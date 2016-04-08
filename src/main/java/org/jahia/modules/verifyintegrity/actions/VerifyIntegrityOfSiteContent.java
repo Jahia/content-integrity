@@ -1,19 +1,13 @@
 package org.jahia.modules.verifyintegrity.actions;
 
 
-import com.sun.star.rdf.Repository;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.groovy.runtime.typehandling.GroovyCastException;
-import org.jahia.ajax.gwt.client.data.definition.GWTJahiaNodeProperty;
-import org.jahia.ajax.gwt.client.data.definition.GWTJahiaNodePropertyValue;
 import org.jahia.ajax.gwt.helper.ContentDefinitionHelper;
 import org.jahia.api.Constants;
 import org.jahia.bin.Action;
 import org.jahia.bin.ActionResult;
 import org.jahia.modules.verifyintegrity.exceptions.CompositeIntegrityViolationException;
 import org.jahia.services.content.*;
-import org.jahia.services.content.decorator.JCRFileNode;
-import org.jahia.services.content.decorator.JCRReferenceNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.decorator.validation.JCRNodeValidator;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -26,7 +20,6 @@ import org.slf4j.Logger;
 
 import javax.jcr.*;
 import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.PropertyDefinition;
 import javax.jcr.query.Query;
 import javax.servlet.http.HttpServletRequest;
@@ -37,7 +30,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * Created by jroussel on 31/03/16.
+ * Jahia action to be called on a site to check integrity of its content
  */
 public class VerifyIntegrityOfSiteContent extends Action {
 
@@ -46,6 +39,9 @@ public class VerifyIntegrityOfSiteContent extends Action {
 	private JCRSessionFactory jcrSessionFactory;
 
 	private ContentDefinitionHelper contentDefinition;
+
+	private List<String> propertiestoIgnore = Arrays.asList("jcr:predecessors", "j:nodename", "jcr:versionHistory",
+			"jcr:baseVersion", "jcr:isCheckedOut", "jcr:uuid", "jcr:mergeFailed", "jcr:title");
 
 	public void setJcrSessionFactory(JCRSessionFactory jcrSessionFactory) {
 		this.jcrSessionFactory = jcrSessionFactory;
@@ -122,6 +118,7 @@ public class VerifyIntegrityOfSiteContent extends Action {
 			LOGGER.debug("A new node can no longer be accessed to run validation checks", e);
 		}
 
+		// TODO : improve this part
 		Map<String, Constructor<?>> validators = jcrSessionFactory.getDefaultProvider().getValidators();
 		Set<ConstraintViolation<JCRNodeValidator>> constraintViolations = new LinkedHashSet<ConstraintViolation<JCRNodeValidator>>();
 		for (Map.Entry<String, Constructor<?>> validatorEntry : validators.entrySet()) {
@@ -185,10 +182,15 @@ public class VerifyIntegrityOfSiteContent extends Action {
 
 		try {
 			PropertyIterator itProp = node.getProperties();
+			SortedSet<String> sortedProps = new TreeSet<String>();
 
 			while (itProp.hasNext()) {
 				Property prop = itProp.nextProperty();
 				PropertyDefinition def = prop.getDefinition();
+
+				if (node.getProvider().canExportProperty(prop)) {
+					sortedProps.add(prop.getName());
+				}
 
 				if (def != null && ((ExtendedPropertyDefinition) def).getSelectorOptions().get("password") == null) {
 					propName = def.getName();
@@ -197,17 +199,16 @@ public class VerifyIntegrityOfSiteContent extends Action {
 					// in which case it needs to be omitted
 					// TODO improve the following, have to test it on every locale
 					final Locale locale = session.getLocale();
-					if(Constants.nonI18nPropertiesCopiedToTranslationNodes.contains(propName) && node.hasI18N(locale,
+					if (Constants.nonI18nPropertiesCopiedToTranslationNodes.contains(propName) && node.hasI18N(locale,
 							false)) {
 						// get the translation node for the current locale
 						final Node i18N = node.getI18N(locale, false);
-						if(!i18N.hasProperty(propName)) {
+						if (!i18N.hasProperty(propName)) {
 							// if the translation node doesn't have the property and it's part of the set of copied
 							// properties, then we shouldn't test it
 							continue;
 						}
 					}
-
 
 
 					Value[] values;
@@ -233,6 +234,36 @@ public class VerifyIntegrityOfSiteContent extends Action {
 					}
 				}
 			}
+
+			/**
+			 * Check for removed properties
+			 * TODO : test with properties coming from a mixin
+			 *
+			 * TODO : take care of properties already checked (i.e. string value instead of date issue)
+			 */
+			try {
+				for (String sortedProp : sortedProps) {
+					Property property = node.getRealNode().getProperty(sortedProp);
+					if ((property.getType() != PropertyType.BINARY) && !propertiestoIgnore.contains(property.getName())
+							&& !property.isMultiple()) {
+
+						try {
+							property.getDefinition();
+						} catch (ConstraintViolationException ex) {
+							LOGGER.debug(node.getPath() + " Removed property found : " + property.getName());
+							ExtendedPropertyDefinition propertyDefinition = node.getApplicablePropertyDefinition(
+									property.getName());
+							cive = addError(cive, new PropertyConstraintViolationException(node, ex.getMessage(),
+									null, propertyDefinition));
+						}
+					}
+				}
+			} catch (PathNotFoundException ex) {
+
+			} catch (RepositoryException rex) {
+				LOGGER.info("Cannot export property", rex);
+			}
+
 		} catch (RepositoryException rex) {
 			//LOGGER.error("Cannot access property " + propName + " of node " + node.getName(), rex);
 			cive = addError(cive, new NodeConstraintViolationException(node, rex.getMessage(), null));
