@@ -86,18 +86,8 @@ public class VerifyIntegrityOfSiteContent extends Action {
 		return null;
 	}
 
-	/**
-	 * Cases currently being checked by the following method :
-	 * - mandatory field having with no value defined
-	 * - property filled with values not coherent with the constraint specified (regex, range)
-	 * <p/>
-	 * TODO : identify removed fields still having values
-	 * <p/>
-	 * TODO : identify incoherent value (i.e. a previous "date (string)" is now a "date (date)", and the value does
-	 * not match date constraint)
-	 * <p/>
-	 * TODO : constraint on field (regex, range) seems to be broken
-	 */
+	// Verify mandatory field missing
+	// TODO improve for checking constraint (regex & range)
 	private CompositeIntegrityViolationException validateNode(JCRNodeWrapper node, JCRSessionWrapper session,
 															  CompositeIntegrityViolationException cive) throws RepositoryException {
 		try {
