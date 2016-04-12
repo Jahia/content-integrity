@@ -2,6 +2,9 @@ package org.jahia.modules.verifyintegrity.actions;
 
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.core.value.InternalValue;
+import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
+import org.apache.jackrabbit.spi.commons.value.QValueValue;
 import org.jahia.ajax.gwt.helper.ContentDefinitionHelper;
 import org.jahia.api.Constants;
 import org.jahia.bin.Action;
@@ -9,7 +12,6 @@ import org.jahia.bin.ActionResult;
 import org.jahia.modules.verifyintegrity.exceptions.CompositeIntegrityViolationException;
 import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
-import org.jahia.services.content.decorator.validation.JCRNodeValidator;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.query.QueryResultWrapper;
@@ -22,10 +24,6 @@ import javax.jcr.*;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.query.Query;
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.ConstraintViolation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -39,8 +37,8 @@ public class VerifyIntegrityOfSiteContent extends Action {
 
 	private ContentDefinitionHelper contentDefinition;
 
-	private List<String> propertiestoIgnore = Arrays.asList("jcr:predecessors", "j:nodename", "jcr:versionHistory",
-			"jcr:baseVersion", "jcr:isCheckedOut", "jcr:uuid", "jcr:mergeFailed", "jcr:title");
+	private List<String> propertiesToIgnore = Arrays.asList("jcr:predecessors", "j:nodename", "jcr:versionHistory",
+			"jcr:baseVersion", "jcr:isCheckedOut", "jcr:uuid", "jcr:mergeFailed");
 
 	public void setJcrSessionFactory(JCRSessionFactory jcrSessionFactory) {
 		this.jcrSessionFactory = jcrSessionFactory;
@@ -80,99 +78,6 @@ public class VerifyIntegrityOfSiteContent extends Action {
 		return null;
 	}
 
-	// Verify mandatory field missing
-	// TODO improve and repair constraints checking
-	private CompositeIntegrityViolationException validateNode(JCRNodeWrapper node, JCRSessionWrapper session,
-															  CompositeIntegrityViolationException cive) throws RepositoryException {
-		try {
-			for (String s : node.getNodeTypes()) {
-				Collection<ExtendedPropertyDefinition> propDefs = NodeTypeRegistry.getInstance().getNodeType(s).getPropertyDefinitionsAsMap().values();
-				for (ExtendedPropertyDefinition propertyDefinition : propDefs) {
-					String propertyName = propertyDefinition.getName();
-					if (propertyDefinition.isMandatory() &&
-							propertyDefinition.getRequiredType() != PropertyType.WEAKREFERENCE &&
-							propertyDefinition.getRequiredType() != PropertyType.REFERENCE &&
-							!propertyDefinition.isProtected() &&
-							(!propertyDefinition.isInternationalized() || session.getLocale() != null) &&
-							(
-									!node.hasProperty(propertyName) ||
-											(!propertyDefinition.isMultiple() &&
-													propertyDefinition.getRequiredType() != PropertyType.BINARY &&
-													StringUtils.isEmpty(node.getProperty(propertyName).getString()))
-
-							)) {
-
-						Locale errorLocale = null;
-						if (propertyDefinition.isInternationalized()) {
-							errorLocale = session.getLocale();
-						}
-						cive = addError(cive, new PropertyConstraintViolationException(node, "This field is mandatory", errorLocale,
-								propertyDefinition));
-						LOGGER.debug("Mandatory field");
-					}
-				}
-			}
-		} catch (InvalidItemStateException e) {
-			LOGGER.debug("A new node can no longer be accessed to run validation checks", e);
-		}
-
-		// TODO : improve this part
-		Map<String, Constructor<?>> validators = jcrSessionFactory.getDefaultProvider().getValidators();
-		Set<ConstraintViolation<JCRNodeValidator>> constraintViolations = new LinkedHashSet<ConstraintViolation<JCRNodeValidator>>();
-		for (Map.Entry<String, Constructor<?>> validatorEntry : validators.entrySet()) {
-			if (node.isNodeType(validatorEntry.getKey())) {
-				try {
-					JCRNodeValidator validatorDecoratedNode = (JCRNodeValidator) validatorEntry.getValue().newInstance(node);
-					Set<ConstraintViolation<JCRNodeValidator>> validate = jcrSessionFactory.getValidatorFactoryBean().validate(
-							validatorDecoratedNode);
-					constraintViolations.addAll(validate);
-				} catch (InstantiationException e) {
-					LOGGER.error(e.getMessage(), e);
-				} catch (IllegalAccessException e) {
-					LOGGER.error(e.getMessage(), e);
-				} catch (InvocationTargetException e) {
-					LOGGER.error(e.getMessage(), e);
-				}
-			}
-		}
-		for (ConstraintViolation<JCRNodeValidator> constraintViolation : constraintViolations) {
-			String propertyName;
-			try {
-				Method propertyNameGetter = constraintViolation.getConstraintDescriptor().getAnnotation().annotationType().getMethod(
-						"propertyName");
-				propertyName = (String) propertyNameGetter.invoke(
-						constraintViolation.getConstraintDescriptor().getAnnotation());
-			} catch (Exception e) {
-				propertyName = constraintViolation.getPropertyPath().toString();
-			}
-			if (StringUtils.isNotBlank(propertyName)) {
-				ExtendedPropertyDefinition propertyDefinition = node.getApplicablePropertyDefinition(
-						propertyName);
-				if (propertyDefinition == null) {
-					propertyDefinition = node.getApplicablePropertyDefinition(propertyName.replaceFirst("_", ":"));
-				}
-				if (propertyDefinition != null) {
-					Locale errorLocale = null;
-					if (propertyDefinition.isInternationalized()) {
-						errorLocale = session.getLocale();
-						if (errorLocale == null) {
-							continue;
-						}
-					}
-					cive = addError(cive, new PropertyConstraintViolationException(node, constraintViolation.getMessage(), errorLocale, propertyDefinition));
-					LOGGER.debug(constraintViolation.getMessage());
-				} else {
-					cive = addError(cive, new NodeConstraintViolationException(node, constraintViolation.getMessage(), null));
-					LOGGER.debug(constraintViolation.getMessage());
-				}
-			} else {
-				cive = addError(cive, new NodeConstraintViolationException(node, constraintViolation.getMessage(), null));
-				LOGGER.debug(constraintViolation.getMessage());
-			}
-		}
-		return cive;
-	}
-
 	private CompositeIntegrityViolationException validate(JCRNodeWrapper node, JCRSessionWrapper session,
 														  CompositeIntegrityViolationException cive) {
 		SortedSet<String> sortedProps = new TreeSet<String>();
@@ -182,6 +87,12 @@ public class VerifyIntegrityOfSiteContent extends Action {
 				Collection<ExtendedPropertyDefinition> propDefs = NodeTypeRegistry.getInstance().getNodeType(s).getPropertyDefinitionsAsMap().values();
 				for (ExtendedPropertyDefinition propertyDefinition : propDefs) {
 					String propertyName = propertyDefinition.getName();
+
+					if (propertiesToIgnore.contains(propertyName)) {
+						continue;
+					}
+
+					// Following condition checks mandatory missing properties
 					if (propertyDefinition.isMandatory() &&
 							propertyDefinition.getRequiredType() != PropertyType.WEAKREFERENCE &&
 							propertyDefinition.getRequiredType() != PropertyType.REFERENCE &&
@@ -205,11 +116,54 @@ public class VerifyIntegrityOfSiteContent extends Action {
 						Property prop = node.getProperty(propertyName);
 						boolean wrongValueForTheType = false;
 
+
+						// Following checks for constraint not fulfiled
+						if (propertyDefinition.getValueConstraints().length != 0) {
+							if (node.hasProperty(propertyName)) {
+								if (!propertyDefinition.isMultiple()) {
+									Value value = node.getProperty(propertyName).getValue();
+									InternalValue internalValue = null;
+									if (value.getType() != PropertyType.BINARY && !((value.getType() == PropertyType.PATH || value.getType() == PropertyType.NAME) && !(value instanceof QValueValue))) {
+										internalValue = InternalValue.create(value, null, null);
+									}
+									if (internalValue != null) {
+										cive = validateConstraints(node, propertyDefinition, new InternalValue[] {
+												internalValue	}, cive);
+									}
+								}
+								else {
+									Value[] values = node.getProperty(propertyName).getValues();
+									List<InternalValue> list = new ArrayList<InternalValue>();
+									for (Value value : values) {
+										if (value != null) {
+											// perform type conversion as necessary and create InternalValue
+											// from (converted) Value
+											InternalValue internalValue = null;
+											if (value.getType() != PropertyType.BINARY
+													&& !((value.getType() == PropertyType.PATH || value.getType() == PropertyType.NAME) && !(value instanceof QValueValue))) {
+												internalValue = InternalValue.create(value, null, null);
+											}
+											list.add(internalValue);
+										}
+									}
+									if (!list.isEmpty()) {
+										InternalValue[] internalValues = list.toArray(new InternalValue[list.size()]);
+										cive = validateConstraints(node, propertyDefinition, internalValues, cive);
+									}
+								}
+
+
+
+
+							}
+						}
+
+
+						// Following condition checks for values incoherent with its type (i.e. string instead of date)
 						if (propertyDefinition != null && propertyDefinition.getSelectorOptions().get("password") == null) {
 
 							// check that we're not dealing with a not-set property from the translation nodes,
 							// in which case it needs to be omitted
-							// TODO improve the following, have to test it on every locale
 							final Locale locale = session.getLocale();
 							if (Constants.nonI18nPropertiesCopiedToTranslationNodes.contains(propertyName) && node.hasI18N(locale,
 									false)) {
@@ -221,7 +175,6 @@ public class VerifyIntegrityOfSiteContent extends Action {
 									continue;
 								}
 							}
-
 
 							Value[] values;
 							if (!propertyDefinition.isMultiple()) {
@@ -246,7 +199,7 @@ public class VerifyIntegrityOfSiteContent extends Action {
 						}
 
 
-						if (! wrongValueForTheType && node.getProvider().canExportProperty(prop)) {
+						if (!wrongValueForTheType && node.getProvider().canExportProperty(prop)) {
 							sortedProps.add(propertyDefinition.getName());
 						}
 					}
@@ -269,7 +222,7 @@ public class VerifyIntegrityOfSiteContent extends Action {
 			try {
 				for (String sortedProp : sortedProps) {
 					Property property = node.getRealNode().getProperty(sortedProp);
-					if ((property.getType() != PropertyType.BINARY) && !propertiestoIgnore.contains(property.getName())
+					if ((property.getType() != PropertyType.BINARY) && !propertiesToIgnore.contains(property.getName())
 							&& !property.isMultiple()) {
 
 						try {
@@ -290,6 +243,53 @@ public class VerifyIntegrityOfSiteContent extends Action {
 			}
 		}
 
+
+		return cive;
+	}
+
+	private CompositeIntegrityViolationException validateConstraints(JCRNodeWrapper node, ExtendedPropertyDefinition
+			propertyDefinition, InternalValue[] values, CompositeIntegrityViolationException cive) {
+		try {
+			// check multi-value flag
+			if (!propertyDefinition.isMultiple() && values != null && values.length > 1) {
+				LOGGER.debug("Property is not multi-valued : " + propertyDefinition.getName() + " | Node : " + node
+						.getPath());
+				throw new ConstraintViolationException("the property is not multi-valued");
+			}
+
+			ValueConstraint[] constraints = propertyDefinition.getValueConstraintObjects();
+
+			if (values != null && values.length > 0) {
+				// check value constraints on every value
+				for (InternalValue value : values) {
+					// constraints are OR-ed together
+					boolean satisfied = false;
+					ConstraintViolationException cve = null;
+					for (ValueConstraint constraint : constraints) {
+						try {
+							constraint.check(value);
+							satisfied = true;
+							break;
+						} catch (ConstraintViolationException e) {
+							cve = e;
+						}
+					}
+					if (!satisfied) {
+						// re-throw last exception we encountered
+						throw cve;
+					}
+				}
+			}
+		} catch (ConstraintViolationException e) {
+			try {
+				cive = addError(cive, new PropertyConstraintViolationException(node, e.getMessage(),
+						null, propertyDefinition));
+			} catch (RepositoryException ex) {
+				LOGGER.debug("Repository exception", ex);
+			}
+		} catch (RepositoryException e) {
+			LOGGER.debug("Repository exception", e);
+		}
 
 		return cive;
 	}
