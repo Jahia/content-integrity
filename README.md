@@ -13,6 +13,7 @@ It provides an action than you can call on any node of a site, the action will t
 identifying integrity issue.
 
 Name of the action : verifyIntegrityOfSiteContent
+
 Example of URL to call : http://localhost:8080/cms/render/default/en/sites/mySite/home.verifyIntegrityOfSiteContent.do
 
 The action will then log detected node in errors with a message specifying the issue
