@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 
 import javax.jcr.*;
 import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.PropertyDefinition;
 import javax.jcr.query.Query;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolation;
@@ -65,8 +64,7 @@ public class VerifyIntegrityOfSiteContent extends Action {
 					"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
 			QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
 			for (Node node : queryResult.getNodes()) {
-				cive = validateNode((JCRNodeWrapper) node, session, cive);
-				cive = validateConstraints((JCRNodeWrapper) node, session, cive);
+				cive = validate((JCRNodeWrapper) node, session, cive);
 			}
 		} catch (RepositoryException e) {
 			e.printStackTrace();
@@ -83,7 +81,7 @@ public class VerifyIntegrityOfSiteContent extends Action {
 	}
 
 	// Verify mandatory field missing
-	// TODO improve for checking constraint (regex & range)
+	// TODO improve and repair constraints checking
 	private CompositeIntegrityViolationException validateNode(JCRNodeWrapper node, JCRSessionWrapper session,
 															  CompositeIntegrityViolationException cive) throws RepositoryException {
 		try {
@@ -175,72 +173,99 @@ public class VerifyIntegrityOfSiteContent extends Action {
 		return cive;
 	}
 
-	// Detect property type modified (i.e. property was previously a string, is now a date, but the value is
-	// incorrect for a date field)
-	private CompositeIntegrityViolationException validateConstraints(JCRNodeWrapper node, JCRSessionWrapper session, CompositeIntegrityViolationException cive) {
-		String propName = "null";
+	private CompositeIntegrityViolationException validate(JCRNodeWrapper node, JCRSessionWrapper session,
+														  CompositeIntegrityViolationException cive) {
+		SortedSet<String> sortedProps = new TreeSet<String>();
 
 		try {
-			PropertyIterator itProp = node.getProperties();
-			SortedSet<String> sortedProps = new TreeSet<String>();
+			for (String s : node.getNodeTypes()) {
+				Collection<ExtendedPropertyDefinition> propDefs = NodeTypeRegistry.getInstance().getNodeType(s).getPropertyDefinitionsAsMap().values();
+				for (ExtendedPropertyDefinition propertyDefinition : propDefs) {
+					String propertyName = propertyDefinition.getName();
+					if (propertyDefinition.isMandatory() &&
+							propertyDefinition.getRequiredType() != PropertyType.WEAKREFERENCE &&
+							propertyDefinition.getRequiredType() != PropertyType.REFERENCE &&
+							!propertyDefinition.isProtected() &&
+							(!propertyDefinition.isInternationalized() || session.getLocale() != null) &&
+							(!node.hasProperty(propertyName) ||
+									(!propertyDefinition.isMultiple() &&
+											propertyDefinition.getRequiredType() != PropertyType.BINARY &&
+											StringUtils.isEmpty(node.getProperty(propertyName).getString()))
 
-			while (itProp.hasNext()) {
-				Property prop = itProp.nextProperty();
-				PropertyDefinition def = prop.getDefinition();
+							)) {
 
-				if (node.getProvider().canExportProperty(prop)) {
-					sortedProps.add(prop.getName());
-				}
-
-				if (def != null && ((ExtendedPropertyDefinition) def).getSelectorOptions().get("password") == null) {
-					propName = def.getName();
-
-					// check that we're not dealing with a not-set property from the translation nodes,
-					// in which case it needs to be omitted
-					// TODO improve the following, have to test it on every locale
-					final Locale locale = session.getLocale();
-					if (Constants.nonI18nPropertiesCopiedToTranslationNodes.contains(propName) && node.hasI18N(locale,
-							false)) {
-						// get the translation node for the current locale
-						final Node i18N = node.getI18N(locale, false);
-						if (!i18N.hasProperty(propName)) {
-							// if the translation node doesn't have the property and it's part of the set of copied
-							// properties, then we shouldn't test it
-							continue;
+						Locale errorLocale = null;
+						if (propertyDefinition.isInternationalized()) {
+							errorLocale = session.getLocale();
 						}
-					}
-
-
-					Value[] values;
-					if (!def.isMultiple()) {
-						Value oneValue = prop.getValue();
-						values = new Value[]{oneValue};
+						cive = addError(cive, new PropertyConstraintViolationException(node, "This field is mandatory", errorLocale,
+								propertyDefinition));
+						LOGGER.debug("Mandatory field");
 					} else {
-						values = prop.getValues();
-					}
+						Property prop = node.getProperty(propertyName);
+						boolean wrongValueForTheType = false;
 
-					for (Value val : values) {
-						try {
-							contentDefinition.convertValue(val, (ExtendedPropertyDefinition) def);
-						} catch (RepositoryException rex) {
-							ExtendedPropertyDefinition propertyDefinition = node.getApplicablePropertyDefinition(
-									propName);
-							cive = addError(cive, new PropertyConstraintViolationException(node, "This field has a " +
-									"wrong value for its type (i.e. 'string' instead of 'date')",
-									null,
-									propertyDefinition));
+						if (propertyDefinition != null && propertyDefinition.getSelectorOptions().get("password") == null) {
+
+							// check that we're not dealing with a not-set property from the translation nodes,
+							// in which case it needs to be omitted
+							// TODO improve the following, have to test it on every locale
+							final Locale locale = session.getLocale();
+							if (Constants.nonI18nPropertiesCopiedToTranslationNodes.contains(propertyName) && node.hasI18N(locale,
+									false)) {
+								// get the translation node for the current locale
+								final Node i18N = node.getI18N(locale, false);
+								if (!i18N.hasProperty(propertyName)) {
+									// if the translation node doesn't have the property and it's part of the set of copied
+									// properties, then we shouldn't test it
+									continue;
+								}
+							}
+
+
+							Value[] values;
+							if (!propertyDefinition.isMultiple()) {
+								Value oneValue = prop.getValue();
+								values = new Value[]{oneValue};
+							} else {
+								values = prop.getValues();
+							}
+
+							for (Value val : values) {
+								try {
+									contentDefinition.convertValue(val, (ExtendedPropertyDefinition) propertyDefinition);
+								} catch (RepositoryException rex) {
+									cive = addError(cive, new PropertyConstraintViolationException(node, "This field has a " +
+											"wrong value for its type (i.e. 'string' instead of 'date')",
+											null,
+											propertyDefinition));
+									wrongValueForTheType = true;
+								}
+
+							}
 						}
 
+
+						if (! wrongValueForTheType && node.getProvider().canExportProperty(prop)) {
+							sortedProps.add(propertyDefinition.getName());
+						}
 					}
 				}
 			}
+		} catch (InvalidItemStateException e) {
+			LOGGER.debug("A new node can no longer be accessed to run validation checks", e);
+		} catch (PathNotFoundException e) {
+			// TODO : what exactly does generate such cases ?
+		} catch (RepositoryException e) {
+			LOGGER.error("RepositoryException", e);
+		}
 
-			/**
-			 * Check for removed properties
-			 * TODO : test with properties coming from a mixin
-			 *
-			 * TODO : take care of properties already checked (i.e. string value instead of date issue)
-			 */
+		/**
+		 * Check for removed properties
+		 * TODO : test with properties coming from a mixin
+		 *
+		 */
+		if (!(sortedProps.size() == 0)) {
 			try {
 				for (String sortedProp : sortedProps) {
 					Property property = node.getRealNode().getProperty(sortedProp);
@@ -261,13 +286,10 @@ public class VerifyIntegrityOfSiteContent extends Action {
 			} catch (PathNotFoundException ex) {
 
 			} catch (RepositoryException rex) {
-				LOGGER.info("Cannot export property", rex);
+				LOGGER.debug("Cannot export property", rex);
 			}
-
-		} catch (RepositoryException rex) {
-			//LOGGER.error("Cannot access property " + propName + " of node " + node.getName(), rex);
-			cive = addError(cive, new NodeConstraintViolationException(node, rex.getMessage(), null));
 		}
+
 
 		return cive;
 	}
