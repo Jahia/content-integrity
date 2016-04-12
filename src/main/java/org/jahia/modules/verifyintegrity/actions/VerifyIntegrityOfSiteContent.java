@@ -127,11 +127,10 @@ public class VerifyIntegrityOfSiteContent extends Action {
 										internalValue = InternalValue.create(value, null, null);
 									}
 									if (internalValue != null) {
-										cive = validateConstraints(node, propertyDefinition, new InternalValue[] {
-												internalValue	}, cive);
+										cive = validateConstraints(node, propertyDefinition, new InternalValue[]{
+												internalValue}, cive);
 									}
-								}
-								else {
+								} else {
 									Value[] values = node.getProperty(propertyName).getValues();
 									List<InternalValue> list = new ArrayList<InternalValue>();
 									for (Value value : values) {
@@ -151,8 +150,6 @@ public class VerifyIntegrityOfSiteContent extends Action {
 										cive = validateConstraints(node, propertyDefinition, internalValues, cive);
 									}
 								}
-
-
 
 
 							}
@@ -208,15 +205,13 @@ public class VerifyIntegrityOfSiteContent extends Action {
 		} catch (InvalidItemStateException e) {
 			LOGGER.debug("A new node can no longer be accessed to run validation checks", e);
 		} catch (PathNotFoundException e) {
-			// TODO : what exactly does generate such cases ?
+
 		} catch (RepositoryException e) {
 			LOGGER.error("RepositoryException", e);
 		}
 
 		/**
 		 * Check for removed properties
-		 * TODO : test with properties coming from a mixin
-		 *
 		 */
 		if (!(sortedProps.size() == 0)) {
 			try {
