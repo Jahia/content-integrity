@@ -68,6 +68,7 @@ public class VerifyIntegrityOfSiteContent extends Action {
 		} else {
 			LOGGER.info("No integrity error found for the site : " + siteNode.getName());
 			resultAsMap.put("siteContentIsValid", "true");
+			resultAsMap.put("numberOfErrors", "0");
 		}
 
 		JSONObject resultAsJSON = new JSONObject(resultAsMap);

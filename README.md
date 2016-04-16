@@ -17,3 +17,7 @@ Name of the action : verifyIntegrityOfSiteContent
 Example of URL to call : http://localhost:8080/cms/render/default/en/sites/mySite/home.verifyIntegrityOfSiteContent.do
 
 The action will then log detected node in errors with a message specifying the issue
+It will also return JSON result for automation. You can check for those keys in the result :
+- siteContentIsValid : "true" or "false" value, depending on the result of the verification
+- numberOfErrors : number of errors found during the verification
+- errors : logged errors found
