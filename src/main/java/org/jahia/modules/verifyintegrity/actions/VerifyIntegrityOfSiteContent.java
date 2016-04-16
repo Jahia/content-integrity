@@ -1,31 +1,27 @@
 package org.jahia.modules.verifyintegrity.actions;
 
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.jackrabbit.core.value.InternalValue;
-import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
-import org.apache.jackrabbit.spi.commons.value.QValueValue;
-import org.jahia.ajax.gwt.helper.ContentDefinitionHelper;
-import org.jahia.api.Constants;
 import org.jahia.bin.Action;
 import org.jahia.bin.ActionResult;
 import org.jahia.modules.verifyintegrity.exceptions.CompositeIntegrityViolationException;
 import org.jahia.modules.verifyintegrity.services.VerifyIntegrityService;
-import org.jahia.services.content.*;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
-import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
-import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.services.query.QueryResultWrapper;
 import org.jahia.services.render.RenderContext;
 import org.jahia.services.render.Resource;
 import org.jahia.services.render.URLResolver;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 
-import javax.jcr.*;
-import javax.jcr.nodetype.ConstraintViolationException;
+import javax.jcr.Node;
+import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Jahia action to be called on a site to check integrity of its content
@@ -60,14 +56,23 @@ public class VerifyIntegrityOfSiteContent extends Action {
 			e.printStackTrace();
 		}
 
+		Map<String, String> resultAsMap = new HashMap();
+
 		if ((cive != null) && (cive.getErrors() != null)) {
 			LOGGER.info("Content of the site '" + siteNode.getName() + "' is wrong.");
 			LOGGER.info("Number of incorrect nodes : " + cive.getErrors().size());
 			LOGGER.info(cive.getMessage());
+			resultAsMap.put("siteContentIsValid", "false");
+			resultAsMap.put("numberOfErrors", Integer.toString(cive.getErrors().size()));
+			resultAsMap.put("errors", cive.getMessage());
 		} else {
 			LOGGER.info("No integrity error found for the site : " + siteNode.getName());
+			resultAsMap.put("siteContentIsValid", "true");
 		}
 
-		return null;
+		JSONObject resultAsJSON = new JSONObject(resultAsMap);
+		LOGGER.debug("resultAsJSON={}", resultAsJSON);
+
+		return new ActionResult(200, null, resultAsJSON);
 	}
 }
