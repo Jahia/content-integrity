@@ -5,7 +5,10 @@
 
     <bean class="org.jahia.modules.verifyintegrity.actions.VerifyIntegrityOfSiteContent">
         <property name="name" value="verifyIntegrityOfSiteContent"/>
-        <property name="jcrSessionFactory" ref="jcrSessionFactory"/>
+        <property name="verifyIntegrityService" ref="VerifyIntegrityService"/>
+    </bean>
+
+    <bean id="VerifyIntegrityService" class="org.jahia.modules.verifyintegrity.services.VerifyIntegrityService">
         <property name="contentDefinition" ref="ContentDefinitionHelper"/>
     </bean>
 
