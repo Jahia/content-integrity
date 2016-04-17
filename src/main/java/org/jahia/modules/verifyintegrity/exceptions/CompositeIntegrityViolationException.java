@@ -14,6 +14,10 @@ public class CompositeIntegrityViolationException {
 		this.errors.add(exception);
 	}
 
+	public void addExceptions(List<Exception> listOfExceptions) {
+		this.errors.addAll(listOfExceptions);
+	}
+
 	public String getMessage() {
 		StringBuilder sb = new StringBuilder(512);
 		Iterator i$ = this.errors.iterator();
