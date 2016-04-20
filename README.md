@@ -16,10 +16,6 @@ Name of the action : verifyIntegrityOfSiteContent
 
 Example of URL to call : http://localhost:8080/cms/render/default/en/sites/mySite/home.verifyIntegrityOfSiteContent.do
 
-Parameters of the action :
-- performMultiLocaleVerification : true by default. Allow to perform check on only the main site's locale if needed, by
-setting it to false
-
 The action will then log detected node in errors with a message specifying the issue
 It will also return JSON result for automation. You can check for those keys in the result :
 - siteContentIsValid : "true" or "false" value, depending on the result of the verification
