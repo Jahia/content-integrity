@@ -5,8 +5,10 @@ import org.jahia.bin.Action;
 import org.jahia.bin.ActionResult;
 import org.jahia.modules.verifyintegrity.exceptions.CompositeIntegrityViolationException;
 import org.jahia.modules.verifyintegrity.services.VerifyIntegrityService;
+import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.query.QueryResultWrapper;
 import org.jahia.services.render.RenderContext;
@@ -28,7 +30,7 @@ import java.util.Map;
  */
 public class VerifyIntegrityOfSiteContent extends Action {
 
-	private static Logger LOGGER = org.slf4j.LoggerFactory.getLogger(VerifyIntegrityOfSiteContent.class);
+	private static Logger logger = org.slf4j.LoggerFactory.getLogger(VerifyIntegrityOfSiteContent.class);
 
 	private VerifyIntegrityService verifyIntegrityService;
 
@@ -39,40 +41,48 @@ public class VerifyIntegrityOfSiteContent extends Action {
 	@Override
 	public ActionResult doExecute(HttpServletRequest req, RenderContext renderContext, Resource resource, JCRSessionWrapper session, Map<String, List<String>> parameters, URLResolver urlResolver) throws Exception {
 		final JCRSiteNode siteNode = renderContext.getSite();
+		logger.debug("VerifyIntegrityOfSiteContent action has been called on site : " + siteNode.getName());
 
+		final String workspaceToUse = getParameter(parameters, "workspace");
+		logger.debug("Workspace to use : " + workspaceToUse);
 
-		LOGGER.debug("VerifyIntegrityOfSiteContent action has been called on site : " + siteNode.getName());
+		CompositeIntegrityViolationException cive = (CompositeIntegrityViolationException) JCRTemplate.getInstance()
+				.doExecuteWithSystemSessionAsUser(null, workspaceToUse, null, new JCRCallback() {
+			@Override
+			public CompositeIntegrityViolationException doInJCR(JCRSessionWrapper session) throws RepositoryException {
+				CompositeIntegrityViolationException cive = null;
+				try {
+					Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [jnt:content] WHERE " +
+							"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
+					QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
+					for (Node node : queryResult.getNodes()) {
+						cive = verifyIntegrityService.validateNodeIntegrity((JCRNodeWrapper) node, session, cive);
+					}
+				} catch (RepositoryException e) {
+					e.printStackTrace();
+				}
 
-		CompositeIntegrityViolationException cive = null;
-
-		try {
-			Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [jnt:content] WHERE " +
-					"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
-			QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
-			for (Node node : queryResult.getNodes()) {
-				cive = verifyIntegrityService.validateNodeIntegrity((JCRNodeWrapper) node, session, cive);
+				return cive;
 			}
-		} catch (RepositoryException e) {
-			e.printStackTrace();
-		}
+		});
 
 		Map<String, String> resultAsMap = new HashMap();
 
 		if ((cive != null) && (cive.getErrors() != null)) {
-			LOGGER.info("Content of the site '" + siteNode.getName() + "' is wrong.");
-			LOGGER.info("Number of incorrect nodes : " + cive.getErrors().size());
-			LOGGER.info(cive.getMessage());
+			logger.info("Content of the site '" + siteNode.getName() + "' is wrong.");
+			logger.info("Number of incorrect nodes : " + cive.getErrors().size());
+			logger.info(cive.getMessage());
 			resultAsMap.put("siteContentIsValid", "false");
 			resultAsMap.put("numberOfErrors", Integer.toString(cive.getErrors().size()));
 			resultAsMap.put("errors", cive.getMessage());
 		} else {
-			LOGGER.info("No integrity error found for the site : " + siteNode.getName());
+			logger.info("No integrity error found for the site : " + siteNode.getName());
 			resultAsMap.put("siteContentIsValid", "true");
 			resultAsMap.put("numberOfErrors", "0");
 		}
 
 		JSONObject resultAsJSON = new JSONObject(resultAsMap);
-		LOGGER.debug("resultAsJSON={}", resultAsJSON);
+		logger.debug("resultAsJSON={}", resultAsJSON);
 
 		return new ActionResult(200, null, resultAsJSON);
 	}
