@@ -20,7 +20,7 @@ import javax.jcr.nodetype.ConstraintViolationException;
 import java.util.*;
 
 public class VerifyIntegrityService {
-	private static Logger LOGGER = org.slf4j.LoggerFactory.getLogger(VerifyIntegrityService.class);
+	private static Logger logger = org.slf4j.LoggerFactory.getLogger(VerifyIntegrityService.class);
 
 	private ContentDefinitionHelper contentDefinition;
 
@@ -82,7 +82,7 @@ public class VerifyIntegrityService {
 						}
 						cive = addError(cive, new PropertyConstraintViolationException(node, "This field is mandatory", errorLocale,
 								propertyDefinition));
-						LOGGER.debug("Mandatory field");
+						logger.debug("Mandatory field");
 					} else {
 						Property prop = node.getProperty(propertyName);
 						boolean wrongValueForTheType = false;
@@ -174,11 +174,11 @@ public class VerifyIntegrityService {
 				}
 			}
 		} catch (InvalidItemStateException e) {
-			LOGGER.debug("A new node can no longer be accessed to run validation checks", e);
+			logger.debug("A new node can no longer be accessed to run validation checks", e);
 		} catch (PathNotFoundException e) {
 
 		} catch (RepositoryException e) {
-			LOGGER.error("RepositoryException", e);
+			logger.error("RepositoryException", e);
 		}
 
 		/**
@@ -194,7 +194,7 @@ public class VerifyIntegrityService {
 						try {
 							property.getDefinition();
 						} catch (ConstraintViolationException ex) {
-							LOGGER.debug(node.getPath() + " Removed property found : " + property.getName());
+							logger.debug(node.getPath() + " Removed property found : " + property.getName());
 							ExtendedPropertyDefinition propertyDefinition = node.getApplicablePropertyDefinition(
 									property.getName());
 							cive = addError(cive, new PropertyConstraintViolationException(node, ex.getMessage(),
@@ -205,7 +205,7 @@ public class VerifyIntegrityService {
 			} catch (PathNotFoundException ex) {
 
 			} catch (RepositoryException rex) {
-				LOGGER.debug("Cannot export property", rex);
+				logger.debug("Cannot export property", rex);
 			}
 		}
 
@@ -228,7 +228,7 @@ public class VerifyIntegrityService {
 		try {
 			// check multi-value flag
 			if (!propertyDefinition.isMultiple() && values != null && values.length > 1) {
-				LOGGER.debug("Property is not multi-valued : " + propertyDefinition.getName() + " | Node : " + node
+				logger.debug("Property is not multi-valued : " + propertyDefinition.getName() + " | Node : " + node
 						.getPath());
 				throw new ConstraintViolationException("the property is not multi-valued");
 			}
@@ -261,38 +261,12 @@ public class VerifyIntegrityService {
 				cive = addError(cive, new PropertyConstraintViolationException(node, e.getMessage(),
 						null, propertyDefinition));
 			} catch (RepositoryException ex) {
-				LOGGER.debug("Repository exception", ex);
+				logger.debug("Repository exception", ex);
 			}
 		} catch (RepositoryException e) {
-			LOGGER.debug("Repository exception", e);
+			logger.debug("Repository exception", e);
 		}
 
 		return cive;
 	}
-
-	/*
-	// WIP verification method on children nodes
-	private CompositeIntegrityViolationException verifyChildrenNodes(JCRNodeWrapper node, ExtendedPropertyDefinition
-			propertyDefinition, CompositeIntegrityViolationException cive) {
-		// TODO : verify if all children nodes are authorized as children (definitions could have changed)
-		for (JCRNodeWrapper childNode : node.getNodes()) {
-			try {
-
-			} catch (ConstraintViolationException e) {
-				try {
-				cive = addError(cive, new PropertyConstraintViolationException(node, "This field has a " +
-						"wrong value for its type (i.e. 'string' instead of 'date')",
-						null,
-						propertyDefinition));
-				} catch (RepositoryException ex) {
-					LOGGER.error("RepositoryException", ex);
-				}
-			} catch (RepositoryException e) {
-				LOGGER.error("RepositoryException", e);
-			}
-		}
-
-		return cive;
-	}
-	*/
 }

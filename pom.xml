@@ -57,7 +57,7 @@
     <groupId>org.jahia.modules</groupId>
     <artifactId>verify-integrity</artifactId>
     <name>Verify Integrity</name>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <description>This is the custom module (Verify Integrity) for running on a Digital Experience Manager server.</description>
 
