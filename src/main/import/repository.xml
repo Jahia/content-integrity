@@ -5,7 +5,34 @@
                         j:modulePriority="0"
                         j:moduleType="module"
                         j:title="Verify Integrity"
+                        jcr:mixinTypes="jmix:hasExternalProviderExtension"
                         jcr:primaryType="jnt:module">
+                <sources jcr:mixinTypes="jmix:hasExternalProviderExtension jmix:sourceControl"
+                  jcr:primaryType="jnt:moduleVersionFolder"
+                  j:staticMountPointProviderKey="module-verify-integrity-1.0">
+                    <src jcr:mixinTypes="jmix:sourceControl" jcr:primaryType="jnt:folder">
+                        <main jcr:mixinTypes="jmix:sourceControl" jcr:primaryType="jnt:folder">
+                            <resources jcr:mixinTypes="jmix:sourceControl" jcr:primaryType="jnt:folder">
+                                <javascript jcr:mixinTypes="jmix:sourceControl"
+                                 jcr:primaryType="jnt:javascriptFolder">
+                                    <verifyIntegrity.js jcr:mixinTypes="jmix:sourceControl"
+                                            jcr:primaryType="jnt:javascriptFile"/>
+                                </javascript>
+                                <jnt_verifyIntegrityAdminPanel jcr:mixinTypes="jmix:sourceControl"
+                                                    jcr:primaryType="jnt:nodeTypeFolder">
+                                    <html jcr:mixinTypes="jmix:sourceControl"
+                              jcr:primaryType="jnt:templateTypeFolder">
+                                        <verifyIntegrityAdminPanel.jsp jcr:mixinTypes="jmix:sourceControl" jcr:primaryType="jnt:viewFile"/>
+                                    </html>
+                                </jnt_verifyIntegrityAdminPanel>
+                                <META-INF jcr:mixinTypes="jmix:sourceControl" jcr:primaryType="jnt:metaInfFolder">
+                                    <definitions.cnd jcr:mixinTypes="jmix:sourceControl"
+                                         jcr:primaryType="jnt:definitionFile"/>
+                                </META-INF>
+                            </resources>
+                        </main>
+                    </src>
+                </sources>
                 
                 <portlets jcr:primaryType="jnt:portletFolder"/>
                 <files jcr:primaryType="jnt:folder"/>
@@ -13,6 +40,21 @@
                 <templates j:rootTemplatePath="/base" jcr:primaryType="jnt:templatesFolder">
                     <files jcr:primaryType="jnt:folder"/>
                     <contents jcr:primaryType="jnt:contentFolder"/>
+                    <site-settings-base j:view="siteSettings"
+                                jcr:mixinTypes="jmix:useUILocale"
+                                jcr:primaryType="jnt:template">
+                        <jcr-integrity-checker j:defaultTemplate="false"
+                                    j:hiddenTemplate="false"
+                                    jcr:primaryType="jnt:contentTemplate">
+                            <j:translation_en jcr:language="en"
+                                    jcr:mixinTypes="mix:title"
+                                    jcr:primaryType="jnt:translation"
+                                    jcr:title="JCR Integrity Checker"/>
+                            <pagecontent jcr:primaryType="jnt:contentList">
+                                <verifyintegrityadminpanel jcr:primaryType="jnt:verifyIntegrityAdminPanel"/>
+                            </pagecontent>
+                        </jcr-integrity-checker>
+                    </site-settings-base>
                 </templates>
                 
             </verify-integrity>
