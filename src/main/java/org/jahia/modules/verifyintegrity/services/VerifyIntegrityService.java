@@ -25,7 +25,13 @@ public class VerifyIntegrityService {
 	private ContentDefinitionHelper contentDefinition;
 
 	private List<String> propertiesToIgnore = Arrays.asList("jcr:predecessors", "j:nodename", "jcr:versionHistory",
-			"jcr:baseVersion", "jcr:isCheckedOut", "jcr:uuid", "jcr:mergeFailed");
+			"jcr:baseVersion", "jcr:isCheckedOut", "jcr:uuid", "jcr:mergeFailed", "j:isHomePage", "j:templateNode",
+			"j:tags", "j:newTag", "j:tagList", "jcr:activity", "jcr:configuration", "j:legacyRuleSettings",
+			"j:processId", "jcr:description", "j:invalidLanguages", "j:workInProgress", "jcr:lockOwner",
+			"jcr:configuration", "j:originWS", "j:published", "j:lastPublishedBy", "j:lastPublished",
+			"jcr:lastModified", "jcr:LastModifiedBy", "jcr:lockIsDeep", "j:locktoken", "j:lockTypes", "jcr:created",
+			"jcr:createdBy", "j:fullpath", "jcr:mixinTypes", "jcr:primaryType"
+	);
 
 	public void setContentDefinition(ContentDefinitionHelper contentDefinition) {
 		this.contentDefinition = contentDefinition;

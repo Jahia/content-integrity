@@ -23,6 +23,7 @@ import javax.jcr.query.Query;
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -43,16 +44,39 @@ public class VerifyIntegrityOfSiteContent extends Action {
 		final JCRSiteNode siteNode = renderContext.getSite();
 		logger.debug("VerifyIntegrityOfSiteContent action has been called on site : " + siteNode.getName());
 
-		final String workspaceToUse = getParameter(parameters, "workspace");
+		final String workspaceToUse = session.getWorkspace().getName();
 		logger.debug("Workspace to use : " + workspaceToUse);
 
+		String allLocalesParameter = getParameter(parameters, "allLocales");
+		Locale localeToUse = null;
+		if (allLocalesParameter != null && "true".equals(allLocalesParameter)) {
+			logger.debug("Locale to use : all");
+		} else {
+			localeToUse = session.getLocale();
+			logger.debug("Locale to use : " + localeToUse.getDisplayName());
+		}
+
+
 		CompositeIntegrityViolationException cive = (CompositeIntegrityViolationException) JCRTemplate.getInstance()
-				.doExecuteWithSystemSessionAsUser(null, workspaceToUse, null, new JCRCallback() {
+				.doExecuteWithSystemSessionAsUser(null, workspaceToUse, localeToUse, new JCRCallback() {
 			@Override
 			public CompositeIntegrityViolationException doInJCR(JCRSessionWrapper session) throws RepositoryException {
 				CompositeIntegrityViolationException cive = null;
+
 				try {
 					Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [jnt:content] WHERE " +
+							"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
+					QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
+					for (Node node : queryResult.getNodes()) {
+						cive = verifyIntegrityService.validateNodeIntegrity((JCRNodeWrapper) node, session, cive);
+					}
+				} catch (RepositoryException e) {
+					e.printStackTrace();
+				}
+
+				try {
+					Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [jnt:page] " +
+							"WHERE " +
 							"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
 					QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
 					for (Node node : queryResult.getNodes()) {
