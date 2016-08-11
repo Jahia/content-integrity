@@ -33,7 +33,7 @@
                         </main>
                     </src>
                 </sources>
-                
+
                 <portlets jcr:primaryType="jnt:portletFolder"/>
                 <files jcr:primaryType="jnt:folder"/>
                 <contents jcr:primaryType="jnt:contentFolder"/>
@@ -45,6 +45,7 @@
                                 jcr:primaryType="jnt:template">
                         <jcr-integrity-checker j:defaultTemplate="false"
                                     j:hiddenTemplate="false"
+                                      j:requiredPermissionNames="allowToVerifySiteIntegrity"
                                     jcr:primaryType="jnt:contentTemplate">
                             <j:translation_en jcr:language="en"
                                     jcr:mixinTypes="mix:title"
