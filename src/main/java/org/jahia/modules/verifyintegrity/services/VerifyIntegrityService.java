@@ -8,9 +8,9 @@ import org.apache.jackrabbit.spi.commons.value.QValueValue;
 import org.jahia.ajax.gwt.helper.ContentDefinitionHelper;
 import org.jahia.api.Constants;
 import org.jahia.modules.verifyintegrity.exceptions.CompositeIntegrityViolationException;
+import org.jahia.modules.verifyintegrity.exceptions.IntegrityViolationException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.PropertyConstraintViolationException;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
@@ -37,7 +37,8 @@ public class VerifyIntegrityService {
 		this.contentDefinition = contentDefinition;
 	}
 
-	private CompositeIntegrityViolationException addError(CompositeIntegrityViolationException cive, Exception
+	private CompositeIntegrityViolationException addError(CompositeIntegrityViolationException cive,
+														  IntegrityViolationException
 			exception) {
 		if (cive == null) {
 			cive = new CompositeIntegrityViolationException();
@@ -64,6 +65,10 @@ public class VerifyIntegrityService {
 				Collection<ExtendedPropertyDefinition> propDefs = NodeTypeRegistry.getInstance().getNodeType(s).getPropertyDefinitionsAsMap().values();
 				for (ExtendedPropertyDefinition propertyDefinition : propDefs) {
 					String propertyName = propertyDefinition.getName();
+					Locale errorLocale = null;
+					if (propertyDefinition.isInternationalized()) {
+						errorLocale = session.getLocale();
+					}
 
 					if (propertiesToIgnore.contains(propertyName)) {
 						continue;
@@ -82,12 +87,10 @@ public class VerifyIntegrityService {
 
 							)) {
 
-						Locale errorLocale = null;
-						if (propertyDefinition.isInternationalized()) {
-							errorLocale = session.getLocale();
-						}
-						cive = addError(cive, new PropertyConstraintViolationException(node, "This field is mandatory", errorLocale,
-								propertyDefinition));
+						cive = addError(cive, new IntegrityViolationException(node.getPath(), node
+								.getPrimaryNodeTypeName(), propertyDefinition.getName(), errorLocale,
+								"This field is " +
+								"mandatory"));
 						logger.debug("Mandatory field");
 					} else {
 						Property prop = node.getProperty(propertyName);
@@ -105,7 +108,7 @@ public class VerifyIntegrityService {
 									}
 									if (internalValue != null) {
 										cive = validateConstraints(node, propertyDefinition, new InternalValue[]{
-												internalValue}, cive);
+												internalValue}, cive, errorLocale);
 									}
 								} else {
 									Value[] values = node.getProperty(propertyName).getValues();
@@ -124,11 +127,10 @@ public class VerifyIntegrityService {
 									}
 									if (!list.isEmpty()) {
 										InternalValue[] internalValues = list.toArray(new InternalValue[list.size()]);
-										cive = validateConstraints(node, propertyDefinition, internalValues, cive);
+										cive = validateConstraints(node, propertyDefinition, internalValues, cive,
+												errorLocale);
 									}
 								}
-
-
 							}
 						}
 
@@ -162,10 +164,10 @@ public class VerifyIntegrityService {
 								try {
 									contentDefinition.convertValue(val, (ExtendedPropertyDefinition) propertyDefinition);
 								} catch (RepositoryException rex) {
-									cive = addError(cive, new PropertyConstraintViolationException(node, "This field has a " +
-											"wrong value for its type (i.e. 'string' instead of 'date')",
-											null,
-											propertyDefinition));
+									cive = addError(cive, new IntegrityViolationException(node.getPath(), node
+											.getPrimaryNodeTypeName(), propertyName, locale,
+											"This field has a " +
+											"wrong value for its type (i.e. string instead of date)"));
 									wrongValueForTheType = true;
 								}
 
@@ -203,8 +205,13 @@ public class VerifyIntegrityService {
 							logger.debug(node.getPath() + " Removed property found : " + property.getName());
 							ExtendedPropertyDefinition propertyDefinition = node.getApplicablePropertyDefinition(
 									property.getName());
-							cive = addError(cive, new PropertyConstraintViolationException(node, ex.getMessage(),
-									null, propertyDefinition));
+							Locale errorLocale = null;
+							if (propertyDefinition.isInternationalized()) {
+								errorLocale = session.getLocale();
+							}
+							cive = addError(cive, new IntegrityViolationException(node.getPath(), node
+									.getPrimaryNodeTypeName(), propertyDefinition.getName(), errorLocale, ex.getMessage
+									()));
 						}
 					}
 				}
@@ -230,7 +237,7 @@ public class VerifyIntegrityService {
 	 * @return
 	 */
 	private CompositeIntegrityViolationException validateConstraints(JCRNodeWrapper node, ExtendedPropertyDefinition
-			propertyDefinition, InternalValue[] values, CompositeIntegrityViolationException cive) {
+			propertyDefinition, InternalValue[] values, CompositeIntegrityViolationException cive, Locale errorLocale) {
 		try {
 			// check multi-value flag
 			if (!propertyDefinition.isMultiple() && values != null && values.length > 1) {
@@ -264,8 +271,8 @@ public class VerifyIntegrityService {
 			}
 		} catch (ConstraintViolationException e) {
 			try {
-				cive = addError(cive, new PropertyConstraintViolationException(node, e.getMessage(),
-						null, propertyDefinition));
+				cive = addError(cive, new IntegrityViolationException(node.getPath(), node.getPrimaryNodeTypeName(),
+						propertyDefinition.getName(), errorLocale, e.getMessage()));
 			} catch (RepositoryException ex) {
 				logger.debug("Repository exception", ex);
 			}

@@ -9,30 +9,43 @@ function verifyIntegrity (site, workspace, language) {
 }
 
 function displayErrors(json) {
+
 	$("#errorDisplay").html("");
-	errorArray = json.errors.split("\n");
 
 	$("#errorDisplay").append($('<tr>')
-		.append($('<td colspan=3 class="errorDisplay">')
-			.append(json.numberOfErrors + " error(s) detected")
+			.append($('<td colspan=3 class="errorDisplay">')
+				.append(json.numberOfErrors + " error(s) detected")
 		)
 	);
 
-	for (var i = 0; i < errorArray.length-1; i++) {
+	$("#errorDisplay").append($('<tr>')
+			.append($('<td class="errorDisplay">')
+				.append("Path")
+		)
+			.append($('<td class="errorDisplay">')
+				.append("Property name")
+		)
+			.append($('<td class="errorDisplay">')
+				.append("Type of error")
+		)
+	);
 
-		error = errorArray[i].split(":");
-		nodetype = error[0].split(" ");
-		$("#errorDisplay").append($('<tr>')
-			.append($('<td>')
-				.append(nodetype[0])
-			)
-			.append($('<td>')
-				.append(nodetype[1])
-			)
-			.append($('<td>')
-				.append(error[1])
-			)
-		);
+	if (json.numberOfErrors > 0) {
+		for (var i=0; i<json.errors.length; i++) {
+			var error = json.errors[i];
+
+			$("#errorDisplay").append($('<tr>')
+					.append($('<td>')
+						.append(error.path)
+				)
+					.append($('<td>')
+						.append(error.propertyName)
+				)
+					.append($('<td>')
+						.append(error.constraintMessage)
+				)
+			);
+		}
 	}
 }
 
