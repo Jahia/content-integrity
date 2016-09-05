@@ -1,6 +1,7 @@
 function verifyIntegrity (site, workspace, language) {
+
 	$.ajax({
-		url: "/cms/edit/"+workspace+"/"+language+"/sites/"+site+"/home.verifyIntegrityOfSiteContent.do",
+		url: "/cms/render/"+workspace+"/"+language+"/sites/"+site+"/home.verifyIntegrityOfSiteContent.do",
 		context: document.body,
 		dataType: "json"
 	}).done(function(data) {
