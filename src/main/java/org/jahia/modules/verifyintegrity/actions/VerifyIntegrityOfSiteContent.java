@@ -5,15 +5,14 @@ import org.jahia.bin.Action;
 import org.jahia.bin.ActionResult;
 import org.jahia.modules.verifyintegrity.exceptions.CompositeIntegrityViolationException;
 import org.jahia.modules.verifyintegrity.services.VerifyIntegrityService;
-import org.jahia.services.content.JCRCallback;
-import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.content.*;
 import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.query.QueryResultWrapper;
 import org.jahia.services.render.RenderContext;
 import org.jahia.services.render.Resource;
 import org.jahia.services.render.URLResolver;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -34,6 +33,12 @@ public class VerifyIntegrityOfSiteContent extends Action {
 	private static Logger logger = org.slf4j.LoggerFactory.getLogger(VerifyIntegrityOfSiteContent.class);
 
 	private VerifyIntegrityService verifyIntegrityService;
+
+	private JahiaUserManagerService jahiaUserManagerService;
+
+	public void setJahiaUserManagerService(JahiaUserManagerService jahiaUserManagerService) {
+		this.jahiaUserManagerService = jahiaUserManagerService;
+	}
 
 	public void setVerifyIntegrityService(VerifyIntegrityService verifyIntegrityService) {
 		this.verifyIntegrityService = verifyIntegrityService;
@@ -57,38 +62,41 @@ public class VerifyIntegrityOfSiteContent extends Action {
 		}
 
 
+		JCRUserNode rootUser = jahiaUserManagerService.lookupUser("root");
+
 		CompositeIntegrityViolationException cive = (CompositeIntegrityViolationException) JCRTemplate.getInstance()
-				.doExecuteWithSystemSessionAsUser(null, workspaceToUse, localeToUse, new JCRCallback() {
-					@Override
-					public CompositeIntegrityViolationException doInJCR(JCRSessionWrapper session) throws RepositoryException {
-						CompositeIntegrityViolationException cive = null;
+				.doExecuteWithSystemSessionAsUser(rootUser.getJahiaUser(), workspaceToUse, localeToUse, new
+						JCRCallback() {
+							@Override
+							public CompositeIntegrityViolationException doInJCR(JCRSessionWrapper session) throws RepositoryException {
+								CompositeIntegrityViolationException cive = null;
 
-						try {
-							Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [jnt:content] WHERE " +
-									"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
-							QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
-							for (Node node : queryResult.getNodes()) {
-								cive = verifyIntegrityService.validateNodeIntegrity((JCRNodeWrapper) node, session, cive);
+								try {
+									Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [jnt:content] WHERE " +
+											"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
+									QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
+									for (Node node : queryResult.getNodes()) {
+										cive = verifyIntegrityService.validateNodeIntegrity((JCRNodeWrapper) node, session, cive);
+									}
+								} catch (RepositoryException e) {
+									e.printStackTrace();
+								}
+
+								try {
+									Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [jnt:page] " +
+											"WHERE " +
+											"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
+									QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
+									for (Node node : queryResult.getNodes()) {
+										cive = verifyIntegrityService.validateNodeIntegrity((JCRNodeWrapper) node, session, cive);
+									}
+								} catch (RepositoryException e) {
+									e.printStackTrace();
+								}
+
+								return cive;
 							}
-						} catch (RepositoryException e) {
-							e.printStackTrace();
-						}
-
-						try {
-							Query query = session.getWorkspace().getQueryManager().createQuery("SELECT * FROM [jnt:page] " +
-									"WHERE " +
-									"ISDESCENDANTNODE('" + siteNode.getPath() + "')", Query.JCR_SQL2);
-							QueryResultWrapper queryResult = (QueryResultWrapper) query.execute();
-							for (Node node : queryResult.getNodes()) {
-								cive = verifyIntegrityService.validateNodeIntegrity((JCRNodeWrapper) node, session, cive);
-							}
-						} catch (RepositoryException e) {
-							e.printStackTrace();
-						}
-
-						return cive;
-					}
-				});
+						});
 
 
 		JSONObject resultAsJSON = new JSONObject();
