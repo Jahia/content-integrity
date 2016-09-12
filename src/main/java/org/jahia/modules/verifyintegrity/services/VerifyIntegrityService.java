@@ -11,6 +11,8 @@ import org.jahia.modules.verifyintegrity.exceptions.CompositeIntegrityViolationE
 import org.jahia.modules.verifyintegrity.exceptions.IntegrityViolationException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.slf4j.Logger;
@@ -93,12 +95,29 @@ public class VerifyIntegrityService {
 								"mandatory"));
 						logger.debug("Mandatory field");
 					} else {
-						Property prop = node.getProperty(propertyName);
+
+						Property prop = null;
+						try{
+							prop = node.getProperty(propertyName);
+						} catch (PathNotFoundException ex){
+							logger.debug("Property : " + propertyName + " not found on node " + node.getPath() + " so continuing to other properties without validating");
+							continue;
+						} catch (RepositoryException ex){
+							logger.error("Error getting Property : " + propertyName + " on node " + node.getPath() + " continuing even though error is : " + ex.getMessage());
+							continue;
+						}
 						boolean wrongValueForTheType = false;
 
+						if ("jcr:title".equals(propertyName) && !hasMixTitle(node.getPrimaryNodeType())){
+							logger.info("         in here ");
+							cive = addError(cive, new IntegrityViolationException(node.getPath(), node
+									.getPrimaryNodeTypeName(), propertyName, errorLocale,
+									"This field has a has jcr:title property but, the primary node type does not have mix:title as one of it's supertypes"));
+						}
 
 						// Following checks for constraint not fulfiled
 						if (propertyDefinition.getValueConstraints().length != 0) {
+							logger.info("Node path is " + node.getPath() + " and property checked is " + propertyDefinition.getName());
 							if (node.hasProperty(propertyName)) {
 								if (!propertyDefinition.isMultiple()) {
 									Value value = node.getProperty(propertyName).getValue();
@@ -184,9 +203,10 @@ public class VerifyIntegrityService {
 		} catch (InvalidItemStateException e) {
 			logger.debug("A new node can no longer be accessed to run validation checks", e);
 		} catch (PathNotFoundException e) {
-
+			logger.info("               Property not found " + e.getMessage());
 		} catch (RepositoryException e) {
 			logger.error("RepositoryException", e);
+
 		}
 
 		/**
@@ -246,9 +266,11 @@ public class VerifyIntegrityService {
 				throw new ConstraintViolationException("the property is not multi-valued");
 			}
 
+
 			ValueConstraint[] constraints = propertyDefinition.getValueConstraintObjects();
 
 			if (values != null && values.length > 0) {
+
 				// check value constraints on every value
 				for (InternalValue value : values) {
 					// constraints are OR-ed together
@@ -281,5 +303,20 @@ public class VerifyIntegrityService {
 		}
 
 		return cive;
+	}
+
+	private boolean hasMixTitle(ExtendedNodeType nodeType){
+
+		if ("mix:title".equals(nodeType.getName())) {
+			return true;
+		}
+		ExtendedNodeType[] supertypes = nodeType.getSupertypes();
+		for (ExtendedNodeType extendedNodeType : supertypes){
+			if ( hasMixTitle(extendedNodeType)){
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
