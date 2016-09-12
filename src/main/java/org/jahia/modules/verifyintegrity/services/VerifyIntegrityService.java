@@ -109,7 +109,6 @@ public class VerifyIntegrityService {
 						boolean wrongValueForTheType = false;
 
 						if ("jcr:title".equals(propertyName) && !hasMixTitle(node.getPrimaryNodeType())){
-							logger.info("         in here ");
 							cive = addError(cive, new IntegrityViolationException(node.getPath(), node
 									.getPrimaryNodeTypeName(), propertyName, errorLocale,
 									"This field has a has jcr:title property but, the primary node type does not have mix:title as one of it's supertypes"));
@@ -117,7 +116,6 @@ public class VerifyIntegrityService {
 
 						// Following checks for constraint not fulfiled
 						if (propertyDefinition.getValueConstraints().length != 0) {
-							logger.info("Node path is " + node.getPath() + " and property checked is " + propertyDefinition.getName());
 							if (node.hasProperty(propertyName)) {
 								if (!propertyDefinition.isMultiple()) {
 									Value value = node.getProperty(propertyName).getValue();
@@ -203,7 +201,7 @@ public class VerifyIntegrityService {
 		} catch (InvalidItemStateException e) {
 			logger.debug("A new node can no longer be accessed to run validation checks", e);
 		} catch (PathNotFoundException e) {
-			logger.info("               Property not found " + e.getMessage());
+			logger.debug("Property not found " + e.getMessage());
 		} catch (RepositoryException e) {
 			logger.error("RepositoryException", e);
 
