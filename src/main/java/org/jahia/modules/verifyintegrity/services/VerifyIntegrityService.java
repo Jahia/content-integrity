@@ -250,6 +250,8 @@ public class VerifyIntegrityService {
 	}
 
 	/**
+	 * Validate constraints integrity on a node, such as regex or range constraint
+	 *
 	 * @param node               node on which perform constraint validation check
 	 * @param propertyDefinition property definition of the node
 	 * @param values             internvalValue of the node
