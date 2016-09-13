@@ -39,9 +39,15 @@ public class VerifyIntegrityService {
 		this.contentDefinition = contentDefinition;
 	}
 
+	/**
+	 * Add an error to the error collection
+	 * @param cive the error collection
+	 * @param exception the exception to add
+	 * @return the error collection containing the new exception
+	 */
 	private CompositeIntegrityViolationException addError(CompositeIntegrityViolationException cive,
 														  IntegrityViolationException
-			exception) {
+																  exception) {
 		if (cive == null) {
 			cive = new CompositeIntegrityViolationException();
 		}
@@ -56,7 +62,7 @@ public class VerifyIntegrityService {
 	 * @param session session to be used for integrity check
 	 * @param cive    compositeIntegrityViolationException collection to which add the error is any is found during the
 	 *                integrity check
-	 * @return
+	 * @return the error collection
 	 */
 	public CompositeIntegrityViolationException validateNodeIntegrity(JCRNodeWrapper node, JCRSessionWrapper session,
 																	  CompositeIntegrityViolationException cive) {
@@ -92,23 +98,23 @@ public class VerifyIntegrityService {
 						cive = addError(cive, new IntegrityViolationException(node.getPath(), node
 								.getPrimaryNodeTypeName(), propertyDefinition.getName(), errorLocale,
 								"This field is " +
-								"mandatory"));
+										"mandatory"));
 						logger.debug("Mandatory field");
 					} else {
 
 						Property prop = null;
-						try{
+						try {
 							prop = node.getProperty(propertyName);
-						} catch (PathNotFoundException ex){
+						} catch (PathNotFoundException ex) {
 							logger.debug("Property : " + propertyName + " not found on node " + node.getPath() + " so continuing to other properties without validating");
 							continue;
-						} catch (RepositoryException ex){
+						} catch (RepositoryException ex) {
 							logger.error("Error getting Property : " + propertyName + " on node " + node.getPath() + " continuing even though error is : " + ex.getMessage());
 							continue;
 						}
 						boolean wrongValueForTheType = false;
 
-						if ("jcr:title".equals(propertyName) && !hasMixTitle(node.getPrimaryNodeType())){
+						if ("jcr:title".equals(propertyName) && !hasMixTitle(node.getPrimaryNodeType())) {
 							cive = addError(cive, new IntegrityViolationException(node.getPath(), node
 									.getPrimaryNodeTypeName(), propertyName, errorLocale,
 									"This field has a has jcr:title property but, the primary node type does not have mix:title as one of it's supertypes"));
@@ -184,7 +190,7 @@ public class VerifyIntegrityService {
 									cive = addError(cive, new IntegrityViolationException(node.getPath(), node
 											.getPrimaryNodeTypeName(), propertyName, locale,
 											"This field has a " +
-											"wrong value for its type (i.e. string instead of date)"));
+													"wrong value for its type (i.e. string instead of date)"));
 									wrongValueForTheType = true;
 								}
 
@@ -201,7 +207,7 @@ public class VerifyIntegrityService {
 		} catch (InvalidItemStateException e) {
 			logger.debug("A new node can no longer be accessed to run validation checks", e);
 		} catch (PathNotFoundException e) {
-			logger.debug("Property not found " + e.getMessage());
+			logger.debug("Property or node not found: " + e.getMessage());
 		} catch (RepositoryException e) {
 			logger.error("RepositoryException", e);
 
@@ -240,18 +246,16 @@ public class VerifyIntegrityService {
 			}
 		}
 
-
 		return cive;
 	}
 
 	/**
-	 * Validate constraints integrity on a node, such as regex or range constraint
-	 *
 	 * @param node               node on which perform constraint validation check
 	 * @param propertyDefinition property definition of the node
 	 * @param values             internvalValue of the node
-	 * @param cive               compositeIntegrityViolationException collection to which add the error is any is found during the
-	 *                           integrity check
+	 * @param cive               compositeIntegrityViolationException collection to which add the error is any is
+	 *                           found during the integrity check
+	 * @param errorLocale        locale being used/checked
 	 * @return
 	 */
 	private CompositeIntegrityViolationException validateConstraints(JCRNodeWrapper node, ExtendedPropertyDefinition
@@ -263,7 +267,6 @@ public class VerifyIntegrityService {
 						.getPath());
 				throw new ConstraintViolationException("the property is not multi-valued");
 			}
-
 
 			ValueConstraint[] constraints = propertyDefinition.getValueConstraintObjects();
 
@@ -303,14 +306,20 @@ public class VerifyIntegrityService {
 		return cive;
 	}
 
-	private boolean hasMixTitle(ExtendedNodeType nodeType){
-
+	/**
+	 * Verify if the nodeType is inheriting mix:title mixin
+	 *
+	 * @param nodeType nodetype to verify
+	 * @return true if the nodetype is inheriting mix:title, false otherwise
+	 */
+	private boolean hasMixTitle(ExtendedNodeType nodeType) {
 		if ("mix:title".equals(nodeType.getName())) {
 			return true;
 		}
+
 		ExtendedNodeType[] supertypes = nodeType.getSupertypes();
-		for (ExtendedNodeType extendedNodeType : supertypes){
-			if ( hasMixTitle(extendedNodeType)){
+		for (ExtendedNodeType extendedNodeType : supertypes) {
+			if (hasMixTitle(extendedNodeType)) {
 				return true;
 			}
 		}
