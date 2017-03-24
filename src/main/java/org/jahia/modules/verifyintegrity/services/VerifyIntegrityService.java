@@ -110,6 +110,13 @@ public class VerifyIntegrityService {
 										"This field is " +
 												"mandatory"));
 								logger.debug("Mandatory field missing on reference property");
+							} catch (ItemNotFoundException infe) {
+								cive = addError(cive, new IntegrityViolationException(node.getPath(), node
+										.getPrimaryNodeTypeName(), propertyDefinition.getName(), errorLocale,
+										"This reference field is " +
+												"mandatory. The property is set but toward a no-more existing node"));
+								logger.debug("Mandatory field on reference property is set toward a no-more existing " +
+										"node");
 							}
 						}
 					} else {
