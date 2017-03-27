@@ -11,7 +11,6 @@ import org.jahia.modules.verifyintegrity.exceptions.CompositeIntegrityViolationE
 import org.jahia.modules.verifyintegrity.exceptions.IntegrityViolationException;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.nodetypes.ExtendedNodeDefinition;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
@@ -83,23 +82,43 @@ public class VerifyIntegrityService {
 					}
 
 					// Following condition checks mandatory missing properties
-					if (propertyDefinition.isMandatory() &&
-							propertyDefinition.getRequiredType() != PropertyType.WEAKREFERENCE &&
-							propertyDefinition.getRequiredType() != PropertyType.REFERENCE &&
-							!propertyDefinition.isProtected() &&
-							(!propertyDefinition.isInternationalized() || session.getLocale() != null) &&
-							(!node.hasProperty(propertyName) ||
-									(!propertyDefinition.isMultiple() &&
-											propertyDefinition.getRequiredType() != PropertyType.BINARY &&
-											StringUtils.isEmpty(node.getProperty(propertyName).getString()))
+					if (propertyDefinition.isMandatory()) {
+						if (propertyDefinition.getRequiredType() != PropertyType.WEAKREFERENCE &&
+								propertyDefinition.getRequiredType() != PropertyType.REFERENCE &&
+								!propertyDefinition.isProtected() &&
+								(!propertyDefinition.isInternationalized() || session.getLocale() != null) &&
+								(!node.hasProperty(propertyName) ||
+										(!propertyDefinition.isMultiple() &&
+												propertyDefinition.getRequiredType() != PropertyType.BINARY &&
+												StringUtils.isEmpty(node.getProperty(propertyName).getString()))
 
-							)) {
+								)) {
 
-						cive = addError(cive, new IntegrityViolationException(node.getPath(), node
-								.getPrimaryNodeTypeName(), propertyDefinition.getName(), errorLocale,
-								"This field is " +
-										"mandatory"));
-						logger.debug("Mandatory field");
+							cive = addError(cive, new IntegrityViolationException(node.getPath(), node
+									.getPrimaryNodeTypeName(), propertyDefinition.getName(), errorLocale,
+									"This field is " +
+											"mandatory"));
+							logger.debug("Mandatory field missing on property");
+						} else if(propertyDefinition.getRequiredType() == PropertyType.WEAKREFERENCE ||
+								propertyDefinition.getRequiredType() == PropertyType.REFERENCE) {
+							try {
+								JCRNodeWrapper referencedNode = (JCRNodeWrapper) node.getProperty(propertyName)
+										.getNode();
+							} catch (PathNotFoundException pnfe) {
+								cive = addError(cive, new IntegrityViolationException(node.getPath(), node
+										.getPrimaryNodeTypeName(), propertyDefinition.getName(), errorLocale,
+										"This field is " +
+												"mandatory"));
+								logger.debug("Mandatory field missing on reference property");
+							} catch (ItemNotFoundException infe) {
+								cive = addError(cive, new IntegrityViolationException(node.getPath(), node
+										.getPrimaryNodeTypeName(), propertyDefinition.getName(), errorLocale,
+										"This reference field is " +
+												"mandatory. The property is set but toward a no-more existing node"));
+								logger.debug("Mandatory field on reference property is set toward a no-more existing " +
+										"node");
+							}
+						}
 					} else {
 
 						Property prop = null;
