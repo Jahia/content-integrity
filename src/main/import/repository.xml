@@ -7,7 +7,7 @@
                         j:title="Verify Integrity"
                         jcr:mixinTypes="jmix:hasExternalProviderExtension"
                         jcr:primaryType="jnt:module">
-                
+
                 <portlets jcr:primaryType="jnt:portletFolder"/>
                 <files jcr:primaryType="jnt:folder"/>
                 <contents jcr:primaryType="jnt:contentFolder"/>
@@ -18,20 +18,18 @@
                                 jcr:mixinTypes="jmix:useUILocale"
                                 jcr:primaryType="jnt:template">
                         <jcr-integrity-checker j:defaultTemplate="false"
-                                    j:hiddenTemplate="false"
+                                      j:hiddenTemplate="false"
                                       j:requiredPermissionNames="allowToVerifySiteIntegrity"
-                                    jcr:primaryType="jnt:contentTemplate">
-                            <j:translation_en jcr:language="en"
-                                    jcr:mixinTypes="mix:title"
-                                    jcr:primaryType="jnt:translation"
-                                    jcr:title="JCR Integrity Checker"/>
+                                      j:titleKey="label.verifyIntegrity.title"
+                                      jcr:mixinTypes="jmix:rbTitle"
+                                      jcr:primaryType="jnt:contentTemplate">
                             <pagecontent jcr:primaryType="jnt:contentList">
                                 <verifyintegrityadminpanel jcr:primaryType="jnt:verifyIntegrityAdminPanel"/>
                             </pagecontent>
                         </jcr-integrity-checker>
                     </site-settings-base>
                 </templates>
-                
+
             </verify-integrity>
     </modules>
 </content>
