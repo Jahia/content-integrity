@@ -5,12 +5,12 @@
 
     <bean class="org.jahia.modules.verifyintegrity.actions.VerifyIntegrityOfSiteContent">
         <property name="name" value="verifyIntegrityOfSiteContent"/>
-        <property name="verifyIntegrityService" ref="VerifyIntegrityService"/>
+        <property name="verifyIntegrityService" ref="verifyIntegrityService"/>
         <property name="jahiaUserManagerService" ref="JahiaUserManagerService"/>
         <property name="requiredPermission" value="allowToVerifySiteIntegrity"/>
     </bean>
 
-    <bean id="VerifyIntegrityService" class="org.jahia.modules.verifyintegrity.services.VerifyIntegrityService">
+    <bean id="verifyIntegrityService" class="org.jahia.modules.verifyintegrity.services.VerifyIntegrityService">
         <property name="contentDefinition" ref="ContentDefinitionHelper"/>
     </bean>
 
