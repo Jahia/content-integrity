@@ -24,7 +24,7 @@
 <h2><fmt:message key="label.verifyIntegrity.title"/></h2>
 <p><fmt:message key="label.verifyIntegrity.description" /></p>
 
-<input type="hidden" id="currentSite" value="${renderContext.site.properties['j:nodename'].string}" />
+<input type="hidden" id="currentSite" value="${renderContext.site.siteKey}" />
 <input type="hidden" id="currentLanguage" value="${renderContext.mainResourceLocale.language}" />
 Workspace : <select id="currentWorkspace">
     <option>default</option>
@@ -33,5 +33,5 @@ Workspace : <select id="currentWorkspace">
 <input type="submit" id="verifyButton" value="Check JCR integrity" />
 
 <table class="table table-bordered table-striped table-hover integrityTable"  id="errorDisplay">
-  
+
 </table>
