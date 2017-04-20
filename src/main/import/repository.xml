@@ -19,7 +19,7 @@
                                 jcr:primaryType="jnt:template">
                         <jcr-integrity-checker j:defaultTemplate="false"
                                       j:hiddenTemplate="false"
-                                      j:requiredPermissionNames="allowToVerifySiteIntegrity"
+                                      j:requiredPermissionNames="siteIntegrityPanelAccess"
                                       j:titleKey="label.verifyIntegrity.title"
                                       jcr:mixinTypes="jmix:rbTitle"
                                       jcr:primaryType="jnt:contentTemplate">
