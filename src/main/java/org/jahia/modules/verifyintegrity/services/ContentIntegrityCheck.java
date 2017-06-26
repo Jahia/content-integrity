@@ -1,39 +1,57 @@
 package org.jahia.modules.verifyintegrity.services;
 
-import org.jahia.registries.ServicesRegistry;
-import org.jahia.services.JahiaService;
-import org.jahia.services.content.JCRNodeWrapper;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.jahia.utils.Patterns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+
+import javax.jcr.Node;
+import javax.jcr.RepositoryException;
+import java.util.LinkedList;
+import java.util.List;
 
 public abstract class ContentIntegrityCheck implements InitializingBean, DisposableBean, Comparable<ContentIntegrityCheck> {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityCheck.class);
 
     private float priority = 100f;
+    private boolean disabled;
+    private String description;
+    private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
+
+    public abstract void checkIntegrityBeforeChildren(Node node);
+
+    public abstract void checkIntegrityAfterChildren(Node node);
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        final JahiaService service = ServicesRegistry.getInstance().getService("contentIntegrity");
-        if (service == null) {
-            logger.error("Impossible to register in the content integrity service, as this one is missing");
-            return;
-        }
-
-        ((ContentIntegrityService) service).registerIntegrityCheck(this);
+        ContentIntegrityService.getInstance().registerIntegrityCheck(this);
     }
 
     @Override
     public void destroy() throws Exception {
-        final JahiaService service = ServicesRegistry.getInstance().getService("contentIntegrity");
-        if (service == null) {
-            logger.error("Impossible to unregister in the content integrity service, as this one is missing");
-            return;
-        }
+        ContentIntegrityService.getInstance().unregisterIntegrityCheck(this);
+    }
 
-        ((ContentIntegrityService) service).unregisterIntegrityCheck(this);
+    public boolean areConditionsMatched(Node node) {
+        if (disabled) return false;
+        for (ExecutionCondition condition : conditions) {
+            if (!condition.matches(node)) return false;
+        }
+        return true;
+    }
+
+    public void addCondition(ExecutionCondition condition) {
+        conditions.add(condition);
+    }
+
+    public void setConditions(List<ExecutionCondition> conditions) {
+        for (ExecutionCondition condition : conditions) {
+            addCondition(condition);
+        }
     }
 
     public void setPriority(float priority) {
@@ -42,6 +60,22 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
 
     public float getPriority() {
         return priority;
+    }
+
+    public boolean isDisabled() {
+        return disabled;
+    }
+
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     @Override
@@ -54,5 +88,68 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
         return String.format("%s (priority: %s)", this.getClass().getName(), priority);
     }
 
-    abstract void checkIntegrity(JCRNodeWrapper node);
+    public interface ExecutionCondition {
+        boolean matches(Node node);
+    }
+
+    public static class AnyOfCondition implements ExecutionCondition {
+
+        private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
+
+        public void add(ExecutionCondition condition) {
+            conditions.add(condition);
+        }
+
+        @Override
+        public boolean matches(Node node) {
+            if (CollectionUtils.isEmpty(conditions)) return true;
+            for (ExecutionCondition condition : conditions) {
+                if (condition.matches(node)) return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder out = new StringBuilder();
+            for (ExecutionCondition cond : conditions) {
+                if (out.length() > 0) {
+                    out.append(" || ");
+                }
+                out.append("(").append(cond).append(")");
+            }
+            return out.toString();
+        }
+    }
+
+    public static class NodeTypeCondition implements ExecutionCondition {
+
+        private String nodeType;
+
+        public NodeTypeCondition(String nodeType) {
+            this.nodeType = nodeType;
+        }
+
+        @Override
+        public boolean matches(Node node) {
+            try {
+                return node.isNodeType(nodeType);
+            } catch (RepositoryException e) {
+                logger.error("An error occured while ", e);
+            }
+            return false;
+        }
+    }
+
+    public void setApplyOnNodeTypes(String nodeTypes) {
+        if (nodeTypes.contains(",")) {
+            final AnyOfCondition condition = new AnyOfCondition();
+            for (String nodeType : Patterns.COMMA.split(nodeTypes)) {
+                condition.add(new NodeTypeCondition(nodeType.trim()));
+            }
+            addCondition(condition);
+        } else if (StringUtils.isNotBlank(nodeTypes)) {
+            addCondition(new NodeTypeCondition(nodeTypes.trim()));
+        }
+    }
 }

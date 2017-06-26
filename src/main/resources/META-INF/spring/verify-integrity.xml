@@ -3,15 +3,15 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
-    <bean class="org.jahia.modules.verifyintegrity.actions.VerifyIntegrityOfSiteContent">
+    <!--bean class="org.jahia.modules.verifyintegrity.actions.VerifyIntegrityOfSiteContent">
         <property name="name" value="verifyIntegrityOfSiteContent" />
         <property name="verifyIntegrityService" ref="verifyIntegrityService" />
         <property name="jahiaUserManagerService" ref="JahiaUserManagerService" />
         <property name="requiredPermission" value="allowToVerifySiteIntegrity" />
-    </bean>
+    </bean-->
 
     <bean id="contentIntegrityService" class="org.jahia.modules.verifyintegrity.services.ContentIntegrityService"
-          init-method="start" destroy-method="stop">
+          factory-method="getInstance" init-method="start" destroy-method="stop">
     </bean>
 
 </beans>
