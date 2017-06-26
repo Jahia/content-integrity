@@ -52,7 +52,7 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.1.1.0</version>
+        <version>7.2.0.3</version>
     </parent>
     <groupId>org.jahia.modules</groupId>
     <artifactId>verify-integrity</artifactId>
@@ -60,6 +60,10 @@
     <version>2.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <description>This is the custom module (Verify Integrity) for running on a Digital Experience Manager server.</description>
+
+    <properties>
+        <jahia-depends>default</jahia-depends>
+    </properties>
 
     <scm>
         <connection>scm:dummy:uri</connection>
@@ -80,19 +84,4 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Jahia-Depends>default</Jahia-Depends>
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
