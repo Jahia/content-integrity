@@ -10,6 +10,10 @@
         <property name="requiredPermission" value="allowToVerifySiteIntegrity" />
     </bean-->
 
+    <bean class="org.jahia.modules.verifyintegrity.actions.CheckIntegrityAction">
+        <property name="name" value="checkIntegrity" />
+    </bean>
+
     <bean id="contentIntegrityService" class="org.jahia.modules.verifyintegrity.services.ContentIntegrityService"
           factory-method="getInstance" init-method="start" destroy-method="stop">
     </bean>
