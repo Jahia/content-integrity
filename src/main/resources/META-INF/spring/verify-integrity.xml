@@ -14,4 +14,8 @@
           factory-method="getInstance" init-method="start" destroy-method="stop">
     </bean>
 
+    <bean class="org.jahia.modules.verifyintegrity.services.checks.JCRLanguagePropertyCheck">
+        <property name="applyOnNodeTypes" value="jnt:translation" />
+    </bean>
+
 </beans>
