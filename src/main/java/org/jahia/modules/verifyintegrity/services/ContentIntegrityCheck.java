@@ -22,9 +22,9 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
     private String description;
     private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
 
-    public abstract void checkIntegrityBeforeChildren(Node node);
+    public abstract ContentIntegrityError checkIntegrityBeforeChildren(Node node);
 
-    public abstract void checkIntegrityAfterChildren(Node node);
+    public abstract ContentIntegrityError checkIntegrityAfterChildren(Node node);
 
     @Override
     public void afterPropertiesSet() throws Exception {

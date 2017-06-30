@@ -48,39 +48,42 @@ public class ContentIntegrityService {
         logger.info(String.format("Unregistered %s in the contentIntegrity service ", integrityCheck));
     }
 
-    public void validateIntegrity(String path, String workspace) {   // TODO maybe need to prevent concurrent executions
+    public List<ContentIntegrityError> validateIntegrity(String path, String workspace) {   // TODO maybe need to prevent concurrent executions
         final JCRSessionWrapper session;
         try {
             session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
         } catch (RepositoryException e) {
             logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
-            return;
+            return null;
         }
         final JCRNodeWrapper node;
+        final List<ContentIntegrityError> errors = new ArrayList<>();
         try {
             node = session.getNode(path);
             logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
             final long start = System.currentTimeMillis();
-            validateIntegrity(node);
+            validateIntegrity(node, errors);
             logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(System.currentTimeMillis() - start)));
-
         } catch (RepositoryException e) {
             logger.error("", e);
         }
+        return errors;
     }
 
-    private void validateIntegrity(Node node) {
+    private void validateIntegrity(Node node, List<ContentIntegrityError> errors) {
+        // TODO add a mechanism to stop
         for (ContentIntegrityCheck integrityCheck : integrityChecks)
             if (integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s", integrityCheck.getClass().getName(), node));
-                integrityCheck.checkIntegrityBeforeChildren(node);
+                final ContentIntegrityError error = integrityCheck.checkIntegrityBeforeChildren(node);
+                if (error != null) errors.add(error);
             } else if (logger.isDebugEnabled())
                 logger.debug(String.format("Skipping %s on %s", integrityCheck.getClass().getName(), node));
         try {
             for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
                 final Node child = (Node) it.next();
-                validateIntegrity(child);
+                validateIntegrity(child, errors);
             }
         } catch (RepositoryException e) {
             String ws = "unknown";
@@ -93,7 +96,10 @@ public class ContentIntegrityService {
                     node, ws), e);
         }
         for (ContentIntegrityCheck integrityCheck : integrityChecks)
-            if (integrityCheck.areConditionsMatched(node)) integrityCheck.checkIntegrityAfterChildren(node);
+            if (integrityCheck.areConditionsMatched(node)) {
+                final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
+                if (error != null) errors.add(error);
+            }
     }
 
     public void printIntegrityChecksList() {

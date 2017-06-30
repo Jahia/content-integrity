@@ -1,6 +1,8 @@
 package org.jahia.modules.verifyintegrity.services.checks;
 
+import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityCheck;
+import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,22 +17,27 @@ public class JCRLanguagePropertyCheck extends ContentIntegrityCheck {
 
 
     @Override
-    public void checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
         if (logger.isDebugEnabled()) logger.debug(String.format("Checking %s", node));
         try {
             if (!node.hasProperty(JCR_LANGUAGE)) {
-                logger.error(String.format("The %s property is missing on node %s", JCR_LANGUAGE, node));
-                return;
+                final String msg = String.format("The %s property is missing", JCR_LANGUAGE);
+                logger.error(msg);
+                return ContentIntegrityError.createError(node, StringUtils.substringAfterLast(node.getName(), "_"), msg, this.getClass().getSimpleName());
             }
             if (!node.getName().equals("j:translation_" + node.getProperty(JCR_LANGUAGE).getString())) {
-                logger.error(String.format("The value of the property %s is inconsistent with the node name on node %s", JCR_LANGUAGE, node));
+                final String msg = String.format("The value of the property %s is inconsistent with the node name", JCR_LANGUAGE);
+                logger.error(msg);
+                return ContentIntegrityError.createError(node, StringUtils.substringAfterLast(node.getName(), "_"), msg, this.getClass().getSimpleName());
             }
         } catch (RepositoryException e) {
             logger.error("", e);
         }
+        return null;
     }
 
     @Override
-    public void checkIntegrityAfterChildren(Node node) {
+    public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
+        return null;
     }
 }
