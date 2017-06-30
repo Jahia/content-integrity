@@ -22,4 +22,8 @@
         <property name="applyOnNodeTypes" value="jnt:translation" />
     </bean>
 
+    <bean class="org.jahia.modules.verifyintegrity.services.checks.HomePageDeclaration">
+        <property name="applyOnNodeTypes" value="jnt:virtualsite" />
+    </bean>
+
 </beans>

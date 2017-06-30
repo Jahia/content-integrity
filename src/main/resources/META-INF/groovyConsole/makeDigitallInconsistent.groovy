@@ -6,4 +6,5 @@ final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSyst
 session.getNode("/sites/digitall/home/j:translation_de").setProperty("jcr:language", "it")
 def home_fr = session.getNode("/sites/digitall/home/j:translation_fr")
 if (home_fr.hasProperty("jcr:language")) home_fr.getProperty("jcr:language").remove()
+session.getNode("/sites/digitall/home").setProperty("j:isHomePage", false)
 session.save()
