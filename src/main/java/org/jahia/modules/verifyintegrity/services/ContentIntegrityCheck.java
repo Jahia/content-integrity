@@ -92,6 +92,25 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
         boolean matches(Node node);
     }
 
+    public static class NotCondition implements ExecutionCondition {
+
+        private ExecutionCondition condition;
+
+        public NotCondition(ExecutionCondition condition) {
+            this.condition = condition;
+        }
+
+        @Override
+        public boolean matches(Node node) {
+            return !condition.matches(node);
+        }
+
+        @Override
+        public String toString() {
+            return "not (" + condition + ")";
+        }
+    }
+
     public static class AnyOfCondition implements ExecutionCondition {
 
         private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
@@ -111,7 +130,7 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
 
         @Override
         public String toString() {
-            StringBuilder out = new StringBuilder();
+            final StringBuilder out = new StringBuilder();
             for (ExecutionCondition cond : conditions) {
                 if (out.length() > 0) {
                     out.append(" || ");
@@ -151,5 +170,48 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
         } else if (StringUtils.isNotBlank(nodeTypes)) {
             addCondition(new NodeTypeCondition(nodeTypes.trim()));
         }
+    }
+
+    public void setSkipOnNodeTypes(String nodeTypes) {
+        ExecutionCondition condition = null;
+        if (nodeTypes.contains(",")) {
+            final AnyOfCondition anyOf = new AnyOfCondition();
+            for (String nodeType : Patterns.COMMA.split(nodeTypes)) {
+                anyOf.add(new NodeTypeCondition(nodeType.trim()));
+            }
+            condition = anyOf;
+        } else if (StringUtils.isNotBlank(nodeTypes)) {
+            condition = new NodeTypeCondition(nodeTypes);
+        }
+        if (condition != null) {
+            addCondition(new NotCondition(condition));
+        }
+    }
+
+    public static class WorkspaceCondition implements ExecutionCondition {
+
+        private String workspace;
+
+        public WorkspaceCondition(String workspace) {
+            this.workspace = workspace;
+        }
+
+        @Override
+        public boolean matches(Node node) {
+            try {
+                return workspace != null && workspace.equalsIgnoreCase(node.getSession().getWorkspace().getName());
+            } catch (RepositoryException e) {
+                logger.error("", e);
+                return false;
+            }
+        }
+    }
+
+    public void setApplyOnWorkspace(String workspace) {
+        addCondition(new WorkspaceCondition(workspace));
+    }
+
+    public void setSkipOnWorkspace(String workspace) {
+        addCondition(new NotCondition(new WorkspaceCondition(workspace)));
     }
 }
