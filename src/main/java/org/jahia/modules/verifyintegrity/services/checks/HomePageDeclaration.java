@@ -39,8 +39,7 @@ public class HomePageDeclaration extends ContentIntegrityCheck {
                     msg = String.format("The site %s has no page flagged as home, but one is named 'home'", node.getName());
                 else
                     msg = String.format("The site %s has no page flagged as home and no one is named 'home'", node.getName());
-                logger.error(msg);
-                return ContentIntegrityError.createError(node, "-", msg, this.getClass().getSimpleName());
+                return ContentIntegrityError.createError(node, null, msg, this.getClass().getSimpleName());
             }
         } catch (RepositoryException e) {
             logger.error("", e);
