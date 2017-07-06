@@ -8,3 +8,11 @@ def home_fr = session.getNode("/sites/digitall/home/j:translation_fr")
 if (home_fr.hasProperty("jcr:language")) home_fr.getProperty("jcr:language").remove()
 session.getNode("/sites/digitall/home").setProperty("j:isHomePage", false)
 session.save()
+
+def list = session.getNode("/sites/digitall/home/investors/contacts/section--container--row--grid-main")
+if (!list.isMarkedForDeletion()) list.markForDeletion("")
+list.removeMixin("jmix:markedForDeletionRoot")
+session.save()
+
+list.unmarkForDeletion()
+session.save()
