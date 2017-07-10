@@ -23,6 +23,7 @@ public class MarkForDeletionCheck extends ContentIntegrityCheck {
                     parent = parent.getParent();
                 } catch (ItemNotFoundException e) {
                     isConsistent = false;
+                    break;
                 }
                 if (!parent.isNodeType("jmix:markedForDeletion")) {
                     isConsistent = false;
@@ -41,6 +42,6 @@ public class MarkForDeletionCheck extends ContentIntegrityCheck {
 
     @Override
     public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
-        return null;  //TODO: review me, I'm generated
+        return null;
     }
 }
