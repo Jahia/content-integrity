@@ -214,4 +214,8 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
     public void setSkipOnWorkspace(String workspace) {
         addCondition(new NotCondition(new WorkspaceCondition(workspace)));
     }
+
+    public interface SupportsIntegrityErrorFix {
+        boolean fixError(Node node) throws RepositoryException;
+    }
 }

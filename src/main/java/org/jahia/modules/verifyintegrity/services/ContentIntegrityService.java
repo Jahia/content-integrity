@@ -78,7 +78,11 @@ public class ContentIntegrityService {
         logger.info(String.format("Unregistered %s in the contentIntegrity service ", integrityCheck));
     }
 
-    public List<ContentIntegrityError> validateIntegrity(String path, String workspace) {   // TODO maybe need to prevent concurrent executions
+    public List<ContentIntegrityError> validateIntegrity(String path, String workspace) {
+        return validateIntegrity(path, workspace, false);
+    }
+
+    public List<ContentIntegrityError> validateIntegrity(String path, String workspace, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
         final JCRSessionWrapper session;
         try {
             session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
@@ -92,7 +96,7 @@ public class ContentIntegrityService {
             node = session.getNode(path);
             logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
             final long start = System.currentTimeMillis();
-            validateIntegrity(node, errors);
+            validateIntegrity(node, errors, fixErrors);
             logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(System.currentTimeMillis() - start)));
             storeErrorsInCache(errors, start);
         } catch (RepositoryException e) {
@@ -101,20 +105,20 @@ public class ContentIntegrityService {
         return errors;
     }
 
-    private void validateIntegrity(Node node, List<ContentIntegrityError> errors) {
+    private void validateIntegrity(Node node, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop
         for (ContentIntegrityCheck integrityCheck : integrityChecks)
             if (integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s", integrityCheck.getClass().getName(), node));
                 final ContentIntegrityError error = integrityCheck.checkIntegrityBeforeChildren(node);
-                if (error != null) errors.add(error);
+                handleError(error, node, fixErrors, integrityCheck, errors);
             } else if (logger.isDebugEnabled())
                 logger.debug(String.format("Skipping %s on %s", integrityCheck.getClass().getName(), node));
         try {
             for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
                 final Node child = (Node) it.next();
-                validateIntegrity(child, errors);
+                validateIntegrity(child, errors, fixErrors);
             }
         } catch (RepositoryException e) {
             String ws = "unknown";
@@ -129,8 +133,19 @@ public class ContentIntegrityService {
         for (ContentIntegrityCheck integrityCheck : integrityChecks)
             if (integrityCheck.areConditionsMatched(node)) {
                 final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
-                if (error != null) errors.add(error);
+                handleError(error, node, fixErrors, integrityCheck, errors);
             }
+    }
+
+    private void handleError(ContentIntegrityError error, Node node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
+        if (error == null) return;
+        if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
+            try {
+                error.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node));
+            } catch (RepositoryException e) {
+                logger.error("An error occurred while fixing a content integrity error", e);
+            }
+        errors.add(error);
     }
 
     private void storeErrorsInCache(List<ContentIntegrityError> errors, long testDate) {
