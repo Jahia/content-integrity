@@ -21,6 +21,7 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
     private boolean disabled;
     private String description;
     private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
+    private long id = -1L;
 
     public abstract ContentIntegrityError checkIntegrityBeforeChildren(Node node);
 
@@ -76,6 +77,14 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     @Override

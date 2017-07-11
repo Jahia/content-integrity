@@ -21,8 +21,10 @@ public class ContentIntegrityError {
     private String constraintMessage;
     private String errorType;
     private boolean fixed = false;
+    private long integrityCheckID = -1L;
 
-    private ContentIntegrityError(String path, String uuid, String primaryType, String mixins, String workspace, String locale, String constraintMessage, String errorType) {
+    private ContentIntegrityError(String path, String uuid, String primaryType, String mixins, String workspace,
+                                  String locale, String constraintMessage, String errorType, long integrityCheckID) {
         this.path = path;
         this.uuid = uuid;
         this.primaryType = primaryType;
@@ -33,11 +35,11 @@ public class ContentIntegrityError {
         this.errorType = errorType;
     }
 
-    public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, String type) throws RepositoryException {
+    public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, ContentIntegrityCheck integrityCheck) throws RepositoryException {
         logger.error(message);
         return new ContentIntegrityError(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
                 Arrays.toString(node.getMixinNodeTypes()), node.getSession().getWorkspace().getName(),
-                locale == null ? "-" : locale, message, type);
+                locale == null ? "-" : locale, message, integrityCheck.getClass().getSimpleName(), integrityCheck.getId());
     }
 
     public JSONObject toJSON() {
@@ -57,6 +59,30 @@ public class ContentIntegrityError {
 
     public void setFixed(boolean fixed) {
         this.fixed = fixed;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public String getLocale() {
+        return locale;
+    }
+
+    public String getWorkspace() {
+        return workspace;
+    }
+
+    public String getErrorType() {
+        return errorType;
+    }
+
+    public long getIntegrityCheckID() {
+        return integrityCheckID;
     }
 
     private String getFullNodetype() {

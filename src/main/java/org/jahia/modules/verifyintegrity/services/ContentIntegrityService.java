@@ -3,6 +3,7 @@ package org.jahia.modules.verifyintegrity.services;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.exceptions.JahiaException;
@@ -19,7 +20,9 @@ import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 public class ContentIntegrityService {
@@ -68,6 +71,7 @@ public class ContentIntegrityService {
     }
 
     public void registerIntegrityCheck(ContentIntegrityCheck integrityCheck) {
+        integrityCheck.setId(System.currentTimeMillis());
         integrityChecks.add(integrityCheck);
         Collections.sort(integrityChecks);
         logger.info(String.format("Registered %s in the contentIntegrity service ", integrityCheck));
@@ -146,6 +150,57 @@ public class ContentIntegrityService {
                 logger.error("An error occurred while fixing a content integrity error", e);
             }
         errors.add(error);
+    }
+
+    public void fixError(ContentIntegrityError error) {
+        fixErrors(Collections.singletonList(error));
+    }
+
+    public void fixErrors(List<ContentIntegrityError> errors) {
+        final Map<String, JCRSessionWrapper> sessions = new HashMap<String,JCRSessionWrapper>();
+        for (ContentIntegrityError error : errors) {
+            final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+            if (integrityCheck == null) {
+                logger.error("Impossible to load the integrity check which detected this error");
+                continue;
+            }
+            if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
+
+            final String workspace = error.getWorkspace();
+            JCRSessionWrapper session = sessions.get(workspace);
+            if (session == null) {
+                session = getSystemSession(workspace);
+                if (session == null) continue;
+                sessions.put(workspace, session);
+            }
+            String uuid = null;
+            try {
+                uuid = error.getUuid();
+                final JCRNodeWrapper node = session.getNodeByUUID(uuid);
+                final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node);
+                if (fixed) error.setFixed(true);
+                else logger.error(String.format("Failed to fix the error %s", error.toJSON()));
+            } catch (RepositoryException e) {
+                logger.error(String.format("Failed to fix the error %s", error.toJSON()), e);
+            }
+        }
+    }
+
+    private JCRSessionWrapper getSystemSession(String workspace) {
+        try {
+            return JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
+        } catch (RepositoryException e) {
+            logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
+            return null;
+        }
+    }
+
+    private ContentIntegrityCheck getContentIntegrityCheck(long id) {
+        // TODO: a double storage of the integrity checks in a map where the keys are the IDs should fasten this method
+        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+            if (integrityCheck.getId() == id) return integrityCheck;
+        }
+        return null;
     }
 
     private void storeErrorsInCache(List<ContentIntegrityError> errors, long testDate) {

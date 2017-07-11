@@ -32,7 +32,7 @@ public class MarkForDeletionCheck extends ContentIntegrityCheck {
                 if (parent.isNodeType("jmix:markedForDeletionRoot")) break;
             }
             if (!isConsistent) {
-                return ContentIntegrityError.createError(node, null, "The node is flagged as deleted, but the root of the deletion can't be found", this.getClass().getSimpleName());
+                return ContentIntegrityError.createError(node, null, "The node is flagged as deleted, but the root of the deletion can't be found", this);
             }
         } catch (RepositoryException e) {
             logger.error("", e);
