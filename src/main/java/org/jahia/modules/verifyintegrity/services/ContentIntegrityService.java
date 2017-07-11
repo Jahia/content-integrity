@@ -1,7 +1,13 @@
 package org.jahia.modules.verifyintegrity.services;
 
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.Element;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
+import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -14,6 +20,7 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeSet;
 
 public class ContentIntegrityService {
 
@@ -21,6 +28,10 @@ public class ContentIntegrityService {
     private static ContentIntegrityService instance = new ContentIntegrityService();
 
     private List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
+    private Cache errorsCache;
+    private EhCacheProvider ehCacheProvider;
+    private String errorsCacheName = "ContentIntegrityService-errors";
+    private long errorsCacheTti = 24L * 3600L; // 1 day;
 
     public static ContentIntegrityService getInstance() {
         return instance;
@@ -30,11 +41,30 @@ public class ContentIntegrityService {
     }
 
     public void start() throws JahiaInitializationException {
-        //TODO: review me, I'm generated
+        if (errorsCache == null) {
+            errorsCache = ehCacheProvider.getCacheManager().getCache(errorsCacheName);
+            if (errorsCache == null) {
+                ehCacheProvider.getCacheManager().addCache(errorsCacheName);
+                errorsCache = ehCacheProvider.getCacheManager().getCache(errorsCacheName);
+                errorsCache.getCacheConfiguration().setTimeToIdleSeconds(errorsCacheTti);
+            }
+        }
     }
 
     public void stop() throws JahiaException {
-        //TODO: review me, I'm generated
+        if (errorsCache != null) errorsCache.flush();
+    }
+
+    public void setEhCacheProvider(EhCacheProvider ehCacheProvider) {
+        this.ehCacheProvider = ehCacheProvider;
+    }
+
+    public void setErrorsCacheName(String errorsCacheName) {
+        this.errorsCacheName = errorsCacheName;
+    }
+
+    public void setErrorsCacheTti(long errorsCacheTti) {
+        this.errorsCacheTti = errorsCacheTti;
     }
 
     public void registerIntegrityCheck(ContentIntegrityCheck integrityCheck) {
@@ -64,6 +94,7 @@ public class ContentIntegrityService {
             final long start = System.currentTimeMillis();
             validateIntegrity(node, errors);
             logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(System.currentTimeMillis() - start)));
+            storeErrorsInCache(errors, start);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
@@ -100,6 +131,29 @@ public class ContentIntegrityService {
                 final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
                 if (error != null) errors.add(error);
             }
+    }
+
+    private void storeErrorsInCache(List<ContentIntegrityError> errors, long testDate) {
+        final Element element = new Element(FastDateFormat.getInstance("yyyy_MM_dd-HH_mm_ss_SSS").format(testDate), errors);
+        errorsCache.put(element);
+    }
+
+    public List<ContentIntegrityError> getLatestTestResults() {
+        return getTestResults(null);
+    }
+
+    public List<ContentIntegrityError> getTestResults(String testDate) {
+        final List<String> keys = errorsCache.getKeys();
+        if (CollectionUtils.isEmpty(keys)) return null;
+        if (StringUtils.isBlank(testDate)) {
+            final TreeSet<String> testDates = new TreeSet<>(keys);
+            return (List<ContentIntegrityError>) errorsCache.get(testDates.last()).getObjectValue();
+        }
+        return (List<ContentIntegrityError>) errorsCache.get(testDate).getObjectValue();
+    }
+
+    public List<String> getTestResultsDates()  {
+        return errorsCache.getKeys();
     }
 
     public void printIntegrityChecksList() {

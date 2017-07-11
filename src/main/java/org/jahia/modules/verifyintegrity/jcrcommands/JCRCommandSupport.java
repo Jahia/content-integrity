@@ -43,12 +43,21 @@
  */
 package org.jahia.modules.verifyintegrity.jcrcommands;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.karaf.shell.api.console.Session;
+import org.apache.karaf.shell.support.table.Col;
+import org.apache.karaf.shell.support.table.Row;
+import org.apache.karaf.shell.support.table.ShellTable;
+import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 // TODO : this is a fork from org.jahia.bundles.jcrcommands , which doesn't export a required package
 public class JCRCommandSupport {
@@ -103,6 +112,33 @@ public class JCRCommandSupport {
                     throw e;
                 }
             }
+        }
+    }
+
+    protected void printContentIntegrityErrors(List<ContentIntegrityError> errors) throws JSONException {
+        if (CollectionUtils.isNotEmpty(errors)) {
+            final ShellTable table = new ShellTable();
+            table.column(new Col("Error"));
+            table.column(new Col("Workspace"));
+            //table.column(new Col("Path"));
+            table.column(new Col("UUID"));
+            table.column(new Col("Node type"));
+            table.column(new Col("Locale"));
+            table.column(new Col("Message"));
+
+            for (ContentIntegrityError error : errors) {
+                final Row row = table.addRow();
+                final JSONObject json = error.toJSON();
+                final Iterator keys = json.keys();
+                row.addContent(json.get("errorType"));
+                row.addContent(json.get("workspace"));
+                //row.addContent(json.get("path"));
+                row.addContent(json.get("uuid"));
+                row.addContent(json.get("nt"));
+                row.addContent(json.get("locale"));
+                row.addContent(json.get("message"));
+            }
+            table.print(System.out, true);
         }
     }
 }

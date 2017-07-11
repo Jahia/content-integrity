@@ -16,6 +16,7 @@
 
     <bean id="contentIntegrityService" class="org.jahia.modules.verifyintegrity.services.ContentIntegrityService"
           factory-method="getInstance" init-method="start" destroy-method="stop">
+        <property name="ehCacheProvider" ref="bigEhCacheProvider" />
     </bean>
 
     <bean class="org.jahia.modules.verifyintegrity.services.checks.JCRLanguagePropertyCheck">
