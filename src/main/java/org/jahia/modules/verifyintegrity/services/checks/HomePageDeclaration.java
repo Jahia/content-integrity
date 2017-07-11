@@ -11,7 +11,7 @@ import javax.jcr.RepositoryException;
 
 import static org.jahia.api.Constants.JAHIANT_PAGE;
 
-public class HomePageDeclaration extends ContentIntegrityCheck {
+public class HomePageDeclaration extends ContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(HomePageDeclaration.class);
     private static final String HOME_PAGE_FLAG = "j:isHomePage";
@@ -45,5 +45,19 @@ public class HomePageDeclaration extends ContentIntegrityCheck {
             logger.error("", e);
         }
         return null;
+    }
+
+    @Override
+    public boolean fixError(Node node) throws RepositoryException {
+        final NodeIterator iterator = node.getNodes();
+        while (iterator.hasNext()) {
+            final Node child = iterator.nextNode();
+            if (child.isNodeType(JAHIANT_PAGE)) {
+                child.setProperty(HOME_PAGE_FLAG, true);
+                child.getSession().save();
+                return true;
+            }
+        }
+        return false;
     }
 }
