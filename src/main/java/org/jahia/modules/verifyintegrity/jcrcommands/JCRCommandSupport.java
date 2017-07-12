@@ -118,6 +118,7 @@ public class JCRCommandSupport {
     protected void printContentIntegrityErrors(List<ContentIntegrityError> errors) throws JSONException {
         if (CollectionUtils.isNotEmpty(errors)) {
             final ShellTable table = new ShellTable();
+            table.column(new Col("ID"));
             table.column(new Col("Error"));
             table.column(new Col("Workspace"));
             //table.column(new Col("Path"));
@@ -126,10 +127,12 @@ public class JCRCommandSupport {
             table.column(new Col("Locale"));
             table.column(new Col("Message"));
 
+            int i = 0;
             for (ContentIntegrityError error : errors) {
                 final Row row = table.addRow();
                 final JSONObject json = error.toJSON();
                 final Iterator keys = json.keys();
+                row.addContent(i++);
                 row.addContent(json.get("errorType"));
                 row.addContent(json.get("workspace"));
                 //row.addContent(json.get("path"));

@@ -33,6 +33,7 @@ public class ContentIntegrityError {
         this.workspace = workspace;
         this.constraintMessage = constraintMessage;
         this.errorType = errorType;
+        this.integrityCheckID = integrityCheckID;
     }
 
     public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, ContentIntegrityCheck integrityCheck) throws RepositoryException {

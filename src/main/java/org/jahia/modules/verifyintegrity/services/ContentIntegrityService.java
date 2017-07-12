@@ -157,7 +157,7 @@ public class ContentIntegrityService {
     }
 
     public void fixErrors(List<ContentIntegrityError> errors) {
-        final Map<String, JCRSessionWrapper> sessions = new HashMap<String,JCRSessionWrapper>();
+        final Map<String, JCRSessionWrapper> sessions = new HashMap<>();
         for (ContentIntegrityError error : errors) {
             final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
             if (integrityCheck == null) {
@@ -173,9 +173,8 @@ public class ContentIntegrityService {
                 if (session == null) continue;
                 sessions.put(workspace, session);
             }
-            String uuid = null;
             try {
-                uuid = error.getUuid();
+                final String uuid = error.getUuid();
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
                 final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node);
                 if (fixed) error.setFixed(true);

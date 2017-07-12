@@ -5,7 +5,9 @@ import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Completion;
+import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
+import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
 import org.slf4j.Logger;
@@ -18,6 +20,10 @@ import java.util.List;
 public class PrintPreviousTestCommand extends JCRCommandSupport implements Action {
 
     private static final Logger logger = LoggerFactory.getLogger(PrintPreviousTestCommand.class);
+    public static final String LAST_PRINTED_TEST = "lastPrintedTest";
+
+    @Reference
+    Session session;
 
     @Argument(description = "Test date")
     @Completion(TestDateCompleter.class)
@@ -37,7 +43,10 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
         }
 
         if (errors == null) System.out.println(errorMsg);
-        else printContentIntegrityErrors(errors);
+        else {
+            printContentIntegrityErrors(errors);
+            session.put(LAST_PRINTED_TEST, testDate);
+        }
         return null;
     }
 
