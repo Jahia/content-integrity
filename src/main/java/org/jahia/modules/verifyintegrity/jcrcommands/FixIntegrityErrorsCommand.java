@@ -1,5 +1,6 @@
 package org.jahia.modules.verifyintegrity.jcrcommands;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.action.Action;
@@ -30,12 +31,17 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
     @Completion(TestDateCompleter.class)
     private String testID;
 
-    @Argument(description = "ID of the error to fix.")
+    @Argument(description = "ID of the error to fix.", required = true, multiValued = true)
     @Completion(ErrorIdCompleter.class)
-    private String errorID;
+    private List<String> errorIDs;
 
     @Override
     public Object execute() throws Exception {
+
+        if (CollectionUtils.isEmpty(errorIDs)) {
+            System.out.println("No error specified");
+            return null;
+        }
 
         final ContentIntegrityService contentIntegrityService = ContentIntegrityService.getInstance();
         final List<ContentIntegrityError> testResults = contentIntegrityService.getTestResults(testID);
@@ -44,19 +50,23 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
             else System.out.println("The specified test results couldn't be found");
             return null;
         }
-        final int errorIdx = NumberUtils.toInt(errorID, -1);
-        if (errorIdx < 0 || errorIdx >= testResults.size()) {
-            System.out.println("The specified error couldn't be found");
-            return null;
+
+        for (String errorID : errorIDs) {
+            final int errorIdx = NumberUtils.toInt(errorID, -1);
+            if (errorIdx < 0 || errorIdx >= testResults.size()) {
+                System.out.println(String.format("The specified error (%s) couldn't be found", errorID));
+                continue;
+            }
+            final ContentIntegrityError error = testResults.get(errorIdx);
+            if (error.isFixed()) {
+                System.out.println(String.format("The error (%s) is already fixed", errorID));
+                continue;
+            }
+            contentIntegrityService.fixError(error);
+            if (error.isFixed()) System.out.println(String.format("Error fixed: %s", errorID));
+            else System.out.println(String.format("Impossible to fix the error: %s", errorID));
         }
-        final ContentIntegrityError error = testResults.get(errorIdx);
-        if (error.isFixed()) {
-            System.out.println("The error is already fixed");
-            return null;
-        }
-        contentIntegrityService.fixError(error);
-        if (error.isFixed()) System.out.println("Error fixed");
-        else System.out.println("Impossible to fix the error");
+
         return null;
     }
 
