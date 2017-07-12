@@ -28,7 +28,7 @@ public class HomePageDeclaration extends ContentIntegrityCheck implements Conten
             final NodeIterator iterator = node.getNodes();
             while (iterator.hasNext()) {
                 final Node child = iterator.nextNode();
-                if (child.isNodeType(JAHIANT_PAGE) && node.hasProperty(HOME_PAGE_FLAG) && node.getProperty(HOME_PAGE_FLAG).getBoolean())
+                if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean())
                     flaggedAsHomeCount++;
             }
             if (flaggedAsHomeCount != 1) {
