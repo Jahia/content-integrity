@@ -119,6 +119,7 @@ public class JCRCommandSupport {
         if (CollectionUtils.isNotEmpty(errors)) {
             final ShellTable table = new ShellTable();
             table.column(new Col("ID"));
+            table.column(new Col("Fixed"));
             table.column(new Col("Error"));
             table.column(new Col("Workspace"));
             //table.column(new Col("Path"));
@@ -133,6 +134,7 @@ public class JCRCommandSupport {
                 final JSONObject json = error.toJSON();
                 final Iterator keys = json.keys();
                 row.addContent(i++);
+                row.addContent(error.isFixed() ? "X" : "");
                 row.addContent(json.get("errorType"));
                 row.addContent(json.get("workspace"));
                 //row.addContent(json.get("path"));
