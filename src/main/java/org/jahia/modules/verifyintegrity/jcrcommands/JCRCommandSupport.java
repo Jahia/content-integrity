@@ -44,6 +44,7 @@
 package org.jahia.modules.verifyintegrity.jcrcommands;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.table.Col;
 import org.apache.karaf.shell.support.table.Row;
@@ -64,6 +65,7 @@ public class JCRCommandSupport {
 
     public static String WORKSPACE = "JcrCommand.WORKSPACE";
     public static String PATH = "JcrCommand.PATH";
+    private static final int DEFAULT_LIMIT = 20;
 
     protected String getCurrentPath(Session session) {
         String path = (String) session.get(PATH);
@@ -115,7 +117,12 @@ public class JCRCommandSupport {
         }
     }
 
-    protected void printContentIntegrityErrors(List<ContentIntegrityError> errors) throws JSONException {
+    protected void printContentIntegrityErrors(List<ContentIntegrityError> errors, String limitStr) throws JSONException {
+        printContentIntegrityErrors(errors, limitStr, true);
+    }
+
+    protected void printContentIntegrityErrors(List<ContentIntegrityError> errors, String limitStr, boolean printFixedErrors) throws JSONException {
+        // TODO implement the filter on fixed / not fixed. Add an option in commands printing the errors to leverage it
         if (CollectionUtils.isNotEmpty(errors)) {
             final ShellTable table = new ShellTable();
             table.column(new Col("ID"));
@@ -129,10 +136,11 @@ public class JCRCommandSupport {
             table.column(new Col("Message"));
 
             int i = 0;
+            final int limit = NumberUtils.toInt(limitStr, DEFAULT_LIMIT);
             for (ContentIntegrityError error : errors) {
+                if (i >= limit) continue;
                 final Row row = table.addRow();
                 final JSONObject json = error.toJSON();
-                final Iterator keys = json.keys();
                 row.addContent(i++);
                 row.addContent(error.isFixed() ? "X" : "");
                 row.addContent(json.get("errorType"));
@@ -144,6 +152,9 @@ public class JCRCommandSupport {
                 row.addContent(json.get("message"));
             }
             table.print(System.out, true);
+            final int errorsCount = errors.size();
+            if (errorsCount > limit)
+                System.out.println(String.format("Printed the first %s errors. Total number of errors: %s", limit, errorsCount));
         }
     }
 }

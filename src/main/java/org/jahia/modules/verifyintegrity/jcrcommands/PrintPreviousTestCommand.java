@@ -1,10 +1,12 @@
 package org.jahia.modules.verifyintegrity.jcrcommands;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Completion;
+import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
@@ -29,6 +31,9 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
     @Completion(TestDateCompleter.class)
     private String testDate;
 
+    @Option(name = "-l", aliases = "--limit", description = "Maximum number of lines to print.")
+    private String limit;
+
     @Override
     public Object execute() throws Exception {
         final List<ContentIntegrityError> errors;
@@ -44,10 +49,9 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
 
         if (errors == null) System.out.println(errorMsg);
         else {
-            printContentIntegrityErrors(errors);
+            printContentIntegrityErrors(errors, limit);
             session.put(LAST_PRINTED_TEST, testDate);
         }
         return null;
     }
-
 }
