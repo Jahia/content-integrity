@@ -3,7 +3,6 @@ package org.jahia.modules.verifyintegrity.services;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.exceptions.JahiaException;
@@ -221,7 +220,7 @@ public class ContentIntegrityService {
         return (List<ContentIntegrityError>) errorsCache.get(testDate).getObjectValue();
     }
 
-    public List<String> getTestResultsDates()  {
+    public List<String> getTestResultsDates() {
         return errorsCache.getKeys();
     }
 

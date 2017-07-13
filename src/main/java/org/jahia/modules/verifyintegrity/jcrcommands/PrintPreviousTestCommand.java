@@ -1,7 +1,6 @@
 package org.jahia.modules.verifyintegrity.jcrcommands;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
 import org.apache.karaf.shell.api.action.Command;
@@ -34,6 +33,9 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
     @Option(name = "-l", aliases = "--limit", description = "Maximum number of lines to print.")
     private String limit;
 
+    @Option(name = "-f", aliases = "--showFixedErrors", description = "Specifies if the already fixed errors have to be shown.")
+    private String showFixedErrors;
+
     @Override
     public Object execute() throws Exception {
         final List<ContentIntegrityError> errors;
@@ -49,7 +51,7 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
 
         if (errors == null) System.out.println(errorMsg);
         else {
-            printContentIntegrityErrors(errors, limit);
+            printContentIntegrityErrors(errors, limit, !"false".equalsIgnoreCase(showFixedErrors));
             session.put(LAST_PRINTED_TEST, testDate);
         }
         return null;

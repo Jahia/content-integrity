@@ -57,9 +57,9 @@ import org.json.JSONObject;
 
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+
 // TODO : this is a fork from org.jahia.bundles.jcrcommands , which doesn't export a required package
 public class JCRCommandSupport {
 
@@ -122,7 +122,6 @@ public class JCRCommandSupport {
     }
 
     protected void printContentIntegrityErrors(List<ContentIntegrityError> errors, String limitStr, boolean printFixedErrors) throws JSONException {
-        // TODO implement the filter on fixed / not fixed. Add an option in commands printing the errors to leverage it
         if (CollectionUtils.isNotEmpty(errors)) {
             final ShellTable table = new ShellTable();
             table.column(new Col("ID"));
@@ -135,26 +134,32 @@ public class JCRCommandSupport {
             table.column(new Col("Locale"));
             table.column(new Col("Message"));
 
-            int i = 0;
+            int errorID = 0;
+            int nbPrintedErrors = 0;
             final int limit = NumberUtils.toInt(limitStr, DEFAULT_LIMIT);
             for (ContentIntegrityError error : errors) {
-                if (i >= limit) continue;
-                final Row row = table.addRow();
-                final JSONObject json = error.toJSON();
-                row.addContent(i++);
-                row.addContent(error.isFixed() ? "X" : "");
-                row.addContent(json.get("errorType"));
-                row.addContent(json.get("workspace"));
-                //row.addContent(json.get("path"));
-                row.addContent(json.get("uuid"));
-                row.addContent(json.get("nt"));
-                row.addContent(json.get("locale"));
-                row.addContent(json.get("message"));
+                if (nbPrintedErrors >= limit) continue;
+                final boolean fixed = error.isFixed();
+                if (printFixedErrors || !fixed) {
+                    nbPrintedErrors++;
+                    final Row row = table.addRow();
+                    final JSONObject json = error.toJSON();
+                    row.addContent(errorID);
+                    row.addContent(fixed ? "X" : "");
+                    row.addContent(json.get("errorType"));
+                    row.addContent(json.get("workspace"));
+                    //row.addContent(json.get("path"));
+                    row.addContent(json.get("uuid"));
+                    row.addContent(json.get("nt"));
+                    row.addContent(json.get("locale"));
+                    row.addContent(json.get("message"));
+                }
+                errorID++;
             }
             table.print(System.out, true);
             final int errorsCount = errors.size();
-            if (errorsCount > limit)
-                System.out.println(String.format("Printed the first %s errors. Total number of errors: %s", limit, errorsCount));
+            if (errorsCount > errorID)
+                System.out.println(String.format("Printed the first %s errors. Total number of errors: %s", nbPrintedErrors, errorsCount));
         }
     }
 }
