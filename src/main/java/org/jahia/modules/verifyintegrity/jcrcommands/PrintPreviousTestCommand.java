@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-@Command(scope = "jcr", name = "printIntegrityTest")
+@Command(scope = "jcr", name = "integrity-print")
 @Service
 public class PrintPreviousTestCommand extends JCRCommandSupport implements Action {
 

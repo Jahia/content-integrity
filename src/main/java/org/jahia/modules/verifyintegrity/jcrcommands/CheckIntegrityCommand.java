@@ -11,7 +11,7 @@ import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
 
 import java.util.List;
 
-@Command(scope = "jcr", name = "checkIntegrity")
+@Command(scope = "jcr", name = "integrity-check")
 @Service
 public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
 

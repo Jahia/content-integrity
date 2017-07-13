@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-@Command(scope = "jcr", name = "fixIntegrity")
+@Command(scope = "jcr", name = "integrity-fix")
 @Service
 public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Action {
 
