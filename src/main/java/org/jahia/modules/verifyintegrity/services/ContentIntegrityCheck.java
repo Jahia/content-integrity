@@ -2,6 +2,7 @@ package org.jahia.modules.verifyintegrity.services;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
 import org.jahia.utils.Patterns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 public abstract class ContentIntegrityCheck implements InitializingBean, DisposableBean, Comparable<ContentIntegrityCheck> {
+
+    public interface SupportsIntegrityErrorFix {
+        boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException;
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityCheck.class);
 
@@ -97,6 +102,26 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
         return String.format("%s (priority: %s)", this.getClass().getName(), priority);
     }
 
+    /*
+        Utility methods
+    */
+
+    protected boolean isInDefaultWorkspace(Node node) {
+        try {
+            return Constants.EDIT_WORKSPACE.equals(node.getSession().getWorkspace().getName());
+        } catch (RepositoryException e) {
+            logger.error("", e);
+            return false;
+        }
+    }
+
+    protected boolean isInLiveWorkspace(Node node) {
+        return !isInDefaultWorkspace(node);
+    }
+
+    /*
+        Execution conditions
+    */
     public interface ExecutionCondition {
         boolean matches(Node node);
     }
@@ -222,9 +247,5 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
 
     public void setSkipOnWorkspace(String workspace) {
         addCondition(new NotCondition(new WorkspaceCondition(workspace)));
-    }
-
-    public interface SupportsIntegrityErrorFix {
-        boolean fixError(Node node) throws RepositoryException;
     }
 }

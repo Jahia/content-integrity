@@ -144,7 +144,7 @@ public class ContentIntegrityService {
         if (error == null) return;
         if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
             try {
-                error.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node));
+                error.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos()));
             } catch (RepositoryException e) {
                 logger.error("An error occurred while fixing a content integrity error", e);
             }
@@ -175,7 +175,7 @@ public class ContentIntegrityService {
             try {
                 final String uuid = error.getUuid();
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
-                final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node);
+                final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos());
                 if (fixed) error.setFixed(true);
                 else logger.error(String.format("Failed to fix the error %s", error.toJSON()));
             } catch (RepositoryException e) {

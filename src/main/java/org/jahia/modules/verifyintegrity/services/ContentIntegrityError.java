@@ -22,6 +22,7 @@ public class ContentIntegrityError {
     private String errorType;
     private boolean fixed = false;
     private long integrityCheckID = -1L;
+    private Object extraInfos;
 
     private ContentIntegrityError(String path, String uuid, String primaryType, String mixins, String workspace,
                                   String locale, String constraintMessage, String errorType, long integrityCheckID) {
@@ -84,6 +85,14 @@ public class ContentIntegrityError {
 
     public long getIntegrityCheckID() {
         return integrityCheckID;
+    }
+
+    public Object getExtraInfos() {
+        return extraInfos;
+    }
+
+    public void setExtraInfos(Object extraInfos) {
+        this.extraInfos = extraInfos;
     }
 
     private String getFullNodetype() {
