@@ -25,6 +25,7 @@
 
     <bean class="org.jahia.modules.verifyintegrity.services.checks.HomePageDeclaration">
         <property name="applyOnNodeTypes" value="jnt:virtualsite" />
+        <property name="applyOnSubTrees" value="/sites" />
     </bean>
 
     <bean class="org.jahia.modules.verifyintegrity.services.checks.MarkForDeletionCheck">

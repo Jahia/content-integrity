@@ -248,4 +248,54 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
     public void setSkipOnWorkspace(String workspace) {
         addCondition(new NotCondition(new WorkspaceCondition(workspace)));
     }
+
+    public static class SubtreeCondition implements ExecutionCondition {
+
+        private String treePath;
+
+        public SubtreeCondition(String treePath) {
+            if (treePath.endsWith("/")) this.treePath = treePath.substring(0, treePath.length() - 1);
+            else this.treePath = treePath;
+        }
+
+        @Override
+        public boolean matches(Node node) {
+            try {
+                final String path = node.getPath();
+                return path.equals(treePath) || path.startsWith(treePath + "/");
+            } catch (RepositoryException e) {
+                logger.error("", e);
+                return false;
+            }
+        }
+    }
+
+    public void setApplyOnSubTrees(String trees) {
+        if (trees.contains(",")) {
+            final AnyOfCondition condition = new AnyOfCondition();
+            for (String tree : Patterns.COMMA.split(trees)) {
+                condition.add(new SubtreeCondition(tree.trim()));
+            }
+            addCondition(condition);
+        } else if (StringUtils.isNotBlank(trees)) {
+            addCondition(new SubtreeCondition(trees.trim()));
+        }
+    }
+
+    public void setSkipOnSubTrees(String trees) {
+        ExecutionCondition condition = null;
+        if (trees.contains(",")) {
+            final AnyOfCondition anyOf = new AnyOfCondition();
+            for (String tree : Patterns.COMMA.split(trees)) {
+                anyOf.add(new SubtreeCondition(tree.trim()));
+            }
+            condition = anyOf;
+        } else if (StringUtils.isNotBlank(trees)) {
+            condition = new SubtreeCondition(trees);
+        }
+        if (condition != null) {
+            addCondition(new NotCondition(condition));
+        }
+
+    }
 }

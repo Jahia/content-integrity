@@ -26,11 +26,6 @@ public class HomePageDeclaration extends ContentIntegrityCheck implements Conten
 
     @Override
     public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
-        return null;  //TODO: review me, I'm generated
-    }
-
-    @Override
-    public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
         try {
             int flaggedAsHomeCount = 0;
             final NodeIterator iterator = node.getNodes();
@@ -64,6 +59,11 @@ public class HomePageDeclaration extends ContentIntegrityCheck implements Conten
         } catch (RepositoryException e) {
             logger.error("", e);
         }
+        return null;
+    }
+
+    @Override
+    public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
         return null;
     }
 
