@@ -92,6 +92,10 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
         this.id = id;
     }
 
+    public String getCheckName() {
+        return this.getClass().getSimpleName();
+    }
+
     @Override
     public int compareTo(ContentIntegrityCheck o) {
         return (int) (priority - o.getPriority());

@@ -41,7 +41,7 @@ public class ContentIntegrityError {
         logger.error(message);
         return new ContentIntegrityError(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
                 Arrays.toString(node.getMixinNodeTypes()), node.getSession().getWorkspace().getName(),
-                locale == null ? "-" : locale, message, integrityCheck.getClass().getSimpleName(), integrityCheck.getId());
+                locale == null ? "-" : locale, message, integrityCheck.getCheckName(), integrityCheck.getId());
     }
 
     public JSONObject toJSON() {
