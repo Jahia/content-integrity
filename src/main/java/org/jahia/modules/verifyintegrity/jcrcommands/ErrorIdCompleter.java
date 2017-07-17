@@ -8,6 +8,7 @@ import org.apache.karaf.shell.api.console.Completer;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.completers.StringsCompleter;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
+import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,19 +29,20 @@ public class ErrorIdCompleter implements Completer {
     @Override
     public int complete(Session session, CommandLine commandLine, List<String> candidates) {
         final String testID = getTestID(session, commandLine);
-        final List<ContentIntegrityError> testResults = ContentIntegrityService.getInstance().getTestResults(testID);
-        if (CollectionUtils.isEmpty(testResults)) return -1;
+        final ContentIntegrityResults testResults = ContentIntegrityService.getInstance().getTestResults(testID);
+        final List<ContentIntegrityError> errors;
+        if (testResults == null || CollectionUtils.isEmpty(errors = testResults.getErrors())) return -1;
 
         final StringsCompleter delegate = new StringsCompleter();
         final String argument = commandLine.getCursorArgument();
         if (StringUtils.isBlank(argument)) {
-            for (int i = 0; i < testResults.size(); i++) {
-                final ContentIntegrityError error = testResults.get(i);
+            for (int i = 0; i < errors.size(); i++) {
+                final ContentIntegrityError error = errors.get(i);
                 if (!error.isFixed()) candidates.add(Integer.toString(i));
             }
         } else {
-            for (int i = 0; i < testResults.size(); i++) {
-                final ContentIntegrityError error = testResults.get(i);
+            for (int i = 0; i < errors.size(); i++) {
+                final ContentIntegrityError error = errors.get(i);
                 if (!error.isFixed()) {
                     final String errorID = Integer.toString(i);
                     if (errorID.startsWith(argument)) candidates.add(errorID);

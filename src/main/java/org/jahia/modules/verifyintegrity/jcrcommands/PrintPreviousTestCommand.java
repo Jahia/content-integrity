@@ -1,5 +1,8 @@
 package org.jahia.modules.verifyintegrity.jcrcommands;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
@@ -10,10 +13,12 @@ import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
+import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.List;
 
 @Command(scope = "jcr", name = "integrity-print")
@@ -36,23 +41,52 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
     @Option(name = "-f", aliases = "--showFixedErrors", description = "Specifies if the already fixed errors have to be shown.")
     private String showFixedErrors;
 
+    @Option(name = "-d", aliases = {"--dump", "--dumpToCSV"}, description = "Dumps the error into a CSV file in " +
+            "temp/content-integrity/. The limit option is ignored when dumping.")
+    private String dumpToCSV;
+
     @Override
     public Object execute() throws Exception {
-        final List<ContentIntegrityError> errors;
+        final ContentIntegrityResults results;
         final String errorMsg;
 
         if (StringUtils.isBlank(testDate)) {
-            errors = ContentIntegrityService.getInstance().getLatestTestResults();
+            results = ContentIntegrityService.getInstance().getLatestTestResults();
             errorMsg = "No previous test results found";
         } else {
-            errors = ContentIntegrityService.getInstance().getTestResults(testDate);
+            results = ContentIntegrityService.getInstance().getTestResults(testDate);
             errorMsg = "No previous test results found for this date";
         }
 
-        if (errors == null) System.out.println(errorMsg);
-        else {
-            printContentIntegrityErrors(errors, limit, !"false".equalsIgnoreCase(showFixedErrors));
-            session.put(LAST_PRINTED_TEST, testDate);
+        if (results == null) {
+            System.out.println(errorMsg);
+            return null;
+        }
+
+        session.put(LAST_PRINTED_TEST, testDate);
+        final boolean excludeFixedErrors = "false".equalsIgnoreCase(showFixedErrors);
+        if (Boolean.parseBoolean(dumpToCSV)) {
+            final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
+            final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
+
+            if (folderCreated && outputDir.canWrite()) {
+                final File csvFile = new File(outputDir, String.format("%s-%s.csv",
+                        results.getFormattedTestDate(), excludeFixedErrors ? "remainingErrors" : "full"));
+                final boolean exists = csvFile.exists();
+                if (!exists) csvFile.createNewFile();
+                final List<String> lines = (List<String>) CollectionUtils.collect(results.getErrors(), new Transformer() {
+                    @Override
+                    public Object transform(Object input) {
+                        return ((ContentIntegrityError) input).toCSV();
+                    }
+                });
+                FileUtils.writeLines(csvFile, "UTF-8", lines);
+                System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", csvFile.getPath()));
+            } else {
+                logger.error("Impossible to write the folder " + outputDir.getPath());
+            }
+        } else {
+            printContentIntegrityErrors(results, limit, !excludeFixedErrors);
         }
         return null;
     }

@@ -7,10 +7,8 @@ import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
-import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
+import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
-
-import java.util.List;
 
 @Command(scope = "jcr", name = "integrity-check")
 @Service
@@ -25,8 +23,8 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     @Override
     public Object execute() throws Exception {
         final String currentPath = StringUtils.defaultString(getCurrentPath(session), "/");
-        final List<ContentIntegrityError> errors = ContentIntegrityService.getInstance().validateIntegrity(currentPath, getCurrentWorkspace(session));
-        printContentIntegrityErrors(errors, limit);
+        final ContentIntegrityResults integrityResults = ContentIntegrityService.getInstance().validateIntegrity(currentPath, getCurrentWorkspace(session));
+        printContentIntegrityErrors(integrityResults, limit);
         return null;
     }
 }

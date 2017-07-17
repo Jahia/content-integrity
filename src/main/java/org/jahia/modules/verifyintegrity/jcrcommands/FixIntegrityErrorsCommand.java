@@ -12,6 +12,7 @@ import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
+import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,20 +45,21 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
         }
 
         final ContentIntegrityService contentIntegrityService = ContentIntegrityService.getInstance();
-        final List<ContentIntegrityError> testResults = contentIntegrityService.getTestResults(testID);
-        if (testResults == null) {
+        final ContentIntegrityResults results = contentIntegrityService.getTestResults(testID);
+        if (results == null) {
             if (StringUtils.isBlank(testID)) System.out.println("No test results found");
             else System.out.println("The specified test results couldn't be found");
             return null;
         }
 
+        final List<ContentIntegrityError> errors = results.getErrors();
         for (String errorID : errorIDs) {
             final int errorIdx = NumberUtils.toInt(errorID, -1);
-            if (errorIdx < 0 || errorIdx >= testResults.size()) {
+            if (errorIdx < 0 || errorIdx >= errors.size()) {
                 System.out.println(String.format("The specified error (%s) couldn't be found", errorID));
                 continue;
             }
-            final ContentIntegrityError error = testResults.get(errorIdx);
+            final ContentIntegrityError error = errors.get(errorIdx);
             if (error.isFixed()) {
                 System.out.println(String.format("The error (%s) is already fixed", errorID));
                 continue;

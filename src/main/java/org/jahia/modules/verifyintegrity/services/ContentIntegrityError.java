@@ -1,5 +1,6 @@
 package org.jahia.modules.verifyintegrity.services;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -53,6 +54,28 @@ public class ContentIntegrityError {
             logger.error("", e);  //TODO: review me, I'm generated
         }
         return null;
+    }
+
+    public String toCSV() {
+        return toCSV(",", ";");
+    }
+
+    public String toCSV(String separator, String escapedSeparator) {
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append(StringUtils.replace(String.valueOf(integrityCheckID), separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(String.valueOf(fixed), separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(errorType, separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(workspace, separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(uuid, separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(path, separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(primaryType, separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(mixins, separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(locale, separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(constraintMessage, separator, escapedSeparator));
+        sb.append(separator).append(StringUtils.replace(String.valueOf(extraInfos), separator, escapedSeparator));
+
+        return sb.toString();
     }
 
     public boolean isFixed() {

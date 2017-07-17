@@ -4,7 +4,6 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
@@ -81,11 +80,11 @@ public class ContentIntegrityService {
         logger.info(String.format("Unregistered %s in the contentIntegrity service ", integrityCheck));
     }
 
-    public List<ContentIntegrityError> validateIntegrity(String path, String workspace) {
+    public ContentIntegrityResults validateIntegrity(String path, String workspace) {
         return validateIntegrity(path, workspace, false);
     }
 
-    public List<ContentIntegrityError> validateIntegrity(String path, String workspace, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
+    public ContentIntegrityResults validateIntegrity(String path, String workspace, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
         final JCRSessionWrapper session;
         try {
             session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
@@ -94,18 +93,19 @@ public class ContentIntegrityService {
             return null;
         }
         final JCRNodeWrapper node;
-        final List<ContentIntegrityError> errors = new ArrayList<>();
         try {
             node = session.getNode(path);
             logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
+            final List<ContentIntegrityError> errors = new ArrayList<>();
             final long start = System.currentTimeMillis();
             validateIntegrity(node, errors, fixErrors);
             logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(System.currentTimeMillis() - start)));
-            storeErrorsInCache(errors, start);
+            final ContentIntegrityResults results = new ContentIntegrityResults(start, errors);
+            storeErrorsInCache(results);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
-        return errors;
+        return null;
     }
 
     private void validateIntegrity(Node node, List<ContentIntegrityError> errors, boolean fixErrors) {
@@ -201,23 +201,23 @@ public class ContentIntegrityService {
         return null;
     }
 
-    private void storeErrorsInCache(List<ContentIntegrityError> errors, long testDate) {
-        final Element element = new Element(FastDateFormat.getInstance("yyyy_MM_dd-HH_mm_ss_SSS").format(testDate), errors);
+    private void storeErrorsInCache(ContentIntegrityResults results) {
+        final Element element = new Element(results.getFormattedTestDate(), results);
         errorsCache.put(element);
     }
 
-    public List<ContentIntegrityError> getLatestTestResults() {
+    public ContentIntegrityResults getLatestTestResults() {
         return getTestResults(null);
     }
 
-    public List<ContentIntegrityError> getTestResults(String testDate) {
+    public ContentIntegrityResults getTestResults(String testDate) {
         final List<String> keys = errorsCache.getKeys();
         if (CollectionUtils.isEmpty(keys)) return null;
         if (StringUtils.isBlank(testDate)) {
             final TreeSet<String> testDates = new TreeSet<>(keys);
-            return (List<ContentIntegrityError>) errorsCache.get(testDates.last()).getObjectValue();
+            return (ContentIntegrityResults) errorsCache.get(testDates.last()).getObjectValue();
         }
-        return (List<ContentIntegrityError>) errorsCache.get(testDate).getObjectValue();
+        return (ContentIntegrityResults) errorsCache.get(testDate).getObjectValue();
     }
 
     public List<String> getTestResultsDates() {
