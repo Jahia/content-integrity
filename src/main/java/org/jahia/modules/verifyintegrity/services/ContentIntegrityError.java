@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
-import java.util.Arrays;
+import javax.jcr.nodetype.NodeType;
 
 public class ContentIntegrityError {
 
@@ -40,9 +40,17 @@ public class ContentIntegrityError {
 
     public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, ContentIntegrityCheck integrityCheck) throws RepositoryException {
         logger.error(message);
+        final NodeType[] mixinNodeTypes = node.getMixinNodeTypes();
+        final String mixins;
+        if (mixinNodeTypes == null || mixinNodeTypes.length == 0) mixins = null;
+        else {
+            final StringBuilder mixinsBuilder = new StringBuilder(mixinNodeTypes[0].getName());
+            for (int i = 1; i < mixinNodeTypes.length; i++) mixinsBuilder.append(",").append(mixinNodeTypes[i].getName());
+            mixins = mixinsBuilder.toString();
+        }
         return new ContentIntegrityError(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
-                Arrays.toString(node.getMixinNodeTypes()), node.getSession().getWorkspace().getName(),
-                locale == null ? "-" : locale, message, integrityCheck.getCheckName(), integrityCheck.getId());
+                mixins, node.getSession().getWorkspace().getName(), locale == null ? "-" : locale, message,
+                integrityCheck.getCheckName(), integrityCheck.getId());
     }
 
     public JSONObject toJSON() {
@@ -119,6 +127,8 @@ public class ContentIntegrityError {
     }
 
     private String getFullNodetype() {
-        return primaryType; // TODO add the mixins
+        if (StringUtils.isBlank(mixins))
+            return primaryType;
+        return String.format("%s (%s)", primaryType, mixins);
     }
 }
