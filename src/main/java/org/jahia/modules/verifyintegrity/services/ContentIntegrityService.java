@@ -102,6 +102,7 @@ public class ContentIntegrityService {
             logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(System.currentTimeMillis() - start)));
             final ContentIntegrityResults results = new ContentIntegrityResults(start, errors);
             storeErrorsInCache(results);
+            return results;
         } catch (RepositoryException e) {
             logger.error("", e);
         }
