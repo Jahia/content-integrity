@@ -34,8 +34,14 @@
         <property name="applyOnNodeTypes" value="jmix:markedForDeletion" />
     </bean>
 
-    <bean class="org.jahia.modules.verifyintegrity.services.checks.PublicationSanityCheck">
+    <bean class="org.jahia.modules.verifyintegrity.services.checks.PublicationSanityDefaultCheck">
         <property name="applyOnNodeTypes" value="jmix:lastPublished" />
+        <property name="applyOnWorkspace" value="default" />
+    </bean>
+
+    <bean class="org.jahia.modules.verifyintegrity.services.checks.PublicationSanityLiveCheck">
+        <property name="applyOnNodeTypes" value="jmix:lastPublished" />
+        <property name="applyOnWorkspace" value="live" />
     </bean>
 
 </beans>
