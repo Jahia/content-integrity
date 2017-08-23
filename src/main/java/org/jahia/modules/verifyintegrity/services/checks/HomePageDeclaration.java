@@ -1,7 +1,7 @@
 package org.jahia.modules.verifyintegrity.services.checks;
 
 import org.jahia.api.Constants;
-import org.jahia.modules.verifyintegrity.services.ContentIntegrityCheck;
+import org.jahia.modules.verifyintegrity.services.AbstractContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -16,7 +16,7 @@ import javax.jcr.RepositoryException;
 
 import static org.jahia.api.Constants.JAHIANT_PAGE;
 
-public class HomePageDeclaration extends ContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class HomePageDeclaration extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(HomePageDeclaration.class);
     private static final String HOME_PAGE_FLAG = "j:isHomePage";

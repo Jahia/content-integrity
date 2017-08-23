@@ -38,7 +38,7 @@ public class ContentIntegrityError {
         this.integrityCheckID = integrityCheckID;
     }
 
-    public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, ContentIntegrityCheck integrityCheck) throws RepositoryException {
+    public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, AbstractContentIntegrityCheck integrityCheck) throws RepositoryException {
         logger.error(message);
         final NodeType[] mixinNodeTypes = node.getMixinNodeTypes();
         final String mixins;
@@ -59,7 +59,7 @@ public class ContentIntegrityError {
                     .put("uuid", uuid).put("nt", getFullNodetype()).put("locale", locale)
                     .put("message", constraintMessage).put("fixed", fixed);
         } catch (JSONException e) {
-            logger.error("", e);  //TODO: review me, I'm generated
+            logger.error("", e);
         }
         return null;
     }

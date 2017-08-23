@@ -1,6 +1,6 @@
 package org.jahia.modules.verifyintegrity.services.checks;
 
-import org.jahia.modules.verifyintegrity.services.ContentIntegrityCheck;
+import org.jahia.modules.verifyintegrity.services.AbstractContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +9,7 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 
-public class MarkForDeletionCheck extends ContentIntegrityCheck {
+public class MarkForDeletionCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(MarkForDeletionCheck.class);
 

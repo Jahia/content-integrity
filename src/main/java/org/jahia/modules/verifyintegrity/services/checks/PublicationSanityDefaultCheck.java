@@ -1,7 +1,7 @@
 package org.jahia.modules.verifyintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.verifyintegrity.services.ContentIntegrityCheck;
+import org.jahia.modules.verifyintegrity.services.AbstractContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -21,7 +21,7 @@ import static org.jahia.api.Constants.LASTPUBLISHED;
 import static org.jahia.api.Constants.LIVE_WORKSPACE;
 import static org.jahia.api.Constants.PUBLISHED;
 
-public class PublicationSanityDefaultCheck extends ContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
 

@@ -14,13 +14,13 @@ import javax.jcr.RepositoryException;
 import java.util.LinkedList;
 import java.util.List;
 
-public abstract class ContentIntegrityCheck implements InitializingBean, DisposableBean, Comparable<ContentIntegrityCheck> {
+public abstract class AbstractContentIntegrityCheck implements InitializingBean, DisposableBean, Comparable<AbstractContentIntegrityCheck> {
 
     public interface SupportsIntegrityErrorFix {
         boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityCheck.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
 
     private float priority = 100f;
     private boolean disabled;
@@ -97,7 +97,7 @@ public abstract class ContentIntegrityCheck implements InitializingBean, Disposa
     }
 
     @Override
-    public int compareTo(ContentIntegrityCheck o) {
+    public int compareTo(AbstractContentIntegrityCheck o) {
         return (int) (priority - o.getPriority());
     }
 
