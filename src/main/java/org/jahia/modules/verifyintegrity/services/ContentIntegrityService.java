@@ -225,11 +225,17 @@ public class ContentIntegrityService {
         return errorsCache.getKeys();
     }
 
-    public void printIntegrityChecksList() {
-        logger.info("Integrity checks:");
-        for (ContentIntegrityCheck integrityCheck : integrityChecks)
-            logger.info(String.format("   %s", integrityCheck));
+    public List<String> printIntegrityChecksList() {
+        final List<String> lines = new ArrayList<>(integrityChecks.size()+1);
+        logAndAppend("Integrity checks:", lines);
+        for (AbstractContentIntegrityCheck integrityCheck : integrityChecks)
+            logAndAppend(String.format("   %s", integrityCheck), lines);
+        return lines;
+    }
 
+    private void logAndAppend(String line, List<String> lines) {
+        logger.info(line);
+        lines.add(line);
     }
 
     /**

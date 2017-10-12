@@ -10,6 +10,8 @@ import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
 
+import java.util.List;
+
 @Command(scope = "jcr", name = "integrity-check")
 @Service
 public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
@@ -20,8 +22,17 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     @Option(name = "-l", aliases = "--limit", description = "Maximum number of lines to print.")
     private String limit;
 
+    @Option(name = "-lc", aliases = "--listChecks", description = "List the registered checks.")
+    private String listChecks;
+
     @Override
     public Object execute() throws Exception {
+        if (listChecks != null) {
+            for (String s : ContentIntegrityService.getInstance().printIntegrityChecksList()) {
+                System.out.println(s);
+            }
+            return null;
+        }
         final String currentPath = StringUtils.defaultString(getCurrentPath(session), "/");
         final ContentIntegrityResults integrityResults = ContentIntegrityService.getInstance().validateIntegrity(currentPath, getCurrentWorkspace(session));
         printContentIntegrityErrors(integrityResults, limit);
