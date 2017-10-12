@@ -38,19 +38,26 @@ public class ContentIntegrityError {
         this.integrityCheckID = integrityCheckID;
     }
 
-    public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, AbstractContentIntegrityCheck integrityCheck) throws RepositoryException {
+    public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, AbstractContentIntegrityCheck integrityCheck) {
         logger.error(message);
-        final NodeType[] mixinNodeTypes = node.getMixinNodeTypes();
-        final String mixins;
-        if (mixinNodeTypes == null || mixinNodeTypes.length == 0) mixins = null;
-        else {
-            final StringBuilder mixinsBuilder = new StringBuilder(mixinNodeTypes[0].getName());
-            for (int i = 1; i < mixinNodeTypes.length; i++) mixinsBuilder.append(",").append(mixinNodeTypes[i].getName());
-            mixins = mixinsBuilder.toString();
+        try {
+            final NodeType[] mixinNodeTypes = node.getMixinNodeTypes();
+            final String mixins;
+            if (mixinNodeTypes == null || mixinNodeTypes.length == 0) mixins = null;
+            else {
+                final StringBuilder mixinsBuilder = new StringBuilder(mixinNodeTypes[0].getName());
+                for (int i = 1; i < mixinNodeTypes.length; i++)
+                    mixinsBuilder.append(",").append(mixinNodeTypes[i].getName());
+                mixins = mixinsBuilder.toString();
+            }
+            return new ContentIntegrityError(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
+                    mixins, node.getSession().getWorkspace().getName(), locale == null ? "-" : locale, message,
+                    integrityCheck.getCheckName(), integrityCheck.getId());
+        } catch (RepositoryException e) {
+            logger.error("", e);  //TODO: review me, I'm generated
         }
-        return new ContentIntegrityError(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
-                mixins, node.getSession().getWorkspace().getName(), locale == null ? "-" : locale, message,
-                integrityCheck.getCheckName(), integrityCheck.getId());
+
+        return new ContentIntegrityError(null, null, null, null, null, locale == null ? "-" : locale, message, integrityCheck.getCheckName(), integrityCheck.getId());
     }
 
     public JSONObject toJSON() {
