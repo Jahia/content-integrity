@@ -81,7 +81,10 @@ public class JCRCommandSupport {
 
     protected void printContentIntegrityErrors(ContentIntegrityResults results, String limitStr, boolean printFixedErrors) throws JSONException {
         final List<ContentIntegrityError> errors = results != null ? results.getErrors() : null;
-        if (CollectionUtils.isEmpty(errors)) return;
+        if (CollectionUtils.isEmpty(errors)) {
+            System.out.println("No error found");
+            return;
+        }
         final ShellTable table = new ShellTable();
         table.column(new Col("ID"));
         table.column(new Col("Fixed"));
