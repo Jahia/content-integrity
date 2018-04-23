@@ -80,7 +80,12 @@ public class JCRCommandSupport {
     }
 
     protected void printContentIntegrityErrors(ContentIntegrityResults results, String limitStr, boolean printFixedErrors) throws JSONException {
-        final List<ContentIntegrityError> errors = results != null ? results.getErrors() : null;
+        if (results == null) {
+            System.out.println("An error occured while testing the content integrity");
+            return;
+        }
+        System.out.println(String.format("Content integrity tested in %s", results.getFormattedTestDuration()));
+        final List<ContentIntegrityError> errors = results.getErrors();
         if (CollectionUtils.isEmpty(errors)) {
             System.out.println("No error found");
             return;

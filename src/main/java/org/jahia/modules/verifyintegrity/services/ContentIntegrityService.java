@@ -99,8 +99,9 @@ public class ContentIntegrityService {
             final List<ContentIntegrityError> errors = new ArrayList<>();
             final long start = System.currentTimeMillis();
             validateIntegrity(node, errors, fixErrors);
-            logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(System.currentTimeMillis() - start)));
-            final ContentIntegrityResults results = new ContentIntegrityResults(start, errors);
+            final long testDuration = System.currentTimeMillis() - start;
+            logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration)));
+            final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, errors);
             storeErrorsInCache(results);
             return results;
         } catch (RepositoryException e) {
