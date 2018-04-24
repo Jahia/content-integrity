@@ -123,6 +123,7 @@ public class ContentIntegrityService {
         try {
             for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
                 final Node child = (Node) it.next();
+                if ("/jcr:system".equals(child.getPath())) continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
                 validateIntegrity(child, errors, fixErrors);
             }
         } catch (RepositoryException e) {
