@@ -14,6 +14,7 @@ import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
+import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,8 @@ import java.util.List;
 public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Action {
 
     private static final Logger logger = LoggerFactory.getLogger(FixIntegrityErrorsCommand.class);
+
+    private static final boolean devMode = Boolean.parseBoolean(SettingsBean.getInstance().getPropertiesFile().getProperty("modules.contentIntegrity.devMode"));
 
     @Reference
     Session session;
@@ -38,6 +41,10 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
 
     @Override
     public Object execute() throws Exception {
+        if (!devMode) {
+            System.out.println("Not yet available, coming soon!");
+            return null;
+        }
 
         if (CollectionUtils.isEmpty(errorIDs)) {
             System.out.println("No error specified");
@@ -71,5 +78,4 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
 
         return null;
     }
-
 }
