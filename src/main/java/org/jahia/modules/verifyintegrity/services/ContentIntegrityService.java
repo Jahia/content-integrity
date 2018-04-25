@@ -6,6 +6,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
+import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -50,10 +51,15 @@ public class ContentIntegrityService {
                 errorsCache.getCacheConfiguration().setTimeToIdleSeconds(errorsCacheTti);
             }
         }
+        final Map<String, AbstractContentIntegrityCheck> beans = SpringContextSingleton.getBeansOfType(AbstractContentIntegrityCheck.class);
+        for (AbstractContentIntegrityCheck integrityCheck : beans.values()) {
+            registerIntegrityCheck(integrityCheck);
+        }
     }
 
     public void stop() throws JahiaException {
         if (errorsCache != null) errorsCache.flush();
+        if (integrityChecks != null) integrityChecks.clear();
     }
 
     public void setEhCacheProvider(EhCacheProvider ehCacheProvider) {
@@ -72,12 +78,12 @@ public class ContentIntegrityService {
         integrityCheck.setId(System.currentTimeMillis()); //TODO is it sure to be unique? Shouldn't we check that there's not already another one registered during the same ms?
         integrityChecks.add(integrityCheck);
         Collections.sort(integrityChecks);
-        logger.info(String.format("Registered %s in the contentIntegrity service ", integrityCheck));
+        logger.info(String.format("Registered %s in the contentIntegrity service, number of checks: %s, service: %s, CL: %s", integrityCheck, integrityChecks.size(), this, this.getClass().getClassLoader()));
     }
 
     public void unregisterIntegrityCheck(AbstractContentIntegrityCheck integrityCheck) {
         integrityChecks.remove(integrityCheck);
-        logger.info(String.format("Unregistered %s in the contentIntegrity service ", integrityCheck));
+        logger.info(String.format("Unregistered %s in the contentIntegrity service, number of checks: %s", integrityCheck, integrityChecks.size()));
     }
 
     public ContentIntegrityResults validateIntegrity(String path, String workspace) {
