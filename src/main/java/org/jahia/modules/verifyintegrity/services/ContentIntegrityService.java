@@ -28,7 +28,7 @@ public class ContentIntegrityService {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(ContentIntegrityService.class);
     private static ContentIntegrityService instance = new ContentIntegrityService();
 
-    private List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
+    private List<AbstractContentIntegrityCheck> integrityChecks = new ArrayList<>();
     private Cache errorsCache;
     private EhCacheProvider ehCacheProvider;
     private String errorsCacheName = "ContentIntegrityService-errors";
@@ -68,14 +68,14 @@ public class ContentIntegrityService {
         this.errorsCacheTti = errorsCacheTti;
     }
 
-    public void registerIntegrityCheck(ContentIntegrityCheck integrityCheck) {
-        integrityCheck.setId(System.currentTimeMillis());
+    public void registerIntegrityCheck(AbstractContentIntegrityCheck integrityCheck) {
+        integrityCheck.setId(System.currentTimeMillis()); //TODO is it sure to be unique? Shouldn't we check that there's not already another one registered during the same ms?
         integrityChecks.add(integrityCheck);
         Collections.sort(integrityChecks);
         logger.info(String.format("Registered %s in the contentIntegrity service ", integrityCheck));
     }
 
-    public void unregisterIntegrityCheck(ContentIntegrityCheck integrityCheck) {
+    public void unregisterIntegrityCheck(AbstractContentIntegrityCheck integrityCheck) {
         integrityChecks.remove(integrityCheck);
         logger.info(String.format("Unregistered %s in the contentIntegrity service ", integrityCheck));
     }
@@ -112,7 +112,7 @@ public class ContentIntegrityService {
 
     private void validateIntegrity(Node node, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop
-        for (ContentIntegrityCheck integrityCheck : integrityChecks)
+        for (AbstractContentIntegrityCheck integrityCheck : integrityChecks)
             if (integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s", integrityCheck.getClass().getName(), node));
@@ -136,18 +136,18 @@ public class ContentIntegrityService {
             logger.error(String.format("An error occured while iterating over the children of the node %s in the workspace %s",
                     node, ws), e);
         }
-        for (ContentIntegrityCheck integrityCheck : integrityChecks)
+        for (AbstractContentIntegrityCheck integrityCheck : integrityChecks)
             if (integrityCheck.areConditionsMatched(node)) {
                 final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
                 handleError(error, node, fixErrors, integrityCheck, errors);
             }
     }
 
-    private void handleError(ContentIntegrityError error, Node node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
+    private void handleError(ContentIntegrityError error, Node node, boolean executeFix, AbstractContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
         if (error == null) return;
-        if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
+        if (executeFix && integrityCheck instanceof AbstractContentIntegrityCheck.SupportsIntegrityErrorFix)
             try {
-                error.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos()));
+                error.setFixed(((AbstractContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos()));
             } catch (RepositoryException e) {
                 logger.error("An error occurred while fixing a content integrity error", e);
             }
@@ -161,12 +161,12 @@ public class ContentIntegrityService {
     public void fixErrors(List<ContentIntegrityError> errors) {
         final Map<String, JCRSessionWrapper> sessions = new HashMap<>();
         for (ContentIntegrityError error : errors) {
-            final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+            final AbstractContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
             if (integrityCheck == null) {
                 logger.error("Impossible to load the integrity check which detected this error");
                 continue;
             }
-            if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
+            if (!(integrityCheck instanceof AbstractContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
 
             final String workspace = error.getWorkspace();
             JCRSessionWrapper session = sessions.get(workspace);
@@ -178,7 +178,7 @@ public class ContentIntegrityService {
             try {
                 final String uuid = error.getUuid();
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
-                final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos());
+                final boolean fixed = ((AbstractContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos());
                 if (fixed) error.setFixed(true);
                 else logger.error(String.format("Failed to fix the error %s", error.toJSON()));
             } catch (RepositoryException e) {
@@ -196,9 +196,9 @@ public class ContentIntegrityService {
         }
     }
 
-    private ContentIntegrityCheck getContentIntegrityCheck(long id) {
+    private AbstractContentIntegrityCheck getContentIntegrityCheck(long id) {
         // TODO: a double storage of the integrity checks in a map where the keys are the IDs should fasten this method
-        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+        for (AbstractContentIntegrityCheck integrityCheck : integrityChecks) {
             if (integrityCheck.getId() == id) return integrityCheck;
         }
         return null;
@@ -228,7 +228,7 @@ public class ContentIntegrityService {
     }
 
     public List<String> printIntegrityChecksList() {
-        final List<String> lines = new ArrayList<>(integrityChecks.size()+1);
+        final List<String> lines = new ArrayList<>(integrityChecks.size() + 1);
         logAndAppend("Integrity checks:", lines);
         for (AbstractContentIntegrityCheck integrityCheck : integrityChecks)
             logAndAppend(String.format("   %s", integrityCheck), lines);
