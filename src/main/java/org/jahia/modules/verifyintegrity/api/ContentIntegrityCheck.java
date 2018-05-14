@@ -24,4 +24,18 @@ public interface ContentIntegrityCheck {
     interface SupportsIntegrityErrorFix {
         boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException;
     }
+
+    /*
+       Execution conditions
+    */
+    public interface ExecutionCondition {
+        boolean matches(Node node);
+
+        String APPLY = "apply";
+        String SKIP = "skip";
+
+        String ON_NT = "OnNodeTypes";
+        String APPLY_ON_NT = APPLY + ON_NT;
+        String SKIP_ON_NT = SKIP + ON_NT;
+    }
 }

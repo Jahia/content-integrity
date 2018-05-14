@@ -30,9 +30,15 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             return;
         }
 
-        final Object p = context.getProperties().get(PRIORITY);
-        if (p instanceof Float) priority = (float) p;
+        Object prop = context.getProperties().get(PRIORITY);
+        if (prop instanceof Float) priority = (float) prop;
 
+        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_NT);
+        if (prop instanceof String) setApplyOnNodeTypes((String) prop);
+        else if (prop == null) {
+            prop = context.getProperties().get(ExecutionCondition.SKIP_ON_NT);
+            if (prop instanceof String) setSkipOnNodeTypes((String) prop);
+        }
     }
 
     @Override
@@ -109,13 +115,6 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected boolean isInLiveWorkspace(Node node) {
         return !isInDefaultWorkspace(node);
-    }
-
-    /*
-        Execution conditions
-    */
-    public interface ExecutionCondition {
-        boolean matches(Node node);
     }
 
     public static class NotCondition implements ExecutionCondition {
