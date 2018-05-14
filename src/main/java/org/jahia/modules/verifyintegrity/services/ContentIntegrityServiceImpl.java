@@ -4,14 +4,24 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.bin.Jahia;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
+import org.jahia.modules.verifyintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.verifyintegrity.api.ContentIntegrityService;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.DateUtils;
+import org.osgi.framework.Constants;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 
 import javax.jcr.Node;
@@ -19,30 +29,31 @@ import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-public class ContentIntegrityService {
+@Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
+        Constants.SERVICE_PID + "=org.jahia.modules.contentintegrity.service",
+        Constants.SERVICE_DESCRIPTION + "=Content integrity service",
+        Constants.SERVICE_VENDOR + "=" + Jahia.VENDOR_NAME}, immediate = true)
+public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
-    private static Logger logger = org.slf4j.LoggerFactory.getLogger(ContentIntegrityService.class);
-    private static ContentIntegrityService instance = new ContentIntegrityService();
+    private static Logger logger = org.slf4j.LoggerFactory.getLogger(ContentIntegrityServiceImpl.class);
 
-    private List<AbstractContentIntegrityCheck> integrityChecks = new ArrayList<>();
+    private List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
     private Cache errorsCache;
     private EhCacheProvider ehCacheProvider;
     private String errorsCacheName = "ContentIntegrityService-errors";
     private long errorsCacheTti = 24L * 3600L; // 1 day;
 
-    public static ContentIntegrityService getInstance() {
-        return instance;
-    }
 
-    private ContentIntegrityService() {
-    }
-
+    @Activate
     public void start() throws JahiaInitializationException {
+        if (ehCacheProvider == null)
+            ehCacheProvider = (EhCacheProvider) SpringContextSingleton.getBean("bigEhCacheProvider");
         if (errorsCache == null) {
             errorsCache = ehCacheProvider.getCacheManager().getCache(errorsCacheName);
             if (errorsCache == null) {
@@ -51,41 +62,41 @@ public class ContentIntegrityService {
                 errorsCache.getCacheConfiguration().setTimeToIdleSeconds(errorsCacheTti);
             }
         }
-        final Map<String, AbstractContentIntegrityCheck> beans = SpringContextSingleton.getBeansOfType(AbstractContentIntegrityCheck.class);
-        for (AbstractContentIntegrityCheck integrityCheck : beans.values()) {
-            registerIntegrityCheck(integrityCheck);
-        }
+
+        logger.info("Content integrity service started");
     }
 
+    @Deactivate
     public void stop() throws JahiaException {
         if (errorsCache != null) errorsCache.flush();
-        if (integrityChecks != null) integrityChecks.clear();
+
+        logger.info("Content integrity service stopped");
     }
 
-    public void setEhCacheProvider(EhCacheProvider ehCacheProvider) {
-        this.ehCacheProvider = ehCacheProvider;
-    }
-
-    public void setErrorsCacheName(String errorsCacheName) {
-        this.errorsCacheName = errorsCacheName;
-    }
-
-    public void setErrorsCacheTti(long errorsCacheTti) {
-        this.errorsCacheTti = errorsCacheTti;
-    }
-
-    public void registerIntegrityCheck(AbstractContentIntegrityCheck integrityCheck) {
+    @Reference(service = ContentIntegrityCheck.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, unbind = "unregisterIntegrityCheck")
+    public void registerIntegrityCheck(ContentIntegrityCheck integrityCheck) {
         integrityCheck.setId(System.currentTimeMillis()); //TODO is it sure to be unique? Shouldn't we check that there's not already another one registered during the same ms?
         integrityChecks.add(integrityCheck);
-        Collections.sort(integrityChecks);
+        Collections.sort(integrityChecks, new Comparator<ContentIntegrityCheck>() {
+            @Override
+            public int compare(ContentIntegrityCheck o1, ContentIntegrityCheck o2) {
+                return (int) (o1.getPriority() - o2.getPriority());
+            }
+        });
+
         logger.info(String.format("Registered %s in the contentIntegrity service, number of checks: %s, service: %s, CL: %s", integrityCheck, integrityChecks.size(), this, this.getClass().getClassLoader()));
     }
 
-    public void unregisterIntegrityCheck(AbstractContentIntegrityCheck integrityCheck) {
-        integrityChecks.remove(integrityCheck);
-        logger.info(String.format("Unregistered %s in the contentIntegrity service, number of checks: %s", integrityCheck, integrityChecks.size()));
+    public void unregisterIntegrityCheck(ContentIntegrityCheck integrityCheck) {
+        final boolean success = integrityChecks.remove(integrityCheck);// TODO: not sure that .equals() always work here, maybe we should itereate until we find one instance for which .getId().equals(integrityCheck.getId())
+        if (success)
+            logger.info(String.format("Unregistered %s in the contentIntegrity service, number of checks: %s", integrityCheck, integrityChecks.size()));
+        else
+            logger.error(String.format("Failed to unregister %s in the contentIntegrity service, number of checks: %s", integrityCheck, integrityChecks.size()));
     }
 
+
+    @Override
     public ContentIntegrityResults validateIntegrity(String path, String workspace) {
         return validateIntegrity(path, workspace, false);
     }
@@ -118,7 +129,7 @@ public class ContentIntegrityService {
 
     private void validateIntegrity(Node node, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop
-        for (AbstractContentIntegrityCheck integrityCheck : integrityChecks)
+        for (ContentIntegrityCheck integrityCheck : integrityChecks)
             if (integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s", integrityCheck.getClass().getName(), node));
@@ -129,7 +140,8 @@ public class ContentIntegrityService {
         try {
             for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
                 final Node child = (Node) it.next();
-                if ("/jcr:system".equals(child.getPath())) continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
+                if ("/jcr:system".equals(child.getPath()))
+                    continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
                 validateIntegrity(child, errors, fixErrors);
             }
         } catch (RepositoryException e) {
@@ -142,24 +154,25 @@ public class ContentIntegrityService {
             logger.error(String.format("An error occured while iterating over the children of the node %s in the workspace %s",
                     node, ws), e);
         }
-        for (AbstractContentIntegrityCheck integrityCheck : integrityChecks)
+        for (ContentIntegrityCheck integrityCheck : integrityChecks)
             if (integrityCheck.areConditionsMatched(node)) {
                 final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
                 handleError(error, node, fixErrors, integrityCheck, errors);
             }
     }
 
-    private void handleError(ContentIntegrityError error, Node node, boolean executeFix, AbstractContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
+    private void handleError(ContentIntegrityError error, Node node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
         if (error == null) return;
-        if (executeFix && integrityCheck instanceof AbstractContentIntegrityCheck.SupportsIntegrityErrorFix)
+        if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
             try {
-                error.setFixed(((AbstractContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos()));
+                error.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos()));
             } catch (RepositoryException e) {
                 logger.error("An error occurred while fixing a content integrity error", e);
             }
         errors.add(error);
     }
 
+    @Override
     public void fixError(ContentIntegrityError error) {
         fixErrors(Collections.singletonList(error));
     }
@@ -167,12 +180,12 @@ public class ContentIntegrityService {
     public void fixErrors(List<ContentIntegrityError> errors) {
         final Map<String, JCRSessionWrapper> sessions = new HashMap<>();
         for (ContentIntegrityError error : errors) {
-            final AbstractContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+            final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
             if (integrityCheck == null) {
                 logger.error("Impossible to load the integrity check which detected this error");
                 continue;
             }
-            if (!(integrityCheck instanceof AbstractContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
+            if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
 
             final String workspace = error.getWorkspace();
             JCRSessionWrapper session = sessions.get(workspace);
@@ -184,7 +197,7 @@ public class ContentIntegrityService {
             try {
                 final String uuid = error.getUuid();
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
-                final boolean fixed = ((AbstractContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos());
+                final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos());
                 if (fixed) error.setFixed(true);
                 else logger.error(String.format("Failed to fix the error %s", error.toJSON()));
             } catch (RepositoryException e) {
@@ -202,9 +215,9 @@ public class ContentIntegrityService {
         }
     }
 
-    private AbstractContentIntegrityCheck getContentIntegrityCheck(long id) {
+    private ContentIntegrityCheck getContentIntegrityCheck(long id) {
         // TODO: a double storage of the integrity checks in a map where the keys are the IDs should fasten this method
-        for (AbstractContentIntegrityCheck integrityCheck : integrityChecks) {
+        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             if (integrityCheck.getId() == id) return integrityCheck;
         }
         return null;
@@ -215,10 +228,12 @@ public class ContentIntegrityService {
         errorsCache.put(element);
     }
 
+    @Override
     public ContentIntegrityResults getLatestTestResults() {
         return getTestResults(null);
     }
 
+    @Override
     public ContentIntegrityResults getTestResults(String testDate) {
         final List<String> keys = errorsCache.getKeys();
         if (CollectionUtils.isEmpty(keys)) return null;
@@ -229,14 +244,16 @@ public class ContentIntegrityService {
         return (ContentIntegrityResults) errorsCache.get(testDate).getObjectValue();
     }
 
+    @Override
     public List<String> getTestResultsDates() {
         return errorsCache.getKeys();
     }
 
+    @Override
     public List<String> printIntegrityChecksList() {
         final List<String> lines = new ArrayList<>(integrityChecks.size() + 1);
         logAndAppend("Integrity checks:", lines);
-        for (AbstractContentIntegrityCheck integrityCheck : integrityChecks)
+        for (ContentIntegrityCheck integrityCheck : integrityChecks)
             logAndAppend(String.format("   %s", integrityCheck), lines);
         return lines;
     }

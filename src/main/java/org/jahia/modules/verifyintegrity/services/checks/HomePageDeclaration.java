@@ -1,11 +1,13 @@
 package org.jahia.modules.verifyintegrity.services.checks;
 
 import org.jahia.api.Constants;
+import org.jahia.modules.verifyintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.AbstractContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +18,7 @@ import javax.jcr.RepositoryException;
 
 import static org.jahia.api.Constants.JAHIANT_PAGE;
 
+@Component(service = ContentIntegrityCheck.class)
 public class HomePageDeclaration extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(HomePageDeclaration.class);

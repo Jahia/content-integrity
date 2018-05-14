@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
-
 import java.util.Calendar;
 
 import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;

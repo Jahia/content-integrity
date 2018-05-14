@@ -1,18 +1,20 @@
 package org.jahia.modules.verifyintegrity.services.checks;
 
+import org.jahia.modules.verifyintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.AbstractContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
-
 import java.util.HashSet;
 
 import static org.jahia.api.Constants.JCR_LOCKISDEEP;
 import static org.jahia.api.Constants.JCR_LOCKOWNER;
 
+@Component(service = ContentIntegrityCheck.class)
 public class LockSanityCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(LockSanityCheck.class);

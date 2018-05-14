@@ -7,7 +7,7 @@ import org.apache.karaf.shell.api.console.CommandLine;
 import org.apache.karaf.shell.api.console.Completer;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.completers.StringsCompleter;
-import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
+import org.jahia.modules.verifyintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public class TestDateCompleter implements Completer {
 
     @Override
     public int complete(Session session, CommandLine commandLine, List<String> candidates) {
-        final List<String> resultsDates = ContentIntegrityService.getInstance().getTestResultsDates();
+        final List<String> resultsDates = Utils.getContentIntegrityService().getTestResultsDates();
         if (CollectionUtils.isEmpty(resultsDates)) return -1;
         final StringsCompleter delegate = new StringsCompleter();
         final String argument = commandLine.getCursorArgument();

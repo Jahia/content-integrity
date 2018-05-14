@@ -11,9 +11,10 @@ import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
+import org.jahia.modules.verifyintegrity.api.ContentIntegrityService;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
-import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
+import org.jahia.modules.verifyintegrity.services.Utils;
 import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,7 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
             return null;
         }
 
-        final ContentIntegrityService contentIntegrityService = ContentIntegrityService.getInstance();
+        final ContentIntegrityService contentIntegrityService = Utils.getContentIntegrityService();
         final ContentIntegrityResults results = contentIntegrityService.getTestResults(testID);
         if (results == null) {
             if (StringUtils.isBlank(testID)) System.out.println("No test results found");

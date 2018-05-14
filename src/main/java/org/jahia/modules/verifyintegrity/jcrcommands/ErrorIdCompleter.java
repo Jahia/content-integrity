@@ -9,7 +9,7 @@ import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.completers.StringsCompleter;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
-import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
+import org.jahia.modules.verifyintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class ErrorIdCompleter implements Completer {
     @Override
     public int complete(Session session, CommandLine commandLine, List<String> candidates) {
         final String testID = getTestID(session, commandLine);
-        final ContentIntegrityResults testResults = ContentIntegrityService.getInstance().getTestResults(testID);
+        final ContentIntegrityResults testResults = Utils.getContentIntegrityService().getTestResults(testID);
         final List<ContentIntegrityError> errors;
         if (testResults == null || CollectionUtils.isEmpty(errors = testResults.getErrors())) return -1;
 

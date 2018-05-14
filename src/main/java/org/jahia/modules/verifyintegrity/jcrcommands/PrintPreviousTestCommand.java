@@ -14,7 +14,7 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityResults;
-import org.jahia.modules.verifyintegrity.services.ContentIntegrityService;
+import org.jahia.modules.verifyintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,10 +51,10 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
         final String errorMsg;
 
         if (StringUtils.isBlank(testDate)) {
-            results = ContentIntegrityService.getInstance().getLatestTestResults();
+            results = Utils.getContentIntegrityService().getLatestTestResults();
             errorMsg = "No previous test results found";
         } else {
-            results = ContentIntegrityService.getInstance().getTestResults(testDate);
+            results = Utils.getContentIntegrityService().getTestResults(testDate);
             errorMsg = "No previous test results found for this date";
         }
 

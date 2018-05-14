@@ -3,22 +3,18 @@ package org.jahia.modules.verifyintegrity.services;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
+import org.jahia.modules.verifyintegrity.api.ContentIntegrityCheck;
 import org.jahia.utils.Patterns;
+import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.LinkedList;
 import java.util.List;
 
-public abstract class AbstractContentIntegrityCheck implements InitializingBean, DisposableBean, Comparable<AbstractContentIntegrityCheck> {
-
-    public interface SupportsIntegrityErrorFix {
-        boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException;
-    }
+public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
 
@@ -28,20 +24,18 @@ public abstract class AbstractContentIntegrityCheck implements InitializingBean,
     private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
     private long id = -1L;
 
-    public abstract ContentIntegrityError checkIntegrityBeforeChildren(Node node);
+    protected void configure(ComponentContext context) {
+        if (context == null) {
+            logger.error("The ComponentContext is null");
+            return;
+        }
 
-    public abstract ContentIntegrityError checkIntegrityAfterChildren(Node node);
+        final Object p = context.getProperties().get(PRIORITY);
+        if (p instanceof Float) priority = (float) p;
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        ContentIntegrityService.getInstance().registerIntegrityCheck(this);
     }
 
     @Override
-    public void destroy() throws Exception {
-        ContentIntegrityService.getInstance().unregisterIntegrityCheck(this);
-    }
-
     public boolean areConditionsMatched(Node node) {
         if (disabled) return false;
         for (ExecutionCondition condition : conditions) {
@@ -60,10 +54,7 @@ public abstract class AbstractContentIntegrityCheck implements InitializingBean,
         }
     }
 
-    public void setPriority(float priority) {
-        this.priority = priority;
-    }
-
+    @Override
     public float getPriority() {
         return priority;
     }
@@ -84,21 +75,18 @@ public abstract class AbstractContentIntegrityCheck implements InitializingBean,
         this.description = description;
     }
 
+    @Override
     public long getId() {
         return id;
     }
 
+    @Override
     public void setId(long id) {
         this.id = id;
     }
 
     public String getCheckName() {
         return this.getClass().getSimpleName();
-    }
-
-    @Override
-    public int compareTo(AbstractContentIntegrityCheck o) {
-        return (int) (priority - o.getPriority());
     }
 
     @Override
