@@ -37,5 +37,9 @@ public interface ContentIntegrityCheck {
         String ON_NT = "OnNodeTypes";
         String APPLY_ON_NT = APPLY + ON_NT;
         String SKIP_ON_NT = SKIP + ON_NT;
+
+        String ON_SUBTREES = "OnSubTrees";
+        String APPLY_ON_SUBTREES = APPLY + ON_SUBTREES;
+        String SKIP_ON_SUBTREES = SKIP + ON_SUBTREES;
     }
 }

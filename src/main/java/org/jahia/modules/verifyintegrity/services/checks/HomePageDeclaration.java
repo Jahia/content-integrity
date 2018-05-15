@@ -7,6 +7,8 @@ import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +20,10 @@ import javax.jcr.RepositoryException;
 
 import static org.jahia.api.Constants.JAHIANT_PAGE;
 
-@Component(service = ContentIntegrityCheck.class)
+@Component(service = ContentIntegrityCheck.class, immediate = true, property = {
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/sites"
+})
 public class HomePageDeclaration extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(HomePageDeclaration.class);
@@ -26,6 +31,11 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
     private static final String HOME_PAGE_FALLBACK_NAME = "home";
 
     private enum ErrorType {NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME}
+
+    @Activate
+    public void activate(ComponentContext context) {
+        configure(context);
+    }
 
     @Override
     public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {

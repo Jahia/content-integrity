@@ -39,6 +39,13 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             prop = context.getProperties().get(ExecutionCondition.SKIP_ON_NT);
             if (prop instanceof String) setSkipOnNodeTypes((String) prop);
         }
+
+        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_SUBTREES);
+        if (prop instanceof String) setApplyOnSubTrees((String) prop);
+        else if (prop == null) {
+            prop = context.getProperties().get(ExecutionCondition.SKIP_ON_SUBTREES);
+            if (prop instanceof String) setSkipOnSubTrees((String) prop);
+        }
     }
 
     @Override
