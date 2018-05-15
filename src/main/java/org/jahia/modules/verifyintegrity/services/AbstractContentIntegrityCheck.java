@@ -111,7 +111,22 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public String toString() {
-        return String.format("%s (priority: %s)", this.getClass().getName(), priority);
+        return String.format("%s (priority: %s)", this.getClass().getSimpleName(), priority);
+    }
+
+    @Override
+    public String toFullString() {
+        return String.format("%s (priority: %s) %s", this.getClass().getSimpleName(), priority, printConditions());
+    }
+
+    private String printConditions() {
+        if (CollectionUtils.isEmpty(conditions)) return StringUtils.EMPTY;
+        final StringBuilder sb = new StringBuilder("[");
+        for (ExecutionCondition condition : conditions) {
+            sb.append(condition).append(";");  // TODO improve the output of the conditins
+        }
+
+        return sb.append("]").toString();
     }
 
     /*

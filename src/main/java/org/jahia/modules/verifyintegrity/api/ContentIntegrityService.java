@@ -17,5 +17,5 @@ public interface ContentIntegrityService {
 
     List<String> getTestResultsDates();
 
-    List<String> printIntegrityChecksList();
+    List<String> printIntegrityChecksList(boolean simpleOutput);
 }

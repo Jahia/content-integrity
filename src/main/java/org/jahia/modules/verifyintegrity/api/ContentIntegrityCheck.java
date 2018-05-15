@@ -21,6 +21,8 @@ public interface ContentIntegrityCheck {
 
     boolean areConditionsMatched(Node node);
 
+    String toFullString();
+
     interface SupportsIntegrityErrorFix {
         boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException;
     }

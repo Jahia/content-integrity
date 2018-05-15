@@ -3,6 +3,7 @@ package org.jahia.modules.verifyintegrity.jcrcommands;
 import org.apache.commons.lang.StringUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
+import org.apache.karaf.shell.api.action.Completion;
 import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
@@ -21,12 +22,14 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     private String limit;
 
     @Option(name = "-lc", aliases = "--listChecks", description = "List the registered checks.")
+    @Completion(OutputLevelCompleter.class)
     private String listChecks;
 
     @Override
     public Object execute() throws Exception {
         if (listChecks != null) {
-            for (String s : Utils.getContentIntegrityService().printIntegrityChecksList()) {
+            final boolean fullOutput = "full".equalsIgnoreCase(listChecks);
+            for (String s : Utils.getContentIntegrityService().printIntegrityChecksList(!fullOutput)) {
                 System.out.println(s);
             }
             return null;
@@ -36,4 +39,5 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         printContentIntegrityErrors(integrityResults, limit);
         return null;
     }
+
 }

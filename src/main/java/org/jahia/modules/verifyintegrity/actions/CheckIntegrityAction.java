@@ -24,7 +24,7 @@ public class CheckIntegrityAction extends Action {
         final String action = getParameter(parameters, "action");
         switch (action) {
             case "print":
-                Utils.getContentIntegrityService().printIntegrityChecksList();
+                Utils.getContentIntegrityService().printIntegrityChecksList(true);
                 break;
             case "check":
                 final String ws = getParameter(parameters, "workspace", Constants.EDIT_WORKSPACE);
