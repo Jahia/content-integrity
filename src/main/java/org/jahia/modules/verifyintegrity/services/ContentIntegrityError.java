@@ -1,6 +1,7 @@
 package org.jahia.modules.verifyintegrity.services;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.verifyintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;

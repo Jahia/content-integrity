@@ -1,4 +1,4 @@
-package org.jahia.modules.verifyintegrity.services;
+package org.jahia.modules.verifyintegrity.services.impl;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;

@@ -64,7 +64,8 @@
     <properties>
         <jahia-depends>default</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
-        <export-package>org.jahia.modules.verifyintegrity.api</export-package>
+        <export-package>org.jahia.modules.verifyintegrity.api,
+            org.jahia.modules.verifyintegrity.services.impl</export-package>
     </properties>
 
     <scm>
