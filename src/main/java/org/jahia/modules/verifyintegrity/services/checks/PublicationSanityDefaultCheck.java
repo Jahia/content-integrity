@@ -36,11 +36,6 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
 
     private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH}
 
-    @Activate
-    public void activate(ComponentContext context) {
-        configure(context);
-    }
-
     @Override
     public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
         try {

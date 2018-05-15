@@ -24,7 +24,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
     private long id = -1L;
 
-    protected void configure(ComponentContext context) {
+    protected void activate(ComponentContext context) {
         if (context == null) {
             logger.error("The ComponentContext is null");
             return;

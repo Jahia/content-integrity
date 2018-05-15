@@ -23,11 +23,6 @@ public class JCRLanguagePropertyCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(JCRLanguagePropertyCheck.class);
 
-    @Activate
-    public void activate(ComponentContext context) {
-        configure(context);
-    }
-
     @Override
     public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
         if (logger.isDebugEnabled()) logger.debug(String.format("Checking %s", node));

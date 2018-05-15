@@ -32,11 +32,6 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
 
     private enum ErrorType {NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME}
 
-    @Activate
-    public void activate(ComponentContext context) {
-        configure(context);
-    }
-
     @Override
     public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
         try {

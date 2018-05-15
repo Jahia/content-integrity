@@ -26,9 +26,9 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck implements Ab
 
     private HashSet<String> lockRelatedProperties = new HashSet<>();
 
-    @Activate
-    public void activate(ComponentContext context) {
-        configure(context);
+    @Override
+    protected void activate(ComponentContext context) {
+        super.activate(context);
         init();
     }
 
