@@ -41,5 +41,9 @@ public interface ContentIntegrityCheck {
         String ON_SUBTREES = "OnSubTrees";
         String APPLY_ON_SUBTREES = APPLY + ON_SUBTREES;
         String SKIP_ON_SUBTREES = SKIP + ON_SUBTREES;
+
+        String ON_WS = "OnWorkspace";
+        String APPLY_ON_WS = APPLY + ON_WS;
+        String SKIP_ON_WS = SKIP + ON_WS;
     }
 }

@@ -21,19 +21,5 @@
         <property name="skipOnNodeTypes" value="jmix:markedForDeletionRoot" />
         <property name="applyOnNodeTypes" value="jmix:markedForDeletion" />
     </bean>
-
-    <bean class="org.jahia.modules.verifyintegrity.services.checks.PublicationSanityDefaultCheck">
-        <property name="applyOnNodeTypes" value="jmix:lastPublished" />
-        <property name="applyOnWorkspace" value="default" />
-    </bean>
-
-    <bean class="org.jahia.modules.verifyintegrity.services.checks.PublicationSanityLiveCheck">
-        <property name="applyOnNodeTypes" value="jmix:lastPublished" />
-        <property name="applyOnWorkspace" value="live" />
-    </bean>
-
-    <bean class="org.jahia.modules.verifyintegrity.services.checks.LockSanityCheck" init-method="init">
-        <property name="applyOnWorkspace" value="default" />
-    </bean>
               -->
 </beans>

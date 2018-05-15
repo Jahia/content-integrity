@@ -1,11 +1,16 @@
 package org.jahia.modules.verifyintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
+import org.jahia.modules.verifyintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.AbstractContentIntegrityCheck;
 import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +25,21 @@ import static org.jahia.api.Constants.LASTPUBLISHED;
 import static org.jahia.api.Constants.LIVE_WORKSPACE;
 import static org.jahia.api.Constants.PUBLISHED;
 
+@Component(service = ContentIntegrityCheck.class, immediate = true, property = {
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_LASTPUBLISHED,
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE
+})
 public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
 
 
     private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH}
+
+    @Activate
+    public void activate(ComponentContext context) {
+        configure(context);
+    }
 
     @Override
     public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
