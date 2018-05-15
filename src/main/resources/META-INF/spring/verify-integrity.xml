@@ -13,13 +13,5 @@
     <bean class="org.jahia.modules.verifyintegrity.actions.CheckIntegrityAction">
         <property name="name" value="checkIntegrity" />
     </bean>
-
-     <!--
-
-    <bean class="org.jahia.modules.verifyintegrity.services.checks.MarkForDeletionCheck">
-        <property name="applyOnWorkspace" value="default" />
-        <property name="skipOnNodeTypes" value="jmix:markedForDeletionRoot" />
-        <property name="applyOnNodeTypes" value="jmix:markedForDeletion" />
-    </bean>
-              -->
+    
 </beans>
