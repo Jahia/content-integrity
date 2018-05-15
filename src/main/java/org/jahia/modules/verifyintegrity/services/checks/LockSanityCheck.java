@@ -77,23 +77,4 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck implements Ab
     public boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException {
         return false;  //TODO: review me, I'm generated
     }
-
-    private static class HasPropertyCondition implements ExecutionCondition {
-
-        private String propertyName;
-
-        private HasPropertyCondition(String propertyName) {
-            this.propertyName = propertyName;
-        }
-
-        @Override
-        public boolean matches(Node node) {
-            try {
-                return node.hasProperty(propertyName);
-            } catch (RepositoryException e) {
-                logger.error("", e);
-                return false;
-            }
-        }
-    }
 }

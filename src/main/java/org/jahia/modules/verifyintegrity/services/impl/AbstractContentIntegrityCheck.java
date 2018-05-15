@@ -33,6 +33,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         Object prop = context.getProperties().get(PRIORITY);
         if (prop instanceof Float) priority = (float) prop;
 
+        // TODO check if it is possible to keep the declaration order
         prop = context.getProperties().get(ExecutionCondition.APPLY_ON_NT);
         if (prop instanceof String) setApplyOnNodeTypes((String) prop);
         prop = context.getProperties().get(ExecutionCondition.SKIP_ON_NT);
@@ -58,7 +59,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return true;
     }
 
-    public void addCondition(ExecutionCondition condition) {
+    protected void addCondition(ExecutionCondition condition) {
         conditions.add(condition);
     }
 
@@ -117,7 +118,8 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         if (CollectionUtils.isEmpty(conditions)) return StringUtils.EMPTY;
         final StringBuilder sb = new StringBuilder("[");
         for (ExecutionCondition condition : conditions) {
-            sb.append(condition).append(";");  // TODO improve the output of the conditins
+            if (sb.length() > 1) sb.append(" && ");
+            sb.append("(").append(condition).append(")");
         }
 
         return sb.append("]").toString();
@@ -180,9 +182,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         public String toString() {
             final StringBuilder out = new StringBuilder();
             for (ExecutionCondition cond : conditions) {
-                if (out.length() > 0) {
-                    out.append(" || ");
-                }
+                if (out.length() > 0) out.append(" || ");
                 out.append("(").append(cond).append(")");
             }
             return out.toString();
@@ -206,9 +206,14 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             }
             return false;
         }
+
+        @Override
+        public String toString() {
+            return String.format("node type = %s", nodeType);
+        }
     }
 
-    public void setApplyOnNodeTypes(String nodeTypes) {
+    private void setApplyOnNodeTypes(String nodeTypes) {
         if (nodeTypes.contains(",")) {
             final AnyOfCondition condition = new AnyOfCondition();
             for (String nodeType : Patterns.COMMA.split(nodeTypes)) {
@@ -220,7 +225,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
     }
 
-    public void setSkipOnNodeTypes(String nodeTypes) {
+    private void setSkipOnNodeTypes(String nodeTypes) {
         ExecutionCondition condition = null;
         if (nodeTypes.contains(",")) {
             final AnyOfCondition anyOf = new AnyOfCondition();
@@ -253,13 +258,18 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
                 return false;
             }
         }
+
+        @Override
+        public String toString() {
+            return String.format("workspace = %s", workspace);
+        }
     }
 
-    public void setApplyOnWorkspace(String workspace) {
+    private void setApplyOnWorkspace(String workspace) {
         addCondition(new WorkspaceCondition(workspace));
     }
 
-    public void setSkipOnWorkspace(String workspace) {
+    private void setSkipOnWorkspace(String workspace) {
         addCondition(new NotCondition(new WorkspaceCondition(workspace)));
     }
 
@@ -276,15 +286,20 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         public boolean matches(Node node) {
             try {
                 final String path = node.getPath();
-                return path.equals(treePath) || path.startsWith(treePath + "/");
+                return path.equals(treePath) || path.startsWith(treePath + "/"); // TODO review path.equals(treePath) , shouldn't this be another condition? (toString() to adapt if changed)
             } catch (RepositoryException e) {
                 logger.error("", e);
                 return false;
             }
         }
+
+        @Override
+        public String toString() {
+            return String.format("is or is under %s", treePath);
+        }
     }
 
-    public void setApplyOnSubTrees(String trees) {
+    private void setApplyOnSubTrees(String trees) {
         if (trees.contains(",")) {
             final AnyOfCondition condition = new AnyOfCondition();
             for (String tree : Patterns.COMMA.split(trees)) {
@@ -296,7 +311,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
     }
 
-    public void setSkipOnSubTrees(String trees) {
+    private void setSkipOnSubTrees(String trees) {
         ExecutionCondition condition = null;
         if (trees.contains(",")) {
             final AnyOfCondition anyOf = new AnyOfCondition();
@@ -311,5 +326,29 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             addCondition(new NotCondition(condition));
         }
 
+    }
+
+    protected static class HasPropertyCondition implements ExecutionCondition {
+
+        private String propertyName;
+
+        public HasPropertyCondition(String propertyName) {
+            this.propertyName = propertyName;
+        }
+
+        @Override
+        public boolean matches(Node node) {
+            try {
+                return node.hasProperty(propertyName);
+            } catch (RepositoryException e) {
+                logger.error("", e);
+                return false;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("has property %s", propertyName);
+        }
     }
 }
