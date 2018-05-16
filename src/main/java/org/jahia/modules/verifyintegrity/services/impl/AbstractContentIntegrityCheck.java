@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.verifyintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.verifyintegrity.services.ContentIntegrityError;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
@@ -48,6 +49,16 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         if (prop instanceof String) setApplyOnWorkspace((String) prop);
         prop = context.getProperties().get(ExecutionCondition.SKIP_ON_WS);
         if (prop instanceof String) setSkipOnWorkspace((String) prop);
+    }
+
+    @Override
+    public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
+        return null;
+    }
+
+    @Override
+    public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
+        return null;
     }
 
     @Override

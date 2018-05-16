@@ -52,12 +52,7 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck implements Ab
             return error;
         }
 
-        return null;  //TODO: review me, I'm generated
-    }
-
-    @Override
-    public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
-        return null;  //TODO: review me, I'm generated
+        return null;
     }
 
     private void init() {

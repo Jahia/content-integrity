@@ -47,9 +47,4 @@ public class MarkForDeletionCheck extends AbstractContentIntegrityCheck {
         }
         return null;
     }
-
-    @Override
-    public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
-        return null;
-    }
 }

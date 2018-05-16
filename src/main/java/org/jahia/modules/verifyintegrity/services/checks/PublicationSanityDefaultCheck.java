@@ -86,12 +86,6 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     }
 
     @Override
-    public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
-        return null;
-    }
-
-
-    @Override
     public boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException {
         if (errorExtraInfos == null || !(errorExtraInfos instanceof ErrorType)) {
             logger.error("Unexpected error type: " + errorExtraInfos);
