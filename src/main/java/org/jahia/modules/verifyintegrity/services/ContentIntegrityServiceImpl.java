@@ -48,6 +48,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private EhCacheProvider ehCacheProvider;
     private String errorsCacheName = "ContentIntegrityService-errors";
     private long errorsCacheTti = 24L * 3600L; // 1 day;
+    private long ownTime = 0L;
 
 
     @Activate
@@ -133,10 +134,11 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             integrityCheck.resetOwnTime();
         }
-
+        ownTime = 0L;
     }
 
     private void printChecksDuration() {
+        logger.info(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)));
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             logger.info(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())));
         }
@@ -157,9 +159,11 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
         try {
             for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
+                final long start = System.currentTimeMillis();
                 final Node child = (Node) it.next();
                 if ("/jcr:system".equals(child.getPath()))
                     continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
+                ownTime += (System.currentTimeMillis() - start);
                 validateIntegrity(child, errors, fixErrors);
             }
         } catch (RepositoryException e) {
@@ -172,11 +176,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             logger.error(String.format("An error occured while iterating over the children of the node %s in the workspace %s",
                     node, ws), e);
         }
-        for (ContentIntegrityCheck integrityCheck : integrityChecks)
+        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+            final long start = System.currentTimeMillis();
             if (integrityCheck.areConditionsMatched(node)) {
                 final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
                 handleError(error, node, fixErrors, integrityCheck, errors);
             }
+            integrityCheck.trackOwnTime(System.currentTimeMillis()-start);
+        }
     }
 
     private void handleError(ContentIntegrityError error, Node node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
