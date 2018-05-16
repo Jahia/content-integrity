@@ -19,7 +19,7 @@ import static org.jahia.api.Constants.JCR_LOCKOWNER;
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE
 })
-public class LockSanityCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class LockSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(LockSanityCheck.class);
 
@@ -66,10 +66,5 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck implements Ab
             anyOfCondition.add(new HasPropertyCondition(property));
         }
         addCondition(anyOfCondition);
-    }
-
-    @Override
-    public boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException {
-        return false;  //TODO: review me, I'm generated
     }
 }
