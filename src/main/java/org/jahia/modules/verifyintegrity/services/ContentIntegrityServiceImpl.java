@@ -115,9 +115,11 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
             final List<ContentIntegrityError> errors = new ArrayList<>();
             final long start = System.currentTimeMillis();
+            resetChecksDurationCounter();
             validateIntegrity(node, errors, fixErrors);
             final long testDuration = System.currentTimeMillis() - start;
             logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration)));
+            printChecksDuration();
             final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, errors);
             storeErrorsInCache(results);
             return results;
@@ -127,9 +129,23 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         return null;
     }
 
+    private void resetChecksDurationCounter() {
+        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+            integrityCheck.resetOwnTime();
+        }
+
+    }
+
+    private void printChecksDuration() {
+        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+            logger.info(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())));
+        }
+    }
+
     private void validateIntegrity(Node node, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop
-        for (ContentIntegrityCheck integrityCheck : integrityChecks)
+        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+            final long start = System.currentTimeMillis();
             if (integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s", integrityCheck.getClass().getName(), node));
@@ -137,6 +153,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 handleError(error, node, fixErrors, integrityCheck, errors);
             } else if (logger.isDebugEnabled())
                 logger.debug(String.format("Skipping %s on %s", integrityCheck.getClass().getName(), node));
+            integrityCheck.trackOwnTime(System.currentTimeMillis()-start);
+        }
         try {
             for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
                 final Node child = (Node) it.next();

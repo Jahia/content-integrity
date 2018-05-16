@@ -24,6 +24,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private String description;
     private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
     private long id = -1L;
+    private long ownTime = 0L;
 
     protected void activate(ComponentContext context) {
         if (context == null) {
@@ -111,29 +112,34 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         this.id = id;
     }
 
-    public String getCheckName() {
+    @Override
+    public String getName() {
         return this.getClass().getSimpleName();
     }
 
     @Override
     public String toString() {
-        return String.format("%s (priority: %s)", this.getClass().getSimpleName(), priority);
+        return String.format("%s (priority: %s)", getName(), priority);
     }
 
     @Override
     public String toFullString() {
-        return String.format("%s (priority: %s) %s", this.getClass().getSimpleName(), priority, printConditions());
+        return String.format("%s (priority: %s) %s", getName(), priority, printConditions());
     }
 
-    private String printConditions() {
-        if (CollectionUtils.isEmpty(conditions)) return StringUtils.EMPTY;
-        final StringBuilder sb = new StringBuilder("[");
-        for (ExecutionCondition condition : conditions) {
-            if (sb.length() > 1) sb.append(" && ");
-            sb.append("(").append(condition).append(")");
-        }
+    @Override
+    public void resetOwnTime() {
+        ownTime = 0L;
+    }
 
-        return sb.append("]").toString();
+    @Override
+    public long getOwnTime() {
+        return ownTime;
+    }
+
+    @Override
+    public void trackOwnTime(long time) {
+        ownTime += time;
     }
 
     /*
@@ -151,6 +157,21 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected boolean isInLiveWorkspace(Node node) {
         return !isInDefaultWorkspace(node);
+    }
+
+    /*
+        Execution conditions
+    */
+
+    private String printConditions() {
+        if (CollectionUtils.isEmpty(conditions)) return StringUtils.EMPTY;
+        final StringBuilder sb = new StringBuilder("[");
+        for (ExecutionCondition condition : conditions) {
+            if (sb.length() > 1) sb.append(" && ");
+            sb.append("(").append(condition).append(")");
+        }
+
+        return sb.append("]").toString();
     }
 
     public static class NotCondition implements ExecutionCondition {

@@ -53,12 +53,12 @@ public class ContentIntegrityError {
             }
             return new ContentIntegrityError(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
                     mixins, node.getSession().getWorkspace().getName(), locale == null ? "-" : locale, message,
-                    integrityCheck.getCheckName(), integrityCheck.getId());
+                    integrityCheck.getName(), integrityCheck.getId());
         } catch (RepositoryException e) {
             logger.error("", e);  //TODO: review me, I'm generated
         }
 
-        return new ContentIntegrityError(null, null, null, null, null, locale == null ? "-" : locale, message, integrityCheck.getCheckName(), integrityCheck.getId());
+        return new ContentIntegrityError(null, null, null, null, null, locale == null ? "-" : locale, message, integrityCheck.getName(), integrityCheck.getId());
     }
 
     public JSONObject toJSON() {

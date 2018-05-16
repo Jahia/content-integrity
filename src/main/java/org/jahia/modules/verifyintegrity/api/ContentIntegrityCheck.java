@@ -13,6 +13,8 @@ public interface ContentIntegrityCheck {
 
     ContentIntegrityError checkIntegrityAfterChildren(Node node);
 
+    String getName();
+
     long getId();
 
     void setId(long id);
@@ -22,6 +24,12 @@ public interface ContentIntegrityCheck {
     boolean areConditionsMatched(Node node);
 
     String toFullString();
+
+    void resetOwnTime();
+
+    long getOwnTime();
+
+    void trackOwnTime(long time);
 
     interface SupportsIntegrityErrorFix {
         boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException;
