@@ -1,9 +1,9 @@
 # verify-integrity
 DX module that provides an extensible service to test the integrity of the content
 * [How to use it](#how-to-use)
-    * [jcr:integrity-check](#jcr:integrity-check) 
-    * [jcr:integrity-printChecks](#jcr:integrity-printChecks) 
-    * [jcr:integrity-printTestResults](#jcr:integrity-printTestResults) 
+    * [jcr:integrity-check](#jcr-integrity-check) 
+    * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
+    * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
 * [How to extend it] (#how-to-extend) 
 
 ## <a name="how-to-use"></a>How to use?
@@ -25,7 +25,7 @@ Use `jcr:integrity-check` to run a content integrity test.
     jahia@dx()>
     
 ### Commands
-#### <a name="jcr:integrity-check"></a>jcr:integrity-check  
+#### <a name="jcr-integrity-check"></a>jcr:integrity-check  
 Runs a scan of the current tree and current workspace.
 
 ##### Options:  
@@ -38,7 +38,7 @@ Name | alias | Mandatory | Value | Description
     jcr:workspace live
     jcr:integrity-check -l 10   
       
-#### <a name="jcr:integrity-printChecks"></a>jcr:integrity-printChecks 
+#### <a name="jcr-integrity-printChecks"></a>jcr:integrity-printChecks 
 Prints out the currently registered checks. 
                          
 ##### Options:
@@ -46,7 +46,7 @@ Name | alias | Mandatory | Value | Description
  --- | --- | :---: | :---: | ---
  -l | --outputLevel | | [simple] , full | Specifies the output level to use  
  
-#### <a name="jcr:integrity-printTestResults"></a>jcr:integrity-printTestResults   
+#### <a name="jcr-integrity-printTestResults"></a>jcr:integrity-printTestResults   
 Allows to reprint the result of a previous test.   
                          
 ##### Options:
