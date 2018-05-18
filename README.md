@@ -4,7 +4,7 @@ DX module that provides an extensible service to test the integrity of the conte
     * [jcr:integrity-check](#jcr-integrity-check) 
     * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
     * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
-* [How to extend it] (#how-to-extend) 
+* [How to extend it](#how-to-extend) 
 
 ## <a name="how-to-use"></a>How to use?
 
