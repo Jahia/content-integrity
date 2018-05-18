@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.List;
 
-@Command(scope = "jcr", name = "integrity-print")
+@Command(scope = "jcr", name = "integrity-printTestResults", description = "Reprints the result of some previous test")
 @Service
 public class PrintPreviousTestCommand extends JCRCommandSupport implements Action {
 
@@ -39,10 +39,12 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
     private String limit;
 
     @Option(name = "-f", aliases = "--showFixedErrors", description = "Specifies if the already fixed errors have to be shown.")
+    @Completion(BooleanCompleter.class)
     private String showFixedErrors;
 
-    @Option(name = "-d", aliases = {"--dump", "--dumpToCSV"}, description = "Dumps the error into a CSV file in " +
+    @Option(name = "-d", aliases = {"--dump", "--dumpToCSV"}, description = "Dumps the errors into a CSV file in " +
             "temp/content-integrity/. The limit option is ignored when dumping.")
+    @Completion(BooleanCompleter.class)
     private String dumpToCSV;
 
     @Override
