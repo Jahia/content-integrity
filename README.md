@@ -63,7 +63,95 @@ Coming soon
 
 ## <a name="how-to-extend"></a>How to extend?
 
-[TODO]
+If you want to develop your own tests, for example in order to do some specific tests related to your own datamodel,
+you can develop them in a custom module, and register them into the content integrity service along with the generic ones.
+
+### pom.xml
+
+You need to declare a dependency to the core module
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>verify-integrity</artifactId>
+            <version>2.0</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+    
+You need as well configure the BND plugin to scan the OSGi declarative services annotations
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <_dsannotations>*</_dsannotations>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build> 
+    
+### Implementation of the check
+
+#### java code
+You have to write a java class to implement you custom check
+
+    public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
+    
+        @Override
+        public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
+            try {
+                JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null).getNode(node.getPath());
+            } catch (RepositoryException e) {
+                return ContentIntegrityError.createError(node, null, "The site has been partially deleted", this);
+            }
+            return null;
+        }
+    }       
+    
+The most convenient way is to extend `AbstractContentIntegrityCheck`.
+Then you will overwrite `checkIntegrityBeforeChildren(Node node)` and/or 
+`checkIntegrityAfterChildren(Node node)`. 
+
+Most of the time, you will implement implement `checkIntegrityBeforeChildren`. Implement `checkIntegrityAfterChildren` 
+when you need to test the integrity of a node after having tested the integrity of its subtree.
+
+#### Registration into the service
+
+In order to get you custom check registered into the content integrity service, you need to use the `@Component` annotation.
+You need to specify as well the java interface that all integrity checks implement and the immediate
+injection of your Component: `@Component(service = ContentIntegrityCheck.class, immediate = true`. 
+
+**Example:**
+
+    import org.jahia.modules.verifyintegrity.api.ContentIntegrityCheck;
+    import org.osgi.service.component.annotations.Component;     
+    
+    @Component(service = ContentIntegrityCheck.class, immediate = true)
+    public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
+    
+##### Execution Conditions #####
+
+If you don't want your check to be run on every node, then you can define some execution conditions, as some properties
+of the component.                     
+
+**Example:**
+
+    import org.jahia.api.Constants;
+    
+    @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
+            ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE,
+            ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,
+            ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/sites"
+    })
+    public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
+
+[TODO list of built in conditions]    
 
 ## Changelog
 Version | Required DX version | Changes
