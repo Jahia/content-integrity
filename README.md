@@ -143,6 +143,21 @@ injection of your Component: `@Component(service = ContentIntegrityCheck.class, 
     @Component(service = ContentIntegrityCheck.class, immediate = true)
     public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
     
+    
+##### Priority #####
+
+Each integrity check has a priority, and they are executed sequentially according to that priority, in ascending order. 
+If an integrity check needs to be executed before/after some other, it is possible to ensure that, configuring a priority
+on the integrity check.  
+If not configured, the default priority will be used (100)
+
+**Example:**
+
+    @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
+            ContentIntegrityCheck.PRIORITY + ":Float=50"
+    })
+
+    
 ##### Execution Conditions #####
 
 If you don't want your check to be run on every node, then you can define some execution conditions, as some properties
