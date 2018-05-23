@@ -56,6 +56,14 @@ Name | alias | Mandatory | Value | Description
  -d | --dump , --dumpToCSV | | boolean, [false] | Dumps the errors into a CSV file in temp/content-integrity/ . The limit option is ignored when dumping
  -f | --showFixedErrors | | boolean, [false] | Coming soon 
 
+**Example:**
+
+    jahia@dx()> jcr:integrity-check
+    Content integrity tested in 141 ms
+    No error found
+    jahia@dx()> jcr:integrity-printTestResults -d true
+    Dumped into C:\DigitalExperienceManager-EnterpriseDistribution-7.2.3.0\tomcat\temp\content-integrity\2018_05_23-12_36_34_385-full.csv
+
  
 #### jcr:integrity-fix
 Coming soon    
