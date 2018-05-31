@@ -129,6 +129,8 @@ Then you will overwrite `checkIntegrityBeforeChildren(Node node)` and/or
 Most of the time, you will implement implement `checkIntegrityBeforeChildren`. Implement `checkIntegrityAfterChildren` 
 when you need to test the integrity of a node after having tested the integrity of its subtree.
 
+If an integrity error is detected on the scanned node, return an instance of `ContentIntegrity`, `null` otherwise.
+
 #### Registration into the service
 
 In order to get you custom check registered into the content integrity service, you need to use the `@Component` annotation.
