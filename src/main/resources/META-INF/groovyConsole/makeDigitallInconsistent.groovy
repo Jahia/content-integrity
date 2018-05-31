@@ -16,3 +16,9 @@ session.save()
 
 list.unmarkForDeletion()
 session.save()
+
+def site = session.getNode("/sites/digitall")
+def m = site.getInstalledModules()
+m.add("dummy-module")
+site.setInstalledModules(m)
+session.save()
