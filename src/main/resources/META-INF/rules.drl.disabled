@@ -1,4 +1,4 @@
-package org.jahia.modules.verifyintegrity.rules
+package org.jahia.modules.contentintegrity.rules
 
 // list any import classes here.
 import org.jahia.services.content.rules.*

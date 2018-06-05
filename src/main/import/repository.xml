@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <content xmlns:j="http://www.jahia.org/jahia/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0">
     <modules jcr:primaryType="jnt:modules">
-        <verify-integrity j:dependencies="default"
+        <content-integrity j:dependencies="default"
                         j:modulePriority="0"
                         j:moduleType="module"
-                        j:title="Verify Integrity"
+                        j:title="Content Integrity"
                         jcr:mixinTypes="jmix:hasExternalProviderExtension"
                         jcr:primaryType="jnt:module">
 
@@ -20,16 +20,16 @@
                         <jcr-integrity-checker j:defaultTemplate="false"
                                       j:hiddenTemplate="false"
                                       j:requiredPermissionNames="siteIntegrityPanelAccess"
-                                      j:titleKey="label.verifyIntegrity.title"
+                                      j:titleKey="label.contentIntegrity.title"
                                       jcr:mixinTypes="jmix:rbTitle"
                                       jcr:primaryType="jnt:contentTemplate">
                             <pagecontent jcr:primaryType="jnt:contentList">
-                                <verifyintegrityadminpanel jcr:primaryType="jnt:verifyIntegrityAdminPanel"/>
+                                <contentintegrityadminpanel jcr:primaryType="jnt:contentIntegrityAdminPanel"/>
                             </pagecontent>
                         </jcr-integrity-checker>
                     </site-settings-base>
                 </templates>
 
-            </verify-integrity>
+            </content-integrity>
     </modules>
 </content>

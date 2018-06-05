@@ -1,4 +1,4 @@
-# verify-integrity
+# content-integrity
 DX module that provides an extensible service to test the integrity of the content
 * [How to use it](#how-to-use)
     * [jcr:integrity-check](#jcr-integrity-check) 
@@ -81,7 +81,7 @@ You need to declare a dependency to the core module
     <dependencies>
         <dependency>
             <groupId>org.jahia.modules</groupId>
-            <artifactId>verify-integrity</artifactId>
+            <artifactId>content-integrity</artifactId>
             <version>2.0</version>
             <scope>provided</scope>
         </dependency>
@@ -139,7 +139,7 @@ injection of your Component: `@Component(service = ContentIntegrityCheck.class, 
 
 **Example:**
 
-    import org.jahia.modules.verifyintegrity.api.ContentIntegrityCheck;
+    import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
     import org.osgi.service.component.annotations.Component;     
     
     @Component(service = ContentIntegrityCheck.class, immediate = true)

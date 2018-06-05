@@ -7,6 +7,6 @@
         <siteIntegrityPanelAccess jcr:primaryType="jnt:permission"/>
     </site-admin>
     <actions jcr:primaryType="jnt:permission">
-        <allowToVerifySiteIntegrity jcr:primaryType="jnt:permission"/>
+        <allowToValidateSiteIntegrity jcr:primaryType="jnt:permission"/>
     </actions>
 </permissions>

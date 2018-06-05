@@ -5,6 +5,6 @@
        xmlns:jnt="http://www.jahia.org/jahia/nt/1.0">
 
     <site-administrator jcr:primaryType="jnt:role"
-                        j:permissionNames="allowToVerifySiteIntegrity" />
+                        j:permissionNames="allowToValidateSiteIntegrity" />
 
 </roles>
