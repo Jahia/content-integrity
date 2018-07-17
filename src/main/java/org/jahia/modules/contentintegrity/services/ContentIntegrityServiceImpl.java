@@ -276,8 +276,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Override
     public List<String> printIntegrityChecksList(boolean simpleOutput) {
-        final List<String> lines = new ArrayList<>(integrityChecks.size() + 1);
-        logAndAppend("Integrity checks:", lines);
+        final int nbChecks = integrityChecks.size();
+        final List<String> lines = new ArrayList<>(nbChecks + 1);
+        logAndAppend(String.format("Integrity checks (%d):", nbChecks), lines);
         for (ContentIntegrityCheck integrityCheck : integrityChecks)
             logAndAppend(String.format("   %s", simpleOutput ? integrityCheck : integrityCheck.toFullString()), lines);
         return lines;
