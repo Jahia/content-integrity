@@ -27,6 +27,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private long ownTime = 0L;
 
     protected void activate(ComponentContext context) {
+        if (logger.isDebugEnabled()) logger.debug(String.format("Activating check %s", getClass().getCanonicalName()));
         if (context == null) {
             logger.error("The ComponentContext is null");
             return;
