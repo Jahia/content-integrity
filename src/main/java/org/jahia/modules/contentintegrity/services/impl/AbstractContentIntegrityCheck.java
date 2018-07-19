@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
+import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
@@ -146,6 +148,18 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     @Override
     public void trackOwnTime(long time) {
         ownTime += time;
+    }
+
+    protected ContentIntegrityError createError(javax.jcr.Node node, String locale, String message) {
+        return ContentIntegrityError.createError(node, locale, message, this);
+    }
+
+    protected ContentIntegrityError createError(javax.jcr.Node node, Locale locale, String message) {
+        return ContentIntegrityError.createError(node, locale == null ? null : LanguageCodeConverters.localeToLanguageTag(locale), message, this);
+    }
+
+    protected ContentIntegrityError createError(javax.jcr.Node node, String message) {
+        return ContentIntegrityError.createError(node, null, message, this);
     }
 
     @Override
