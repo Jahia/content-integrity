@@ -8,6 +8,7 @@ import javax.jcr.RepositoryException;
 public interface ContentIntegrityCheck {
 
     String PRIORITY = "ContentIntegrityCheck.priority";
+    String ENABLED = "ContentIntegrityCheck.enabled";
 
     ContentIntegrityError checkIntegrityBeforeChildren(Node node);
 

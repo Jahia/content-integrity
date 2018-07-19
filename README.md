@@ -158,6 +158,18 @@ If not configured, the default priority will be used (100)
     @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
             ContentIntegrityCheck.PRIORITY + ":Float=50"
     })
+    
+    
+##### Enabled #####
+
+Each integrity check can be disabled. It is not possible yet to change it dynamically, comming soon. 
+If not configured, the check will be enabled.
+
+**Example:**
+
+    @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
+            ContentIntegrityCheck.ENABLED + ":Boolean=false"
+    })
 
     
 ##### Execution Conditions #####

@@ -20,7 +20,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
 
     private float priority = 100f;
-    private boolean disabled;
+    private boolean enabled = true;
     private String description;
     private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
     private long id = -1L;
@@ -35,6 +35,9 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
         Object prop = context.getProperties().get(PRIORITY);
         if (prop instanceof Float) priority = (float) prop;
+
+        prop = context.getProperties().get(ENABLED);
+        if (prop instanceof Boolean) enabled = (Boolean) prop;
 
         // TODO check if it is possible to keep the declaration order
         prop = context.getProperties().get(ExecutionCondition.APPLY_ON_NT);
@@ -65,7 +68,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public boolean areConditionsMatched(Node node) {
-        if (disabled) return false;
+        if (!enabled) return false;
         for (ExecutionCondition condition : conditions) {
             if (!condition.matches(node)) return false;
         }
@@ -87,12 +90,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return priority;
     }
 
-    public boolean isDisabled() {
-        return disabled;
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     public String getDescription() {
@@ -120,12 +123,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public String toString() {
-        return String.format("%s (priority: %s)", getName(), priority);
+        return String.format("%s (priority: %s, enabled: %s)", getName(), priority, enabled);
     }
 
     @Override
     public String toFullString() {
-        return String.format("%s (priority: %s) %s", getName(), priority, printConditions());
+        return String.format("%s %s", toString(), printConditions());
     }
 
     @Override
