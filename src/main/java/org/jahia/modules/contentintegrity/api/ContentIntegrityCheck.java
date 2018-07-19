@@ -32,6 +32,12 @@ public interface ContentIntegrityCheck {
 
     void trackOwnTime(long time);
 
+    void trackFatalError();
+
+    void initializeIntegrityTest();
+
+    void finalizeIntegrityTest();
+
     interface SupportsIntegrityErrorFix {
         boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException;
     }

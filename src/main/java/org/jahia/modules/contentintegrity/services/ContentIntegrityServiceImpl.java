@@ -117,7 +117,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             final List<ContentIntegrityError> errors = new ArrayList<>();
             final long start = System.currentTimeMillis();
             resetChecksDurationCounter();
+            for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+                integrityCheck.initializeIntegrityTest();
+            }
             validateIntegrity(node, errors, fixErrors);
+            for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+                integrityCheck.finalizeIntegrityTest();
+            }
             final long testDuration = System.currentTimeMillis() - start;
             logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration)));
             printChecksDuration();
@@ -145,17 +151,21 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private void validateIntegrity(Node node, List<ContentIntegrityError> errors, boolean fixErrors) {
-        // TODO add a mechanism to stop
+        // TODO add a mechanism to stop , prevent concurrent run
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             final long start = System.currentTimeMillis();
             if (integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s", integrityCheck.getClass().getName(), node));
-                final ContentIntegrityError error = integrityCheck.checkIntegrityBeforeChildren(node);
-                handleError(error, node, fixErrors, integrityCheck, errors);
+                try {
+                    final ContentIntegrityError error = integrityCheck.checkIntegrityBeforeChildren(node);
+                    handleError(error, node, fixErrors, integrityCheck, errors);
+                } catch (Throwable t) {
+                    logFatalError(node, t, integrityCheck);
+                }
             } else if (logger.isDebugEnabled())
                 logger.debug(String.format("Skipping %s on %s", integrityCheck.getClass().getName(), node));
-            integrityCheck.trackOwnTime(System.currentTimeMillis()-start);
+            integrityCheck.trackOwnTime(System.currentTimeMillis() - start);
         }
         try {
             for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
@@ -179,10 +189,26 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             final long start = System.currentTimeMillis();
             if (integrityCheck.areConditionsMatched(node)) {
-                final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
-                handleError(error, node, fixErrors, integrityCheck, errors);
+                try {
+                    final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
+                    handleError(error, node, fixErrors, integrityCheck, errors);
+                } catch (Throwable t) {
+                    logFatalError(node, t, integrityCheck);
+                }
             }
-            integrityCheck.trackOwnTime(System.currentTimeMillis()-start);
+            integrityCheck.trackOwnTime(System.currentTimeMillis() - start);
+        }
+    }
+
+    private void logFatalError(Node node, Throwable t, ContentIntegrityCheck integrityCheck) {
+        String path = null;
+        try {
+            path = node.getPath();
+        } catch (RepositoryException e) {
+            logger.error("", e);
+        } finally {
+            logger.error("Impossible to check the integrity of " + path, t);
+            integrityCheck.trackFatalError();
         }
     }
 

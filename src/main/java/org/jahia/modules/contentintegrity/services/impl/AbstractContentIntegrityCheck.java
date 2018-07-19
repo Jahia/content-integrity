@@ -25,6 +25,8 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
     private long id = -1L;
     private long ownTime = 0L;
+    private int fatalErrorCount = 0;
+    private final int FATAL_ERRORS_THRESHOLD = 10;  // TODO make this configurable
 
     protected void activate(ComponentContext context) {
         if (logger.isDebugEnabled()) logger.debug(String.format("Activating check %s", getClass().getCanonicalName()));
@@ -144,6 +146,28 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     @Override
     public void trackOwnTime(long time) {
         ownTime += time;
+    }
+
+    @Override
+    public void trackFatalError() {
+        fatalErrorCount += 1;
+        if (fatalErrorCount >= FATAL_ERRORS_THRESHOLD) {
+            logger.warn(String.format("Automatically disabling the check as it is raising too many unhandled errors: %s", getName()));
+            this.setEnabled(false);
+        }
+    }
+
+    @Override
+    public void initializeIntegrityTest() {
+        fatalErrorCount = 0;
+    }
+
+    @Override
+    public void finalizeIntegrityTest() {
+        if (!enabled && fatalErrorCount > 0) {
+            logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
+            this.setEnabled(true);
+        }
     }
 
     /*
