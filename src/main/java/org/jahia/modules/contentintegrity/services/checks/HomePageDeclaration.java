@@ -2,8 +2,9 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -31,7 +32,7 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
     private enum ErrorType {NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME}
 
     @Override
-    public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
         try {
             int flaggedAsHomeCount = 0;
             final NodeIterator iterator = node.getNodes();
@@ -58,9 +59,9 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
                     msg = String.format("The site %s has no page flagged as home and no one is named 'home'", node.getName());
                 }
 
-                final ContentIntegrityError error = ContentIntegrityError.createError(node, null, msg, this);
+                final ContentIntegrityError error = createError(node, msg);
                 error.setExtraInfos(errortype);
-                return error;
+                return createSingleError(error);
             }
         } catch (RepositoryException e) {
             logger.error("", e);
@@ -69,8 +70,9 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
     }
 
     @Override
-    public boolean fixError(Node site, Object errorExtraInfos) throws RepositoryException {
-        if (errorExtraInfos == null || !(errorExtraInfos instanceof ErrorType)) {
+    public boolean fixError(Node site, ContentIntegrityError integrityError) throws RepositoryException {
+        final Object errorExtraInfos = integrityError.getExtraInfos();
+        if (!(errorExtraInfos instanceof ErrorType)) {
             logger.error("Unexpected error type: " + errorExtraInfos);
             return false;
         }

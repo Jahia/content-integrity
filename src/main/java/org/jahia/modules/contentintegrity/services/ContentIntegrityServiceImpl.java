@@ -158,8 +158,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s", integrityCheck.getClass().getName(), node));
                 try {
-                    final ContentIntegrityError error = integrityCheck.checkIntegrityBeforeChildren(node);
-                    handleError(error, node, fixErrors, integrityCheck, errors);
+                    final ContentIntegrityErrorList checkResult = integrityCheck.checkIntegrityBeforeChildren(node);
+                    handleResult(checkResult, node, fixErrors, integrityCheck, errors);
                 } catch (Throwable t) {
                     logFatalError(node, t, integrityCheck);
                 }
@@ -190,8 +190,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             final long start = System.currentTimeMillis();
             if (integrityCheck.areConditionsMatched(node)) {
                 try {
-                    final ContentIntegrityError error = integrityCheck.checkIntegrityAfterChildren(node);
-                    handleError(error, node, fixErrors, integrityCheck, errors);
+                    final ContentIntegrityErrorList checkResult = integrityCheck.checkIntegrityAfterChildren(node);
+                    handleResult(checkResult, node, fixErrors, integrityCheck, errors);
                 } catch (Throwable t) {
                     logFatalError(node, t, integrityCheck);
                 }
@@ -212,15 +212,17 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void handleError(ContentIntegrityError error, Node node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
-        if (error == null) return;
-        if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
-            try {
-                error.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos()));
-            } catch (RepositoryException e) {
-                logger.error("An error occurred while fixing a content integrity error", e);
-            }
-        errors.add(error);
+    private void handleResult(ContentIntegrityErrorList checkResult, Node node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
+        if (checkResult == null) return;
+        for (ContentIntegrityError integrityError : checkResult.getNestedErrors()) {
+            if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
+                try {
+                    integrityError.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, integrityError));
+                } catch (RepositoryException e) {
+                    logger.error("An error occurred while fixing a content integrity error", e);
+                }
+            errors.add(integrityError);
+        }
     }
 
     @Override
@@ -248,7 +250,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             try {
                 final String uuid = error.getUuid();
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
-                final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error.getExtraInfos());
+                final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error);
                 if (fixed) error.setFixed(true);
                 else logger.error(String.format("Failed to fix the error %s", error.toJSON()));
             } catch (RepositoryException e) {

@@ -2,8 +2,9 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
@@ -30,7 +31,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private enum ErrorType {NO_DEFAULT_NODE}
 
     @Override
-    public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
         try {
             final JCRSessionWrapper defaultSession = JCRSessionFactory.getInstance().getCurrentSystemSession(EDIT_WORKSPACE, null, null);
             if (node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString())) {
@@ -42,9 +43,9 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 return null;
             } catch (ItemNotFoundException infe) {
                 final String msg = "Found not-UGC node which exists only in live";
-                final ContentIntegrityError error = ContentIntegrityError.createError(node, null, msg, this);
+                final ContentIntegrityError error = createError(node, msg);
                 error.setExtraInfos(ErrorType.NO_DEFAULT_NODE);
-                return error;
+                return createSingleError(error);
             }
         } catch (RepositoryException e) {
             logger.error("", e);
@@ -53,7 +54,8 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     }
 
     @Override
-    public boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException {
+    public boolean fixError(Node node, ContentIntegrityError integrityError) throws RepositoryException {
+        final Object errorExtraInfos = integrityError.getExtraInfos();
         if (!(errorExtraInfos instanceof ErrorType)) {
             logger.error("Unexpected error type: " + errorExtraInfos);
             return false;

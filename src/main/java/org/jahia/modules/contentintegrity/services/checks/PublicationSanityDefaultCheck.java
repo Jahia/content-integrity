@@ -3,8 +3,9 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -35,7 +36,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH}
 
     @Override
-    public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
         try {
             final JCRSessionWrapper liveSession = JCRSessionFactory.getInstance().getCurrentSystemSession(LIVE_WORKSPACE, null, null);
             if (node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean()) {
@@ -44,16 +45,16 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());
                 } catch (ItemNotFoundException infe) {
                     final String msg = "Found a node flagged as published, but no corresponding live node exists";
-                    final ContentIntegrityError error = ContentIntegrityError.createError(node, null, msg, this);
+                    final ContentIntegrityError error = createError(node, msg);
                     error.setExtraInfos(ErrorType.NO_LIVE_NODE);
-                    return error;
+                    return createSingleError(error);
                 }
                 if (!hasPendingModifications(node)) {
                     if (!StringUtils.equals(node.getPath(), liveNode.getPath())) {
                         final String msg = "Found a published node, with no pending modifications, but the path in live is different";
-                        final ContentIntegrityError error = ContentIntegrityError.createError(node, null, msg, this);
+                        final ContentIntegrityError error = createError(node, msg);
                         error.setExtraInfos(ErrorType.DIFFERENT_PATH);
-                        return error;
+                        return createSingleError(error);
                     }
                 }
             }
@@ -86,7 +87,8 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     }
 
     @Override
-    public boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException {
+    public boolean fixError(Node node, ContentIntegrityError integrityError) throws RepositoryException {
+        final Object errorExtraInfos = integrityError.getExtraInfos();
         if (!(errorExtraInfos instanceof ErrorType)) {
             logger.error("Unexpected error type: " + errorExtraInfos);
             return false;

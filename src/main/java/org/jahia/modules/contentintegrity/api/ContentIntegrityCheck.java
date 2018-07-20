@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.api;
 
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -10,9 +11,9 @@ public interface ContentIntegrityCheck {
     String PRIORITY = "ContentIntegrityCheck.priority";
     String ENABLED = "ContentIntegrityCheck.enabled";
 
-    ContentIntegrityError checkIntegrityBeforeChildren(Node node);
+    ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node);
 
-    ContentIntegrityError checkIntegrityAfterChildren(Node node);
+    ContentIntegrityErrorList checkIntegrityAfterChildren(Node node);
 
     String getName();
 
@@ -39,7 +40,7 @@ public interface ContentIntegrityCheck {
     void finalizeIntegrityTest();
 
     interface SupportsIntegrityErrorFix {
-        boolean fixError(Node node, Object errorExtraInfos) throws RepositoryException;
+        boolean fixError(Node node, ContentIntegrityError error) throws RepositoryException;
     }
 
     /*

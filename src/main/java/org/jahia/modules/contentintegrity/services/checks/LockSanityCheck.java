@@ -2,8 +2,9 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -32,7 +33,7 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
     }
 
     @Override
-    public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
         HashSet<String> missingProps = null;
         for (String property : lockRelatedProperties) {
             try {
@@ -46,10 +47,9 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
         }
         if (missingProps != null && !missingProps.isEmpty()) {
             final String msg = String.format("The following properties are missing: %s", missingProps);
-            final ContentIntegrityError error;
-            error = ContentIntegrityError.createError(node, null, msg, this);
+            final ContentIntegrityError error = createError(node, msg);
             error.setExtraInfos(missingProps);
-            return error;
+            return createSingleError(error);
         }
 
         return null;

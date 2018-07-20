@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.ComponentContext;
@@ -61,12 +62,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
         return null;
     }
 
     @Override
-    public ContentIntegrityError checkIntegrityAfterChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityAfterChildren(Node node) {
         return null;
     }
 
@@ -150,16 +151,32 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         ownTime += time;
     }
 
-    protected ContentIntegrityError createError(javax.jcr.Node node, String locale, String message) {
+    protected final ContentIntegrityError createError(javax.jcr.Node node, String locale, String message) {
         return ContentIntegrityError.createError(node, locale, message, this);
     }
 
-    protected ContentIntegrityError createError(javax.jcr.Node node, Locale locale, String message) {
+    protected final ContentIntegrityError createError(javax.jcr.Node node, Locale locale, String message) {
         return ContentIntegrityError.createError(node, locale == null ? null : LanguageCodeConverters.localeToLanguageTag(locale), message, this);
     }
 
-    protected ContentIntegrityError createError(javax.jcr.Node node, String message) {
+    protected final ContentIntegrityError createError(javax.jcr.Node node, String message) {
         return ContentIntegrityError.createError(node, null, message, this);
+    }
+
+    protected final ContentIntegrityErrorList createSingleError(javax.jcr.Node node, String locale, String message) {
+        return ContentIntegrityErrorList.createSingleError(createError(node, locale, message));
+    }
+
+    protected final ContentIntegrityErrorList createSingleError(javax.jcr.Node node, Locale locale, String message) {
+        return ContentIntegrityErrorList.createSingleError(createError(node, locale, message));
+    }
+
+    protected final ContentIntegrityErrorList createSingleError(javax.jcr.Node node, String message) {
+        return ContentIntegrityErrorList.createSingleError(createError(node, message));
+    }
+
+    protected final ContentIntegrityErrorList createSingleError(ContentIntegrityError error) {
+        return ContentIntegrityErrorList.createSingleError(error);
     }
 
     @Override
