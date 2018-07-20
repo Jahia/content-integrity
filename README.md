@@ -82,7 +82,7 @@ You need to declare a dependency to the core module
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>content-integrity</artifactId>
-            <version>2.0</version>
+            <version>[2.0,3.0)</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -112,11 +112,11 @@ You have to write a java class to implement you custom check
     public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
     
         @Override
-        public ContentIntegrityError checkIntegrityBeforeChildren(Node node) {
+        public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
             try {
                 JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null).getNode(node.getPath());
             } catch (RepositoryException e) {
-                return ContentIntegrityError.createError(node, null, "The site has been partially deleted", this);
+                return createSingleError(node, "The site has been partially deleted");
             }
             return null;
         }
@@ -129,11 +129,11 @@ Then you will overwrite `checkIntegrityBeforeChildren(Node node)` and/or
 Most of the time, you will implement implement `checkIntegrityBeforeChildren`. Implement `checkIntegrityAfterChildren` 
 when you need to test the integrity of a node after having tested the integrity of its subtree.
 
-If an integrity error is detected on the scanned node, return an instance of `ContentIntegrity`, `null` otherwise.
+If one (or several) integrity error is detected on the scanned node, return an instance of `ContentIntegrityErrorList`, `null` otherwise.
 
 #### Registration into the service
 
-In order to get you custom check registered into the content integrity service, you need to use the `@Component` annotation.
+In order to get your custom check registered into the content integrity service, you need to use the `@Component` annotation.
 You need to specify as well the java interface that all integrity checks implement and the immediate
 injection of your Component: `@Component(service = ContentIntegrityCheck.class, immediate = true`. 
 
