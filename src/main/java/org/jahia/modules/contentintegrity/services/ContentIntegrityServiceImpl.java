@@ -49,6 +49,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private String errorsCacheName = "ContentIntegrityService-errors";
     private long errorsCacheTti = 24L * 3600L; // 1 day;
     private long ownTime = 0L;
+    private long integrityChecksIdGenerator = 0;
 
 
     @Activate
@@ -76,7 +77,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Reference(service = ContentIntegrityCheck.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, unbind = "unregisterIntegrityCheck")
     public void registerIntegrityCheck(ContentIntegrityCheck integrityCheck) {
-        integrityCheck.setId(System.currentTimeMillis()); //TODO is it sure to be unique? Shouldn't we check that there's not already another one registered during the same ms?
+        integrityCheck.setId(getNextIntegrityCheckID());
         integrityChecks.add(integrityCheck);
         Collections.sort(integrityChecks, new Comparator<ContentIntegrityCheck>() {
             @Override
@@ -96,6 +97,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             logger.error(String.format("Failed to unregister %s in the contentIntegrity service, number of checks: %s", integrityCheck, integrityChecks.size()));
     }
 
+    private synchronized long getNextIntegrityCheckID() {
+        return ++integrityChecksIdGenerator;
+    }
 
     @Override
     public ContentIntegrityResults validateIntegrity(String path, String workspace) {
@@ -268,7 +272,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private ContentIntegrityCheck getContentIntegrityCheck(long id) {
+    @Override
+    public ContentIntegrityCheck getContentIntegrityCheck(long id) {
         // TODO: a double storage of the integrity checks in a map where the keys are the IDs should fasten this method
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             if (integrityCheck.getId() == id) return integrityCheck;

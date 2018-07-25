@@ -4,6 +4,7 @@ DX module that provides an extensible service to test the integrity of the conte
     * [jcr:integrity-check](#jcr-integrity-check) 
     * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
     * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
+    * [jcr:integrity-configureCheck](#jcr-integrity-configureCheck) 
 * [How to extend it](#how-to-extend) 
 
 ## <a name="how-to-use"></a>How to use?
@@ -63,7 +64,28 @@ Name | alias | Mandatory | Value | Description
     No error found
     jahia@dx()> jcr:integrity-printTestResults -d true
     Dumped into C:\DigitalExperienceManager-EnterpriseDistribution-7.2.3.0\tomcat\temp\content-integrity\2018_05_23-12_36_34_385-full.csv
+ 
+#### <a name="jcr-integrity-configureCheck"></a>jcr:integrity-configureCheck   
+Allows to configure a registered integrity check. Please note that for the moment, the configuration is reset when restarting the module implementing the check,
+or when restarting the server.   
+                         
+##### Options:
+Name | alias | Mandatory | Value | Description
+ --- | --- | :---: | :---: | ---
+ -id |  | x | positive integer | Specifies the identifier of the integrity check to configure
+ -e | --enabled | | boolean, [null] | Enables the integrity check if `true`, disable it if `false`. Do not change the status if null.
+ 
+**Example:**
 
+    jahia@dx()> jcr:integrity-printChecks
+    Integrity checks (11):
+       FlatStorageCheck (id: 1, priority: 0.0, enabled: true)
+       [...]
+    jahia@dx()> jcr:integrity-configureCheck -id 1 -e false
+    jahia@dx()> jcr:integrity-printChecks
+    Integrity checks (11):
+       FlatStorageCheck (id: 1, priority: 0.0, enabled: false)
+       [...]
  
 #### jcr:integrity-fix
 Coming soon    

@@ -99,6 +99,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return enabled;
     }
 
+    @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
@@ -128,7 +129,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public String toString() {
-        return String.format("%s (priority: %s, enabled: %s)", getName(), priority, enabled);
+        return String.format("%s (id: %s, priority: %s, enabled: %s)", getName(), getId(), priority, enabled);
     }
 
     @Override
