@@ -156,21 +156,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     private void validateIntegrity(Node node, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop , prevent concurrent run
-        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
-            final long start = System.currentTimeMillis();
-            if (integrityCheck.areConditionsMatched(node)) {
-                if (logger.isDebugEnabled())
-                    logger.debug(String.format("Running %s on %s", integrityCheck.getClass().getName(), node));
-                try {
-                    final ContentIntegrityErrorList checkResult = integrityCheck.checkIntegrityBeforeChildren(node);
-                    handleResult(checkResult, node, fixErrors, integrityCheck, errors);
-                } catch (Throwable t) {
-                    logFatalError(node, t, integrityCheck);
-                }
-            } else if (logger.isDebugEnabled())
-                logger.debug(String.format("Skipping %s on %s", integrityCheck.getClass().getName(), node));
-            integrityCheck.trackOwnTime(System.currentTimeMillis() - start);
-        }
+        checkNode(node, errors, fixErrors, true);
         try {
             for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
                 final long start = System.currentTimeMillis();
@@ -190,16 +176,25 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             logger.error(String.format("An error occured while iterating over the children of the node %s in the workspace %s",
                     node, ws), e);
         }
+        checkNode(node, errors, fixErrors, false);
+    }
+
+    private void checkNode(Node node, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren) {
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             final long start = System.currentTimeMillis();
             if (integrityCheck.areConditionsMatched(node)) {
+                if (logger.isDebugEnabled())
+                    logger.debug(String.format("Running %s on %s %s its children", integrityCheck.getClass().getName(), node, beforeChildren ? "before" : "after"));
                 try {
-                    final ContentIntegrityErrorList checkResult = integrityCheck.checkIntegrityAfterChildren(node);
+                    final ContentIntegrityErrorList checkResult = beforeChildren ?
+                            integrityCheck.checkIntegrityBeforeChildren(node) :
+                            integrityCheck.checkIntegrityAfterChildren(node);
                     handleResult(checkResult, node, fixErrors, integrityCheck, errors);
                 } catch (Throwable t) {
                     logFatalError(node, t, integrityCheck);
                 }
-            }
+            } else if (logger.isDebugEnabled())
+                logger.debug(String.format("Skipping %s on %s (%s its children) as conditions are not matched", integrityCheck.getClass().getName(), node, beforeChildren ? "before" : "after"));
             integrityCheck.trackOwnTime(System.currentTimeMillis() - start);
         }
     }
