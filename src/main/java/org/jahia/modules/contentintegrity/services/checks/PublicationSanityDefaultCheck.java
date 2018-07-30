@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.Calendar;
 
@@ -36,7 +35,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH}
 
     @Override
-    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
             final JCRSessionWrapper liveSession = JCRSessionFactory.getInstance().getCurrentSystemSession(LIVE_WORKSPACE, null, null);
             if (node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean()) {
@@ -65,7 +64,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
         }
     }
 
-    private boolean hasPendingModifications(Node node) {
+    private boolean hasPendingModifications(JCRNodeWrapper node) {
         try {
             if (!node.isNodeType(JAHIAMIX_LASTPUBLISHED)) return false;
             if (!node.hasProperty(LASTPUBLISHED)) return true;
@@ -87,7 +86,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     }
 
     @Override
-    public boolean fixError(Node node, ContentIntegrityError integrityError) throws RepositoryException {
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
         final Object errorExtraInfos = integrityError.getExtraInfos();
         if (!(errorExtraInfos instanceof ErrorType)) {
             logger.error("Unexpected error type: " + errorExtraInfos);

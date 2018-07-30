@@ -4,12 +4,12 @@ import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
@@ -22,9 +22,9 @@ public class MarkForDeletionCheck extends AbstractContentIntegrityCheck {
     private static final Logger logger = LoggerFactory.getLogger(MarkForDeletionCheck.class);
 
     @Override
-    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         boolean isConsistent = true;
-        Node parent = node;
+        JCRNodeWrapper parent = node;
         try {
             while (true) {
                 try {

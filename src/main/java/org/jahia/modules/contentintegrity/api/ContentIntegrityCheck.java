@@ -2,8 +2,8 @@ package org.jahia.modules.contentintegrity.api;
 
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.services.content.JCRNodeWrapper;
 
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 
 public interface ContentIntegrityCheck {
@@ -11,9 +11,9 @@ public interface ContentIntegrityCheck {
     String PRIORITY = "ContentIntegrityCheck.priority";
     String ENABLED = "ContentIntegrityCheck.enabled";
 
-    ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node);
+    ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node);
 
-    ContentIntegrityErrorList checkIntegrityAfterChildren(Node node);
+    ContentIntegrityErrorList checkIntegrityAfterChildren(JCRNodeWrapper node);
 
     String getName();
 
@@ -25,7 +25,7 @@ public interface ContentIntegrityCheck {
 
     float getPriority();
 
-    boolean areConditionsMatched(Node node);
+    boolean areConditionsMatched(JCRNodeWrapper node);
 
     String toFullString();
 
@@ -42,14 +42,14 @@ public interface ContentIntegrityCheck {
     void finalizeIntegrityTest();
 
     interface SupportsIntegrityErrorFix {
-        boolean fixError(Node node, ContentIntegrityError error) throws RepositoryException;
+        boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException;
     }
 
     /*
        Execution conditions
     */
     public interface ExecutionCondition {
-        boolean matches(Node node);
+        boolean matches(JCRNodeWrapper node);
 
         String APPLY = "apply";
         String SKIP = "skip";

@@ -11,6 +11,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -24,8 +25,6 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 
-import javax.jcr.Node;
-import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -154,13 +153,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void validateIntegrity(Node node, List<ContentIntegrityError> errors, boolean fixErrors) {
+    private void validateIntegrity(JCRNodeWrapper node, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop , prevent concurrent run
         checkNode(node, errors, fixErrors, true);
         try {
-            for (NodeIterator it = node.getNodes(); it.hasNext(); ) {
+            for (JCRNodeIteratorWrapper it = node.getNodes(); it.hasNext(); ) {
                 final long start = System.currentTimeMillis();
-                final Node child = (Node) it.next();
+                final JCRNodeWrapper child = (JCRNodeWrapper) it.next();
                 if ("/jcr:system".equals(child.getPath()))
                     continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
                 ownTime += (System.currentTimeMillis() - start);
@@ -179,7 +178,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         checkNode(node, errors, fixErrors, false);
     }
 
-    private void checkNode(Node node, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren) {
+    private void checkNode(JCRNodeWrapper node, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren) {
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             final long start = System.currentTimeMillis();
             if (integrityCheck.areConditionsMatched(node)) {
@@ -199,19 +198,17 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void logFatalError(Node node, Throwable t, ContentIntegrityCheck integrityCheck) {
+    private void logFatalError(JCRNodeWrapper node, Throwable t, ContentIntegrityCheck integrityCheck) {
         String path = null;
         try {
             path = node.getPath();
-        } catch (RepositoryException e) {
-            logger.error("", e);
         } finally {
             logger.error("Impossible to check the integrity of " + path, t);
             integrityCheck.trackFatalError();
         }
     }
 
-    private void handleResult(ContentIntegrityErrorList checkResult, Node node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
+    private void handleResult(ContentIntegrityErrorList checkResult, JCRNodeWrapper node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
         if (checkResult == null) return;
         for (ContentIntegrityError integrityError : checkResult.getNestedErrors()) {
             if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)

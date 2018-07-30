@@ -5,12 +5,12 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.HashSet;
 
@@ -33,7 +33,7 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
     }
 
     @Override
-    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         HashSet<String> missingProps = null;
         for (String property : lockRelatedProperties) {
             try {

@@ -3,11 +3,11 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
@@ -20,7 +20,7 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck {
     private int threshold = 500; // TODO make this somehow configurable
 
     @Override
-    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
             if (node.getNodes().getSize() > threshold)
                 return createSingleError(node, String.format("The node has over %s children", threshold));

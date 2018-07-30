@@ -2,6 +2,7 @@ package org.jahia.modules.contentintegrity.services;
 
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ public class ContentIntegrityError {
         this.integrityCheckID = integrityCheckID;
     }
 
-    public static ContentIntegrityError createError(javax.jcr.Node node, String locale, String message, ContentIntegrityCheck integrityCheck) {
+    public static ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message, ContentIntegrityCheck integrityCheck) {
         logger.error(message);
         try {
             final NodeType[] mixinNodeTypes = node.getMixinNodeTypes();

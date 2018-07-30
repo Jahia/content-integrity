@@ -134,7 +134,7 @@ You have to write a java class to implement you custom check
     public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
     
         @Override
-        public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
+        public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
             try {
                 JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null).getNode(node.getPath());
             } catch (RepositoryException e) {
@@ -145,8 +145,8 @@ You have to write a java class to implement you custom check
     }       
     
 The most convenient way is to extend `AbstractContentIntegrityCheck`.
-Then you will overwrite `checkIntegrityBeforeChildren(Node node)` and/or 
-`checkIntegrityAfterChildren(Node node)`. 
+Then you will overwrite `checkIntegrityBeforeChildren(JCRNodeWrapper node)` and/or 
+`checkIntegrityAfterChildren(JCRNodeWrapper node)`. 
 
 Most of the time, you will implement implement `checkIntegrityBeforeChildren`. Implement `checkIntegrityAfterChildren` 
 when you need to test the integrity of a node after having tested the integrity of its subtree.

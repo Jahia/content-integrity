@@ -6,13 +6,13 @@ import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.LinkedList;
 import java.util.List;
@@ -62,17 +62,17 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         return null;
     }
 
     @Override
-    public ContentIntegrityErrorList checkIntegrityAfterChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityAfterChildren(JCRNodeWrapper node) {
         return null;
     }
 
     @Override
-    public boolean areConditionsMatched(Node node) {
+    public boolean areConditionsMatched(JCRNodeWrapper node) {
         if (!enabled) return false;
         for (ExecutionCondition condition : conditions) {
             if (!condition.matches(node)) return false;
@@ -152,27 +152,27 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         ownTime += time;
     }
 
-    protected final ContentIntegrityError createError(javax.jcr.Node node, String locale, String message) {
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message) {
         return ContentIntegrityError.createError(node, locale, message, this);
     }
 
-    protected final ContentIntegrityError createError(javax.jcr.Node node, Locale locale, String message) {
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, String message) {
         return ContentIntegrityError.createError(node, locale == null ? null : LanguageCodeConverters.localeToLanguageTag(locale), message, this);
     }
 
-    protected final ContentIntegrityError createError(javax.jcr.Node node, String message) {
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, String message) {
         return ContentIntegrityError.createError(node, null, message, this);
     }
 
-    protected final ContentIntegrityErrorList createSingleError(javax.jcr.Node node, String locale, String message) {
+    protected final ContentIntegrityErrorList createSingleError(JCRNodeWrapper node, String locale, String message) {
         return ContentIntegrityErrorList.createSingleError(createError(node, locale, message));
     }
 
-    protected final ContentIntegrityErrorList createSingleError(javax.jcr.Node node, Locale locale, String message) {
+    protected final ContentIntegrityErrorList createSingleError(JCRNodeWrapper node, Locale locale, String message) {
         return ContentIntegrityErrorList.createSingleError(createError(node, locale, message));
     }
 
-    protected final ContentIntegrityErrorList createSingleError(javax.jcr.Node node, String message) {
+    protected final ContentIntegrityErrorList createSingleError(JCRNodeWrapper node, String message) {
         return ContentIntegrityErrorList.createSingleError(createError(node, message));
     }
 
@@ -206,7 +206,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         Utility methods
     */
 
-    protected boolean isInDefaultWorkspace(Node node) {
+    protected boolean isInDefaultWorkspace(JCRNodeWrapper node) {
         try {
             return Constants.EDIT_WORKSPACE.equals(node.getSession().getWorkspace().getName());
         } catch (RepositoryException e) {
@@ -215,7 +215,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
     }
 
-    protected boolean isInLiveWorkspace(Node node) {
+    protected boolean isInLiveWorkspace(JCRNodeWrapper node) {
         return !isInDefaultWorkspace(node);
     }
 
@@ -243,7 +243,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
 
         @Override
-        public boolean matches(Node node) {
+        public boolean matches(JCRNodeWrapper node) {
             return !condition.matches(node);
         }
 
@@ -262,7 +262,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
 
         @Override
-        public boolean matches(Node node) {
+        public boolean matches(JCRNodeWrapper node) {
             if (CollectionUtils.isEmpty(conditions)) return true;
             for (ExecutionCondition condition : conditions) {
                 if (condition.matches(node)) return true;
@@ -290,7 +290,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
 
         @Override
-        public boolean matches(Node node) {
+        public boolean matches(JCRNodeWrapper node) {
             try {
                 return node.isNodeType(nodeType);
             } catch (RepositoryException e) {
@@ -342,7 +342,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
 
         @Override
-        public boolean matches(Node node) {
+        public boolean matches(JCRNodeWrapper node) {
             try {
                 return workspace != null && workspace.equalsIgnoreCase(node.getSession().getWorkspace().getName());
             } catch (RepositoryException e) {
@@ -375,14 +375,9 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
 
         @Override
-        public boolean matches(Node node) {
-            try {
-                final String path = node.getPath();
-                return path.equals(treePath) || path.startsWith(treePath + "/"); // TODO review path.equals(treePath) , shouldn't this be another condition? (toString() to adapt if changed)
-            } catch (RepositoryException e) {
-                logger.error("", e);
-                return false;
-            }
+        public boolean matches(JCRNodeWrapper node) {
+            final String path = node.getPath();
+            return path.equals(treePath) || path.startsWith(treePath + "/"); // TODO review path.equals(treePath) , shouldn't this be another condition? (toString() to adapt if changed)
         }
 
         @Override
@@ -429,7 +424,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
 
         @Override
-        public boolean matches(Node node) {
+        public boolean matches(JCRNodeWrapper node) {
             try {
                 return node.hasProperty(propertyName);
             } catch (RepositoryException e) {

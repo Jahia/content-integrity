@@ -10,6 +10,7 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.registries.ServicesRegistry;
+import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.templates.JahiaTemplateManagerService;
 import org.osgi.framework.Bundle;
@@ -17,7 +18,6 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +35,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
     private static final Logger logger = LoggerFactory.getLogger(UndeployedModulesReferencesCheck.class);
 
     @Override
-    public ContentIntegrityErrorList checkIntegrityBeforeChildren(Node node) {
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         final JCRSiteNode site = (JCRSiteNode) node;
         final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
         final List<JahiaTemplatesPackage> availableTemplatePackages = jahiaTemplateManagerService.getAvailableTemplatePackages();
@@ -63,7 +63,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
     }
 
     @Override
-    public boolean fixError(Node node, ContentIntegrityError integrityError) throws RepositoryException {
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
         final JCRSiteNode site = (JCRSiteNode) node;
         final List<String> missingModules = (List<String>) integrityError.getExtraInfos();
         if (CollectionUtils.isEmpty(missingModules)) return true;
