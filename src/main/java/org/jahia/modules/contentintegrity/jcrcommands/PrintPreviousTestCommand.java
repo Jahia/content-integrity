@@ -12,7 +12,6 @@ import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
-import org.jahia.modules.contentintegrity.jcrcommands.completers.BooleanCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
@@ -40,14 +39,12 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
     @Option(name = "-l", aliases = "--limit", description = "Maximum number of lines to print.")
     private String limit;
 
-    @Option(name = "-f", aliases = "--showFixedErrors", description = "Specifies if the already fixed errors have to be shown.")
-    @Completion(BooleanCompleter.class)
-    private String showFixedErrors;
+    @Option(name = "-ef", aliases = "--excludeFixedErrors", description = "Specifies if the already fixed errors have to be excluded.")
+    private boolean excludeFixedErrors;
 
     @Option(name = "-d", aliases = {"--dump", "--dumpToCSV"}, description = "Dumps the errors into a CSV file in " +
             "temp/content-integrity/. The limit option is ignored when dumping.")
-    @Completion(BooleanCompleter.class)
-    private String dumpToCSV;
+    private boolean dumpToCSV;
 
     @Override
     public Object execute() throws Exception {
@@ -68,8 +65,7 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
         }
 
         session.put(LAST_PRINTED_TEST, testDate);
-        final boolean excludeFixedErrors = "false".equalsIgnoreCase(showFixedErrors);
-        if (Boolean.parseBoolean(dumpToCSV)) {
+        if (dumpToCSV) {
             final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
             final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
 
