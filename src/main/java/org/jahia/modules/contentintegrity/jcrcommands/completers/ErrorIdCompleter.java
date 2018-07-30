@@ -1,4 +1,4 @@
-package org.jahia.modules.contentintegrity.jcrcommands;
+package org.jahia.modules.contentintegrity.jcrcommands.completers;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
