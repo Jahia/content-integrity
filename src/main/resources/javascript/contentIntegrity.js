@@ -1,4 +1,4 @@
-function verifyIntegrity (site, workspace, language) {
+function contentIntegrity (site, workspace, language) {
 
 	$.ajax({
 		url: "/cms/render/"+workspace+"/"+language+"/sites/"+site+"/home.verifyIntegrityOfSiteContent.do",
@@ -60,6 +60,6 @@ function parseIntegrityActionFeedback(json) {
 
 $( document ).ready(function() {
 	$( "#verifyButton" ).click(function() {
-		verifyIntegrity($("#currentSite").val(),$("#currentWorkspace").val(),$("#currentLanguage").val());
+		contentIntegrity($("#currentSite").val(),$("#currentWorkspace").val(),$("#currentLanguage").val());
 	});
 });

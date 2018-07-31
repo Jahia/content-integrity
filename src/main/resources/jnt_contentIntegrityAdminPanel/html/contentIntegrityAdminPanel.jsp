@@ -18,8 +18,8 @@
 <%--@elvariable id="currentResource" type="org.jahia.services.render.Resource"--%>
 <%--@elvariable id="url" type="org.jahia.services.render.URLGenerator"--%>
 
-<template:addResources type="javascript" resources="jquery.js,verifyIntegrity.js"/>
-<template:addResources type="css" resources="verifyIntegrity.css"/>
+<template:addResources type="javascript" resources="jquery.js,contentIntegrity.js"/>
+<template:addResources type="css" resources="contentIntegrity.css"/>
 
 <h2><fmt:message key="label.contentIntegrity.title"/></h2>
 <p><fmt:message key="label.contentIntegrity.description" /></p>

@@ -2,11 +2,11 @@
 <content xmlns:j="http://www.jahia.org/jahia/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0">
     <modules jcr:primaryType="jnt:modules">
         <content-integrity j:dependencies="default"
-                        j:modulePriority="0"
-                        j:moduleType="module"
-                        j:title="Content Integrity"
-                        jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                        jcr:primaryType="jnt:module">
+                         j:modulePriority="0"
+                         j:moduleType="module"
+                         j:title="Content Integrity"
+                         jcr:mixinTypes="jmix:hasExternalProviderExtension"
+                         jcr:primaryType="jnt:module">
 
                 <portlets jcr:primaryType="jnt:portletFolder"/>
                 <files jcr:primaryType="jnt:folder"/>
@@ -17,6 +17,7 @@
                     <site-settings-base j:view="siteSettings"
                                 jcr:mixinTypes="jmix:useUILocale"
                                 jcr:primaryType="jnt:template">
+                        <!--
                         <jcr-integrity-checker j:defaultTemplate="false"
                                       j:hiddenTemplate="false"
                                       j:requiredPermissionNames="siteIntegrityPanelAccess"
@@ -27,6 +28,7 @@
                                 <contentintegrityadminpanel jcr:primaryType="jnt:contentIntegrityAdminPanel"/>
                             </pagecontent>
                         </jcr-integrity-checker>
+                        -->
                     </site-settings-base>
                 </templates>
 
