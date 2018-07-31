@@ -30,11 +30,13 @@ Use `jcr:integrity-check` to run a content integrity test.
 Runs a scan of the current tree and current workspace.
 
 **Options:**  
+
 Name | alias | Mandatory | Value | Description
  --- | --- | :---: | :---: | ---
  -l | --limit | | positive integer, [20] | Specifies the maximum number of errors to print out
  
 **Example:**
+
     jcr:cd /sites/mySite/
     jcr:workspace live
     jcr:integrity-check -l 10   
@@ -43,6 +45,7 @@ Name | alias | Mandatory | Value | Description
 Prints out the currently registered checks. 
                          
 **Options:**
+
 Name | alias | Mandatory | Value | Description
  --- | --- | :---: | :---: | ---
  -l | --outputLevel | | [simple] , full | Specifies the output level to use  
@@ -64,6 +67,7 @@ Name | alias | Mandatory | Value | Description
 Allows to reprint the result of a previous test.   
                          
 **Options:**
+
 Name | alias | Mandatory | Value | Description
  --- | --- | :---: | :---: | ---
  -l | --limit | | positive integer, [20] | Specifies the maximum number of errors to print out
@@ -83,10 +87,12 @@ Allows to configure a registered integrity check. Please note that for the momen
 or when restarting the server.   
                          
 **Options:**
+
 Name | alias | Mandatory | Value | Description
  --- | --- | :---: | :---: | ---
  -id |  | x | positive integer | Specifies the identifier of the integrity check to configure
  -e | --enabled | | boolean, [null] | Enables the integrity check if `true`, disable it if `false`. Do not change the current status if `null`. 
+ 
 **Example:**
 
     jahia@dx()> jcr:integrity-printChecks
