@@ -237,7 +237,25 @@ of the component.
     })
     public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
 
-[TODO list of built in conditions]    
+##### Apply on node types / skip on node types
+
+Specifies on which node types the check has to be executed. Several node types can be listed, comma separated.
+
+    ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE  
+
+##### Apply on workspace / skip on workspace
+
+Specifies on which workspace the check has to be executed.
+
+    ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE   
+
+##### Apply on subtrees / skip on subtrees
+
+Specifies on which subtrees the check has to be executed. The root node of a specified subtree is checked. Several subtrees can be listed, comma separated.
+
+    ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/sites"
+    
+    
 
 ## Changelog
 Version | Required DX version | Changes
