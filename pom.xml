@@ -69,8 +69,8 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git@github.com:/Jahia/content-integrity</connection>
-        <developerConnection>scm:git:git@github.com:/Jahia/content-integrity</developerConnection>
+        <connection>scm:git:git@github.com:Jahia/content-integrity</connection>
+        <developerConnection>scm:git:git@github.com:Jahia/content-integrity</developerConnection>
     </scm>
 
     <repositories>
