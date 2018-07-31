@@ -18,13 +18,13 @@
 <%--@elvariable id="currentResource" type="org.jahia.services.render.Resource"--%>
 <%--@elvariable id="url" type="org.jahia.services.render.URLGenerator"--%>
 
-<template:addResources type="javascript" resources="jquery.js,verifyIntegrity.js"/>
-<template:addResources type="css" resources="verifyIntegrity.css"/>
+<template:addResources type="javascript" resources="jquery.js,contentIntegrity.js"/>
+<template:addResources type="css" resources="contentIntegrity.css"/>
 
-<h2><fmt:message key="label.verifyIntegrity.title"/></h2>
-<p><fmt:message key="label.verifyIntegrity.description" /></p>
+<h2><fmt:message key="label.contentIntegrity.title"/></h2>
+<p><fmt:message key="label.contentIntegrity.description" /></p>
 
-<input type="hidden" id="currentSite" value="${renderContext.site.properties['j:nodename'].string}" />
+<input type="hidden" id="currentSite" value="${renderContext.site.siteKey}" />
 <input type="hidden" id="currentLanguage" value="${renderContext.mainResourceLocale.language}" />
 Workspace : <select id="currentWorkspace">
     <option>default</option>
@@ -33,5 +33,5 @@ Workspace : <select id="currentWorkspace">
 <input type="submit" id="verifyButton" value="Check JCR integrity" />
 
 <table class="table table-bordered table-striped table-hover integrityTable"  id="errorDisplay">
-  
+
 </table>

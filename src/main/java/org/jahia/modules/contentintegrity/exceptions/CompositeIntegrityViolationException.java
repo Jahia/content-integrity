@@ -1,9 +1,9 @@
-package org.jahia.modules.verifyintegrity.exceptions;
+package org.jahia.modules.contentintegrity.exceptions;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
+@Deprecated
 public class CompositeIntegrityViolationException {
 	private List<IntegrityViolationException> errors = new ArrayList();
 

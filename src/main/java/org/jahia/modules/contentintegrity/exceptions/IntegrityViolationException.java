@@ -1,11 +1,11 @@
-package org.jahia.modules.verifyintegrity.exceptions;
+package org.jahia.modules.contentintegrity.exceptions;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 
 import java.util.Locale;
-
+@Deprecated
 public class IntegrityViolationException {
 
 	private static Logger logger = org.slf4j.LoggerFactory.getLogger(IntegrityViolationException.class);

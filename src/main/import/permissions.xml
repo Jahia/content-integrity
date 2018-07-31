@@ -3,7 +3,10 @@
              xmlns:jcr="http://www.jcp.org/jcr/1.0"
              xmlns:j="http://www.jahia.org/jahia/1.0"
              xmlns:jnt="http://www.jahia.org/jahia/nt/1.0">
+    <site-admin jcr:primaryType="jnt:permission">
+        <siteIntegrityPanelAccess jcr:primaryType="jnt:permission"/>
+    </site-admin>
     <actions jcr:primaryType="jnt:permission">
-        <allowToVerifySiteIntegrity jcr:primaryType="jnt:permission"/>
+        <allowToValidateSiteIntegrity jcr:primaryType="jnt:permission"/>
     </actions>
 </permissions>
