@@ -98,7 +98,7 @@ you can develop them in a custom module, and register them into the content inte
 
 ### pom.xml
 
-You need to declare a dependency to the core module
+You need to declare a Maven dependency to the core module.
 
     <dependencies>
         <dependency>
@@ -109,7 +109,15 @@ You need to declare a dependency to the core module
         </dependency>
     </dependencies>
     
-You need as well configure the BND plugin to scan the OSGi declarative services annotations
+You need to declare a DX level dependency to the core module. If you module is dedicated to content integrity extension,
+then it is relevant to flag it as a system module as enabling it on a website would not carry any additional effect.
+    
+    <properties>
+        <jahia-depends>default,content-integrity</jahia-depends>
+        <jahia-module-type>system</jahia-module-type>
+    </properties>    
+    
+You need as well configure the BND plugin to scan the OSGi declarative services annotations.
 
     <build>
         <plugins>
@@ -129,7 +137,7 @@ You need as well configure the BND plugin to scan the OSGi declarative services 
 ### Implementation of the check
 
 #### java code
-You have to write a java class to implement you custom check
+You have to write a java class to implement you custom check.
 
     public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
     
