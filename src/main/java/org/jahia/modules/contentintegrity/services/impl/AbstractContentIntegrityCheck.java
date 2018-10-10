@@ -180,6 +180,11 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return ContentIntegrityErrorList.createSingleError(error);
     }
 
+    protected final ContentIntegrityErrorList appendError(ContentIntegrityErrorList list, ContentIntegrityError error) {
+        if (list == null) return createSingleError(error);
+        return list.addError(error);
+    }
+
     @Override
     public void trackFatalError() {
         fatalErrorCount += 1;

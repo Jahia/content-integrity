@@ -261,3 +261,4 @@ Specifies on which subtrees the check has to be executed. The root node of a spe
 Version | Required DX version | Changes
 ------------ | -------------| -------------
 2.0 | 7.2.0.0 | Initial version
+2.1 | 7.2.0.0 | Implemented BinaryPropertiesSanityCheck
