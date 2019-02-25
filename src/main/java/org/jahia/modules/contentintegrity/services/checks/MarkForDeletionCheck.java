@@ -13,7 +13,7 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.LIVE_WORKSPACE,
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE,
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=" + Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT,
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_MARKED_FOR_DELETION
 })
