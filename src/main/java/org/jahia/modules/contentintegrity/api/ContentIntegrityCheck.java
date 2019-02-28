@@ -41,6 +41,8 @@ public interface ContentIntegrityCheck {
 
     void finalizeIntegrityTest();
 
+    boolean isValid();
+
     interface SupportsIntegrityErrorFix {
         boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException;
     }
@@ -65,5 +67,15 @@ public interface ContentIntegrityCheck {
         String ON_WS = "OnWorkspace";
         String APPLY_ON_WS = APPLY + ON_WS;
         String SKIP_ON_WS = SKIP + ON_WS;
+    }
+
+    public interface ValidityCondition {
+        String APPLY = "apply";
+        String SKIP = "skip";
+
+        String ON_VERSION_GREATER_THAN = "OnVersionGT";
+        String OR_EQUAL = "E";
+        String APPLY_ON_VERSION_GT = APPLY + ON_VERSION_GREATER_THAN;
+        String APPLY_ON_VERSION_GTE = APPLY + ON_VERSION_GREATER_THAN + OR_EQUAL;
     }
 }

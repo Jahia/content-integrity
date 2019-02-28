@@ -76,6 +76,11 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Reference(service = ContentIntegrityCheck.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, unbind = "unregisterIntegrityCheck")
     public void registerIntegrityCheck(ContentIntegrityCheck integrityCheck) {
+        if (!integrityCheck.isValid()) {
+            logger.info(String.format("Skipping registration on invalid integrity check %s", integrityCheck.toString()));
+            return;
+        }
+
         integrityCheck.setId(getNextIntegrityCheckID());
         integrityChecks.add(integrityCheck);
         Collections.sort(integrityChecks, new Comparator<ContentIntegrityCheck>() {
@@ -89,6 +94,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     public void unregisterIntegrityCheck(ContentIntegrityCheck integrityCheck) {
+        if (!integrityCheck.isValid()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(String.format("Skipping unregistration on invalid integrity check %s", integrityCheck.toString()));
+            }
+            return;
+        }
+
         final boolean success = integrityChecks.remove(integrityCheck);// TODO: not sure that .equals() always work here, maybe we should itereate until we find one instance for which .getId().equals(integrityCheck.getId())
         if (success)
             logger.info(String.format("Unregistered %s in the contentIntegrity service, number of checks: %s", integrityCheck, integrityChecks.size()));

@@ -3,6 +3,8 @@ package org.jahia.modules.contentintegrity.services.impl;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
+import org.jahia.bin.Jahia;
+import org.jahia.commons.Version;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
@@ -30,6 +32,8 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private long ownTime = 0L;
     private int fatalErrorCount = 0;
     private final int FATAL_ERRORS_THRESHOLD = 10;  // TODO make this configurable
+    private String validity_dxMinimumVersion = null;  // TODO if another criteria is some day required, introduce a list of validity conditions as for the execution conditions
+    private boolean validity_dxMinimumVersionBoundIncluded = false;
 
     protected void activate(ComponentContext context) {
         if (logger.isDebugEnabled()) logger.debug(String.format("Activating check %s", getClass().getCanonicalName()));
@@ -43,6 +47,17 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
         prop = context.getProperties().get(ENABLED);
         if (prop instanceof Boolean) enabled = (Boolean) prop;
+
+        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_VERSION_GT);
+        if (prop instanceof String) {
+            validity_dxMinimumVersion = (String) prop;
+            validity_dxMinimumVersionBoundIncluded = false;
+        };
+        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_VERSION_GTE);
+        if (prop instanceof String) {
+            validity_dxMinimumVersion = (String) prop;
+            validity_dxMinimumVersionBoundIncluded = true;
+        };
 
         // TODO check if it is possible to keep the declaration order
         prop = context.getProperties().get(ExecutionCondition.APPLY_ON_NT);
@@ -442,5 +457,21 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         public String toString() {
             return String.format("has property %s", propertyName);
         }
+    }
+
+    @Override
+    public boolean isValid() {
+        if (validity_dxMinimumVersion == null) return true;
+        final Version checkVersion;
+        try {
+            checkVersion = new Version(validity_dxMinimumVersion);
+        } catch (NumberFormatException nfe) {
+            logger.error(String.format("Invalid DX minimum version: %s", validity_dxMinimumVersion));
+            return false;
+        }
+
+        final Version dxVersion = new Version(Jahia.VERSION);
+        final int compareTo = dxVersion.compareTo(checkVersion);
+        return validity_dxMinimumVersionBoundIncluded ? compareTo >= 0 : compareTo > 0;
     }
 }
