@@ -32,7 +32,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck {
                 try {
                     property.getBinary().getStream();
                 } catch (DataStoreException dse) {
-                    final ContentIntegrityError error = createError(node, "Invalid binary for the property " + property.getPath());
+                    final ContentIntegrityError error = createError(node, String.format("Invalid binary for the property %s", property.getPath()));
                     errors = appendError(errors, error);
                 }
             }
