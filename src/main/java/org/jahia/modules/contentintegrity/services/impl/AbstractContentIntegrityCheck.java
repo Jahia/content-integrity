@@ -48,12 +48,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         prop = context.getProperties().get(ENABLED);
         if (prop instanceof Boolean) enabled = (Boolean) prop;
 
-        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_VERSION_GT);
+        prop = context.getProperties().get(ValidityCondition.APPLY_ON_VERSION_GT);
         if (prop instanceof String) {
             validity_dxMinimumVersion = (String) prop;
             validity_dxMinimumVersionBoundIncluded = false;
         };
-        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_VERSION_GTE);
+        prop = context.getProperties().get(ValidityCondition.APPLY_ON_VERSION_GTE);
         if (prop instanceof String) {
             validity_dxMinimumVersion = (String) prop;
             validity_dxMinimumVersionBoundIncluded = true;
