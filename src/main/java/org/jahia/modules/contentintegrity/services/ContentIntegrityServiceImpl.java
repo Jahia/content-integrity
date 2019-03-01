@@ -147,6 +147,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             return results;
         } catch (RepositoryException e) {
             logger.error("", e);
+        } finally {
+            JCRSessionFactory.getInstance().closeAllSessions();
         }
         return null;
     }
