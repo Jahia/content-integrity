@@ -126,9 +126,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
             return null;
         }
-        final JCRNodeWrapper node;
         try {
-            node = session.getNode(path);
+            final JCRNodeWrapper node = session.getNode(path);
             logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
             final List<ContentIntegrityError> errors = new ArrayList<>();
             final long start = System.currentTimeMillis();
