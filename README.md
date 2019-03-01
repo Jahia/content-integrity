@@ -219,6 +219,22 @@ at any time, a faulty one can be disabled. See [jcr:integrity-configureCheck](#j
     @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
             ContentIntegrityCheck.ENABLED + ":Boolean=false"
     })
+    
+#### Minimum DX version
+
+Each integrity check can declare a minimum DX version. If the DX version is lower than the declared one, the check will
+be skipped at registration time. If not configured, the check will be registered no matter the version of the DX server.  
+
+Two possibilities are offered:
+- **ContentIntegrityCheck.ValidityCondition.APPLY_ON_VERSION_GTE** : runs on the specified version or newer
+- **ContentIntegrityCheck.ValidityCondition.APPLY_ON_VERSION_GT** : runs on versions newer than the specified one
+
+**Example**
+
+    @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
+            ContentIntegrityCheck.ValidityCondition.APPLY_ON_VERSION_GTE + "=7.2.3.1"
+    })
+    public class WipSanityCheck extends AbstractContentIntegrityCheck {         
 
     
 #### Execution Conditions
@@ -263,3 +279,4 @@ Version | Required DX version | Changes
 2.0 | 7.2.0.0 | Initial version
 2.1 | 7.2.0.0 | Implemented BinaryPropertiesSanityCheck
 2.2 | 7.2.0.0 | Implemented TemplatesIndexationCheck
+2.3 | 7.2.0.0 | Implemented a sanity check for the "work in progress" related properties<br>Implemented the possibility to define a minimum DX version for an integrity check<br>Fixed the execution conditions on MarkedForDeletionCheck
