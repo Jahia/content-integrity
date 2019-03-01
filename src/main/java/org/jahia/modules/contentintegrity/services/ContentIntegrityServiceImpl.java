@@ -118,6 +118,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     public ContentIntegrityResults validateIntegrity(String path, String workspace, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
+        JCRSessionFactory.getInstance().closeAllSessions();
         final JCRSessionWrapper session;
         try {
             session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
