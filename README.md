@@ -280,3 +280,4 @@ Version | Required DX version | Changes
 2.1 | 7.2.0.0 | Implemented BinaryPropertiesSanityCheck
 2.2 | 7.2.0.0 | Implemented TemplatesIndexationCheck
 2.3 | 7.2.0.0 | Implemented a sanity check for the "work in progress" related properties<br>Implemented the possibility to define a minimum DX version for an integrity check<br>Fixed the execution conditions on MarkedForDeletionCheck
+2.4 | 7.2.0.0 | Implemented a sanity check on the system groups 
