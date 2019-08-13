@@ -30,8 +30,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 @Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
@@ -50,7 +52,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
     private long integrityChecksIdGenerator = 0;
-
+    private long nbNodesToScan = 0;
 
     @Activate
     public void start() throws JahiaInitializationException {
@@ -116,7 +118,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     @Override
     public ContentIntegrityResults validateIntegrity(String path, String workspace) {
         return validateIntegrity(path, null, workspace);
-    };
+    }
 
     @Override
     public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace) {
@@ -137,11 +139,16 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
             final List<ContentIntegrityError> errors = new ArrayList<>();
             final long start = System.currentTimeMillis();
-            resetChecksDurationCounter();
+            resetCounters();
+            final Set<String> trimmedExcludedPaths = new HashSet<>();
+            for (String excludedPath : excludedPaths) {
+                trimmedExcludedPaths.add(("/".equals(excludedPath) || !excludedPath.endsWith("/")) ? excludedPath : excludedPath.substring(0, excludedPath.length() - 1));
+            }
+            calculateNbNodestoScan(node, trimmedExcludedPaths);
             for (ContentIntegrityCheck integrityCheck : integrityChecks) {
                 integrityCheck.initializeIntegrityTest();
             }
-            validateIntegrity(node, excludedPaths, errors, fixErrors);
+            validateIntegrity(node, trimmedExcludedPaths, errors, fixErrors);
             for (ContentIntegrityCheck integrityCheck : integrityChecks) {
                 integrityCheck.finalizeIntegrityTest();
             }
@@ -159,12 +166,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         return null;
     }
 
-    private void resetChecksDurationCounter() {
+    private void resetCounters() {
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             integrityCheck.resetOwnTime();
         }
         ownTime = 0L;
         ownTimeIntervalStart = 0L;
+        nbNodesToScan = 0L;
     }
 
     private void beginComputingOwnTime() {
@@ -187,7 +195,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void validateIntegrity(JCRNodeWrapper node, List<String> excludedPaths, List<ContentIntegrityError> errors, boolean fixErrors) {
+    private void validateIntegrity(JCRNodeWrapper node, Set<String> excludedPaths, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop , prevent concurrent run
         try {
             beginComputingOwnTime();
@@ -201,9 +209,12 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
         checkNode(node, errors, fixErrors, true);
         try {
-            for (JCRNodeIteratorWrapper it = node.getNodes(); it.hasNext(); ) {
+            final JCRNodeIteratorWrapper it = node.getNodes();
+            boolean hasNext = it.hasNext();
+            while (hasNext) {
                 beginComputingOwnTime();
                 final JCRNodeWrapper child = (JCRNodeWrapper) it.next();
+                hasNext = it.hasNext(); // Not using a for loop so that it.hasNext() is part of the calculation of the duration of the scan
                 if ("/jcr:system".equals(child.getPath()))
                     continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
                 endComputingOwnTime();
@@ -240,6 +251,26 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 logger.debug(String.format("Skipping %s on %s (%s its children) as conditions are not matched", integrityCheck.getClass().getName(), node, beforeChildren ? "before" : "after"));
             integrityCheck.trackOwnTime(System.currentTimeMillis() - start);
         }
+    }
+
+    private void calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths) {
+        try {
+            nbNodesToScan = calculateNbNodestoScan(node, excludedPaths, 0);
+            logger.info(String.format("%s nodes to scan", nbNodesToScan));
+        } catch (RepositoryException e) {
+            logger.error("", e);
+        }
+    }
+
+    private int calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths, int currentCount) throws RepositoryException {
+        if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(node.getPath())) {
+            return currentCount;
+        }
+        int count = currentCount + 1;
+        for (JCRNodeWrapper child : node.getNodes()) {
+            count = calculateNbNodestoScan(child, excludedPaths, count);
+        }
+        return count;
     }
 
     private void logFatalError(JCRNodeWrapper node, Throwable t, ContentIntegrityCheck integrityCheck) {
