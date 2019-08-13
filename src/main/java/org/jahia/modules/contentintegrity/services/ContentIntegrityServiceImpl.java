@@ -114,10 +114,15 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Override
     public ContentIntegrityResults validateIntegrity(String path, String workspace) {
-        return validateIntegrity(path, workspace, false);
+        return validateIntegrity(path, null, workspace);
+    };
+
+    @Override
+    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace) {
+        return validateIntegrity(path, excludedPaths, workspace, false);
     }
 
-    public ContentIntegrityResults validateIntegrity(String path, String workspace, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
         JCRSessionFactory.getInstance().closeAllSessions();
         final JCRSessionWrapper session;
         try {
@@ -135,7 +140,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             for (ContentIntegrityCheck integrityCheck : integrityChecks) {
                 integrityCheck.initializeIntegrityTest();
             }
-            validateIntegrity(node, errors, fixErrors);
+            validateIntegrity(node, excludedPaths, errors, fixErrors);
             for (ContentIntegrityCheck integrityCheck : integrityChecks) {
                 integrityCheck.finalizeIntegrityTest();
             }
@@ -167,8 +172,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void validateIntegrity(JCRNodeWrapper node, List<ContentIntegrityError> errors, boolean fixErrors) {
+    private void validateIntegrity(JCRNodeWrapper node, List<String> excludedPaths, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop , prevent concurrent run
+        final String path = node.getPath();
+        if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(path)) { // TODO track ownTime
+            logger.info(String.format("Skipping node %s", path));
+            return;
+        }
         checkNode(node, errors, fixErrors, true);
         try {
             for (JCRNodeIteratorWrapper it = node.getNodes(); it.hasNext(); ) {
@@ -177,7 +187,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 if ("/jcr:system".equals(child.getPath()))
                     continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
                 ownTime += (System.currentTimeMillis() - start);
-                validateIntegrity(child, errors, fixErrors);
+                validateIntegrity(child, excludedPaths, errors, fixErrors);
             }
         } catch (RepositoryException e) {
             String ws = "unknown";

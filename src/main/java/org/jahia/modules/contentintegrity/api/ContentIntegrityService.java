@@ -9,6 +9,8 @@ public interface ContentIntegrityService {
 
     ContentIntegrityResults validateIntegrity(String path, String workspace);
 
+    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace);
+
     void fixError(ContentIntegrityError error);
 
     ContentIntegrityCheck getContentIntegrityCheck(long id);

@@ -31,24 +31,29 @@ Runs a scan of the current tree and current workspace.
 
 **Options:**  
 
-Name | alias | Mandatory | Value | Description
- --- | --- | :---: | :---: | ---
- -l | --limit | | positive integer, [20] | Specifies the maximum number of errors to print out
+Name | alias | Value | Mandatory | Multiple | Description
+ --- | --- | :---: | :---: | :---: | ---
+ -l | --limit | positive integer, [20] | | | Specifies the maximum number of errors to print out
+ -x | --exclude | string | | x | Specifies one or several subtrees to exclude
  
-**Example:**
+**Examples:**
 
     jcr:cd /sites/mySite/
     jcr:workspace live
     jcr:integrity-check -l 10   
+    
+    jcr:cd /sites
+    jcr:integrity-check -x /sites/aHugeSite
+    jcr:integrity-check -x /sites/aHugeSite -x /sites/anotherHugeSite/files 
       
 #### <a name="jcr-integrity-printChecks"></a>jcr:integrity-printChecks 
 Prints out the currently registered checks. 
                          
 **Options:**
 
-Name | alias | Mandatory | Value | Description
- --- | --- | :---: | :---: | ---
- -l | --outputLevel | | [simple] , full | Specifies the output level to use  
+Name | alias | Value | Mandatory | Multiple | Description
+ --- | --- | :---: | :---: | :---: | ---
+ -l | --outputLevel | [simple] , full | | | Specifies the output level to use  
  
 **Example:**
 
@@ -68,11 +73,11 @@ Allows to reprint the result of a previous test.
                          
 **Options:**
 
-Name | alias | Mandatory | Value | Description
- --- | --- | :---: | :---: | ---
- -l | --limit | | positive integer, [20] | Specifies the maximum number of errors to print out
- -d | --dump , --dumpToCSV | |  | Dumps the errors into a CSV file in temp/content-integrity/ if used. The limit option is ignored when dumping
- -ef | --excludeFixedErrors | |  | Coming soon 
+Name | alias | Value | Mandatory | Multiple | Description
+ --- | --- | :---: | :---: | :---: | ---
+ -l | --limit | positive integer, [20] | | | Specifies the maximum number of errors to print out
+ -d | --dump , --dumpToCSV | | | | Dumps the errors into a CSV file in temp/content-integrity/ if used. The limit option is ignored when dumping
+ -ef | --excludeFixedErrors | | | | Coming soon 
 
 **Example:**
 
@@ -88,10 +93,10 @@ or when restarting the server.
                          
 **Options:**
 
-Name | alias | Mandatory | Value | Description
- --- | --- | :---: | :---: | ---
- -id |  | x | positive integer | Specifies the identifier of the integrity check to configure
- -e | --enabled | | boolean, [null] | Enables the integrity check if `true`, disable it if `false`. Do not change the current status if `null`. 
+Name | alias | Value | Mandatory | Multiple | Description
+ --- | --- | :---: | :---: | :---: | ---
+ -id |  | positive integer | x | | Specifies the identifier of the integrity check to configure
+ -e | --enabled | true, false | | | Enables the integrity check if `true`, disable it if `false`. Do not change the current status if not defined. 
  
 **Example:**
 
@@ -281,3 +286,4 @@ Version | Required DX version | Changes
 2.2 | 7.2.0.0 | Implemented TemplatesIndexationCheck
 2.3 | 7.2.0.0 | Implemented a sanity check for the "work in progress" related properties<br>Implemented the possibility to define a minimum DX version for an integrity check<br>Fixed the execution conditions on MarkedForDeletionCheck
 2.4 | 7.2.0.0 | Implemented a sanity check on the system groups 
+2.5 | 7.2.0.0 | Implemented an option to exclude a subtree from the scan
