@@ -48,6 +48,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private String errorsCacheName = "ContentIntegrityService-errors";
     private long errorsCacheTti = 24L * 3600L; // 1 day;
     private long ownTime = 0L;
+    private long ownTimeIntervalStart = 0L;
     private long integrityChecksIdGenerator = 0;
 
 
@@ -163,6 +164,20 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             integrityCheck.resetOwnTime();
         }
         ownTime = 0L;
+        ownTimeIntervalStart = 0L;
+    }
+
+    private void beginComputingOwnTime() {
+        ownTimeIntervalStart = System.currentTimeMillis();
+    }
+
+    private void endComputingOwnTime() {
+        if (ownTimeIntervalStart == 0L) {
+            logger.error("Invalid call to endComputingOwnTime()");
+            return;
+        }
+        ownTime += (System.currentTimeMillis() - ownTimeIntervalStart);
+        ownTimeIntervalStart = 0L;
     }
 
     private void printChecksDuration() {
@@ -174,19 +189,24 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     private void validateIntegrity(JCRNodeWrapper node, List<String> excludedPaths, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop , prevent concurrent run
-        final String path = node.getPath();
-        if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(path)) { // TODO track ownTime
-            logger.info(String.format("Skipping node %s", path));
-            return;
+        try {
+            beginComputingOwnTime();
+            final String path = node.getPath();
+            if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(path)) {
+                logger.info(String.format("Skipping node %s", path));
+                return;
+            }
+        } finally {
+            endComputingOwnTime();
         }
         checkNode(node, errors, fixErrors, true);
         try {
             for (JCRNodeIteratorWrapper it = node.getNodes(); it.hasNext(); ) {
-                final long start = System.currentTimeMillis();
+                beginComputingOwnTime();
                 final JCRNodeWrapper child = (JCRNodeWrapper) it.next();
                 if ("/jcr:system".equals(child.getPath()))
                     continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
-                ownTime += (System.currentTimeMillis() - start);
+                endComputingOwnTime();
                 validateIntegrity(child, excludedPaths, errors, fixErrors);
             }
         } catch (RepositoryException e) {
