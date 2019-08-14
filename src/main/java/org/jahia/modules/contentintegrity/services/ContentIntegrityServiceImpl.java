@@ -141,8 +141,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             final long start = System.currentTimeMillis();
             resetCounters();
             final Set<String> trimmedExcludedPaths = new HashSet<>();
-            for (String excludedPath : excludedPaths) {
-                trimmedExcludedPaths.add(("/".equals(excludedPath) || !excludedPath.endsWith("/")) ? excludedPath : excludedPath.substring(0, excludedPath.length() - 1));
+            if (CollectionUtils.isNotEmpty(excludedPaths)) {
+                for (String excludedPath : excludedPaths) {
+                    trimmedExcludedPaths.add(("/".equals(excludedPath) || !excludedPath.endsWith("/")) ? excludedPath : excludedPath.substring(0, excludedPath.length() - 1));
+                }
             }
             calculateNbNodestoScan(node, trimmedExcludedPaths);
             for (ContentIntegrityCheck integrityCheck : integrityChecks) {
