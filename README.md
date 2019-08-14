@@ -286,4 +286,4 @@ Version | Required DX version | Changes
 2.2 | 7.2.0.0 | Implemented TemplatesIndexationCheck
 2.3 | 7.2.0.0 | Implemented a sanity check for the "work in progress" related properties<br>Implemented the possibility to define a minimum DX version for an integrity check<br>Fixed the execution conditions on MarkedForDeletionCheck
 2.4 | 7.2.0.0 | Implemented a sanity check on the system groups 
-2.5 | 7.2.0.0 | Implemented an option to exclude a subtree from the scan
+2.5 | 7.2.0.0 | Implemented an option to exclude a subtree from the scan<br>Implemented an "estimated time of arrival".

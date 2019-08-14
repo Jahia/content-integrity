@@ -9,6 +9,7 @@ import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
@@ -147,6 +148,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 }
             }
             calculateNbNodestoScan(node, trimmedExcludedPaths);
+            ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger);
             for (ContentIntegrityCheck integrityCheck : integrityChecks) {
                 integrityCheck.initializeIntegrityTest();
             }
@@ -233,6 +235,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     node, ws), e);
         }
         checkNode(node, errors, fixErrors, false);
+        ProgressMonitor.getInstance().progress();
     }
 
     private void checkNode(JCRNodeWrapper node, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren) {
