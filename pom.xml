@@ -49,12 +49,12 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.2.0.0</version>
+        <version>8.0.0.0</version>
     </parent>
     <groupId>org.jahia.modules</groupId>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
-    <version>2.6-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
 
@@ -63,6 +63,8 @@
         <jahia-module-type>system</jahia-module-type>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
+        <jahia-module-signature>MCwCFFLxTj8XjQz8WIBkr5CyhXUmvYMOAhRJZDstFAtuOyglt6Lnyq/gU/DWOA==</jahia-module-signature>
+        <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
     </properties>
 
     <scm>
