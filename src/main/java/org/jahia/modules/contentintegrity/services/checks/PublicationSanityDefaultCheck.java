@@ -31,7 +31,6 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
 
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
 
-
     private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH}
 
     @Override
@@ -48,13 +47,17 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     error.setExtraInfos(ErrorType.NO_LIVE_NODE);
                     return createSingleError(error);
                 }
-                if (!hasPendingModifications(node)) {
-                    if (!StringUtils.equals(node.getPath(), liveNode.getPath())) {
-                        final String msg = "Found a published node, with no pending modifications, but the path in live is different";
-                        final ContentIntegrityError error = createError(node, msg);
-                        error.setExtraInfos(ErrorType.DIFFERENT_PATH);
-                        return createSingleError(error);
-                    }
+
+                /*
+                 hasPendingModifications(node) : the translation subnodes are not tested, since we are dealing here with
+                 a node which was moved. Then the root node itself should have a last modif date newer than the last
+                 publication date
+                 */
+                if (!node.isNodeType(Constants.JAHIANT_TRANSLATION) && !StringUtils.equals(node.getPath(), liveNode.getPath()) && !hasPendingModifications(node)) {
+                    final String msg = "Found a published node, with no pending modifications, but the path in live is different";
+                    final ContentIntegrityError error = createError(node, msg);
+                    error.setExtraInfos(ErrorType.DIFFERENT_PATH);
+                    return createSingleError(error);
                 }
             }
             return null;
