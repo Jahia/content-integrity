@@ -16,6 +16,7 @@ import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateComplet
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
+import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
 
     private static final Logger logger = LoggerFactory.getLogger(PrintPreviousTestCommand.class);
     public static final String LAST_PRINTED_TEST = "lastPrintedTest";
+    private static final String DEFAULT_CSV_HEADER = "Check ID,Fixed,Error type,Workspace,Node identifier,Node path,Node primary type,Node mixins,Locale,Error message,Extra information";
 
     @Reference
     Session session;
@@ -45,6 +47,10 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
     @Option(name = "-d", aliases = {"--dump", "--dumpToCSV"}, description = "Dumps the errors into a CSV file in " +
             "temp/content-integrity/. The limit option is ignored when dumping.")
     private boolean dumpToCSV;
+
+    @Option(name = "-nh", aliases = {"--noCSVHeader"}, description = "Generates a CSV file without header. " +
+            "This option is ignored when not generating a CSV file")
+    private boolean noCsvHeader;
 
     @Override
     public Object execute() throws Exception {
@@ -80,6 +86,10 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
                         return ((ContentIntegrityError) input).toCSV();
                     }
                 });
+                if (!noCsvHeader) {
+                    final String header = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", DEFAULT_CSV_HEADER);
+                    lines.add(0, header);
+                }
                 FileUtils.writeLines(csvFile, "UTF-8", lines);
                 System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", csvFile.getPath()));
             } else {

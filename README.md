@@ -1,5 +1,5 @@
 # Content Integrity
-DX module that provides an extensible service to test the integrity of the content
+Jahia module that provides an extensible service to test the integrity of the content
 * [How to use it](#how-to-use)
     * [jcr:integrity-check](#jcr-integrity-check) 
     * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
@@ -77,6 +77,7 @@ Name | alias | Value | Mandatory | Multiple | Description
  --- | --- | :---: | :---: | :---: | ---
  -l | --limit | positive integer, [20] | | | Specifies the maximum number of errors to print out
  -d | --dump , --dumpToCSV | | | | Dumps the errors into a CSV file in temp/content-integrity/ if used. The limit option is ignored when dumping
+ -nh | --noCSVHeader | | | | Generates a CSV file without header. This option is ignored when not generating a CSV file
  -ef | --excludeFixedErrors | | | | Coming soon 
 
 **Example:**
