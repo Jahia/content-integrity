@@ -80,19 +80,25 @@ public class ContentIntegrityError {
     public String toCSV(String separator, String escapedSeparator) {
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(StringUtils.replace(String.valueOf(integrityCheckID), separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(String.valueOf(fixed), separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(errorType, separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(workspace, separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(uuid, separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(path, separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(primaryType, separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(mixins, separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(locale, separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(constraintMessage, separator, escapedSeparator));
-        sb.append(separator).append(StringUtils.replace(String.valueOf(extraInfos), separator, escapedSeparator));
+        appendToCSVLine(sb, String.valueOf(integrityCheckID), separator, escapedSeparator);
+        appendToCSVLine(sb, String.valueOf(fixed),separator, escapedSeparator);
+        appendToCSVLine(sb, errorType,separator, escapedSeparator);
+        appendToCSVLine(sb, workspace,separator, escapedSeparator);
+        appendToCSVLine(sb, uuid,separator, escapedSeparator);
+        appendToCSVLine(sb, path,separator, escapedSeparator);
+        appendToCSVLine(sb, primaryType,separator, escapedSeparator);
+        appendToCSVLine(sb, mixins,separator, escapedSeparator);
+        appendToCSVLine(sb, locale,separator, escapedSeparator);
+        appendToCSVLine(sb, constraintMessage,separator, escapedSeparator);
+        appendToCSVLine(sb, String.valueOf(extraInfos),separator, escapedSeparator);
 
         return sb.toString();
+    }
+
+    private void appendToCSVLine(StringBuilder sb, Object value, String separator, String escapedSeparator) {
+        if (sb.length() > 0) sb.append(separator);
+        if (value == null) return;
+        sb.append(StringUtils.replace(String.valueOf(value), separator, escapedSeparator));
     }
 
     public boolean isFixed() {
