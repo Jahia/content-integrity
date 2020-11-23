@@ -127,43 +127,45 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
-        JCRSessionFactory.getInstance().closeAllSessions();
-        final JCRSessionWrapper session;
         try {
-            session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
-        } catch (RepositoryException e) {
-            logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
-            return null;
-        }
-        try {
-            final JCRNodeWrapper node = session.getNode(path);
-            logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
-            final List<ContentIntegrityError> errors = new ArrayList<>();
-            final long start = System.currentTimeMillis();
-            resetCounters();
-            final Set<String> trimmedExcludedPaths = new HashSet<>();
-            if (CollectionUtils.isNotEmpty(excludedPaths)) {
-                for (String excludedPath : excludedPaths) {
-                    trimmedExcludedPaths.add(("/".equals(excludedPath) || !excludedPath.endsWith("/")) ? excludedPath : excludedPath.substring(0, excludedPath.length() - 1));
+            JCRSessionFactory.getInstance().closeAllSessions();
+            final JCRSessionWrapper session;
+            try {
+                session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
+            } catch (RepositoryException e) {
+                logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
+                return null;
+            }
+            try {
+                final JCRNodeWrapper node = session.getNode(path);
+                logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
+                final List<ContentIntegrityError> errors = new ArrayList<>();
+                final long start = System.currentTimeMillis();
+                resetCounters();
+                final Set<String> trimmedExcludedPaths = new HashSet<>();
+                if (CollectionUtils.isNotEmpty(excludedPaths)) {
+                    for (String excludedPath : excludedPaths) {
+                        trimmedExcludedPaths.add(("/".equals(excludedPath) || !excludedPath.endsWith("/")) ? excludedPath : excludedPath.substring(0, excludedPath.length() - 1));
+                    }
                 }
+                calculateNbNodestoScan(node, trimmedExcludedPaths);
+                ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger);
+                for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+                    integrityCheck.initializeIntegrityTest();
+                }
+                validateIntegrity(node, trimmedExcludedPaths, errors, fixErrors);
+                for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+                    integrityCheck.finalizeIntegrityTest();
+                }
+                final long testDuration = System.currentTimeMillis() - start;
+                logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration)));
+                printChecksDuration();
+                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, errors);
+                storeErrorsInCache(results);
+                return results;
+            } catch (RepositoryException e) {
+                logger.error("", e);
             }
-            calculateNbNodestoScan(node, trimmedExcludedPaths);
-            ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger);
-            for (ContentIntegrityCheck integrityCheck : integrityChecks) {
-                integrityCheck.initializeIntegrityTest();
-            }
-            validateIntegrity(node, trimmedExcludedPaths, errors, fixErrors);
-            for (ContentIntegrityCheck integrityCheck : integrityChecks) {
-                integrityCheck.finalizeIntegrityTest();
-            }
-            final long testDuration = System.currentTimeMillis() - start;
-            logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration)));
-            printChecksDuration();
-            final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, errors);
-            storeErrorsInCache(results);
-            return results;
-        } catch (RepositoryException e) {
-            logger.error("", e);
         } finally {
             JCRSessionFactory.getInstance().closeAllSessions();
         }
