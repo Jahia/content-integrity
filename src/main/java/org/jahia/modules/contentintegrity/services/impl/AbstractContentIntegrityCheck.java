@@ -52,12 +52,13 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         if (prop instanceof String) {
             validity_dxMinimumVersion = (String) prop;
             validity_dxMinimumVersionBoundIncluded = false;
-        };
+        }
+
         prop = context.getProperties().get(ValidityCondition.APPLY_ON_VERSION_GTE);
         if (prop instanceof String) {
             validity_dxMinimumVersion = (String) prop;
             validity_dxMinimumVersionBoundIncluded = true;
-        };
+        }
 
         // TODO check if it is possible to keep the declaration order
         prop = context.getProperties().get(ExecutionCondition.APPLY_ON_NT);
@@ -220,6 +221,22 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
             this.setEnabled(true);
         }
+    }
+
+    @Override
+    public boolean isValid() {
+        if (validity_dxMinimumVersion == null) return true;
+        final Version checkVersion;
+        try {
+            checkVersion = new Version(validity_dxMinimumVersion);
+        } catch (NumberFormatException nfe) {
+            logger.error(String.format("Invalid DX minimum version: %s", validity_dxMinimumVersion));
+            return false;
+        }
+
+        final Version dxVersion = new Version(Jahia.VERSION);
+        final int compareTo = dxVersion.compareTo(checkVersion);
+        return validity_dxMinimumVersionBoundIncluded ? compareTo >= 0 : compareTo > 0;
     }
 
     /*
@@ -457,21 +474,5 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         public String toString() {
             return String.format("has property %s", propertyName);
         }
-    }
-
-    @Override
-    public boolean isValid() {
-        if (validity_dxMinimumVersion == null) return true;
-        final Version checkVersion;
-        try {
-            checkVersion = new Version(validity_dxMinimumVersion);
-        } catch (NumberFormatException nfe) {
-            logger.error(String.format("Invalid DX minimum version: %s", validity_dxMinimumVersion));
-            return false;
-        }
-
-        final Version dxVersion = new Version(Jahia.VERSION);
-        final int compareTo = dxVersion.compareTo(checkVersion);
-        return validity_dxMinimumVersionBoundIncluded ? compareTo >= 0 : compareTo > 0;
     }
 }
