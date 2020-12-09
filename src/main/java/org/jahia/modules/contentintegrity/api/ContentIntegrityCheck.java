@@ -47,6 +47,10 @@ public interface ContentIntegrityCheck {
         boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException;
     }
 
+    interface IsConfigurable {
+        ContentIntegrityCheckConfiguration getConfigurations();
+    }
+
     /*
        Execution conditions
     */

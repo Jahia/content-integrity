@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.jcrcommands;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Completion;
@@ -29,6 +30,15 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
     @Completion(BooleanCompleter.class)
     private String enabled;
 
+    @Option(name = "-p", aliases = "--param", description = "Parameter to configure. If no value is specified, the current value is printed out")
+    private String paramName;
+
+    @Option(name = "-v", aliases = "--value", description = "Parameter value to set")
+    private String paramValue;
+
+    @Option(name = "-rp", aliases = "--resetParam", description = "Parameter to reset to its default value")
+    private String resetParam;
+
     @Override
     public Object execute() throws Exception {
         final ContentIntegrityCheck integrityCheck = Utils.getContentIntegrityService().getContentIntegrityCheck(checkID);
@@ -36,8 +46,39 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
             System.out.println(String.format("No check found for ID %s", checkID));
             return null;
         }
+
         if (enabled != null)
             integrityCheck.setEnabled(Boolean.parseBoolean(enabled));
+
+        setParam(integrityCheck);
+
         return null;
+    }
+
+    private void setParam(ContentIntegrityCheck integrityCheck) {
+        if (StringUtils.isNotBlank(paramName) && StringUtils.isNotBlank(resetParam)) {
+            System.out.println("-p and -rp can't be used together");
+            return;
+        }
+        if (StringUtils.isNotBlank(paramName) || StringUtils.isNotBlank(resetParam)) {
+            if (!(integrityCheck instanceof ContentIntegrityCheck.IsConfigurable)) {
+                System.out.println(String.format("%s is not configurable", integrityCheck.getName()));
+                return;
+            }
+        }
+
+        final ContentIntegrityCheck.IsConfigurable check = (ContentIntegrityCheck.IsConfigurable) integrityCheck;
+        if (StringUtils.isNotBlank(paramName)) {
+            if (StringUtils.isNotBlank(paramValue))
+                check.getConfigurations().setParameter(paramName, paramValue);
+            System.out.println(String.format("%s: %s = %s", integrityCheck.getName(), paramName, check.getConfigurations().getParameter(paramName)));
+        } else if (StringUtils.isNotBlank(paramValue)) {
+            System.out.println("The parameter name is not declared");
+        }
+
+        if (StringUtils.isNotBlank(resetParam)) {
+            check.getConfigurations().setParameter(resetParam, null);
+            System.out.println(String.format("%s: %s = %s", integrityCheck.getName(), resetParam, check.getConfigurations().getParameter(resetParam)));
+        }
     }
 }
