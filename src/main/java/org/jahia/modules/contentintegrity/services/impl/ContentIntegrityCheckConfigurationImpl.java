@@ -12,7 +12,7 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityCheckConfigurationImpl.class);
 
-    private final Map<String,Object> defaultParameters = new HashMap<>();
+    private final Map<String,DefaultConfiguration> defaultParameters = new HashMap<>();
     private final Map<String,Object> customParameters = new HashMap<>();
 
     @Override
@@ -21,8 +21,8 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
     }
 
     @Override
-    public void declareDefaultParameter(String name, Object value) {
-        defaultParameters.put(name, value);
+    public void declareDefaultParameter(String name, Object value, String description) {
+        defaultParameters.put(name, new DefaultConfiguration(value, description));
     }
 
     @Override
@@ -36,6 +36,30 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
     public Object getParameter(String name) {
         if (!defaultParameters.containsKey(name)) throw new IllegalArgumentException(String.format("Illegal parameter: %s", name));
         if (customParameters.containsKey(name)) return customParameters.get(name);
-        return defaultParameters.get(name);
+        return defaultParameters.get(name).getValue();
+    }
+
+    @Override
+    public String getDescription(String name) {
+        if (!defaultParameters.containsKey(name)) return null;
+        return defaultParameters.get(name).getDescription();
+    }
+
+    private class DefaultConfiguration {
+        final String description;
+        final Object value;
+
+        private DefaultConfiguration(Object value, String description) {
+            this.value = value;
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public Object getValue() {
+            return value;
+        }
     }
 }

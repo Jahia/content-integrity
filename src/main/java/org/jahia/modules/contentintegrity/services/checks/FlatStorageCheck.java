@@ -26,7 +26,7 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
 
     public FlatStorageCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
-        getConfigurations().declareDefaultParameter(THRESHOLD_KEY, defaultThreshold);
+        getConfigurations().declareDefaultParameter(THRESHOLD_KEY, defaultThreshold, "Number of children nodes beyond which an error is raised");
     }
 
     @Override

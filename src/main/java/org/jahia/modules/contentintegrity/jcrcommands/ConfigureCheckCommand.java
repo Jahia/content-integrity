@@ -9,6 +9,7 @@ import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.BooleanCompleter;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
@@ -39,6 +40,9 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
     @Option(name = "-rp", aliases = "--resetParam", description = "Parameter to reset to its default value")
     private String resetParam;
 
+    @Option(name = "-pc", aliases = "--printConfigs", description = "Print all the configurations of the specified check")
+    private boolean printAllConfs;
+
     @Override
     public Object execute() throws Exception {
         final ContentIntegrityCheck integrityCheck = Utils.getContentIntegrityService().getContentIntegrityCheck(checkID);
@@ -50,9 +54,29 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
         if (enabled != null)
             integrityCheck.setEnabled(Boolean.parseBoolean(enabled));
 
-        setParam(integrityCheck);
+        if (printAllConfs) printAllConfs(integrityCheck);
+
+        if (StringUtils.isNotBlank(paramName) || StringUtils.isNotBlank(resetParam)) {
+            setParam(integrityCheck);
+        }
 
         return null;
+    }
+
+    private void printAllConfs(ContentIntegrityCheck integrityCheck) {
+        if (!(integrityCheck instanceof ContentIntegrityCheck.IsConfigurable)) {
+            System.out.println(String.format("%s is not configurable", integrityCheck.getName()));
+            return;
+        }
+
+        final ContentIntegrityCheck.IsConfigurable check = (ContentIntegrityCheck.IsConfigurable) integrityCheck;
+        System.out.println(String.format("%s:", integrityCheck.getName()));
+        final ContentIntegrityCheckConfiguration configurations = check.getConfigurations();
+        for (String name : configurations.getConfigurationNames()) {
+            System.out.println(String.format("    %s = %s (%s)",
+                    name, configurations.getParameter(name), configurations.getDescription(name)));
+        }
+
     }
 
     private void setParam(ContentIntegrityCheck integrityCheck) {
@@ -60,14 +84,13 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
             System.out.println("-p and -rp can't be used together");
             return;
         }
-        if (StringUtils.isNotBlank(paramName) || StringUtils.isNotBlank(resetParam)) {
-            if (!(integrityCheck instanceof ContentIntegrityCheck.IsConfigurable)) {
-                System.out.println(String.format("%s is not configurable", integrityCheck.getName()));
-                return;
-            }
-        }
 
+        if (!(integrityCheck instanceof ContentIntegrityCheck.IsConfigurable)) {
+            System.out.println(String.format("%s is not configurable", integrityCheck.getName()));
+            return;
+        }
         final ContentIntegrityCheck.IsConfigurable check = (ContentIntegrityCheck.IsConfigurable) integrityCheck;
+        
         if (StringUtils.isNotBlank(paramName)) {
             if (StringUtils.isNotBlank(paramValue))
                 check.getConfigurations().setParameter(paramName, paramValue);

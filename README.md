@@ -100,7 +100,8 @@ Name | alias | Value | Mandatory | Multiple | Description
  -e | --enabled | true, false | | | Enables the integrity check if `true`, disable it if `false`. Do not change the current status if not defined 
  -p | --param | string | | | Name of the parameter to configure. Depends on the integrity check specified with `-id`. If no value is specified, the current value is printed out 
  -v | --value | string | | | Value of the parameter to configure. Depends on the parameter specified with `-p`. Depends on the integrity check specified with `-id` 
- -rp| --resetParam | string | | | Name of the parameter to reset to its default value 
+ -rp | --resetParam | string | | | Name of the parameter to reset to its default value 
+ -pc | --printConfigs | string | | | Print all the configurations of the specified check 
  
 **Example:**
 
@@ -113,6 +114,9 @@ Name | alias | Value | Mandatory | Multiple | Description
     Integrity checks (11):
        FlatStorageCheck (id: 2, priority: 0.0, enabled: false)
        [...]
+    jahia@dx()> jcr:integrity-configureCheck -id 2 -pc
+    FlatStorageCheck:
+        threshold = 500 (Number of children nodes beyond which an error is raised)
     jahia@dx()> jcr:integrity-configureCheck -id 2 -p threshold
     FlatStorageCheck: threshold = 500
     jahia@dx()> jcr:integrity-configureCheck -id 2 -p threshold -v 200

@@ -42,7 +42,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
 
     public VersionHistoryCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
-        configurations.declareDefaultParameter(THRESHOLD_KEY, defaultThreshold);
+        configurations.declareDefaultParameter(THRESHOLD_KEY, defaultThreshold, "Number of versions for a single node beyond which an error is raised");
     }
 
     @Override
