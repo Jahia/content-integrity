@@ -111,6 +111,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return priority;
     }
 
+    @Override
     public boolean isEnabled() {
         return enabled;
     }

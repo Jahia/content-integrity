@@ -17,6 +17,8 @@ public interface ContentIntegrityCheck {
 
     String getName();
 
+    boolean isEnabled();
+
     void setEnabled(boolean enabled);
 
     long getId();

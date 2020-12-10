@@ -51,8 +51,11 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
             return null;
         }
 
-        if (enabled != null)
+        if (enabled != null) {
             integrityCheck.setEnabled(Boolean.parseBoolean(enabled));
+            System.out.println(String.format("%s: %s", integrityCheck.getName(),
+                    integrityCheck.isEnabled() ? "enabled" : "disabled"));
+        }
 
         if (printAllConfs) printAllConfs(integrityCheck);
 
@@ -90,7 +93,7 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
             return;
         }
         final ContentIntegrityCheck.IsConfigurable check = (ContentIntegrityCheck.IsConfigurable) integrityCheck;
-        
+
         if (StringUtils.isNotBlank(paramName)) {
             if (StringUtils.isNotBlank(paramValue))
                 check.getConfigurations().setParameter(paramName, paramValue);
