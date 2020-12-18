@@ -38,7 +38,7 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
     @Completion(TestDateCompleter.class)
     private String testID;
 
-    @Argument(description = "ID of the error to fix.", required = true, multiValued = true)
+    @Argument(description = "ID of the error to fix. * for all", required = true, multiValued = true)
     @Completion(ErrorIdCompleter.class)
     private List<String> errorIDs;
 
@@ -63,22 +63,35 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
         }
 
         final List<ContentIntegrityError> errors = results.getErrors();
-        for (String errorID : errorIDs) {
-            final int errorIdx = NumberUtils.toInt(errorID, -1);
-            if (errorIdx < 0 || errorIdx >= errors.size()) {
-                System.out.println(String.format("The specified error (id=%s) couldn't be found", errorID));
-                continue;
+        if (errorIDs.contains("*")) {
+            for (int i = 0; i < errors.size(); i++) {
+                final ContentIntegrityError error = errors.get(i);
+                if (!error.isFixed())
+                    fixSingleError(error, i, contentIntegrityService);
             }
-            final ContentIntegrityError error = errors.get(errorIdx);
-            if (error.isFixed()) {
-                System.out.println(String.format("The error (id=%s) is already fixed", errorID));
-                continue;
+        } else {
+            for (String errorID : errorIDs) {
+                final int errorIdx = NumberUtils.toInt(errorID, -1);
+                if (errorIdx < 0 || errorIdx >= errors.size()) {
+                    System.out.println(String.format("The specified error (id=%s) couldn't be found", errorID));
+                    continue;
+                }
+                final ContentIntegrityError error = errors.get(errorIdx);
+                if (error.isFixed()) {
+                    System.out.println(String.format("The error (id=%s) is already fixed", errorID));
+                    continue;
+                }
+                fixSingleError(error, errorIdx, contentIntegrityService);
             }
-            contentIntegrityService.fixError(error);
-            if (error.isFixed()) System.out.println(String.format("Fixed the error id=%s", errorID));
-            else System.out.println(String.format("Impossible to fix the error id=%s", errorID));
         }
 
         return null;
+    }
+
+    private void fixSingleError(ContentIntegrityError error, int errorID, ContentIntegrityService contentIntegrityService) {
+        contentIntegrityService.fixError(error);
+        if (error.isFixed()) System.out.println(String.format("Fixed the error id=%s", errorID));
+        else System.out.println(String.format("Impossible to fix the error id=%s", errorID));
+
     }
 }

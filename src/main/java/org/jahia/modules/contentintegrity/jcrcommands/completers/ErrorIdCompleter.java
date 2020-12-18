@@ -40,6 +40,7 @@ public class ErrorIdCompleter implements Completer {
                 final ContentIntegrityError error = errors.get(i);
                 if (!error.isFixed()) candidates.add(Integer.toString(i));
             }
+            candidates.add("*");
         } else {
             for (int i = 0; i < errors.size(); i++) {
                 final ContentIntegrityError error = errors.get(i);
