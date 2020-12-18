@@ -66,17 +66,17 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
         for (String errorID : errorIDs) {
             final int errorIdx = NumberUtils.toInt(errorID, -1);
             if (errorIdx < 0 || errorIdx >= errors.size()) {
-                System.out.println(String.format("The specified error (%s) couldn't be found", errorID));
+                System.out.println(String.format("The specified error (id=%s) couldn't be found", errorID));
                 continue;
             }
             final ContentIntegrityError error = errors.get(errorIdx);
             if (error.isFixed()) {
-                System.out.println(String.format("The error (%s) is already fixed", errorID));
+                System.out.println(String.format("The error (id=%s) is already fixed", errorID));
                 continue;
             }
             contentIntegrityService.fixError(error);
-            if (error.isFixed()) System.out.println(String.format("Error fixed: %s", errorID));
-            else System.out.println(String.format("Impossible to fix the error: %s", errorID));
+            if (error.isFixed()) System.out.println(String.format("Fixed the error id=%s", errorID));
+            else System.out.println(String.format("Impossible to fix the error id=%s", errorID));
         }
 
         return null;
