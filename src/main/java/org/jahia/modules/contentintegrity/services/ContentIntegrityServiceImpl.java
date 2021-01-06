@@ -50,6 +50,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private EhCacheProvider ehCacheProvider;
     private String errorsCacheName = "ContentIntegrityService-errors";
     private long errorsCacheTti = 24L * 3600L; // 1 day;
+    private long nbNodestoScanCalculationDuration = 0L;
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
     private long integrityChecksIdGenerator = 0;
@@ -176,6 +177,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             integrityCheck.resetOwnTime();
         }
+        nbNodestoScanCalculationDuration = 0L;
         ownTime = 0L;
         ownTimeIntervalStart = 0L;
         nbNodesToScan = 0L;
@@ -195,6 +197,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private void printChecksDuration() {
+        if (logger.isDebugEnabled())
+            logger.debug(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodestoScanCalculationDuration)));
         logger.info(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)));
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             logger.info(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())));
@@ -261,12 +265,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private void calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths) {
+        final long start = System.currentTimeMillis();
         try {
             nbNodesToScan = calculateNbNodestoScan(node, excludedPaths, 0);
             logger.info(String.format("%s nodes to scan", nbNodesToScan));
         } catch (RepositoryException e) {
             logger.error("", e);
         }
+        nbNodestoScanCalculationDuration = System.currentTimeMillis() - start;
     }
 
     private int calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths, int currentCount) throws RepositoryException {
@@ -275,6 +281,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
         int count = currentCount + 1;
         for (JCRNodeWrapper child : node.getNodes()) {
+            if ("/jcr:system".equals(child.getPath()))
+                continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
             count = calculateNbNodestoScan(child, excludedPaths, count);
         }
         return count;
