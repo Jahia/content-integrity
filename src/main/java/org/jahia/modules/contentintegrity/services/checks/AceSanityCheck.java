@@ -70,6 +70,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     @Override
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
+        if (!Constants.EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
+        
         final Object errorExtraInfos = error.getExtraInfos();
         if (!(errorExtraInfos instanceof ErrorType)) {
             logger.error("Unexpected error type: " + errorExtraInfos);
