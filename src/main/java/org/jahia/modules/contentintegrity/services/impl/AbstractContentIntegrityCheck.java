@@ -32,8 +32,8 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private long ownTime = 0L;
     private int fatalErrorCount = 0;
     private final int FATAL_ERRORS_THRESHOLD = 10;  // TODO make this configurable
-    private String validity_dxMinimumVersion = null;  // TODO if another criteria is some day required, introduce a list of validity conditions as for the execution conditions
-    private boolean validity_dxMinimumVersionBoundIncluded = false;
+    private String validity_jahiaMinimumVersion = null;  // TODO if another criteria is some day required, introduce a list of validity conditions as for the execution conditions
+    private boolean validity_jahiaMinimumVersionBoundIncluded = false;
 
     protected void activate(ComponentContext context) {
         if (logger.isDebugEnabled()) logger.debug(String.format("Activating check %s", getClass().getCanonicalName()));
@@ -50,14 +50,14 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
         prop = context.getProperties().get(ValidityCondition.APPLY_ON_VERSION_GT);
         if (prop instanceof String) {
-            validity_dxMinimumVersion = (String) prop;
-            validity_dxMinimumVersionBoundIncluded = false;
+            validity_jahiaMinimumVersion = (String) prop;
+            validity_jahiaMinimumVersionBoundIncluded = false;
         }
 
         prop = context.getProperties().get(ValidityCondition.APPLY_ON_VERSION_GTE);
         if (prop instanceof String) {
-            validity_dxMinimumVersion = (String) prop;
-            validity_dxMinimumVersionBoundIncluded = true;
+            validity_jahiaMinimumVersion = (String) prop;
+            validity_jahiaMinimumVersionBoundIncluded = true;
         }
 
         // TODO check if it is possible to keep the declaration order
@@ -226,18 +226,18 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public boolean isValid() {
-        if (validity_dxMinimumVersion == null) return true;
+        if (validity_jahiaMinimumVersion == null) return true;
         final Version checkVersion;
         try {
-            checkVersion = new Version(validity_dxMinimumVersion);
+            checkVersion = new Version(validity_jahiaMinimumVersion);
         } catch (NumberFormatException nfe) {
-            logger.error(String.format("Invalid DX minimum version: %s", validity_dxMinimumVersion));
+            logger.error(String.format("Invalid Jahia minimum version: %s", validity_jahiaMinimumVersion));
             return false;
         }
 
-        final Version dxVersion = new Version(Jahia.VERSION);
-        final int compareTo = dxVersion.compareTo(checkVersion);
-        return validity_dxMinimumVersionBoundIncluded ? compareTo >= 0 : compareTo > 0;
+        final Version jahiaVersion = new Version(Jahia.VERSION);
+        final int compareTo = jahiaVersion.compareTo(checkVersion);
+        return validity_jahiaMinimumVersionBoundIncluded ? compareTo >= 0 : compareTo > 0;
     }
 
     /*
