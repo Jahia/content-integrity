@@ -146,6 +146,13 @@ You need to declare a Maven dependency to the core module.
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>jahia-ps-public</id>
+            <url>https://devtools.jahia.com/nexus/content/repositories/jahia-professional-services-public-repository</url>
+        </repository>
+    </repositories>
     
 You need to declare a Jahia level dependency to the core module. If your module is dedicated to content integrity extension,
 then it is relevant to flag it as a system module as enabling it on a website would not carry any additional effect out.
