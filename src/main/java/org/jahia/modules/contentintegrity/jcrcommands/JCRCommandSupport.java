@@ -10,6 +10,7 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.settings.SettingsBean;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -127,5 +128,10 @@ public class JCRCommandSupport {
         final int errorsCount = errors.size();
         if (errorsCount > errorID)
             System.out.println(String.format("Printed the first %s errors. Total number of errors: %s", nbPrintedErrors, errorsCount));
+    }
+
+    protected static String getProperty(String name) {
+        final String property = SettingsBean.getInstance().getPropertiesFile().getProperty(name);
+        return property != null ? property : System.getProperty(name);
     }
 }

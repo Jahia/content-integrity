@@ -29,7 +29,7 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
 
     private static final Logger logger = LoggerFactory.getLogger(FixIntegrityErrorsCommand.class);
 
-    private static final boolean devMode = Boolean.parseBoolean(SettingsBean.getInstance().getPropertiesFile().getProperty("modules.contentIntegrity.devMode"));
+    private static final boolean devMode = Boolean.parseBoolean(getProperty("modules.contentIntegrity.devMode"));
 
     @Reference
     Session session;
