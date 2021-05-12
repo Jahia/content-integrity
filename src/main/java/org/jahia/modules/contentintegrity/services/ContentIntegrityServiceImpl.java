@@ -303,7 +303,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private void handleResult(ContentIntegrityErrorList checkResult, JCRNodeWrapper node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
-        if (checkResult == null) return;
+        if (checkResult == null || !checkResult.hasErrors()) return;
         for (ContentIntegrityError integrityError : checkResult.getNestedErrors()) {
             if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
                 try {

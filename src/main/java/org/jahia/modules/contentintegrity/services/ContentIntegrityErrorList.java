@@ -10,7 +10,11 @@ public class ContentIntegrityErrorList {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityErrorList.class);
 
-    private List<ContentIntegrityError> nestedErrors = new ArrayList<>();
+    private final List<ContentIntegrityError> nestedErrors = new ArrayList<>();
+
+    public static ContentIntegrityErrorList createEmptyList() {
+        return new ContentIntegrityErrorList();
+    }
 
     public static ContentIntegrityErrorList createSingleError(ContentIntegrityError error) {
         return (new ContentIntegrityErrorList()).addError(error);
@@ -21,7 +25,16 @@ public class ContentIntegrityErrorList {
         return this;
     }
 
-    public List<ContentIntegrityError> getNestedErrors() {
+    /*
+    the list should use a "add only" implementation, or this method should return a copy of the list,
+    in order to prevent removing an error from the list. Since cloning would impact the overall performances,
+    using a package-private visibility for the method should be enough.
+     */
+    List<ContentIntegrityError> getNestedErrors() {
         return nestedErrors;
+    }
+
+    public boolean hasErrors() {
+        return !nestedErrors.isEmpty();
     }
 }

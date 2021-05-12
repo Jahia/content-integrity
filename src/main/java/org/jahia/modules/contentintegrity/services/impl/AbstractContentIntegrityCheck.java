@@ -181,6 +181,10 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return ContentIntegrityError.createError(node, null, message, this);
     }
 
+    protected final ContentIntegrityErrorList createEmptyErrorsList() {
+        return ContentIntegrityErrorList.createEmptyList();
+    }
+
     protected final ContentIntegrityErrorList createSingleError(JCRNodeWrapper node, String locale, String message) {
         return ContentIntegrityErrorList.createSingleError(createError(node, locale, message));
     }
