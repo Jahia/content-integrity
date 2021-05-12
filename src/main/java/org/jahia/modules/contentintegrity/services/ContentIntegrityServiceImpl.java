@@ -222,12 +222,16 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             final JCRNodeIteratorWrapper it = node.getNodes();
             boolean hasNext = it.hasNext();
             while (hasNext) {
-                beginComputingOwnTime();
-                final JCRNodeWrapper child = (JCRNodeWrapper) it.next();
-                hasNext = it.hasNext(); // Not using a for loop so that it.hasNext() is part of the calculation of the duration of the scan
-                if ("/jcr:system".equals(child.getPath()))
-                    continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
-                endComputingOwnTime();
+                JCRNodeWrapper child;
+                try {
+                    beginComputingOwnTime();
+                    child = (JCRNodeWrapper) it.next();
+                    hasNext = it.hasNext(); // Not using a for loop so that it.hasNext() is part of the calculation of the duration of the scan
+                    if ("/jcr:system".equals(child.getPath()))
+                        continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
+                } finally {
+                    endComputingOwnTime();
+                }
                 validateIntegrity(child, excludedPaths, errors, fixErrors);
             }
         } catch (RepositoryException e) {
