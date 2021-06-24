@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.ComponentContext;
@@ -16,9 +17,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
@@ -181,6 +184,16 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return ContentIntegrityError.createError(node, null, message, this);
     }
 
+    protected final ContentIntegrityError createErrorWithInfos(JCRNodeWrapper node, String locale, String message, Object... infos) {
+        final ContentIntegrityError error = createError(node, locale, message);
+        if (infos.length == 1) {
+            error.setExtraInfos(Arrays.stream(infos).findFirst().get());
+        } else if (infos.length > 1) {
+            error.setExtraInfos(Arrays.stream(infos).collect(Collectors.toList()));
+        }
+        return error;
+    }
+
     protected final ContentIntegrityErrorList createEmptyErrorsList() {
         return ContentIntegrityErrorList.createEmptyList();
     }
@@ -259,6 +272,15 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected boolean isInLiveWorkspace(JCRNodeWrapper node) {
         return !isInDefaultWorkspace(node);
+    }
+
+    protected boolean nodeExists(String uuid, JCRSessionWrapper session) {
+        try {
+            session.getNodeByUUID(uuid);
+            return true;
+        } catch (RepositoryException e) {
+            return false;
+        }
     }
 
     /*
