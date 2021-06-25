@@ -52,7 +52,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private final Map<String, Role> roles = new HashMap<>();
 
     @Override
-    public void initializeIntegrityTest() {
+    public void initializeIntegrityTestInternal() {
         final JCRSessionWrapper defaultSession;
         try {
             defaultSession = JCRSessionFactory.getInstance().getCurrentSystemSession(EDIT_WORKSPACE, null, null);
@@ -78,7 +78,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     @Override
-    public void finalizeIntegrityTest() {
+    public void finalizeIntegrityTestInternal() {
         roles.clear();
     }
 

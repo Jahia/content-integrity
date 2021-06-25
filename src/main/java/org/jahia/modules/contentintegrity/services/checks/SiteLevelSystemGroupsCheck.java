@@ -32,10 +32,9 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
     private JahiaGroupManagerService jgms;
 
     @Override
-    public void initializeIntegrityTest() {
+    public void initializeIntegrityTestInternal() {
         if (jgms == null)
             jgms = ServicesRegistry.getInstance().getJahiaGroupManagerService();
-        super.initializeIntegrityTest();
     }
 
     @Override

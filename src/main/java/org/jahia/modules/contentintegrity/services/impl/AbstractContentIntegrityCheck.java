@@ -229,17 +229,23 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public void initializeIntegrityTest() {
+    public final void initializeIntegrityTest() {
         fatalErrorCount = 0;
+        initializeIntegrityTestInternal();
     }
 
+    protected void initializeIntegrityTestInternal() {}
+
     @Override
-    public void finalizeIntegrityTest() {
+    public final void finalizeIntegrityTest() {
+        finalizeIntegrityTestInternal();
         if (!enabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
             this.setEnabled(true);
         }
     }
+
+    protected void finalizeIntegrityTestInternal() {}
 
     @Override
     public boolean isValid() {
