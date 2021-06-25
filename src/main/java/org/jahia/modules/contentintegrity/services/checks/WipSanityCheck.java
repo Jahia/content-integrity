@@ -18,22 +18,21 @@ import static org.jahia.api.Constants.EDIT_WORKSPACE;
 import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
 import static org.jahia.api.Constants.JAHIANT_TRANSLATION;
 import static org.jahia.api.Constants.WORKINPROGRESS;
+import static org.jahia.api.Constants.WORKINPROGRESS_STATUS;
+import static org.jahia.api.Constants.WORKINPROGRESS_STATUS_ALLCONTENT;
+import static org.jahia.api.Constants.WORKINPROGRESS_STATUS_LANG;
+import static org.jahia.api.Constants.WORKINPROGRESS_STATUS_DISABLED;
+import static org.jahia.api.Constants.WORKINPROGRESS_LANGUAGES;
 
-// TODO replace j:workInProgressStatus with the related constant when the module is built against 7.2.3.1 or newer
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + EDIT_WORKSPACE,
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + JAHIAMIX_LASTPUBLISHED + "," + JAHIANT_TRANSLATION,
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + WORKINPROGRESS + ",j:workInProgressStatus",
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + WORKINPROGRESS + "," + WORKINPROGRESS_STATUS,
         ContentIntegrityCheck.ValidityCondition.APPLY_ON_VERSION_GTE + "=7.2.3.1"
 })
 public class WipSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(WipSanityCheck.class);
-    private static final String WORKINPROGRESS_STATUS = "j:workInProgressStatus"; // TODO remove when the module is built against 7.2.3.1 or newer
-    private static final String WORKINPROGRESS_LANGUAGES = "j:workInProgressLanguages"; // TODO remove when the module is built against 7.2.3.1 or newer
-    private static final String WORKINPROGRESS_STATUS_ALLCONTENT = "ALL_CONTENT"; // TODO remove when the module is built against 7.2.3.1 or newer
-    private static final String WORKINPROGRESS_STATUS_LANG = "LANGUAGES"; // TODO remove when the module is built against 7.2.3.1 or newer
-    private static final String WORKINPROGRESS_STATUS_DISABLED = "DISABLED"; // TODO remove when the module is built against 7.2.3.1 or newer
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
