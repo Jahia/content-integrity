@@ -54,9 +54,13 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
         }
 
         if (CollectionUtils.isNotEmpty(undeployedModules)) {
-            final ContentIntegrityError error = createError(node, String.format("The modules %s are activated on the site %s, but not available", undeployedModules, site.getTitle()));
-            error.setExtraInfos(undeployedModules);
-            return createSingleError(error);
+            final ContentIntegrityErrorList errors = createEmptyErrorsList();
+            for (String undeployedModule : undeployedModules) {
+                errors.addError(createErrorWithInfos(node, null,
+                        String.format("The module %s is activated on the site %s, but not available", undeployedModule, site.getTitle()),
+                        undeployedModule));
+            }
+            return errors;
         }
 
         return null;
@@ -65,30 +69,25 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
         final JCRSiteNode site = (JCRSiteNode) node;
-        final List<String> missingModules = (List<String>) integrityError.getExtraInfos();
-        if (CollectionUtils.isEmpty(missingModules)) return true;
+        final String missingModule = (String) integrityError.getExtraInfos();
         final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
         final Set<Bundle> bundles = jahiaTemplateManagerService.getModuleStates().keySet();
-        final Set<String> installedModuleIDs = new HashSet<>();
-        installedModuleIDs.addAll(CollectionUtils.collect(bundles, new Transformer<Bundle, String>() {
-            @Override
-            public String transform(Bundle input) {
-                return BundleUtils.getModuleId(input);
-            }
-        }));
-        boolean success = true;
-        for (String undeployedModule : missingModules) {
-            if (installedModuleIDs.contains(undeployedModule)) {
-                success = false;
-                continue;
-            }
-            final List<String> siteModules = site.getInstalledModules();
-            siteModules.remove(undeployedModule);
-            site.setInstalledModules(siteModules);
-            site.getSession().save();
-            logger.info(String.format("Unreferenced the module %s from the site %s", undeployedModule, site.getTitle()));
+        final Collection<String> installedModuleIDs = CollectionUtils.collect(bundles, BundleUtils::getModuleId);
+        if (installedModuleIDs.contains(missingModule)) {
+            logger.info(String.format("The module %s has not been unreferenced from the site %s since it is now installed on the server",
+                    missingModule, site.getSiteKey()));
+            return true;
         }
-
-        return success;
+        final List<String> siteModules = site.getInstalledModules();
+        final boolean remove = siteModules.remove(missingModule);
+        if (!remove) {
+            logger.info(String.format("The module %s is arlready unreferenced from the site %s",
+                    missingModule, site.getSiteKey()));
+            return true;
+        }
+        site.setInstalledModules(siteModules);
+        site.getSession().save();
+        logger.info(String.format("Unreferenced the module %s from the site %s", missingModule, site.getSiteKey()));
+        return true;
     }
 }

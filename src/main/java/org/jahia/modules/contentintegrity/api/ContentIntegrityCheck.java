@@ -46,6 +46,14 @@ public interface ContentIntegrityCheck {
     boolean isValid();
 
     interface SupportsIntegrityErrorFix {
+        /**
+         * Fix a single error identified during a previous scan.
+         *
+         * @param node the node on which the error has been identified.
+         * @param error the error to fix
+         * @return true if the error has been successfuly fixed, or if it is already fixed. false otherwise
+         * @throws RepositoryException
+         */
         boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException;
     }
 
