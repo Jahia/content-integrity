@@ -137,10 +137,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 final JCRSiteNode site = node.getResolveSite();
                 final JCRSiteNode aceSite = srcAce.getResolveSite();
                 final String aceSiteKey = aceSite == null ? null : aceSite.getSiteKey();
+                final String srcAceIdentifier = srcAce.getIdentifier();
                 if (!StringUtils.equals(site == null ? null : site.getSiteKey(), aceSiteKey)) {
                     final Map<String, Object> infos = new HashMap<>(4);
                     infos.put("error-type", ErrorType.SOURCE_ACE_DIFFERENT_SITE);
-                    infos.put("ace-uuid", srcAce.getIdentifier());
+                    infos.put("ace-uuid", srcAceIdentifier);
                     infos.put("ace-path", srcAce.getPath());
                     infos.put("ace-site", aceSiteKey);
                     errors.addError(createErrorWithInfos(node, null, "The external ACE and the source ACE are stored in different sites", infos));
@@ -148,22 +149,25 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 if (hasPropRoles) {
                     if (!srcAce.hasProperty(J_ROLES)) {
                         errors.addError(createErrorWithInfos(node, null,
-                                "The roles differ on the external and source ACE, since the j:roles property is missing on the source ACE",
+                                String.format("The roles differ on the external and source ACE, since the %s property is missing on the source ACE", J_ROLES),
                                 ErrorType.ROLES_DIFFER_ON_SOURCE_ACE));
                     } else {
                         final List<String> externalAceRoles = getRoleNames(node);
-                        final List<String> srcAceRoles = getRoleNames(srcAce);
-                        final Collection externalAceOnlyRoles = CollectionUtils.subtract(externalAceRoles, srcAceRoles);
-                        if (CollectionUtils.isNotEmpty(externalAceOnlyRoles)) {
-                            errors.addError(createErrorWithInfos(node, null,
-                                    String.format("Some roles are defined on the external ACE but not on the source ACE: [%s]", String.join(", ", externalAceOnlyRoles)),
-                                    ErrorType.ROLES_DIFFER_ON_SOURCE_ACE));
-                        }
-                        final Collection srcAceOnlyRoles = CollectionUtils.subtract(srcAceRoles, externalAceRoles);
-                        if (CollectionUtils.isNotEmpty(srcAceOnlyRoles)) {
-                            errors.addError(createErrorWithInfos(node, null,
-                                    String.format("Some roles are defined on the source ACE but not on the external ACE: [%s]", String.join(", ", srcAceOnlyRoles)),
-                                    ErrorType.ROLES_DIFFER_ON_SOURCE_ACE));
+                        if (CollectionUtils.isEmpty(externalAceRoles)) {
+                            errors.addError(createErrorWithInfos(node, null, String.format("The property %s has no value", J_ROLES), ErrorType.INVALID_ROLES_PROP));
+                        } else if (externalAceRoles.size() > 1) {
+                            errors.addError(createErrorWithInfos(node, null, String.format("Unexpected number of roles in the property %s", J_ROLES), ErrorType.INVALID_ROLES_PROP));
+                        } else {
+                            final List<String> srcAceRoles = getRoleNames(srcAce);
+                            final String role = externalAceRoles.get(0);
+                            if (!srcAceRoles.contains(role)) {
+                                final Map<String, Object> infos = new HashMap<>();
+                                infos.put("error-type", ErrorType.ROLES_DIFFER_ON_SOURCE_ACE);
+                                infos.put("ace-uuid", srcAceIdentifier);
+                                errors.addError(createErrorWithInfos(node, null,
+                                        String.format("The external ACE is defined for the role %s, but the ace (%s) has not this role", role, srcAceIdentifier),
+                                        ErrorType.ROLES_DIFFER_ON_SOURCE_ACE));
+                            }
                         }
                     }
                 }
@@ -288,7 +292,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private enum ErrorType {
-        NO_PRINCIPAL, INVALID_PRINCIPAL, NO_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, NO_ROLES_PROP,
+        NO_PRINCIPAL, INVALID_PRINCIPAL, NO_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, NO_ROLES_PROP, INVALID_ROLES_PROP,
         SOURCE_ACE_DIFFERENT_SITE, ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
     }
 
