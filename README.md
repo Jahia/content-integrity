@@ -314,4 +314,4 @@ Version | Required Jahia version | Changes
 2.8 | 7.3.0.0 | Implemented a sanity check on the ACE nodes, in order to detect ACE related to deleted users or groups
 2.9 | 7.3.0.0 | Implemented a factory method to create an empty errors list<br>[bugfix] Fixed the calculation of the number of nodes to scan when scanning the whole repository<br>[bugfix] Fixed the time calculation in case of error
 2.10 | 7.3.0.0 | Improved the sanity check on the ACE nodes
-2.11 | 7.3.0.0 | [bugfix] Fixed the comparison of the roles between an ACE and a related externalACE<br>UndeployedModulesReferencesCheck : return one error per missing module
+2.11 | 7.3.0.0 | [bugfix] Fixed the comparison of the roles between an ACE and a related externalACE<br>UndeployedModulesReferencesCheck : return one error per missing module<br>[bugfix] do not report errors for nodes having a different path between default and live when the node is not the root of the move operation

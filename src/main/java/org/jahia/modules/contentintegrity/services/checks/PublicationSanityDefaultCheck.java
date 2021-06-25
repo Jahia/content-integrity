@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
 import static org.jahia.api.Constants.JCR_LASTMODIFIED;
@@ -30,8 +32,15 @@ import static org.jahia.api.Constants.PUBLISHED;
 public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
+    private static final String DIFFERENT_PATH_ROOT = "different-path-root";
 
     private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH}
+    private Map<String, Object> inheritedErrors = new HashMap<>();
+
+    @Override
+    public void finalizeIntegrityTestInternal() {
+        inheritedErrors.clear();
+    }
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -49,15 +58,18 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                 }
 
                 /*
-                 hasPendingModifications(node) : the translation subnodes are not tested, since we are dealing here with
-                 a node which was moved. Then the root node itself should have a last modif date newer than the last
-                 publication date
+                 comparison of the path between the default and live workspaces: if a node has a different path, then the test will not be done
+                 on its subtree
                  */
-                if (!node.isNodeType(Constants.JAHIANT_TRANSLATION) && !StringUtils.equals(node.getPath(), liveNode.getPath()) && !hasPendingModifications(node)) {
-                    final String msg = "Found a published node, with no pending modifications, but the path in live is different";
-                    final ContentIntegrityError error = createError(node, msg);
-                    error.setExtraInfos(ErrorType.DIFFERENT_PATH);
-                    return createSingleError(error);
+                final String nodePath = node.getPath();
+                if (!inheritedErrors.containsKey(DIFFERENT_PATH_ROOT) && !StringUtils.equals(nodePath, liveNode.getPath())) {
+                    inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
+                    if (!hasPendingModifications(node)) {
+                        final String msg = "Found a published node, with no pending modifications, but the path in live is different";
+                        final ContentIntegrityError error = createError(node, msg);
+                        error.setExtraInfos(ErrorType.DIFFERENT_PATH);
+                        return createSingleError(error);
+                    }
                 }
             }
             return null;
@@ -65,6 +77,13 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
             logger.error("", e);
             return null;
         }
+    }
+
+    @Override
+    public ContentIntegrityErrorList checkIntegrityAfterChildren(JCRNodeWrapper node) {
+        if (inheritedErrors.containsKey(DIFFERENT_PATH_ROOT) && StringUtils.equals(node.getPath(), (String) inheritedErrors.get(DIFFERENT_PATH_ROOT)))
+            inheritedErrors.remove(DIFFERENT_PATH_ROOT);
+        return super.checkIntegrityAfterChildren(node);
     }
 
     private boolean hasPendingModifications(JCRNodeWrapper node) {
