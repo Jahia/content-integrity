@@ -115,11 +115,19 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }
 
         if (hasPropSourceAce) {
-            for (JCRValueWrapper value : node.getProperty(J_SOURCE_ACE).getValues()) {
-                JCRNodeWrapper srcAce;
+            final JCRValueWrapper[] values = node.getProperty(J_SOURCE_ACE).getValues();
+            if (values.length == 0) {
+                final ContentIntegrityError error = createError(node, "External ACE without source ACE");
+                error.setExtraInfos(ErrorType.EMPTY_SOURCE_ACE_PROP);
+                errors.addError(error);
+            }
+            for (JCRValueWrapper value : values) {
+                JCRNodeWrapper srcAce = null;
                 try {
                     srcAce = value.getNode();
-                } catch (RepositoryException re) {
+                } catch (RepositoryException ignored) {
+                }
+                if (srcAce == null) {
                     boolean isFalsePositive = false;
                     if (isInLiveWorkspace(node)) {
                         final JCRSessionWrapper defaultSession = JCRSessionFactory.getInstance().getCurrentSystemSession(EDIT_WORKSPACE, null, null);
@@ -292,8 +300,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private enum ErrorType {
-        NO_PRINCIPAL, INVALID_PRINCIPAL, NO_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, NO_ROLES_PROP, INVALID_ROLES_PROP,
-        SOURCE_ACE_DIFFERENT_SITE, ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
+        NO_PRINCIPAL, INVALID_PRINCIPAL,
+        NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, SOURCE_ACE_DIFFERENT_SITE,
+        NO_ROLES_PROP, INVALID_ROLES_PROP,
+        ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
     }
 
     private class Role {
