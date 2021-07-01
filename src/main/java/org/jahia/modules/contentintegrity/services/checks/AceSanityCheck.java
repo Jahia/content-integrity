@@ -142,18 +142,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                         errors.addError(createErrorWithInfos(node, null, "Broken reference to source ACE", ErrorType.SOURCE_ACE_BROKEN_REF));
                     continue;
                 }
-                final JCRSiteNode site = node.getResolveSite();
-                final JCRSiteNode aceSite = srcAce.getResolveSite();
-                final String aceSiteKey = aceSite == null ? null : aceSite.getSiteKey();
-                final String srcAceIdentifier = srcAce.getIdentifier();
-                if (!StringUtils.equals(site == null ? null : site.getSiteKey(), aceSiteKey)) {
-                    final Map<String, Object> infos = new HashMap<>(4);
-                    infos.put("error-type", ErrorType.SOURCE_ACE_DIFFERENT_SITE);
-                    infos.put("ace-uuid", srcAceIdentifier);
-                    infos.put("ace-path", srcAce.getPath());
-                    infos.put("ace-site", aceSiteKey);
-                    errors.addError(createErrorWithInfos(node, null, "The external ACE and the source ACE are stored in different sites", infos));
-                }
+
                 if (hasPropRoles) {
                     if (!srcAce.hasProperty(J_ROLES)) {
                         errors.addError(createErrorWithInfos(node, null,
@@ -168,6 +157,20 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                         } else {
                             final List<String> srcAceRoles = getRoleNames(srcAce);
                             final String role = externalAceRoles.get(0);
+                            final String srcAceIdentifier = srcAce.getIdentifier();
+
+                            if (roles.containsKey(role) && roles.get(role).getExternalPermissions().getOrDefault(J_EXTERNAL_PERMISSIONS_NAME, "").equals("currentSite")) {
+                                final String aceSiteKey = resolveSiteKey(node);
+                                if (!StringUtils.equals(aceSiteKey, resolveSiteKey(srcAce))) {
+                                    final Map<String, Object> infos = new HashMap<>(4);
+                                    infos.put("error-type", ErrorType.SOURCE_ACE_DIFFERENT_SITE);
+                                    infos.put("ace-uuid", srcAceIdentifier);
+                                    infos.put("ace-path", srcAce.getPath());
+                                    infos.put("ace-site", aceSiteKey);
+                                    createErrorWithInfos(node, null, "The external ACE and the source ACE are stored in different sites", infos);
+                                }
+                            }
+                            
                             if (!srcAceRoles.contains(role)) {
                                 final Map<String, Object> infos = new HashMap<>();
                                 infos.put("error-type", ErrorType.ROLES_DIFFER_ON_SOURCE_ACE);
@@ -265,6 +268,13 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             }
         }
         return p;
+    }
+
+    private String resolveSiteKey(JCRNodeWrapper node) {
+        if (node == null) return null;
+        final String path = node.getPath();
+        if (!path.startsWith("/sites/")) return null;
+        return StringUtils.split(path, '/')[1];
     }
 
     @Override
