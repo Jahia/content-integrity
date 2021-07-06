@@ -131,12 +131,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     boolean isFalsePositive = false;
                     if (isInLiveWorkspace(node)) {
                         final JCRSessionWrapper defaultSession = JCRSessionFactory.getInstance().getCurrentSystemSession(EDIT_WORKSPACE, null, null);
-                        if (nodeExists(value.getString(), defaultSession)) {
-                            final JCRNodeWrapper srcAceDefault = defaultSession.getNodeByUUID(value.getString());
-                            final JCRNodeWrapper srcContentDefault = srcAceDefault.getParent().getParent();
-                            if (!node.getSession().nodeExists(srcContentDefault.getPath()))
-                                isFalsePositive = true;
-                        }
+                        if (nodeExists(value.getString(), defaultSession)) isFalsePositive = true;
                     }
                     if (!isFalsePositive)
                         errors.addError(createErrorWithInfos(node, null, "Broken reference to source ACE", ErrorType.SOURCE_ACE_BROKEN_REF));
