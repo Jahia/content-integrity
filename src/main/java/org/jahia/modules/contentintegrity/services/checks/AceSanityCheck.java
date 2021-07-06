@@ -159,7 +159,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             final String role = externalAceRoles.get(0);
                             final String srcAceIdentifier = srcAce.getIdentifier();
 
-                            if (roles.containsKey(role) && roles.get(role).getExternalPermissions().getOrDefault(J_EXTERNAL_PERMISSIONS_NAME, "").equals("currentSite")) {
+                            if (roles.containsKey(role) && roles.get(role).getExternalPermissions().getOrDefault(node.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME), "").equals("currentSite")) {
                                 final String aceSiteKey = resolveSiteKey(node);
                                 if (!StringUtils.equals(aceSiteKey, resolveSiteKey(srcAce))) {
                                     final Map<String, Object> infos = new HashMap<>(4);
@@ -170,7 +170,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                     createErrorWithInfos(node, null, "The external ACE and the source ACE are stored in different sites", infos);
                                 }
                             }
-                            
+
                             if (!srcAceRoles.contains(role)) {
                                 final Map<String, Object> infos = new HashMap<>();
                                 infos.put("error-type", ErrorType.ROLES_DIFFER_ON_SOURCE_ACE);
