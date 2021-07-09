@@ -149,6 +149,16 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     continue;
                 }
 
+                final String srcAceType;
+                final String srcAceIdentifier = srcAce.getIdentifier();
+                if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals("GRANT", srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
+                    final ContentIntegrityError error = createError(node, String.format("The source ACE (%s) is not of type GRANT (type=%s)", srcAceIdentifier, srcAceType));
+                    error.addExtraInfo("error-type", ErrorType.SOURCE_ACE_NOT_TYPE_GRANT)
+                            .addExtraInfo("src-ace-uuid", srcAceIdentifier)
+                            .addExtraInfo("src-ace-type", srcAceType);
+                    errors.addError(error);
+                }
+
                 if (hasPropRoles) {
                     if (!srcAce.hasProperty(J_ROLES)) {
                         errors.addError(createErrorWithInfos(node, null,
@@ -163,7 +173,6 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                         } else {
                             final List<String> srcAceRoles = getRoleNames(srcAce);
                             final String role = externalAceRoles.get(0);
-                            final String srcAceIdentifier = srcAce.getIdentifier();
 
                             if (roles.containsKey(role) && roles.get(role).getExternalPermissions().getOrDefault(node.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME), "").equals("currentSite")) {
                                 final String aceSiteKey = resolveSiteKey(node);
@@ -323,7 +332,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     private enum ErrorType {
         NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
-        NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, SOURCE_ACE_DIFFERENT_SITE,
+        NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, SOURCE_ACE_DIFFERENT_SITE, SOURCE_ACE_NOT_TYPE_GRANT,
         NO_ROLES_PROP, INVALID_ROLES_PROP,
         ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
     }
