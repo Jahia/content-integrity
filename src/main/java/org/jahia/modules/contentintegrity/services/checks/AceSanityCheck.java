@@ -25,7 +25,6 @@ import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +47,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private static final String J_ROLES = "j:roles";
     private static final String J_SOURCE_ACE = "j:sourceAce";
     private static final String J_PATH = "j:path";
+    private static final String J_ACE_TYPE = "j:aceType";
 
     private final Map<String, Role> roles = new HashMap<>();
 
@@ -99,6 +99,17 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private ContentIntegrityErrorList checkExternalAce(JCRNodeWrapper node) throws RepositoryException {
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         errors.addAll(checkPrincipalOnAce(node));
+
+        final String aceType;
+        if (!node.hasProperty(J_ACE_TYPE)) {
+            final ContentIntegrityError error = createError(node, "External ACE without property ".concat(J_ACE_TYPE));
+            error.setExtraInfos(ErrorType.NO_ACE_TYPE_PROP);
+            errors.addError(error);
+        } else if (!StringUtils.equals("GRANT", aceType = node.getPropertyAsString(J_ACE_TYPE))) {
+            final ContentIntegrityError error = createError(node, String.format("External ACE with an invalid value for %s : %s", J_ACE_TYPE, aceType));
+            error.setExtraInfos(ErrorType.INVALID_ACE_TYPE_PROP);
+            errors.addError(error);
+        }
 
         boolean hasPropSourceAce = true, hasPropRoles = true;
         if (!node.hasProperty(J_SOURCE_ACE)) {
@@ -197,6 +208,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private ContentIntegrityErrorList checkRegularAce(JCRNodeWrapper node) throws RepositoryException {
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         errors.addAll(checkPrincipalOnAce(node));
+
+        if (!node.hasProperty(J_ACE_TYPE)) {
+            final ContentIntegrityError error = createError(node, "ACE without property ".concat(J_ACE_TYPE));
+            error.setExtraInfos(ErrorType.NO_ACE_TYPE_PROP);
+            errors.addError(error);
+        }
 
         if (!node.hasProperty(J_ROLES)) {
             errors.addError(createErrorWithInfos(node, null, "ACE without property j:roles", ErrorType.NO_ROLES_PROP));
@@ -305,7 +322,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private enum ErrorType {
-        NO_PRINCIPAL, INVALID_PRINCIPAL,
+        NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
         NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, SOURCE_ACE_DIFFERENT_SITE,
         NO_ROLES_PROP, INVALID_ROLES_PROP,
         ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
