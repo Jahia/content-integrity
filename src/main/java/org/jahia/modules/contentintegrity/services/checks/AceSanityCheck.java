@@ -218,10 +218,22 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         errors.addAll(checkPrincipalOnAce(node));
 
+        final String aceType;
         if (!node.hasProperty(J_ACE_TYPE)) {
             final ContentIntegrityError error = createError(node, "ACE without property ".concat(J_ACE_TYPE));
             error.setExtraInfos(ErrorType.NO_ACE_TYPE_PROP);
             errors.addError(error);
+        }
+        else if (!StringUtils.equals(aceType = node.getPropertyAsString(J_ACE_TYPE), "GRANT")) {
+            final PropertyIterator references = node.getWeakReferences();
+            while (references.hasNext()) {
+                final Node extAce = references.nextProperty().getParent();
+                if (!extAce.isNodeType(JNT_EXTERNAL_ACE)) continue;
+                errors.addError(createError(node, "ACE not of GRANT type referenced by an external ACE")
+                        .addExtraInfo("error-type", ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
+                        .addExtraInfo("ace-type", aceType)
+                        .addExtraInfo("external-ace-uuid", extAce.getIdentifier()));
+            }
         }
 
         if (!node.hasProperty(J_ROLES)) {
@@ -333,7 +345,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private enum ErrorType {
         NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
         NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, SOURCE_ACE_DIFFERENT_SITE, SOURCE_ACE_NOT_TYPE_GRANT,
-        NO_ROLES_PROP, INVALID_ROLES_PROP,
+        NO_ROLES_PROP, INVALID_ROLES_PROP, ACE_NON_GRANT_WITH_EXTERNAL_ACE,
         ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
     }
 
