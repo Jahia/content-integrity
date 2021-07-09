@@ -219,12 +219,14 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         errors.addAll(checkPrincipalOnAce(node));
 
         final String aceType;
+        boolean compareAceWithExternalAce = true;
         if (!node.hasProperty(J_ACE_TYPE)) {
             final ContentIntegrityError error = createError(node, "ACE without property ".concat(J_ACE_TYPE));
             error.setExtraInfos(ErrorType.NO_ACE_TYPE_PROP);
             errors.addError(error);
         }
         else if (!StringUtils.equals(aceType = node.getPropertyAsString(J_ACE_TYPE), "GRANT")) {
+            compareAceWithExternalAce = false;
             final PropertyIterator references = node.getWeakReferences();
             while (references.hasNext()) {
                 final Node extAce = references.nextProperty().getParent();
@@ -246,7 +248,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     infos.put("error-type", ErrorType.ROLE_DOESNT_EXIST);
                     infos.put("role", roleName);
                     errors.addError(createErrorWithInfos(node, null, "ACE with a role that doesn't exist", infos));
-                } else {
+                } else if (compareAceWithExternalAce) {
                     final Role role = roles.get(roleName);
                     for (String extPerm : role.getExternalPermissions().keySet()) {
                         final PropertyIterator references = node.getWeakReferences();
