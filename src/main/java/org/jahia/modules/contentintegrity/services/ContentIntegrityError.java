@@ -10,6 +10,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NodeType;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ContentIntegrityError {
 
@@ -56,7 +60,7 @@ public class ContentIntegrityError {
                     mixins, node.getSession().getWorkspace().getName(), locale == null ? "-" : locale, message,
                     integrityCheck.getName(), integrityCheck.getId());
         } catch (RepositoryException e) {
-            logger.error("", e);  //TODO: review me, I'm generated
+            logger.error("", e);
         }
 
         return new ContentIntegrityError(null, null, null, null, null, locale == null ? "-" : locale, message, integrityCheck.getName(), integrityCheck.getId());
@@ -139,6 +143,20 @@ public class ContentIntegrityError {
 
     public void setExtraInfos(Object extraInfos) {
         this.extraInfos = extraInfos;
+    }
+
+    public ContentIntegrityError addExtraInfo(Object info) {
+        if (extraInfos == null) extraInfos = new ArrayList<>();
+        else if (extraInfos instanceof Collection) ((Collection<Object>) extraInfos).add(info);
+        else throw new IllegalArgumentException("Impossible to add the new extra info to the existing object since it is not a Collection");
+        return this;
+    }
+
+    public ContentIntegrityError addExtraInfo(String key, Object value) {
+        if (extraInfos == null) extraInfos = new HashMap<String, Object>();
+        else if (extraInfos instanceof Map) ((Map<String, Object>) extraInfos).put(key, value);
+        else throw new IllegalArgumentException("Impossible to add the new extra info to the existing object since it is not a Map");
+        return this;
     }
 
     private String getFullNodetype() {
