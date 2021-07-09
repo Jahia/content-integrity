@@ -147,15 +147,17 @@ public class ContentIntegrityError {
 
     public ContentIntegrityError addExtraInfo(Object info) {
         if (extraInfos == null) extraInfos = new ArrayList<>();
-        else if (extraInfos instanceof Collection) ((Collection<Object>) extraInfos).add(info);
-        else throw new IllegalArgumentException("Impossible to add the new extra info to the existing object since it is not a Collection");
+        else if (!(extraInfos instanceof Collection))
+            throw new IllegalArgumentException("Impossible to add the new extra info to the existing object since it is not a Collection");
+        ((Collection<Object>) extraInfos).add(info);
         return this;
     }
 
     public ContentIntegrityError addExtraInfo(String key, Object value) {
         if (extraInfos == null) extraInfos = new HashMap<String, Object>();
-        else if (extraInfos instanceof Map) ((Map<String, Object>) extraInfos).put(key, value);
-        else throw new IllegalArgumentException("Impossible to add the new extra info to the existing object since it is not a Map");
+        else if (!(extraInfos instanceof Map))
+            throw new IllegalArgumentException("Impossible to add the new extra info to the existing object since it is not a Map");
+        ((Map<String, Object>) extraInfos).put(key, value);
         return this;
     }
 
