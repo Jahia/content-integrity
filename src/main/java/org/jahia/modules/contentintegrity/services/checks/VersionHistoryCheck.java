@@ -53,8 +53,8 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
             try {
                 history = vm.getVersionHistoryOfNode(NodeId.valueOf(node.getIdentifier()));
             } catch (ItemNotFoundException infe) {
-                logger.error("", infe);
-                if (logger.isDebugEnabled()) logger.debug("", infe);
+                logger.error(infe.getMessage());
+                if (logger.isDebugEnabled()) logger.debug("Impossible to load the version history for the node " + node.getPath(), infe);
                 return null;
             }
             final int numVersions = history.getNumVersions();
