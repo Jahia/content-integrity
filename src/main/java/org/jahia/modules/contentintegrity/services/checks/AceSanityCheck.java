@@ -174,7 +174,19 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             final List<String> srcAceRoles = getRoleNames(srcAce);
                             final String role = externalAceRoles.get(0);
 
-                            if (roles.containsKey(role) && roles.get(role).getExternalPermissions().getOrDefault(node.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME), "").equals("currentSite")) {
+                            final Map<String, String> roleExternalPermissions;
+                            final String externalPermissionsName;
+                            if (!roles.containsKey(role)) {
+                                errors.addError(createError(node, "External ACE defined for a role which does not exist")
+                                        .addExtraInfo("error-type", ErrorType.ROLE_DOESNT_EXIST)
+                                        .addExtraInfo("role", role));
+                            } else if (!(roleExternalPermissions = roles.get(role).getExternalPermissions())
+                                    .containsKey(externalPermissionsName = node.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME))) {
+                                errors.addError(createError(node, "External ACE defined for external permissions which are not declared by the role")
+                                        .addExtraInfo("error-type", ErrorType.INVALID_EXTERNAL_PERMISSIONS)
+                                        .addExtraInfo("external-permissions-name", externalPermissionsName)
+                                        .addExtraInfo("role", role));
+                            } else if (StringUtils.equals(roleExternalPermissions.get(externalPermissionsName), "currentSite")) {
                                 final String aceSiteKey = resolveSiteKey(node);
                                 if (!StringUtils.equals(aceSiteKey, resolveSiteKey(srcAce))) {
                                     final Map<String, Object> infos = new HashMap<>(4);
@@ -347,6 +359,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private enum ErrorType {
         NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
         NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, SOURCE_ACE_DIFFERENT_SITE, SOURCE_ACE_NOT_TYPE_GRANT,
+        INVALID_EXTERNAL_PERMISSIONS,
         NO_ROLES_PROP, INVALID_ROLES_PROP, ACE_NON_GRANT_WITH_EXTERNAL_ACE,
         ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
     }
