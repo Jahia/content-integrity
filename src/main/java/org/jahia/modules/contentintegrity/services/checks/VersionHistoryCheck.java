@@ -11,6 +11,7 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
+import org.jahia.modules.external.ExtensionNode;
 import org.jahia.modules.external.ExternalNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
+import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.Collections;
 
@@ -44,7 +46,9 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
-        if (node.getRealNode() instanceof ExternalNodeImpl) return null;
+        final Node realNode = node.getRealNode();
+        if (realNode instanceof ExternalNodeImpl || realNode instanceof ExtensionNode) return null;
+        
         try {
             final JCRSessionWrapper session = node.getSession();
             final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode("/").getProvider());
