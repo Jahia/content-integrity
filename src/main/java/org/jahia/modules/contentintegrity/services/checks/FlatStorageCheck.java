@@ -20,13 +20,13 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
     private static final Logger logger = LoggerFactory.getLogger(FlatStorageCheck.class);
 
     private static final String THRESHOLD_KEY = "threshold";
-    private static final int defaultThreshold = 500;
+    private static final int DEFAULT_THRESHOLD = 500;
 
     private final ContentIntegrityCheckConfiguration configurations;
 
     public FlatStorageCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
-        getConfigurations().declareDefaultParameter(THRESHOLD_KEY, defaultThreshold, "Number of children nodes beyond which an error is raised");
+        getConfigurations().declareDefaultParameter(THRESHOLD_KEY, DEFAULT_THRESHOLD, "Number of children nodes beyond which an error is raised");
     }
 
     @Override
@@ -52,7 +52,7 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
                 logger.error(String.format("Invalid threshold: %s", o));
             }
         }
-        return defaultThreshold;
+        return DEFAULT_THRESHOLD;
     }
 
     @Override
