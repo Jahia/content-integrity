@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
         Constants.SERVICE_PID + "=org.jahia.modules.contentintegrity.service",
@@ -200,7 +201,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         if (logger.isDebugEnabled())
             logger.debug(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodestoScanCalculationDuration)));
         logger.info(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)));
-        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+        final List<ContentIntegrityCheck> sortedChecks = integrityChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
+        for (ContentIntegrityCheck integrityCheck : sortedChecks) {
             logger.info(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())));
         }
     }
