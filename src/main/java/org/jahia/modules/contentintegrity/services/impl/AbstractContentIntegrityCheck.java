@@ -16,6 +16,7 @@ import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -286,6 +287,16 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             return true;
         } catch (RepositoryException e) {
             return false;
+        }
+    }
+
+    protected String getTranslationNodeLocale(Node translationNode) {
+        try {
+            if (!translationNode.hasProperty(Constants.JCR_LANGUAGE)) return null;
+            return translationNode.getProperty(Constants.JCR_LANGUAGE).getString();
+        } catch (RepositoryException e) {
+            logger.error("Impossible to extract the locale", e);
+            return null;
         }
     }
 

@@ -179,16 +179,6 @@ public class MandatoryPropertiesCheck extends AbstractContentIntegrityCheck impl
         }
     }
 
-    private String getTranslationNodeLocale(Node translationNode) {
-        try {
-            if (!translationNode.hasProperty(Constants.JCR_LANGUAGE)) return null;
-            return translationNode.getProperty(Constants.JCR_LANGUAGE).getString();
-        } catch (RepositoryException e) {
-            logger.error("Impossible to extract the locale", e);
-            return null;
-        }
-    }
-
     private boolean checkSiteLangsOnly() {
         final Object o = getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
         if (o instanceof Boolean) return (boolean) o;
