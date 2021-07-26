@@ -8,7 +8,6 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRValueFactoryImpl;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -32,16 +31,16 @@ import java.util.Map;
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=" + Constants.JAHIANT_TRANSLATION
 })
-public class MandatoryPropertiesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
+public class PropertyConstraintsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
 
-    private static final Logger logger = LoggerFactory.getLogger(MandatoryPropertiesCheck.class);
+    private static final Logger logger = LoggerFactory.getLogger(PropertyConstraintsSanityCheck.class);
 
     private static final String CHECK_SITE_LANGS_ONLY_KEY = "site-langs-only";
     private static final boolean DEFAULT_CHECK_SITE_LANGS_ONLY_KEY = false;
 
     private final ContentIntegrityCheckConfiguration configurations;
 
-    public MandatoryPropertiesCheck() {
+    public PropertyConstraintsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
         getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, "If true, only the translation subnodes related to an active language are checked when the node is in a site");
     }
