@@ -1,9 +1,12 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.jackrabbit.core.value.InternalValue;
+import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
@@ -23,6 +26,8 @@ import javax.jcr.Property;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
+import javax.jcr.ValueFormatException;
+import javax.jcr.nodetype.ConstraintViolationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -37,12 +42,15 @@ public class PropertyConstraintsSanityCheck extends AbstractContentIntegrityChec
 
     private static final String CHECK_SITE_LANGS_ONLY_KEY = "site-langs-only";
     private static final boolean DEFAULT_CHECK_SITE_LANGS_ONLY_KEY = false;
+    private static final String CHECK_PROPERTIES_WITHOUT_CONSTRAINT = "check-properties-without-constraint";
+    private static final boolean DEFAULT_CHECK_PROPERTIES_WITHOUT_CONSTRAINT = false;
 
     private final ContentIntegrityCheckConfiguration configurations;
 
     public PropertyConstraintsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
         getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, "If true, only the translation subnodes related to an active language are checked when the node is in a site");
+        getConfigurations().declareDefaultParameter(CHECK_PROPERTIES_WITHOUT_CONSTRAINT, DEFAULT_CHECK_PROPERTIES_WITHOUT_CONSTRAINT, "If true, every property value will be check to validate if it is compliant with the current definition, if false only the properties with a declared constraint are checked");
     }
 
     @Override
@@ -77,6 +85,7 @@ public class PropertyConstraintsSanityCheck extends AbstractContentIntegrityChec
     private void checkNodeForType(JCRNodeWrapper node, ExtendedNodeType nodeType, Map<String, String> checkedProperties, ContentIntegrityErrorList errors) throws RepositoryException {
         final String nodeTypeName = nodeType.getName();
         final ExtendedPropertyDefinition[] extendedPropertyDefinitions = nodeType.getPropertyDefinitions();
+        final boolean checkPropertiesWithoutConstraint = checkPropertiesWithoutConstraint();
         for (ExtendedPropertyDefinition propertyDefinition : extendedPropertyDefinitions) {
             final String propertyName = propertyDefinition.getName();
             if (checkedProperties.containsKey(propertyName)) {
@@ -90,7 +99,7 @@ public class PropertyConstraintsSanityCheck extends AbstractContentIntegrityChec
 
             final boolean isMandatory = propertyDefinition.isMandatory();
             final boolean hasConstraints = propertyDefinition.getValueConstraints() != null && propertyDefinition.getValueConstraints().length > 0;
-            if (!isMandatory && !hasConstraints) return;
+            if (!checkPropertiesWithoutConstraint && !isMandatory && !hasConstraints) continue;
 
             if (propertyDefinition.isInternationalized()) {
                 if (checkSiteLangsOnly() && StringUtils.startsWith(node.getPath(), "/sites/")) {
@@ -128,92 +137,151 @@ public class PropertyConstraintsSanityCheck extends AbstractContentIntegrityChec
 
     private void checkProperty(JCRNodeWrapper node, Node propertyNode, String pName, ExtendedPropertyDefinition propertyDefinition, String locale, ExtendedNodeType nodeType, ContentIntegrityErrorList errors) throws RepositoryException {
         final boolean isMandatory = propertyDefinition.isMandatory();
-        final boolean hasConstraints = propertyDefinition.getValueConstraints() != null && propertyDefinition.getValueConstraints().length > 0;
 
         if (!propertyNode.hasProperty(pName)) {
             if (isMandatory) {
-                errors.addError(createError(node, locale, "Missing mandatory property")
-                        .addExtraInfo("error-type", ErrorType.EMPTY_MANDATORY_PROPERTY)
-                        .addExtraInfo("property-name", pName)
-                        .addExtraInfo("declaring-type", nodeType.getName()));
+                trackEmptyValue(pName, propertyDefinition, node, nodeType, locale, errors );
             }
             return;
         }
 
         final Property property = propertyNode.getProperty(pName);
-        final int propertyType = propertyDefinition.getRequiredType();
+        boolean isEmpty = true;
         if (propertyDefinition.isMultiple()) {
-            boolean isEmpty = true;
             int idx = 0;
             for (Value value : property.getValues()) {
-                boolean isCurrentEmpty = true;
-                switch (propertyType) {
-                    case PropertyType.BINARY:
-                        try {
-                            value.getBinary();
-                            isCurrentEmpty = false;
-                        } catch (RepositoryException ignored) {}
-                        break;
-                    default:
-                        isCurrentEmpty = value.getString().length() <= 0;
-                }
-                isEmpty &= isCurrentEmpty;
-                if (isCurrentEmpty && hasConstraints) {
-                    final Value[] values = new Value[1];
-                    values[0] = value;
-                    if (!nodeType.canSetProperty(pName, values)) {
-                        final String valueStr = propertyType == PropertyType.BINARY ? "<binary>" : value.getString();
-                        errors.addError(createError(node, locale, "The value is not allowed by the constraint")
-                                .addExtraInfo("error-type", ErrorType.CONSTRAINT_NOT_VALIDATED)
-                                .addExtraInfo("property-name", pName)
-                                .addExtraInfo("declaring-type", nodeType.getName())
-                                .addExtraInfo("invalid-value", valueStr)
-                                .addExtraInfo("value-index", idx));
-                    }
-                }
+                isEmpty &= checkValue(value, idx, pName, propertyDefinition, node, nodeType, locale, errors);
                 idx++;
             }
-            if (isEmpty && isMandatory) {
-                errors.addError(createError(node, locale, "Empty mandatory property")
-                        .addExtraInfo("error-type", ErrorType.EMPTY_MANDATORY_PROPERTY)
-                        .addExtraInfo("property-name", pName)
-                        .addExtraInfo("declaring-type", nodeType.getName()));
-            }
         } else {
-            boolean isEmpty = false;
-            switch (propertyType) {
-                case PropertyType.BINARY:
-                    try {
-                        property.getBinary();
-                    } catch (RepositoryException re) {
-                        isEmpty = true;
-                    }
-                    break;
-                default:
-                    isEmpty = property.getLength() <= 0;
-            }
-            if (isEmpty && isMandatory) {
-                errors.addError(createError(node, locale, "Empty mandatory property")
-                        .addExtraInfo("error-type", ErrorType.EMPTY_MANDATORY_PROPERTY)
-                        .addExtraInfo("property-name", pName)
-                        .addExtraInfo("declaring-type", nodeType.getName()));
-            } else if (!isEmpty && hasConstraints) {
-                final String valueStr = propertyType == PropertyType.BINARY ? "<binary>" : property.getString();
-                if (!nodeType.canSetProperty(pName, property.getValue())) {
-                    errors.addError(createError(node, locale, "The value is not allowed by the constraint")
-                            .addExtraInfo("error-type", ErrorType.CONSTRAINT_NOT_VALIDATED)
-                            .addExtraInfo("property-name", pName)
-                            .addExtraInfo("declaring-type", nodeType.getName())
-                            .addExtraInfo("invalid-value", valueStr));
+            isEmpty = checkValue(property.getValue(), -1, pName, propertyDefinition, node, nodeType, locale, errors);
+        }
+
+        if (isEmpty && isMandatory) {
+            trackEmptyValue(pName, propertyDefinition, node, nodeType, locale, errors );
+        }
+    }
+
+    /**
+     *
+     * @param value
+     * @param valueIdx ignored if the property is single-valued
+     * @param pName
+     * @param propertyDefinition
+     * @param node
+     * @param nodeType
+     * @param locale
+     * @param errors
+     *
+     * @return true if the value is empty
+     * @throws RepositoryException
+     */
+    private boolean checkValue(Value value, int valueIdx,
+                               String pName, ExtendedPropertyDefinition propertyDefinition,
+                               JCRNodeWrapper node, ExtendedNodeType nodeType, String locale,
+                               ContentIntegrityErrorList errors) throws RepositoryException {
+        final int propertyType = propertyDefinition.getRequiredType();
+        final boolean hasConstraints = propertyDefinition.getValueConstraints() != null && propertyDefinition.getValueConstraints().length > 0;
+        final boolean checkPropertiesWithoutConstraint = checkPropertiesWithoutConstraint();
+
+        switch (propertyType) {
+            case PropertyType.BINARY:
+                try {
+                    value.getBinary();
+                } catch (RepositoryException re) {
+                    return true;
                 }
+                break;
+            default:
+                if (value.getString().length() <= 0) return true;
+        }
+
+        if (hasConstraints || checkPropertiesWithoutConstraint) {
+            final String valueStr = value.getType() == PropertyType.BINARY ? "<binary>" : value.getString();
+            if (propertyType != PropertyType.UNDEFINED && value.getType() != propertyType) {
+                trackInvalidValueType(pName, propertyDefinition, value.getType(), node, nodeType, locale, errors);
+            } else if (!constraintIsValid(value, propertyDefinition)) {
+                trackInvalidValueConstaint(pName, propertyDefinition,
+                        valueStr, valueIdx, node, nodeType, locale, errors);
             }
         }
+
+        return false;
+    }
+
+    private boolean constraintIsValid(Value value, ExtendedPropertyDefinition propertyDefinition) {
+        final ValueConstraint[] constraints = propertyDefinition.getValueConstraintObjects();
+        if (constraints == null || constraints.length == 0) {
+            // no constraints to check
+            return true;
+        }
+
+        for (ValueConstraint constraint : constraints) {
+            try {
+                constraint.check(InternalValue.create(value, null, null));
+                break;
+            } catch (ConstraintViolationException e) {
+               return false;
+            } catch (RepositoryException e) {
+                logger.error("", e);
+            }
+        }
+
+        return true;
+    }
+
+    private void trackEmptyValue(String propertyName, ExtendedPropertyDefinition propertyDefinition,
+                                 JCRNodeWrapper node, ExtendedNodeType nodeType, String locale,
+                                 ContentIntegrityErrorList errors) {
+        trackError(ErrorType.EMPTY_MANDATORY_PROPERTY, propertyName, propertyDefinition, null, -1, -1, node, nodeType, locale, errors);
+    }
+
+    private void trackInvalidValueConstaint(String propertyName, ExtendedPropertyDefinition propertyDefinition,
+                                            String value, int valueIdx,
+                                            JCRNodeWrapper node, ExtendedNodeType nodeType, String locale,
+                                            ContentIntegrityErrorList errors) {
+        trackError(ErrorType.INVALID_VALUE_CONSTRAINT, propertyName, propertyDefinition, value, valueIdx, -1, node, nodeType, locale, errors);
+    }
+
+    private void trackInvalidValueType(String propertyName, ExtendedPropertyDefinition propertyDefinition,
+                                       int valueType,
+                                       JCRNodeWrapper node, ExtendedNodeType nodeType, String locale,
+                                       ContentIntegrityErrorList errors) {
+        trackError(ErrorType.INVALID_VALUE_TYPE, propertyName, propertyDefinition, null, -1, valueType, node, nodeType, locale, errors);
+    }
+
+    private void trackError(ErrorType errorType,
+                                   String propertyName, ExtendedPropertyDefinition propertyDefinition,
+                                   String value, int valueIdx, int valueType,
+                                   JCRNodeWrapper node, ExtendedNodeType nodeType, String locale,
+                                   ContentIntegrityErrorList errors) {
+        final ContentIntegrityError error = createError(node, locale, errorType.desc)
+                .addExtraInfo("error-type", errorType)
+                .addExtraInfo("property-name", propertyName)
+                .addExtraInfo("declaring-type", nodeType.getName());
+        if (value != null) {
+            error.addExtraInfo("invalid-value", value);
+            if (propertyDefinition.isMultiple()) error.addExtraInfo("value-index", valueIdx);
+        }
+        if (valueType >= 0) {
+            error.addExtraInfo("value-type", PropertyType.nameFromValue(valueType));
+            error.addExtraInfo("expected-value-type", PropertyType.nameFromValue(propertyDefinition.getRequiredType()));
+        }
+        errors.addError(error);
     }
 
     private boolean checkSiteLangsOnly() {
         final Object o = getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
         if (o instanceof Boolean) return (boolean) o;
+        if (o instanceof String) return Boolean.parseBoolean((String) o);
         return DEFAULT_CHECK_SITE_LANGS_ONLY_KEY;
+    }
+
+    private boolean checkPropertiesWithoutConstraint() {
+        final Object o = getConfigurations().getParameter(CHECK_PROPERTIES_WITHOUT_CONSTRAINT);
+        if (o instanceof Boolean) return (boolean) o;
+        if (o instanceof String) return Boolean.parseBoolean((String) o);
+        return DEFAULT_CHECK_PROPERTIES_WITHOUT_CONSTRAINT;
     }
 
     @Override
@@ -222,6 +290,14 @@ public class PropertyConstraintsSanityCheck extends AbstractContentIntegrityChec
     }
 
     private enum ErrorType {
-        EMPTY_MANDATORY_PROPERTY, CONSTRAINT_NOT_VALIDATED
+        EMPTY_MANDATORY_PROPERTY("Missing mandatory property"),
+        INVALID_VALUE_TYPE("The value does not match the type declared in the property definition"),
+        INVALID_VALUE_CONSTRAINT("The value does not match the constraint declared in the property definition");
+
+        private final String desc;
+
+        ErrorType(String desc) {
+            this.desc = desc;
+        }
     }
 }
