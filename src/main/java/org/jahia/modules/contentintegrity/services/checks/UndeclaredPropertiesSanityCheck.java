@@ -18,7 +18,9 @@ import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.PropertyDefinition;
 
-@Component(service = ContentIntegrityCheck.class, immediate = true)
+@Component(service = ContentIntegrityCheck.class, immediate = true, property = {
+        ContentIntegrityCheck.ENABLED + ":Boolean=false"
+})
 public class UndeclaredPropertiesSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(UndeclaredPropertiesSanityCheck.class);
