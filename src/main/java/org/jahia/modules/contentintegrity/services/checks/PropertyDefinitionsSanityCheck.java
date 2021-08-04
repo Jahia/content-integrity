@@ -221,6 +221,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 final JCRPropertyWrapper p;
                 try {
                     p = jahiaNode.getSession().getNode(node.getPath()).getProperty(pName);
+                    /*
+                    in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtal node), the extension node inherits from
+                    jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
+                    if this case happens again with other types, a more generic solution would be
+                        if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
+                     */
+                    if (StringUtils.equals(property.getDefinition().getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
+                        continue;
                 } catch (RepositoryException re) {
                     // The property exists only at extension node level, let's skip it
                     continue;
@@ -234,6 +242,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             } else {
                 try {
                     propertyDefinition = property.getDefinition();
+                    /*
+                    in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtal node), the extension node inherits from
+                    jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
+                    if this case happens again with other types, a more generic solution would be
+                        if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
+                     */
+                    if (StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
+                        continue;
                     if (!isI18n) isUndeclared = false;
                     else if (!StringUtils.equals(propertyDefinition.getName(), "*")) isUndeclared = false;
                     else {
@@ -250,15 +266,6 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     isUndeclared = isI18n || epd == null;
                 }
             }
-            
-            /*
-            in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtal node), the extension node inherits from
-            jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
-            if this case happens again with other types, a more generic solution would be
-                if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
-             */
-            if (StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
-                continue;
 
             if (isUndeclared) {
                 trackUndeclaredProperty(pName, jahiaNode, locale, errors);
