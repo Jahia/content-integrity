@@ -2,6 +2,7 @@
 Jahia module that provides an extensible service to test the integrity of the content
 * [How to use it](#how-to-use)
     * [jcr:integrity-check](#jcr-integrity-check) 
+    * [jcr:integrity-printError](#jcr-integrity-printError) 
     * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
     * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
     * [jcr:integrity-configureCheck](#jcr-integrity-configureCheck) 
@@ -46,6 +47,48 @@ Name | alias | Value | Mandatory | Multiple | Description
     jcr:integrity-check -x /sites/aHugeSite
     jcr:integrity-check -x /sites/aHugeSite -x /sites/anotherHugeSite/files 
       
+#### <a name="jcr-integrity-printError"></a>jcr:integrity-printError
+Prints out some extended information about an error.
+
+**Argument:**
+
+Value | Mandatory | Multiple | Description
+ :---: | :---: | :---: | ---
+string | x | x | ID of the error(s) to print out
+
+**Options:**
+
+Name | alias | Value | Mandatory | Multiple | Description
+ --- | --- | :---: | :---: | :---: | ---
+-t | --test | string | | | ID of the test from which to load the error. Latest test used if not defined   
+
+**Example:**
+
+    jcr:cd /sites/mySite/
+    jcr:integrity-check 
+    Content integrity tested in 44 seconds (44609 ms)
+    ID | Fixed | Error                          | Workspace | UUID                                 | Node type         | Locale | Message
+    --------------------------------------------------------------------------------------------------------------------------------------------------------
+    0  |       | PropertyConstraintsSanityCheck | default   | c847913d-64f1-4c23-a6f6-1b7833f8024f | jnt:page          | fr     | Missing mandatory property
+    1  |       | PropertyConstraintsSanityCheck | default   | a60dc57a-0bd3-4908-9b58-7e60dc558a34 | jnt:page          | fr     | Missing mandatory property
+    2  |       | PropertyConstraintsSanityCheck | default   | dbb81015-5cac-4887-90d5-68c9be704ac8 | mynt:internalLink | fr     | Missing mandatory property
+    
+    jahia@dx()> jcr:integrity-printError 2
+    ID             | 0
+    Check name     | PropertyConstraintsSanityCheck
+    Check ID       | 8
+    Fixed          | false
+    Workspace      | default
+    Locale         | fr
+    Path           | /sites/mySite/home/missions/internalLink-3
+    UUID           | dbb81015-5cac-4887-90d5-68c9be704ac8
+    Node type      | mynt:internalLink
+    Mixin types    |
+    Message        | Missing mandatory property
+    property-name  | node
+    error-type     | EMPTY_MANDATORY_PROPERTY
+    declaring-type | mynt:internalLink
+
 #### <a name="jcr-integrity-printChecks"></a>jcr:integrity-printChecks 
 Prints out the currently registered checks. 
                          
@@ -319,4 +362,4 @@ Version | Required Jahia version | Changes
 2.13 | 7.3.0.0 | <ul><li>AceSanityCheck:<ul><li>[bugfix] fixed the detection of ACE which are not in the same site as their related external ACE</li><li>[bugfix] fixed the calculation of the false positives when dealing with a broken reference to a source ACE in live</li></ul></li></ul>
 2.14 | 7.3.0.0 | <ul><li>AceSanityCheck:<ul><li>detect ACE / external ACE without ACE type</li><li>detect external ACE with a type different from 'GRANT'</li><li>detect external ACE with a reference to a source ACE having a type different from 'GRANT'</li><li>detect the ACE having a type different from 'GRANT' and being referenced by an external ACE</li><li>[bugfix] do not check the consistency of the external ACE for the ACE having a type different from 'GRANT'</li></ul></li></ul>
 2.15 | 7.3.0.0 | <ul><li>AceSanityCheck:<ul><li>detect the external ACE defined for a role which does not exist</li><li>detect the external ACE defined for external permissions which are not declared by the role</li></ul></li><li>VersionHistoryCheck:<ul><li>[bugfix] when the version history can't be loaded for a node, log the full stacktrace only when the log level is set to debug</li><li>[bugfix] skip the external nodes with a custom decorator</li></ul></li></ul>
-2.16 | 7.3.0.0 | <ul><li>Implemented a check on the property definitions<ul><li>detection of the missing mandatory properties</li><li>detection of the properties having their value not matching the declared constraint</li><li>detection of the properties having their value not matching the declared type</li><li>detection of the properties having a single-valued value and declared as multi-valued</li><li>detection of the properties having a multi-valued value and declared as single-valued</li><li>detection of the non declared properties</li></ul></li><li>Sum up of the check durations at the end of the scan: sort the checks by duration</li></ul>
+2.16 | 7.3.0.0 | <ul><li>Implemented a check on the property definitions<ul><li>detection of the missing mandatory properties</li><li>detection of the properties having their value not matching the declared constraint</li><li>detection of the properties having their value not matching the declared type</li><li>detection of the properties having a single-valued value and declared as multi-valued</li><li>detection of the properties having a multi-valued value and declared as single-valued</li><li>detection of the non declared properties</li></ul></li><li>Implemented a command to print out some extended information about an error</li><li>Sum up of the check durations at the end of the scan: sort the checks by duration</li></ul>

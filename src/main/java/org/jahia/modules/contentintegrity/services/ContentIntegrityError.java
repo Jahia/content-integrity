@@ -45,7 +45,6 @@ public class ContentIntegrityError {
     }
 
     public static ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message, ContentIntegrityCheck integrityCheck) {
-        logger.error(message);
         try {
             final NodeType[] mixinNodeTypes = node.getMixinNodeTypes();
             final String mixins;
@@ -123,6 +122,18 @@ public class ContentIntegrityError {
 
     public String getLocale() {
         return locale;
+    }
+
+    public String getPrimaryType() {
+        return primaryType;
+    }
+
+    public String getMixins() {
+        return mixins;
+    }
+
+    public String getConstraintMessage() {
+        return constraintMessage;
     }
 
     public String getWorkspace() {

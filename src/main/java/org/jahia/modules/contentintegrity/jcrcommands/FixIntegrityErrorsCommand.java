@@ -34,7 +34,7 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
     @Reference
     Session session;
 
-    @Option(name = "-t", aliases = "--test", description = "ID of the previous test. Latest test used if not set.")
+    @Option(name = "-t", aliases = "--test", description = "ID of the test from which to load the error. Latest test used if not defined.")
     @Completion(TestDateCompleter.class)
     private String testID;
 
