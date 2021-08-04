@@ -163,7 +163,11 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         loadPropertyDefinitions(node, namedPropertyDefinitions, unstructuredPropertyDefinitions);
 
         try {
-            checkExistingPropertiesInternal(node.getRealNode(), null, node, namedPropertyDefinitions, unstructuredPropertyDefinitions, errors);
+            final Node realNode = getRealNode(node);
+            if (realNode == null)
+                return;
+
+            checkExistingPropertiesInternal(realNode, null, node, namedPropertyDefinitions, unstructuredPropertyDefinitions, errors);
             doOnTranslationNodes(node, new TranslationNodeProcessor() {
                 @Override
                 public void execute(Node translationNode, String locale) throws RepositoryException {
@@ -212,6 +216,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             ExtendedPropertyDefinition epd = null;
             try {
                 propertyDefinition = property.getDefinition();
+                /*
+                in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtal node), the extension node inherits from
+                jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
+                if this case happens again with other types, a more generic solution would be
+                if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
+                 */
+                if (StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
+                    continue;
                 if (!isI18n) isUndeclared = false;
                 else if (!StringUtils.equals(propertyDefinition.getName(), "*")) isUndeclared = false;
                 else {
@@ -367,6 +379,23 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         }
     }
 
+    private Node getRealNode(Node node) {
+        if (node instanceof JCRNodeWrapper) {
+            if (((JCRNodeWrapper) node).getRealNode() instanceof ExternalNodeImpl) {
+                try {
+                    return ((ExternalNodeImpl) ((JCRNodeWrapper) node).getRealNode()).getExtensionNode(false);
+                } catch (RepositoryException e) {
+                    logger.error("", e);
+                    return null;
+                }
+            } else {
+                return ((JCRNodeWrapper) node).getRealNode();
+            }
+        } else {
+            return node;
+        }
+    }
+
     private void trackMissingMandatoryValue(String propertyName, ExtendedPropertyDefinition propertyDefinition,
                                             JCRNodeWrapper node, String locale,
                                             ContentIntegrityErrorList errors) {
@@ -441,18 +470,22 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 } catch (ItemNotFoundException infe) {
                     continue;
                 }
-                translationNodeProcessor.execute(translationNode, LanguageCodeConverters.localeToLanguageTag(locale));
+                final Node realTranslationNode = getRealNode(translationNode);
+                translationNodeProcessor.execute(realTranslationNode, LanguageCodeConverters.localeToLanguageTag(locale));
             }
         } else {
             final NodeIterator translationNodesIterator = node.getI18Ns();
             while (translationNodesIterator.hasNext()) {
                 final Node translationNode = translationNodesIterator.nextNode();
+                final Node realTranslationNode = getRealNode(translationNode);
+                if (realTranslationNode == null)
+                    continue;
                 final String locale = getTranslationNodeLocale(translationNode);
                 if (StringUtils.isBlank(locale)) {
                     logger.error(String.format("Skipping a translation node since its language is invalid: %s", translationNode.getIdentifier()));
                     continue;
                 }
-                translationNodeProcessor.execute(translationNode, locale);
+                translationNodeProcessor.execute(realTranslationNode, locale);
             }
         }
     }
