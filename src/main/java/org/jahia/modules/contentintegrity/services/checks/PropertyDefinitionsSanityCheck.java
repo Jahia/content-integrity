@@ -12,6 +12,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.external.ExternalNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
@@ -101,7 +102,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     }
                 });
             } else {
-                checkMandatoryProperty(node, node.getRealNode(), propertyDefinitionName, propertyDefinition, null, errors);
+                final Node realNode = getRealNode(node);
+                if (realNode != null)
+                    checkMandatoryProperty(node, realNode, propertyDefinitionName, propertyDefinition, null, errors);
             }
         }
     }
@@ -214,31 +217,49 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             boolean isUndeclared;
             PropertyDefinition propertyDefinition = null;
             ExtendedPropertyDefinition epd = null;
-            try {
-                propertyDefinition = property.getDefinition();
-                /*
-                in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtal node), the extension node inherits from
-                jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
-                if this case happens again with other types, a more generic solution would be
-                if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
-                 */
-                if (StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
+            if (node.isNodeType("jnt:externalProviderExtension")) {
+                final JCRPropertyWrapper p;
+                try {
+                    p = jahiaNode.getSession().getNode(node.getPath()).getProperty(pName);
+                } catch (RepositoryException re) {
+                    // The property exists only at extension node level, let's skip it
                     continue;
-                if (!isI18n) isUndeclared = false;
-                else if (!StringUtils.equals(propertyDefinition.getName(), "*")) isUndeclared = false;
-                else {
-                    isUndeclared = (!namedPropertyDefinitions.containsKey(pName) || !namedPropertyDefinitions.get(pName).isInternationalized())
-                            && !unstructuredPropertyDefinitions.containsKey(getExtendedPropertyType(property, true));
                 }
-            } catch (RepositoryException e) {
-                // if the property is declared, but its value doesn't match the declared type, then property.getDefinition()
-                // raises an exception
-                final ExtendedPropertyDefinition epdTmp = namedPropertyDefinitions.get(pName);
-                if (namedPropertyDefinitions.containsKey(pName) && !epdTmp.isInternationalized()) {
-                    epd = epdTmp;
+                try {
+                    propertyDefinition = p.getDefinition();
+                    isUndeclared = false;
+                } catch (RepositoryException re) {
+                    isUndeclared = true;
                 }
-                isUndeclared = isI18n || epd == null;
+            } else {
+                try {
+                    propertyDefinition = property.getDefinition();
+                    if (!isI18n) isUndeclared = false;
+                    else if (!StringUtils.equals(propertyDefinition.getName(), "*")) isUndeclared = false;
+                    else {
+                        isUndeclared = (!namedPropertyDefinitions.containsKey(pName) || !namedPropertyDefinitions.get(pName).isInternationalized())
+                                && !unstructuredPropertyDefinitions.containsKey(getExtendedPropertyType(property, true));
+                    }
+                } catch (RepositoryException e) {
+                    // if the property is declared, but its value doesn't match the declared type, then property.getDefinition()
+                    // raises an exception
+                    final ExtendedPropertyDefinition epdTmp = namedPropertyDefinitions.get(pName);
+                    if (namedPropertyDefinitions.containsKey(pName) && !epdTmp.isInternationalized()) {
+                        epd = epdTmp;
+                    }
+                    isUndeclared = isI18n || epd == null;
+                }
             }
+            
+            /*
+            in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtal node), the extension node inherits from
+            jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
+            if this case happens again with other types, a more generic solution would be
+                if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
+             */
+            if (StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
+                continue;
+
             if (isUndeclared) {
                 trackUndeclaredProperty(pName, jahiaNode, locale, errors);
                 continue;
@@ -471,7 +492,8 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     continue;
                 }
                 final Node realTranslationNode = getRealNode(translationNode);
-                translationNodeProcessor.execute(realTranslationNode, LanguageCodeConverters.localeToLanguageTag(locale));
+                if (realTranslationNode != null)
+                    translationNodeProcessor.execute(realTranslationNode, LanguageCodeConverters.localeToLanguageTag(locale));
             }
         } else {
             final NodeIterator translationNodesIterator = node.getI18Ns();
