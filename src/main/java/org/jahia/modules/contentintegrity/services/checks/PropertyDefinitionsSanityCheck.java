@@ -49,15 +49,12 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
     private static final String CHECK_SITE_LANGS_ONLY_KEY = "site-langs-only";
     private static final boolean DEFAULT_CHECK_SITE_LANGS_ONLY_KEY = false;
-    private static final String CHECK_PROPERTIES_WITHOUT_CONSTRAINT = "check-properties-without-constraint";
-    private static final boolean DEFAULT_CHECK_PROPERTIES_WITHOUT_CONSTRAINT = false;
 
     private final ContentIntegrityCheckConfiguration configurations;
 
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
         getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, "If true, only the translation subnodes related to an active language are checked when the node is in a site");
-        getConfigurations().declareDefaultParameter(CHECK_PROPERTIES_WITHOUT_CONSTRAINT, DEFAULT_CHECK_PROPERTIES_WITHOUT_CONSTRAINT, "If true, every property value will be check to validate if it is compliant with the current definition, if false only the properties with a declared constraint are checked");
     }
 
     @Override
@@ -210,7 +207,6 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             final Property property = properties.nextProperty();
             final String pName = property.getName();
 
-            //final boolean isWildcard = StringUtils.equals(pName, "*");
             boolean isUndeclared;
             PropertyDefinition propertyDefinition = null;
             ExtendedPropertyDefinition epd = null;
@@ -259,45 +255,11 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             }
 
             // from here, the property is declared, and matches the definition structure
-            checkPropertyConstraints(property, node, locale, epd, jahiaNode, errors);
-            //checkValue()
-            //checkPropertyConstraints(property, epd, locale, node, jahiaNode, errors);
-
-                /*
-            else if (StringUtils.equals(propertyDefinition.getName(), "*")) {
-                logger.info(propertyDefinition.getClass().toString());
-                ExtendedPropertyDefinition extendedPropertyDefinition = null;
-                for (ExtendedPropertyDefinition definition : node.getPrimaryNodeType().getPropertyDefinitions()) {
-                    if (StringUtils.equals(definition.getName(), pName)) {  // TODO KO
-                        extendedPropertyDefinition = definition;
-                        break;
-                    }
-                }
-                if (extendedPropertyDefinition == null) {
-                    for (ExtendedNodeType mixinNodeType : node.getMixinNodeTypes()) {
-                        for (ExtendedPropertyDefinition definition : mixinNodeType.getPropertyDefinitions()) {
-                            if (StringUtils.equals(definition.getName(), pName)) {
-                                extendedPropertyDefinition = definition;
-                                break;
-                            }
-                        }
-                        if (extendedPropertyDefinition != null) break;
-                    }
-                }
-
-                if (extendedPropertyDefinition != null) {
-                    checkProperty(node, checkedNode, pName, extendedPropertyDefinition, locale, errors);
-                } else {
-                    logger.error(String.format("Impossible to check the property %s on the node %s "));
-                }
-            } else {
-                logger.error(String.format("Unexpected property %s on the node %s, only properties declared under the name * should be matched here", pName, node.getPath()));
-            }
-                 */
+            checkPropertyConstraints(property, locale, epd, jahiaNode, errors);
         }
     }
 
-    private void checkPropertyConstraints(Property property, Node node, String locale, ExtendedPropertyDefinition epd, JCRNodeWrapper jahiaNode, ContentIntegrityErrorList errors) throws RepositoryException {
+    private void checkPropertyConstraints(Property property, String locale, ExtendedPropertyDefinition epd, JCRNodeWrapper jahiaNode, ContentIntegrityErrorList errors) throws RepositoryException {
         final boolean hasConstraints = epd.getValueConstraints() != null && epd.getValueConstraints().length > 0;
         if (!hasConstraints) return;
 
@@ -467,13 +429,6 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         errors.addError(error);
     }
 
-    private boolean checkSiteLangsOnly() {
-        final Object o = getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
-        if (o instanceof Boolean) return (boolean) o;
-        if (o instanceof String) return Boolean.parseBoolean((String) o);
-        return DEFAULT_CHECK_SITE_LANGS_ONLY_KEY;
-    }
-
     private void doOnTranslationNodes(JCRNodeWrapper node, TranslationNodeProcessor translationNodeProcessor) throws RepositoryException {
         if (checkSiteLangsOnly() && StringUtils.startsWith(node.getPath(), "/sites/")) {
             final JCRSiteNode site = node.getResolveSite();
@@ -551,6 +506,13 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     @Override
     public ContentIntegrityCheckConfiguration getConfigurations() {
         return configurations;
+    }
+
+    private boolean checkSiteLangsOnly() {
+        final Object o = getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
+        if (o instanceof Boolean) return (boolean) o;
+        if (o instanceof String) return Boolean.parseBoolean((String) o);
+        return DEFAULT_CHECK_SITE_LANGS_ONLY_KEY;
     }
 
     private enum ErrorType {
