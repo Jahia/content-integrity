@@ -43,9 +43,9 @@ import java.util.stream.Collectors;
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=" + Constants.JAHIANT_TRANSLATION
 })
-public class PropertyConstraintsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
+public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
 
-    private static final Logger logger = LoggerFactory.getLogger(PropertyConstraintsSanityCheck.class);
+    private static final Logger logger = LoggerFactory.getLogger(PropertyDefinitionsSanityCheck.class);
 
     private static final String CHECK_SITE_LANGS_ONLY_KEY = "site-langs-only";
     private static final boolean DEFAULT_CHECK_SITE_LANGS_ONLY_KEY = false;
@@ -54,7 +54,7 @@ public class PropertyConstraintsSanityCheck extends AbstractContentIntegrityChec
 
     private final ContentIntegrityCheckConfiguration configurations;
 
-    public PropertyConstraintsSanityCheck() {
+    public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
         getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, "If true, only the translation subnodes related to an active language are checked when the node is in a site");
         getConfigurations().declareDefaultParameter(CHECK_PROPERTIES_WITHOUT_CONSTRAINT, DEFAULT_CHECK_PROPERTIES_WITHOUT_CONSTRAINT, "If true, every property value will be check to validate if it is compliant with the current definition, if false only the properties with a declared constraint are checked");
