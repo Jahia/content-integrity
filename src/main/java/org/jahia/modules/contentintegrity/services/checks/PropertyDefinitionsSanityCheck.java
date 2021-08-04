@@ -236,7 +236,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             if (epd == null)
                 epd = getExtendedPropertyDefinition(propertyDefinition, property, isI18n, namedPropertyDefinitions, unstructuredPropertyDefinitions);
             if (epd == null) {
-                logger.error(String.format("Impossible to load the property definition for the property %s on the node %s", pName, node.getPath()));
+                logger.error(String.format("Impossible to load the property definition for the property %s on the node %s", pName, jahiaNode.getPath()));
                 continue;
             }
 
