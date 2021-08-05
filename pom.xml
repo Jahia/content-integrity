@@ -49,7 +49,7 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.3.0.0</version>
+        <version>7.2.0.0</version>
     </parent>
     <groupId>org.jahia.modules</groupId>
     <artifactId>content-integrity</artifactId>
@@ -108,6 +108,15 @@
                         <Karaf-Commands>*</Karaf-Commands>
                         <_dsannotations>*</_dsannotations>
                     </instructions>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.plugin.version}</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
         </plugins>
