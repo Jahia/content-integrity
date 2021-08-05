@@ -15,14 +15,16 @@ public class ContentIntegrityResults {
     private final String formattedTestDate;
     private final Long testDuration;
     private final String formattedTestDuration;
+    private final String workspace;
     private final List<ContentIntegrityError> errors;
 
 
-    public ContentIntegrityResults(Long testDate, Long testDuration, List<ContentIntegrityError> errors) {
+    public ContentIntegrityResults(Long testDate, Long testDuration, String workspace, List<ContentIntegrityError> errors) {
         this.testDate = testDate;
         formattedTestDate = FastDateFormat.getInstance("yyyy_MM_dd-HH_mm_ss_SSS").format(testDate);
         this.testDuration = testDuration;
         this.formattedTestDuration = DateUtils.formatDurationWords(testDuration);
+        this.workspace = workspace;
         this.errors = errors;
     }
 
@@ -30,8 +32,8 @@ public class ContentIntegrityResults {
         return testDate;
     }
 
-    public String getFormattedTestDate() {
-        return formattedTestDate;
+    public String getID() {
+        return String.format("%s_%s", workspace, formattedTestDate);
     }
 
     public Long getTestDuration() {

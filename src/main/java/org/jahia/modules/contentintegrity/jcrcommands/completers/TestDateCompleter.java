@@ -14,6 +14,6 @@ public class TestDateCompleter extends SimpleCompleter {
 
     @Override
     public List<String> getAllowedValues() {
-        return Utils.getContentIntegrityService().getTestResultsDates();
+        return Utils.getContentIntegrityService().getTestIDs();
     }
 }
