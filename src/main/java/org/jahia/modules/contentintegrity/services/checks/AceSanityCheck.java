@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
@@ -48,6 +49,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private static final String J_SOURCE_ACE = "j:sourceAce";
     private static final String J_PATH = "j:path";
     private static final String J_ACE_TYPE = "j:aceType";
+    private static final Pattern CURRENT_SITE_PATTERN = Pattern.compile("^currentSite");
 
     private final Map<String, Role> roles = new HashMap<>();
 
@@ -186,7 +188,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                         .addExtraInfo("error-type", ErrorType.INVALID_EXTERNAL_PERMISSIONS)
                                         .addExtraInfo("external-permissions-name", externalPermissionsName)
                                         .addExtraInfo("role", role));
-                            } else if (StringUtils.equals(roleExternalPermissions.get(externalPermissionsName), "currentSite")) {
+                            } else if (CURRENT_SITE_PATTERN.matcher(externalPermissionsName).find()) {
                                 final String aceSiteKey = resolveSiteKey(node);
                                 if (!StringUtils.equals(aceSiteKey, resolveSiteKey(srcAce))) {
                                     final Map<String, Object> infos = new HashMap<>(4);
