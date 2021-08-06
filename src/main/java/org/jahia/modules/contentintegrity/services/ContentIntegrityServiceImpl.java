@@ -46,6 +46,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(ContentIntegrityServiceImpl.class);
 
+    private static final long NODES_COUNT_LOG_INTERVAL = 10000L;
+
     private List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
     private Cache errorsCache;
     private EhCacheProvider ehCacheProvider;
@@ -273,7 +275,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private void calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths) {
         final long start = System.currentTimeMillis();
         try {
-            nbNodesToScan = calculateNbNodestoScan(node, excludedPaths, 0);
+            nbNodesToScan = calculateNbNodestoScan(node, excludedPaths, 0L);
             logger.info(String.format("%s nodes to scan", nbNodesToScan));
         } catch (RepositoryException e) {
             logger.error("", e);
@@ -281,11 +283,15 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         nbNodestoScanCalculationDuration = System.currentTimeMillis() - start;
     }
 
-    private int calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths, int currentCount) throws RepositoryException {
+    private long calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths, long currentCount) throws RepositoryException {
         if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(node.getPath())) {
             return currentCount;
         }
-        int count = currentCount + 1;
+
+        long count = currentCount + 1L;
+        if (count % NODES_COUNT_LOG_INTERVAL == 0)
+            logger.info(String.format("Counted %d nodes to scan so far", count));
+
         final JCRNodeIteratorWrapper children;
         try {
             children = node.getNodes();
