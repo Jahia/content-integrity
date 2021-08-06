@@ -286,7 +286,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             return currentCount;
         }
         int count = currentCount + 1;
-        for (JCRNodeWrapper child : node.getNodes()) {
+        final JCRNodeIteratorWrapper children;
+        try {
+            children = node.getNodes();
+        } catch (RepositoryException re) {
+            logger.error(String.format("Impossible to load the child nodes of %s , skipping them in the calculation of the number of nodes to scan", node.getPath()), re);
+            return count;
+        }
+        for (JCRNodeWrapper child : children) {
             if ("/jcr:system".equals(child.getPath()))
                 continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
             count = calculateNbNodestoScan(child, excludedPaths, count);
