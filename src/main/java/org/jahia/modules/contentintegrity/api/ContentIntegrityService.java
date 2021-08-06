@@ -19,7 +19,7 @@ public interface ContentIntegrityService {
 
     ContentIntegrityResults getTestResults(String testDate);
 
-    List<String> getTestResultsDates();
+    List<String> getTestIDs();
 
     List<String> printIntegrityChecksList(boolean simpleOutput);
 }

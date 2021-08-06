@@ -162,7 +162,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final long testDuration = System.currentTimeMillis() - start;
                 logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration)));
                 printChecksDuration();
-                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, errors);
+                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors);
                 storeErrorsInCache(results);
                 return results;
             } catch (RepositoryException e) {
@@ -286,7 +286,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             return currentCount;
         }
         int count = currentCount + 1;
-        for (JCRNodeWrapper child : node.getNodes()) {
+        final JCRNodeIteratorWrapper children;
+        try {
+            children = node.getNodes();
+        } catch (RepositoryException re) {
+            logger.error(String.format("Impossible to load the child nodes of %s , skipping them in the calculation of the number of nodes to scan", node.getPath()), re);
+            return count;
+        }
+        for (JCRNodeWrapper child : children) {
             if ("/jcr:system".equals(child.getPath()))
                 continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
             count = calculateNbNodestoScan(child, excludedPaths, count);
@@ -370,7 +377,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private void storeErrorsInCache(ContentIntegrityResults results) {
-        final Element element = new Element(results.getFormattedTestDate(), results);
+        final Element element = new Element(results.getID(), results);
         errorsCache.put(element);
     }
 
@@ -391,7 +398,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public List<String> getTestResultsDates() {
+    public List<String> getTestIDs() {
         return errorsCache.getKeys();
     }
 

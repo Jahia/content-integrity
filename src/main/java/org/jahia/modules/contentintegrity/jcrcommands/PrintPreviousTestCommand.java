@@ -77,7 +77,7 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
 
             if (folderCreated && outputDir.canWrite()) {
                 final File csvFile = new File(outputDir, String.format("%s-%s.csv",
-                        results.getFormattedTestDate(), excludeFixedErrors ? "remainingErrors" : "full"));
+                        results.getID(), excludeFixedErrors ? "remainingErrors" : "full"));
                 final boolean exists = csvFile.exists();
                 if (!exists) csvFile.createNewFile();
                 final List<String> lines = (List<String>) CollectionUtils.collect(results.getErrors(), new Transformer() {
