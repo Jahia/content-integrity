@@ -52,7 +52,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private Cache errorsCache;
     private EhCacheProvider ehCacheProvider;
     private String errorsCacheName = "ContentIntegrityService-errors";
-    private long errorsCacheTti = 24L * 3600L; // 1 day;
+    private long errorsCacheTti = 7L * 24L * 3600L; // 1 week;
     private long nbNodestoScanCalculationDuration = 0L;
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
