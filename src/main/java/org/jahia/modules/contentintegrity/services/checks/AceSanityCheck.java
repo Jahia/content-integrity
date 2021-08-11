@@ -191,12 +191,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             } else if (CURRENT_SITE_PATTERN.matcher(externalPermissionsName).find()) {
                                 final String aceSiteKey = resolveSiteKey(node);
                                 if (!StringUtils.equals(aceSiteKey, resolveSiteKey(srcAce))) {
-                                    final Map<String, Object> infos = new HashMap<>(4);
-                                    infos.put("error-type", ErrorType.SOURCE_ACE_DIFFERENT_SITE);
-                                    infos.put("ace-uuid", srcAceIdentifier);
-                                    infos.put("ace-path", srcAce.getPath());
-                                    infos.put("ace-site", aceSiteKey);
-                                    createErrorWithInfos(node, null, "The external ACE and the source ACE are stored in different sites", infos);
+                                    errors.addError(createError(node, "The external ACE and the source ACE are stored in different sites")
+                                            .addExtraInfo("error-type", ErrorType.SOURCE_ACE_DIFFERENT_SITE)
+                                            .addExtraInfo("ace-uuid", srcAceIdentifier)
+                                            .addExtraInfo("ace-path", srcAce.getPath())
+                                            .addExtraInfo("ace-site", aceSiteKey));
                                 }
                             }
 
