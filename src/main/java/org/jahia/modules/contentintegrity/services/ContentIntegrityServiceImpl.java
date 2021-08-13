@@ -35,7 +35,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 @Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
@@ -52,7 +53,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private Cache errorsCache;
     private EhCacheProvider ehCacheProvider;
     private String errorsCacheName = "ContentIntegrityService-errors";
-    private long errorsCacheTti = 24L * 3600L; // 1 day;
+    private long errorsCacheTti = 7L * 24L * 3600L; // 1 week;
     private long nbNodestoScanCalculationDuration = 0L;
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
@@ -394,13 +395,17 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Override
     public ContentIntegrityResults getTestResults(String testDate) {
-        final List<String> keys = errorsCache.getKeys();
+        final List<String> keys = getTestIDs();
         if (CollectionUtils.isEmpty(keys)) return null;
-        if (StringUtils.isBlank(testDate)) {
-            final TreeSet<String> testDates = new TreeSet<>(keys);
-            return (ContentIntegrityResults) errorsCache.get(testDates.last()).getObjectValue();
+        if (StringUtils.isNotBlank(testDate)) {
+            return (ContentIntegrityResults) errorsCache.get(testDate).getObjectValue();
         }
-        return (ContentIntegrityResults) errorsCache.get(testDate).getObjectValue();
+        final TreeMap<Long, String> testDates = keys.stream().collect(Collectors.toMap(k -> ((ContentIntegrityResults) errorsCache.get(k).getObjectValue()).getTestDate(), k -> k, throwingMerger(), TreeMap::new));
+        return (ContentIntegrityResults) errorsCache.get(testDates.lastEntry().getValue()).getObjectValue();
+    }
+
+    private static <T> BinaryOperator<T> throwingMerger() {
+        return (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); };
     }
 
     @Override

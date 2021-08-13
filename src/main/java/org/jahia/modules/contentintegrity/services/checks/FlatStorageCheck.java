@@ -35,7 +35,8 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
             final long size = node.getNodes().getSize();
             final int threshold = getThreshold();
             if (size > threshold)
-                return createSingleError(node, String.format("The node has over %s children: %s", threshold, size));
+                return createSingleError(createError(node, String.format("The node has over %s children", threshold))
+                        .addExtraInfo("children-count", size));
         } catch (RepositoryException e) {
             logger.error("", e);
         }

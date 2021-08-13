@@ -45,21 +45,22 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
                 final ErrorType errortype;
                 if (flaggedAsHomeCount > 1) {
                     errortype = ErrorType.MULTIPLE_HOMES;
-                    msg = String.format("The site %s has several pages flagged as home", node.getName());
+                    msg = "The site has several pages flagged as home";
                 } else if (node.hasNode(HOME_PAGE_FALLBACK_NAME)) {
                     if (isInLiveWorkspace(node))
                         return null; // Let's consider it is not an error, if fixed in default, then it will get fixed in live after publishing
                     errortype = ErrorType.FALLBACK_ON_NAME;
-                    msg = String.format("The site %s has no page flagged as home, but one is named 'home'", node.getName());
+                    msg = "The site has no page flagged as home, but one is named 'home'";
                 } else {
                     if (isInLiveWorkspace(node))
                         return null; // Not an error, the home page has maybe not yet been published
                     errortype = ErrorType.NO_HOME;
-                    msg = String.format("The site %s has no page flagged as home and no one is named 'home'", node.getName());
+                    msg = "The site has no page flagged as home and no one is named 'home'";
                 }
 
-                final ContentIntegrityError error = createError(node, msg);
-                error.setExtraInfos(errortype);
+                final ContentIntegrityError error = createError(node, msg)
+                        .setErrorType(errortype)
+                        .addExtraInfo("site", node.getName());
                 return createSingleError(error);
             }
         } catch (RepositoryException e) {
@@ -70,12 +71,12 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
 
     @Override
     public boolean fixError(JCRNodeWrapper site, ContentIntegrityError integrityError) throws RepositoryException {
-        final Object errorExtraInfos = integrityError.getExtraInfos();
-        if (!(errorExtraInfos instanceof ErrorType)) {
-            logger.error("Unexpected error type: " + errorExtraInfos);
+        final Object errorTypeObject = integrityError.getErrorType();
+        if (!(errorTypeObject instanceof ErrorType)) {
+            logger.error("Unexpected error type: " + errorTypeObject);
             return false;
         }
-        final ErrorType errorType = (ErrorType) errorExtraInfos;
+        final ErrorType errorType = (ErrorType) errorTypeObject;
         final JCRNodeIteratorWrapper iterator;
         switch (errorType) {
             case NO_HOME:

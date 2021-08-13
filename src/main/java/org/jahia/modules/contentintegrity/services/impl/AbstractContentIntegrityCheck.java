@@ -18,11 +18,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
@@ -155,7 +153,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public String toFullString() {
-        return String.format("%s %s", toString(), printConditions());
+        return String.format("%s %s", this, printConditions());
     }
 
     @Override
@@ -185,39 +183,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return ContentIntegrityError.createError(node, null, message, this);
     }
 
-    protected final ContentIntegrityError createErrorWithInfos(JCRNodeWrapper node, String locale, String message, Object... infos) {
-        final ContentIntegrityError error = createError(node, locale, message);
-        if (infos.length == 1) {
-            error.setExtraInfos(Arrays.stream(infos).findFirst().get());
-        } else if (infos.length > 1) {
-            error.setExtraInfos(Arrays.stream(infos).collect(Collectors.toList()));
-        }
-        return error;
-    }
-
     protected final ContentIntegrityErrorList createEmptyErrorsList() {
         return ContentIntegrityErrorList.createEmptyList();
     }
 
-    protected final ContentIntegrityErrorList createSingleError(JCRNodeWrapper node, String locale, String message) {
-        return ContentIntegrityErrorList.createSingleError(createError(node, locale, message));
-    }
-
-    protected final ContentIntegrityErrorList createSingleError(JCRNodeWrapper node, Locale locale, String message) {
-        return ContentIntegrityErrorList.createSingleError(createError(node, locale, message));
-    }
-
-    protected final ContentIntegrityErrorList createSingleError(JCRNodeWrapper node, String message) {
-        return ContentIntegrityErrorList.createSingleError(createError(node, message));
-    }
-
     protected final ContentIntegrityErrorList createSingleError(ContentIntegrityError error) {
         return ContentIntegrityErrorList.createSingleError(error);
-    }
-
-    protected final ContentIntegrityErrorList appendError(ContentIntegrityErrorList list, ContentIntegrityError error) {
-        if (list == null) return createSingleError(error);
-        return list.addError(error);
     }
 
     @Override
@@ -292,8 +263,17 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected String getTranslationNodeLocale(Node translationNode) {
         try {
-            if (!translationNode.hasProperty(Constants.JCR_LANGUAGE)) return null;
-            return translationNode.getProperty(Constants.JCR_LANGUAGE).getString();
+            if (translationNode.hasProperty(Constants.JCR_LANGUAGE))
+                return translationNode.getProperty(Constants.JCR_LANGUAGE).getString();
+        } catch (RepositoryException e) {
+            logger.error(String.format("Impossible to read the property %s on a translation node", Constants.JCR_LANGUAGE), e);
+        }
+        return getTranslationNodeLocaleFromNodeName(translationNode);
+    }
+
+    protected String getTranslationNodeLocaleFromNodeName(Node translationNode) {
+        try {
+            return translationNode.getName().substring("j:translation_".length());
         } catch (RepositoryException e) {
             logger.error("Impossible to extract the locale", e);
             return null;

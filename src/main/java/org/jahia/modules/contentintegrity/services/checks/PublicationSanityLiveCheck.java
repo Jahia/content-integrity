@@ -20,7 +20,7 @@ import static org.jahia.api.Constants.LIVE_WORKSPACE;
 import static org.jahia.api.Constants.ORIGIN_WORKSPACE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_LASTPUBLISHED,
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=jmix:originWS",
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.LIVE_WORKSPACE
 })
 public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
@@ -43,8 +43,8 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 return null;
             } catch (ItemNotFoundException infe) {
                 final String msg = "Found not-UGC node which exists only in live";
-                final ContentIntegrityError error = createError(node, msg);
-                error.setExtraInfos(ErrorType.NO_DEFAULT_NODE);
+                final ContentIntegrityError error = createError(node, msg)
+                        .setErrorType(ErrorType.NO_DEFAULT_NODE);
                 return createSingleError(error);
             }
         } catch (RepositoryException e) {
@@ -55,12 +55,12 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
 
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
-        final Object errorExtraInfos = integrityError.getExtraInfos();
-        if (!(errorExtraInfos instanceof ErrorType)) {
-            logger.error("Unexpected error type: " + errorExtraInfos);
+        final Object errorTypeObject = integrityError.getErrorType();
+        if (!(errorTypeObject instanceof ErrorType)) {
+            logger.error("Unexpected error type: " + errorTypeObject);
             return false;
         }
-        final ErrorType errorType = (ErrorType) errorExtraInfos;
+        final ErrorType errorType = (ErrorType) errorTypeObject;
         switch (errorType) {
             case NO_DEFAULT_NODE:
                 // We assume here that the deletion has not been correctly published. An alternative fix would be to consider

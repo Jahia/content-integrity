@@ -350,12 +350,13 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         if (property.isMultiple()) {
             final Set<Integer> types = Arrays.stream(property.getValues())
                     .map(Value::getType)
+                    .map(type -> type == PropertyType.REFERENCE ? PropertyType.WEAKREFERENCE : type)
                     .collect(Collectors.toSet());
             if (types.size() == 1) return types.iterator().next();
         } else {
             if (property.getValue() != null) return property.getValue().getType();
         }
-        return 0;
+        return PropertyType.UNDEFINED;
     }
 
     private int getExtendedPropertyType(Property property, boolean isI18n) {
@@ -464,7 +465,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                             JCRNodeWrapper node, String locale,
                             Map<String, Object> customExtraInfos, ContentIntegrityErrorList errors) {
         final ContentIntegrityError error = createError(node, locale, errorType.desc)
-                .addExtraInfo("error-type", errorType)
+                .setErrorType(errorType)
                 .addExtraInfo("property-name", propertyName);
         if (propertyDefinition != null) {
             error.addExtraInfo("declaring-type", propertyDefinition.getDeclaringNodeType().getName());

@@ -1,7 +1,6 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.Transformer;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
@@ -21,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -39,12 +37,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
         final JCRSiteNode site = (JCRSiteNode) node;
         final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
         final List<JahiaTemplatesPackage> availableTemplatePackages = jahiaTemplateManagerService.getAvailableTemplatePackages();
-        final Collection<String> availableModules = CollectionUtils.collect(availableTemplatePackages, new Transformer<JahiaTemplatesPackage, String>() {
-            @Override
-            public String transform(JahiaTemplatesPackage input) {
-                return input.getId();
-            }
-        });
+        final Collection<String> availableModules = CollectionUtils.collect(availableTemplatePackages, JahiaTemplatesPackage::getId);
         List<String> undeployedModules = null;
         for (String module : ((JCRSiteNode) node).getInstalledModules()) {
             if (!availableModules.contains(module)) {
@@ -56,9 +49,9 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
         if (CollectionUtils.isNotEmpty(undeployedModules)) {
             final ContentIntegrityErrorList errors = createEmptyErrorsList();
             for (String undeployedModule : undeployedModules) {
-                errors.addError(createErrorWithInfos(node, null,
-                        String.format("The module %s is activated on the site %s, but not available", undeployedModule, site.getTitle()),
-                        undeployedModule));
+                errors.addError(createError(node, "Undeployed module still activated on the a site")
+                        .addExtraInfo("module", undeployedModule)
+                        .addExtraInfo("site-name", site.getDisplayableName()));
             }
             return errors;
         }
@@ -69,7 +62,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
         final JCRSiteNode site = (JCRSiteNode) node;
-        final String missingModule = (String) integrityError.getExtraInfos();
+        final String missingModule = (String) integrityError.getExtraInfo("module");
         final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
         final Set<Bundle> bundles = jahiaTemplateManagerService.getModuleStates().keySet();
         final Collection<String> installedModuleIDs = CollectionUtils.collect(bundles, BundleUtils::getModuleId);

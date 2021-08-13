@@ -104,35 +104,31 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
         final String aceType;
         if (!node.hasProperty(J_ACE_TYPE)) {
-            final ContentIntegrityError error = createError(node, "External ACE without property ".concat(J_ACE_TYPE));
-            error.setExtraInfos(ErrorType.NO_ACE_TYPE_PROP);
-            errors.addError(error);
+            errors.addError(createError(node, "External ACE without property ".concat(J_ACE_TYPE))
+                    .setErrorType(ErrorType.NO_ACE_TYPE_PROP));
         } else if (!StringUtils.equals("GRANT", aceType = node.getPropertyAsString(J_ACE_TYPE))) {
-            final ContentIntegrityError error = createError(node, String.format("External ACE with an invalid value for %s : %s", J_ACE_TYPE, aceType));
-            error.setExtraInfos(ErrorType.INVALID_ACE_TYPE_PROP);
-            errors.addError(error);
+            errors.addError(createError(node, "External ACE with an invalid ".concat(J_ACE_TYPE))
+                    .setErrorType(ErrorType.INVALID_ACE_TYPE_PROP)
+                    .addExtraInfo("defined-ace-type", aceType));
         }
 
         boolean hasPropSourceAce = true, hasPropRoles = true;
         if (!node.hasProperty(J_SOURCE_ACE)) {
             hasPropSourceAce = false;
-            final ContentIntegrityError error = createError(node, "External ACE without source ACE");
-            error.setExtraInfos(ErrorType.NO_SOURCE_ACE_PROP);
-            errors.addError(error);
+            errors.addError(createError(node, "External ACE without source ACE")
+                    .setErrorType(ErrorType.NO_SOURCE_ACE_PROP));
         }
         if (!node.hasProperty(J_ROLES)) {
             hasPropRoles = false;
-            final ContentIntegrityError error = createError(node, "External ACE without property j:roles");
-            error.setExtraInfos(ErrorType.NO_ROLES_PROP);
-            errors.addError(error);
+            errors.addError(createError(node, "External ACE without property j:roles")
+                    .setErrorType(ErrorType.NO_ROLES_PROP));
         }
 
         if (hasPropSourceAce) {
             final JCRValueWrapper[] values = node.getProperty(J_SOURCE_ACE).getValues();
             if (values.length == 0) {
-                final ContentIntegrityError error = createError(node, "External ACE without source ACE");
-                error.setExtraInfos(ErrorType.EMPTY_SOURCE_ACE_PROP);
-                errors.addError(error);
+                errors.addError(createError(node, "External ACE without source ACE")
+                        .setErrorType(ErrorType.EMPTY_SOURCE_ACE_PROP));
             }
             for (JCRValueWrapper value : values) {
                 JCRNodeWrapper srcAce = null;
@@ -147,31 +143,39 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                         if (nodeExists(value.getString(), defaultSession)) isFalsePositive = true;
                     }
                     if (!isFalsePositive)
-                        errors.addError(createErrorWithInfos(node, null, "Broken reference to source ACE", ErrorType.SOURCE_ACE_BROKEN_REF));
+                        errors.addError(createError(node, "Broken reference to source ACE")
+                                .setErrorType(ErrorType.SOURCE_ACE_BROKEN_REF));
                     continue;
                 }
 
                 final String srcAceType;
                 final String srcAceIdentifier = srcAce.getIdentifier();
                 if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals("GRANT", srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
-                    final ContentIntegrityError error = createError(node, String.format("The source ACE (%s) is not of type GRANT (type=%s)", srcAceIdentifier, srcAceType));
-                    error.addExtraInfo("error-type", ErrorType.SOURCE_ACE_NOT_TYPE_GRANT)
+                    errors.addError(createError(node, "The source ACE is not of type GRANT")
+                            .setErrorType(ErrorType.SOURCE_ACE_NOT_TYPE_GRANT)
                             .addExtraInfo("src-ace-uuid", srcAceIdentifier)
-                            .addExtraInfo("src-ace-type", srcAceType);
-                    errors.addError(error);
+                            .addExtraInfo("src-ace-path", srcAce.getPath())
+                            .addExtraInfo("src-ace-type", srcAceType)
+                            .setExtraMsg("External ACE are defined only for the ACE of type GRANT"));
                 }
 
                 if (hasPropRoles) {
                     if (!srcAce.hasProperty(J_ROLES)) {
-                        errors.addError(createErrorWithInfos(node, null,
-                                String.format("The roles differ on the external and source ACE, since the %s property is missing on the source ACE", J_ROLES),
-                                ErrorType.ROLES_DIFFER_ON_SOURCE_ACE));
+                        errors.addError(createError(node,
+                                String.format("Missing %s property on the source ACE", J_ROLES))
+                                .setErrorType(ErrorType.ROLES_DIFFER_ON_SOURCE_ACE)
+                                .addExtraInfo("src-ace-uuid", srcAceIdentifier)
+                                .addExtraInfo("src-ace-path", srcAce.getPath())
+                                .setExtraMsg(String.format("Impossible to check if the roles defined on the external ACE and the source ACE are consistant, since the property %s is missing on the source ACE", J_ROLES)));
                     } else {
                         final List<String> externalAceRoles = getRoleNames(node);
                         if (CollectionUtils.isEmpty(externalAceRoles)) {
-                            errors.addError(createErrorWithInfos(node, null, String.format("The property %s has no value", J_ROLES), ErrorType.INVALID_ROLES_PROP));
+                            errors.addError(createError(node, String.format("The property %s has no value", J_ROLES))
+                                    .setErrorType(ErrorType.INVALID_ROLES_PROP));
                         } else if (externalAceRoles.size() > 1) {
-                            errors.addError(createErrorWithInfos(node, null, String.format("Unexpected number of roles in the property %s", J_ROLES), ErrorType.INVALID_ROLES_PROP));
+                            errors.addError(createError(node, String.format("Unexpected number of roles in the property %s", J_ROLES))
+                                    .setErrorType(ErrorType.INVALID_ROLES_PROP)
+                                    .addExtraInfo(J_ROLES, externalAceRoles));
                         } else {
                             final List<String> srcAceRoles = getRoleNames(srcAce);
                             final String role = externalAceRoles.get(0);
@@ -180,33 +184,36 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             final String externalPermissionsName;
                             if (!roles.containsKey(role)) {
                                 errors.addError(createError(node, "External ACE defined for a role which does not exist")
-                                        .addExtraInfo("error-type", ErrorType.ROLE_DOESNT_EXIST)
+                                        .setErrorType(ErrorType.ROLE_DOESNT_EXIST)
                                         .addExtraInfo("role", role));
                             } else if (!(roleExternalPermissions = roles.get(role).getExternalPermissions())
                                     .containsKey(externalPermissionsName = node.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME))) {
                                 errors.addError(createError(node, "External ACE defined for external permissions which are not declared by the role")
-                                        .addExtraInfo("error-type", ErrorType.INVALID_EXTERNAL_PERMISSIONS)
+                                        .setErrorType(ErrorType.INVALID_EXTERNAL_PERMISSIONS)
+                                        .addExtraInfo("role", role)
                                         .addExtraInfo("external-permissions-name", externalPermissionsName)
-                                        .addExtraInfo("role", role));
+                                        .addExtraInfo("expected-external-permissions-names", roleExternalPermissions.keySet()));
                             } else if (CURRENT_SITE_PATTERN.matcher(externalPermissionsName).find()) {
                                 final String aceSiteKey = resolveSiteKey(node);
                                 if (!StringUtils.equals(aceSiteKey, resolveSiteKey(srcAce))) {
-                                    final Map<String, Object> infos = new HashMap<>(4);
-                                    infos.put("error-type", ErrorType.SOURCE_ACE_DIFFERENT_SITE);
-                                    infos.put("ace-uuid", srcAceIdentifier);
-                                    infos.put("ace-path", srcAce.getPath());
-                                    infos.put("ace-site", aceSiteKey);
-                                    createErrorWithInfos(node, null, "The external ACE and the source ACE are stored in different sites", infos);
+                                    errors.addError(createError(node, "The external ACE and the source ACE are stored in different sites")
+                                            .setErrorType(ErrorType.SOURCE_ACE_DIFFERENT_SITE)
+                                            .addExtraInfo("ace-uuid", srcAceIdentifier)
+                                            .addExtraInfo("ace-path", srcAce.getPath())
+                                            .addExtraInfo("ace-site", aceSiteKey)
+                                            .addExtraInfo("role", role)
+                                            .addExtraInfo("external-permissions-name", externalPermissionsName)
+                                            .setExtraMsg("When external permissions are defined with a scope relative to the current site, then the ACE and the external ACE are expected to be in the same site"));
                                 }
                             }
 
                             if (!srcAceRoles.contains(role)) {
-                                final Map<String, Object> infos = new HashMap<>();
-                                infos.put("error-type", ErrorType.ROLES_DIFFER_ON_SOURCE_ACE);
-                                infos.put("ace-uuid", srcAceIdentifier);
-                                errors.addError(createErrorWithInfos(node, null,
-                                        String.format("The external ACE is defined for the role %s, but the ace (%s) has not this role", role, srcAceIdentifier),
-                                        ErrorType.ROLES_DIFFER_ON_SOURCE_ACE));
+                                errors.addError(createError(node, "External ACE defined for a role which is not defined on the source ACE")
+                                        .setErrorType(ErrorType.ROLES_DIFFER_ON_SOURCE_ACE)
+                                        .addExtraInfo("role", role)
+                                        .addExtraInfo("ace-uuid", srcAceIdentifier)
+                                        .addExtraInfo("ace-path", srcAce.getPath())
+                                        .addExtraInfo("ace-roles", srcAceRoles));
                             }
                         }
                     }
@@ -235,9 +242,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final String aceType;
         boolean compareAceWithExternalAce = true;
         if (!node.hasProperty(J_ACE_TYPE)) {
-            final ContentIntegrityError error = createError(node, "ACE without property ".concat(J_ACE_TYPE));
-            error.setExtraInfos(ErrorType.NO_ACE_TYPE_PROP);
-            errors.addError(error);
+            errors.addError(createError(node, "ACE without property ".concat(J_ACE_TYPE))
+                    .setErrorType(ErrorType.NO_ACE_TYPE_PROP));
         }
         else if (!StringUtils.equals(aceType = node.getPropertyAsString(J_ACE_TYPE), "GRANT")) {
             compareAceWithExternalAce = false;
@@ -245,23 +251,25 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             while (references.hasNext()) {
                 final Node extAce = references.nextProperty().getParent();
                 if (!extAce.isNodeType(JNT_EXTERNAL_ACE)) continue;
-                errors.addError(createError(node, "ACE not of GRANT type referenced by an external ACE")
-                        .addExtraInfo("error-type", ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
+                errors.addError(createError(node, "ACE not of type GRANT referenced by an external ACE")
+                        .setErrorType(ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
                         .addExtraInfo("ace-type", aceType)
-                        .addExtraInfo("external-ace-uuid", extAce.getIdentifier()));
+                        .addExtraInfo("external-ace-uuid", extAce.getIdentifier())
+                        .addExtraInfo("external-ace-path", extAce.getPath())
+                        .setExtraMsg("An external ACE is created only when the ACE is of type GRANT"));
             }
         }
 
         if (!node.hasProperty(J_ROLES)) {
-            errors.addError(createErrorWithInfos(node, null, "ACE without property j:roles", ErrorType.NO_ROLES_PROP));
+            errors.addError(createError(node, "ACE without property ".concat(J_ROLES))
+                    .setErrorType(ErrorType.NO_ROLES_PROP));
         } else {
             for (JCRValueWrapper roleRef : node.getProperty(J_ROLES).getValues()) {
                 final String roleName = roleRef.getString();
                 if (!roles.containsKey(roleName)) {
-                    final Map<String, Object> infos = new HashMap<>(2);
-                    infos.put("error-type", ErrorType.ROLE_DOESNT_EXIST);
-                    infos.put("role", roleName);
-                    errors.addError(createErrorWithInfos(node, null, "ACE with a role that doesn't exist", infos));
+                    errors.addError(createError(node, "ACE with a role that doesn't exist")
+                            .setErrorType(ErrorType.ROLE_DOESNT_EXIST)
+                            .addExtraInfo("role", roleName));
                 } else if (compareAceWithExternalAce) {
                     final Role role = roles.get(roleName);
                     for (String extPerm : role.getExternalPermissions().keySet()) {
@@ -275,9 +283,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 extAceFound = true;
                         }
                         if (!extAceFound)
-                            errors.addError(createErrorWithInfos(node, null,
-                                    String.format("The ACE has a role (%s) which defines external permissions (%s) but no related %s exist",
-                                            roleName, extPerm, JNT_EXTERNAL_ACE)));
+                            errors.addError(createError(node, "ACE with a missing external ACE")
+                                    .setErrorType(ErrorType.MISSING_EXTERNAL_ACE)
+                                    .addExtraInfo("role", roleName)
+                                    .addExtraInfo("external-permissions", extPerm)
+                                    .addExtraInfo("external-ace-scope", role.getExternalPermissions().get(extPerm)));
                     }
                 }
             }
@@ -289,7 +299,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private ContentIntegrityErrorList checkPrincipalOnAce(JCRNodeWrapper node) throws RepositoryException {
 
         if (!node.hasProperty(J_PRINCIPAL)) {
-            return createSingleError(createErrorWithInfos(node, null, "ACE without principal", ErrorType.NO_PRINCIPAL));
+            return createSingleError(createError(node, "ACE without principal")
+                    .setErrorType(ErrorType.NO_PRINCIPAL));
         }
 
         final String principal = node.getProperty(J_PRINCIPAL).getString();
@@ -297,8 +308,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final String siteKey = site == null ? null : site.getSiteKey();
         final JCRNodeWrapper principalNode = getPrincipal(siteKey, principal);
         if (principalNode == null) {
-            return createSingleError(createErrorWithInfos(node, null,
-                    String.format("%s not found, but an ACE is defined for it", principal), ErrorType.INVALID_PRINCIPAL));
+            return createSingleError(createError(node, "ACE with an invalid principal")
+                    .setErrorType(ErrorType.INVALID_PRINCIPAL)
+                    .addExtraInfo("invalid principal", principal)
+                    .setExtraMsg("Warning: if the principal comes from an external source such as a LDAP, it might be just temporarily missing because of a connectivity issue"));
         }
 
         return null;
@@ -330,12 +343,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
         if (!Constants.EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
 
-        final Object errorExtraInfos = error.getExtraInfos();
-        if (!(errorExtraInfos instanceof ErrorType)) {
-            logger.error("Unexpected error type: " + errorExtraInfos);
+        final Object errorTypeObject = error.getErrorType();
+        if (!(errorTypeObject instanceof ErrorType)) {
+            logger.error("Unexpected error type: " + errorTypeObject);
             return false;
         }
-        final ErrorType errorType = (ErrorType) errorExtraInfos;
+        final ErrorType errorType = (ErrorType) errorTypeObject;
         final JCRNodeWrapper node = ace.getParent().getParent();
         switch (errorType) {
             case NO_PRINCIPAL:
@@ -361,12 +374,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private enum ErrorType {
         NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
         NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, SOURCE_ACE_DIFFERENT_SITE, SOURCE_ACE_NOT_TYPE_GRANT,
-        INVALID_EXTERNAL_PERMISSIONS,
+        INVALID_EXTERNAL_PERMISSIONS, MISSING_EXTERNAL_ACE,
         NO_ROLES_PROP, INVALID_ROLES_PROP, ACE_NON_GRANT_WITH_EXTERNAL_ACE,
         ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
     }
 
-    private class Role {
+    private static class Role {
         String name;
         String uuid;
         Map<String, String> externalPermissions = new HashMap<>();

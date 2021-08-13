@@ -46,9 +46,8 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
             }
         }
         if (missingProps != null && !missingProps.isEmpty()) {
-            final String msg = String.format("The following properties are missing: %s", missingProps);
-            final ContentIntegrityError error = createError(node, msg);
-            error.setExtraInfos(missingProps);
+            final ContentIntegrityError error = createError(node, "Missing properties on a locked node")
+                    .addExtraInfo("missing-properties", missingProps);
             return createSingleError(error);
         }
 
