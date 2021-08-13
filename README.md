@@ -1,5 +1,5 @@
 <a href="https://store.jahia.com/contents/modules-repository/org/jahia/modules/content-integrity.html">
-    <img src="https://www.jahia.com/modules/jahiacom-templates/images/jahia-3x.png" alt="Jahia logo" title="Jahia" style="float:right" height="60" />
+    <img src="https://www.jahia.com/modules/jahiacom-templates/images/jahia-3x.png" alt="Jahia logo" title="Jahia" align="right" height="60" />
 </a>
 
 # Content Integrity
