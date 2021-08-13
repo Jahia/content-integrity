@@ -20,7 +20,7 @@ import static org.jahia.api.Constants.LIVE_WORKSPACE;
 import static org.jahia.api.Constants.ORIGIN_WORKSPACE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_LASTPUBLISHED,
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=jmix:originWS",
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.LIVE_WORKSPACE
 })
 public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
