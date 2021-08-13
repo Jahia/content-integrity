@@ -350,6 +350,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         if (property.isMultiple()) {
             final Set<Integer> types = Arrays.stream(property.getValues())
                     .map(Value::getType)
+                    .map(type -> type == PropertyType.REFERENCE ? PropertyType.WEAKREFERENCE : type)
                     .collect(Collectors.toSet());
             if (types.size() == 1) return types.iterator().next();
         } else {
