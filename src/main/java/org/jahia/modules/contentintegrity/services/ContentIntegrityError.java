@@ -10,9 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NodeType;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ContentIntegrityError {
@@ -26,13 +24,13 @@ public class ContentIntegrityError {
     private String locale;
     private String workspace;
     private String constraintMessage;
-    private String errorType;
-    private boolean fixed = false;
+    private String integrityCheckName;
     private long integrityCheckID = -1L;
-    private Object extraInfos;
+    private boolean fixed = false;
+    private Map<String,Object> extraInfos;
 
     private ContentIntegrityError(String path, String uuid, String primaryType, String mixins, String workspace,
-                                  String locale, String constraintMessage, String errorType, long integrityCheckID) {
+                                  String locale, String constraintMessage, String integrityCheckName, long integrityCheckID) {
         this.path = path;
         this.uuid = uuid;
         this.primaryType = primaryType;
@@ -40,7 +38,7 @@ public class ContentIntegrityError {
         this.locale = locale;
         this.workspace = workspace;
         this.constraintMessage = constraintMessage;
-        this.errorType = errorType;
+        this.integrityCheckName = integrityCheckName;
         this.integrityCheckID = integrityCheckID;
     }
 
@@ -67,7 +65,7 @@ public class ContentIntegrityError {
 
     public JSONObject toJSON() {
         try {
-            return (new JSONObject()).put("errorType", errorType).put("workspace", workspace).put("path", path)
+            return (new JSONObject()).put("errorType", integrityCheckName).put("workspace", workspace).put("path", path)
                     .put("uuid", uuid).put("nt", getFullNodetype()).put("locale", locale)
                     .put("message", constraintMessage).put("fixed", fixed);
         } catch (JSONException e) {
@@ -85,7 +83,7 @@ public class ContentIntegrityError {
 
         appendToCSVLine(sb, String.valueOf(integrityCheckID), separator, escapedSeparator);
         appendToCSVLine(sb, String.valueOf(fixed),separator, escapedSeparator);
-        appendToCSVLine(sb, errorType,separator, escapedSeparator);
+        appendToCSVLine(sb, integrityCheckName,separator, escapedSeparator);
         appendToCSVLine(sb, workspace,separator, escapedSeparator);
         appendToCSVLine(sb, uuid,separator, escapedSeparator);
         appendToCSVLine(sb, path,separator, escapedSeparator);
@@ -140,36 +138,38 @@ public class ContentIntegrityError {
         return workspace;
     }
 
-    public String getErrorType() {
-        return errorType;
+    public String getIntegrityCheckName() {
+        return integrityCheckName;
     }
 
     public long getIntegrityCheckID() {
         return integrityCheckID;
     }
 
-    public Object getExtraInfos() {
-        return extraInfos;
+    public Map<String, Object> getExtraInfos() {
+        return new LinkedHashMap<>(extraInfos);
     }
 
-    public void setExtraInfos(Object extraInfos) {
-        this.extraInfos = extraInfos;
-    }
-
-    public ContentIntegrityError addExtraInfo(Object info) {
-        if (extraInfos == null) extraInfos = new ArrayList<>();
-        else if (!(extraInfos instanceof Collection))
-            throw new IllegalArgumentException("Impossible to add the new extra info to the existing object since it is not a Collection");
-        ((Collection<Object>) extraInfos).add(info);
-        return this;
+    public Object getExtraInfo(String key) {
+        return extraInfos.get(key);
     }
 
     public ContentIntegrityError addExtraInfo(String key, Object value) {
-        if (extraInfos == null) extraInfos = new HashMap<String, Object>();
-        else if (!(extraInfos instanceof Map))
-            throw new IllegalArgumentException("Impossible to add the new extra info to the existing object since it is not a Map");
-        ((Map<String, Object>) extraInfos).put(key, value);
+        if (extraInfos == null) extraInfos = new LinkedHashMap<>();
+        extraInfos.put(key, value);
         return this;
+    }
+
+    public ContentIntegrityError setErrorType(Object type) {
+        return addExtraInfo("error-type", type);
+    }
+
+    public Object getErrorType() {
+        return getExtraInfo("error-type");
+    }
+
+    public ContentIntegrityError setExtraMsg(String msg) {
+        return addExtraInfo("extra-message", msg);
     }
 
     private String getFullNodetype() {

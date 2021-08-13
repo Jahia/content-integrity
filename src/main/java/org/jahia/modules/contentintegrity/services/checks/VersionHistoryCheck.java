@@ -48,7 +48,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         final Node realNode = node.getRealNode();
         if (realNode instanceof ExternalNodeImpl || realNode instanceof ExtensionNode) return null;
-        
+
         try {
             final JCRSessionWrapper session = node.getSession();
             final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode("/").getProvider());
@@ -64,7 +64,8 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
             final int numVersions = history.getNumVersions();
             final int threshold = getThreshold();
             if (numVersions > threshold)
-                return createSingleError(node, String.format("The node has over %s versions: %s", threshold, numVersions));
+                return createSingleError(createError(node, String.format("The node has over %s versions", threshold))
+                        .addExtraInfo("versions-count", numVersions));
         } catch (RepositoryException e) {
             logger.error("", e);
         }

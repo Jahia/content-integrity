@@ -35,7 +35,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     private static final String DIFFERENT_PATH_ROOT = "different-path-root";
 
     private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH}
-    private Map<String, Object> inheritedErrors = new HashMap<>();
+    private final Map<String, Object> inheritedErrors = new HashMap<>();
 
     @Override
     public void finalizeIntegrityTestInternal() {
@@ -52,8 +52,8 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());
                 } catch (ItemNotFoundException infe) {
                     final String msg = "Found a node flagged as published, but no corresponding live node exists";
-                    final ContentIntegrityError error = createError(node, msg);
-                    error.setExtraInfos(ErrorType.NO_LIVE_NODE);
+                    final ContentIntegrityError error = createError(node, msg)
+                            .setErrorType(ErrorType.NO_LIVE_NODE);
                     return createSingleError(error);
                 }
 
@@ -66,8 +66,9 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
                     if (!hasPendingModifications(node)) {
                         final String msg = "Found a published node, with no pending modifications, but the path in live is different";
-                        final ContentIntegrityError error = createError(node, msg);
-                        error.setExtraInfos(ErrorType.DIFFERENT_PATH);
+                        final ContentIntegrityError error = createError(node, msg)
+                                .setErrorType(ErrorType.DIFFERENT_PATH)
+                                .addExtraInfo("live-node-path", liveNode.getPath());
                         return createSingleError(error);
                     }
                 }
@@ -109,12 +110,12 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
 
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
-        final Object errorExtraInfos = integrityError.getExtraInfos();
-        if (!(errorExtraInfos instanceof ErrorType)) {
-            logger.error("Unexpected error type: " + errorExtraInfos);
+        final Object errorTypeObject = integrityError.getErrorType();
+        if (!(errorTypeObject instanceof ErrorType)) {
+            logger.error("Unexpected error type: " + errorTypeObject);
             return false;
         }
-        final ErrorType errorType = (ErrorType) errorExtraInfos;
+        final ErrorType errorType = (ErrorType) errorTypeObject;
         switch (errorType) {
             case NO_LIVE_NODE:
                 node.getProperty(PUBLISHED).remove();

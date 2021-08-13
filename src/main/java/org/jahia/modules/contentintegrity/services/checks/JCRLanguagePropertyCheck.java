@@ -27,11 +27,11 @@ public class JCRLanguagePropertyCheck extends AbstractContentIntegrityCheck {
         try {
             if (!node.hasProperty(JCR_LANGUAGE)) {
                 final String msg = String.format("The %s property is missing", JCR_LANGUAGE);
-                return createSingleError(node, StringUtils.substringAfterLast(node.getName(), "_"), msg);
+                return createSingleError(createError(node, getTranslationNodeLocaleFromNodeName(node), msg));
             }
-            if (!node.getName().equals("j:translation_" + node.getProperty(JCR_LANGUAGE).getString())) {
+            if (!node.getName().equals("j:translation_".concat(node.getProperty(JCR_LANGUAGE).getString()))) {
                 final String msg = String.format("The value of the property %s is inconsistent with the node name", JCR_LANGUAGE);
-                return createSingleError(node, StringUtils.substringAfterLast(node.getName(), "_"), msg);
+                return createSingleError(createError(node, getTranslationNodeLocaleFromNodeName(node), msg));
             }
         } catch (RepositoryException e) {
             logger.error("", e);

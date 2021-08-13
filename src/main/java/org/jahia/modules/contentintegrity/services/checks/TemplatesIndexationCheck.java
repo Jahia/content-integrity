@@ -39,7 +39,7 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
 
         final String query = String.format("select * from [jnt:template] as w where isdescendantnode(w, ['%s']) and name(w)='%s'",
                 JCRContentUtils.sqlEncode(modulePath), JCRContentUtils.sqlEncode(template.getName()));
-        QueryWrapper q = null;
+        final QueryWrapper q;
         try {
             q = template.getSession().getWorkspace().getQueryManager().createQuery(query, Query.JCR_SQL2);
             final QueryResultWrapper result = q.execute();
@@ -48,7 +48,7 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
                     return null; // The template is correctly indexed
             }
 
-            return createSingleError(template, "The template is not correctly indexed");
+            return createSingleError(createError(template, "The template is not correctly indexed"));
         } catch (RepositoryException e) {
             logger.error("Error when running the query " + query, e);
         }

@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.jackrabbit.core.data.DataStoreException;
+import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
@@ -22,7 +23,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck {
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
-        ContentIntegrityErrorList errors = null;
+        final ContentIntegrityErrorList errors = createEmptyErrorsList();
         try {
             final PropertyIterator properties = node.getProperties();
 
@@ -32,8 +33,11 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck {
                 try {
                     property.getBinary().getStream();
                 } catch (DataStoreException dse) {
-                    final ContentIntegrityError error = createError(node, String.format("Invalid binary for the property %s", property.getPath()));
-                    errors = appendError(errors, error);
+                    final String locale = node.isNodeType(Constants.JAHIANT_TRANSLATION) ?
+                            getTranslationNodeLocale(node) : null;
+                    errors.addError(createError(node, locale, "Invalid binary property")
+                            .addExtraInfo("property-name", property.getName())
+                            .addExtraInfo("property-path", property.getPath()));
                 }
             }
         } catch (RepositoryException e) {

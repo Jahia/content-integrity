@@ -464,7 +464,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                             JCRNodeWrapper node, String locale,
                             Map<String, Object> customExtraInfos, ContentIntegrityErrorList errors) {
         final ContentIntegrityError error = createError(node, locale, errorType.desc)
-                .addExtraInfo("error-type", errorType)
+                .setErrorType(errorType)
                 .addExtraInfo("property-name", propertyName);
         if (propertyDefinition != null) {
             error.addExtraInfo("declaring-type", propertyDefinition.getDeclaringNodeType().getName());

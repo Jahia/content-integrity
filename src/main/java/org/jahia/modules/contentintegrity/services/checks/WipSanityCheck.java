@@ -37,18 +37,20 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck {
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
-            ContentIntegrityErrorList errors = null;
+            final ContentIntegrityErrorList errors = createEmptyErrorsList();
             if (node.isNodeType(JAHIANT_TRANSLATION)) {
                 for (String p : Arrays.asList(WORKINPROGRESS, WORKINPROGRESS_STATUS, WORKINPROGRESS_LANGUAGES)) {
                     if (node.hasProperty(p)) {
-                        final ContentIntegrityError error = createError(node, String.format("Unexpected property on a translation node: %s", p));
-                        errors = appendError(errors, error);
+                        final ContentIntegrityError error = createError(node, "Unexpected WIP property on a translation node")
+                                .addExtraInfo("property-name", p);
+                        errors.addError(error);
                     }
                 }
             } else {
                 if (node.hasProperty(WORKINPROGRESS)) {
-                    final ContentIntegrityError error = createError(node, "WIP legacy format found on the node");
-                    errors = appendError(errors, error);
+                    final ContentIntegrityError error = createError(node, "WIP legacy format found on the node")
+                            .addExtraInfo("unexpected-property", WORKINPROGRESS);
+                    errors.addError(error);
                 }
                 final boolean propertyLangsIsDefined = node.hasProperty(WORKINPROGRESS_LANGUAGES);
                 if (node.hasProperty(WORKINPROGRESS_STATUS)) {
@@ -59,31 +61,33 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck {
                                 for (JCRValueWrapper value : node.getProperty(WORKINPROGRESS_LANGUAGES).getValues()) {
                                     final String lang = value.getString();
                                     if (!siteLanguages.contains(lang)) {
-                                        final ContentIntegrityError error = createError(node, String.format("Unexpected language flagged as WIP: %s", lang));
-                                        errors = appendError(errors, error);
+                                        final ContentIntegrityError error = createError(node, "Unexpected language flagged as WIP")
+                                                .addExtraInfo("language", lang)
+                                                .addExtraInfo("site-languages", siteLanguages);
+                                        errors.addError(error);
                                     }
                                 }
                             } else {
-                                final ContentIntegrityError error = createError(node, String.format("Unexpected missing property %s on a node without the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_LANG));
-                                errors = appendError(errors, error);
+                                final ContentIntegrityError error = createError(node, String.format("Missing property %s on a node without the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_LANG));
+                                errors.addError(error);
                             }
                             break;
                         case WORKINPROGRESS_STATUS_ALLCONTENT:
                             if (propertyLangsIsDefined) {
                                 final ContentIntegrityError error = createError(node, String.format("Unexpected property %s on a node without the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_ALLCONTENT));
-                                errors = appendError(errors, error);
+                                errors.addError(error);
                             }
                             break;
                         case WORKINPROGRESS_STATUS_DISABLED:
                             if (propertyLangsIsDefined) {
                                 final ContentIntegrityError error = createError(node, String.format("Unexpected property %s on a node without the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_DISABLED));
-                                errors = appendError(errors, error);
+                                errors.addError(error);
                             }
                             break;
                     }
                 } else if (propertyLangsIsDefined) {
                     final ContentIntegrityError error = createError(node, String.format("Unexpected property %s on a node without the property %s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS));
-                    errors = appendError(errors, error);
+                    errors.addError(error);
                 }
             }
             return errors;

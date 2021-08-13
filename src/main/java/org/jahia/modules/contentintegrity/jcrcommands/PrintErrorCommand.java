@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Command(scope = "jcr", name = "integrity-printError", description = "Prints out an error identified by an integrity check with full details")
 @Service
@@ -73,7 +72,7 @@ public class PrintErrorCommand extends JCRCommandSupport implements Action {
             table.noHeaders();
 
             table.addRow().addContent("ID", errorID);
-            table.addRow().addContent("Check name", error.getErrorType());
+            table.addRow().addContent("Check name", error.getIntegrityCheckName());
             table.addRow().addContent("Check ID", error.getIntegrityCheckID());
             table.addRow().addContent("Fixed", error.isFixed());
             table.addRow().addContent("Workspace", error.getWorkspace());

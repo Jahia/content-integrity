@@ -45,30 +45,46 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
         }
         final JCRSiteNode site = (JCRSiteNode) node;
         final JCRGroupNode privGroup;
-        ContentIntegrityErrorList errors = null;
+        final ContentIntegrityErrorList errors = createEmptyErrorsList();
         try {
             privGroup = jgms.lookupGroup(null, PRIVILEGED_GROUPNAME, site.getSession());
             if (privGroup == null) {
                 // The 'privileged' group is defined at server level. If missing, this unique error will be logged for each site
-                final ContentIntegrityError error = createError(site, String.format("The '%s' group doesn't exist", PRIVILEGED_GROUPNAME));
-                errors = appendError(errors, error);
+                final ContentIntegrityError error = createError(site, String.format("The '%s' group does not exist", PRIVILEGED_GROUPNAME))
+                        .setErrorType(ErrorType.GROUP_DOES_NOT_EXIST)
+                        .addExtraInfo("group-name", PRIVILEGED_GROUPNAME)
+                        .setExtraMsg(String.format("The '%s' group is created at server installation time, at server level, and should never be deleted", PRIVILEGED_GROUPNAME));
+                errors.addError(error);
             }
 
             final JCRGroupNode sitePrivGroup = jgms.lookupGroup(site.getSiteKey(), SITE_PRIVILEGED_GROUPNAME, site.getSession());
             if (sitePrivGroup == null) {
-                final ContentIntegrityError error = createError(site, String.format("The '%s' group doesn't exist in the site %s", SITE_PRIVILEGED_GROUPNAME, site.getDisplayableName()));
-                errors = appendError(errors, error);
+                final ContentIntegrityError error = createError(site, String.format("The '%s' group doesn't exist in the site", SITE_PRIVILEGED_GROUPNAME))
+                        .setErrorType(ErrorType.GROUP_DOES_NOT_EXIST)
+                        .addExtraInfo("group-name", SITE_PRIVILEGED_GROUPNAME)
+                        .addExtraInfo("site-name", site.getDisplayableName())
+                        .setExtraMsg(String.format("The '%s' group is created at site creation time, at site level, and should never be deleted", SITE_PRIVILEGED_GROUPNAME));
+                errors.addError(error);
             }
 
             if (privGroup != null && sitePrivGroup != null && !privGroup.isMember(sitePrivGroup)) {
-                final ContentIntegrityError error = createError(site, String.format("The '%s' group of the site '%s' is not member of the '%s' group",
-                        SITE_PRIVILEGED_GROUPNAME, site.getDisplayableName(), PRIVILEGED_GROUPNAME));
-                errors = appendError(errors, error);
+                final ContentIntegrityError error = createError(site, String.format("The '%s' group of a site is not member of the '%s' group",
+                        SITE_PRIVILEGED_GROUPNAME, PRIVILEGED_GROUPNAME))
+                        .setErrorType(ErrorType.MISSING_MEMBERSHIP)
+                        .addExtraInfo("missing-member", SITE_PRIVILEGED_GROUPNAME)
+                        .addExtraInfo("group-missing-a-member", PRIVILEGED_GROUPNAME)
+                        .addExtraInfo("site-name", site.getDisplayableName())
+                        .setExtraMsg(String.format("The '%s' group of each site must be member of the server level group '%s", SITE_PRIVILEGED_GROUPNAME, PRIVILEGED_GROUPNAME));
+                errors.addError(error);
             }
         } catch (RepositoryException e) {
             logger.error("", e);
         }
 
         return  errors;
+    }
+
+    private enum ErrorType {
+        GROUP_DOES_NOT_EXIST, MISSING_MEMBERSHIP
     }
 }
