@@ -1,6 +1,5 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
-import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
