@@ -355,7 +355,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         } else {
             if (property.getValue() != null) return property.getValue().getType();
         }
-        return 0;
+        return PropertyType.UNDEFINED;
     }
 
     private int getExtendedPropertyType(Property property, boolean isI18n) {
