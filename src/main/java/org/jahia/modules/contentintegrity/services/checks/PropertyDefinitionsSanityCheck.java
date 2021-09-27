@@ -354,7 +354,10 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     .collect(Collectors.toSet());
             if (types.size() == 1) return types.iterator().next();
         } else {
-            if (property.getValue() != null) return property.getValue().getType();
+            if (property.getValue() != null) {
+                final int type = property.getValue().getType();
+                return type == PropertyType.REFERENCE ? PropertyType.WEAKREFERENCE : type;
+            }
         }
         return PropertyType.UNDEFINED;
     }
