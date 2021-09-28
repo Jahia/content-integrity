@@ -311,7 +311,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             return createSingleError(createError(node, "ACE with an invalid principal")
                     .setErrorType(ErrorType.INVALID_PRINCIPAL)
                     .addExtraInfo("invalid principal", principal)
-                    .setExtraMsg("Warning: if the principal comes from an external source such as a LDAP, it might be just temporarily missing because of a connectivity issue"));
+                    .addExtraInfo("site", siteKey)
+                    .setExtraMsg("If the principal exists, check if it is defined at site level, and if does, if this site differs from the current site. Warning: if the principal comes from an external source such as a LDAP, it might be just temporarily missing because of a connectivity issue"));
         }
 
         return null;
