@@ -8,4 +8,6 @@
         <property name="requiredPermission" value="allowToValidateSiteIntegrity" />
     </bean>
 
+    <bean id="aclcleanup.integrityService" class="org.jahia.modules.aclcleanup.LightContentIntegrityService" />
+
 </beans>
