@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.services;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -147,6 +148,7 @@ public class ContentIntegrityError {
     }
 
     public Map<String, Object> getExtraInfos() {
+        if (MapUtils.isEmpty(extraInfos)) return MapUtils.EMPTY_MAP;
         return new LinkedHashMap<>(extraInfos);
     }
 
