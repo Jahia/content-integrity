@@ -153,7 +153,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                         trimmedExcludedPaths.add(("/".equals(excludedPath) || !excludedPath.endsWith("/")) ? excludedPath : excludedPath.substring(0, excludedPath.length() - 1));
                     }
                 }
-                calculateNbNodestoScan(node, trimmedExcludedPaths);
+                calculateNbNodesToScan(node, trimmedExcludedPaths);
                 ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger);
                 for (ContentIntegrityCheck integrityCheck : integrityChecks) {
                     integrityCheck.initializeIntegrityTest();
@@ -273,10 +273,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths) {
+    private void calculateNbNodesToScan(JCRNodeWrapper node, Set<String> excludedPaths) {
         final long start = System.currentTimeMillis();
         try {
-            nbNodesToScan = calculateNbNodestoScan(node, excludedPaths, 0L);
+            nbNodesToScan = calculateNbNodesToScan(node, excludedPaths, 0L);
             logger.info(String.format("%s nodes to scan", nbNodesToScan));
         } catch (RepositoryException e) {
             logger.error("", e);
@@ -284,7 +284,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         nbNodestoScanCalculationDuration = System.currentTimeMillis() - start;
     }
 
-    private long calculateNbNodestoScan(JCRNodeWrapper node, Set<String> excludedPaths, long currentCount) throws RepositoryException {
+    private long calculateNbNodesToScan(JCRNodeWrapper node, Set<String> excludedPaths, long currentCount) throws RepositoryException {
         if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(node.getPath())) {
             return currentCount;
         }
@@ -303,7 +303,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         for (JCRNodeWrapper child : children) {
             if ("/jcr:system".equals(child.getPath()))
                 continue; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
-            count = calculateNbNodestoScan(child, excludedPaths, count);
+            count = calculateNbNodesToScan(child, excludedPaths, count);
         }
         return count;
     }
