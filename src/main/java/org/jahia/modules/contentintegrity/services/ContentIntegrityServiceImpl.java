@@ -45,17 +45,17 @@ import java.util.stream.Collectors;
         Constants.SERVICE_VENDOR + "=" + Jahia.VENDOR_NAME}, immediate = true)
 public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
-    private static Logger logger = org.slf4j.LoggerFactory.getLogger(ContentIntegrityServiceImpl.class);
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(ContentIntegrityServiceImpl.class);
 
     private static final long NODES_COUNT_LOG_INTERVAL = 10000L;
     private static final long SESSION_REFRESH_INTERVAL = 10000L;
 
-    private List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
+    private final List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
     private Cache errorsCache;
     private EhCacheProvider ehCacheProvider;
-    private String errorsCacheName = "ContentIntegrityService-errors";
-    private long errorsCacheTti = 7L * 24L * 3600L; // 1 week;
-    private long nbNodestoScanCalculationDuration = 0L;
+    private final String errorsCacheName = "ContentIntegrityService-errors";
+    private final long errorsCacheTti = 7L * 24L * 3600L; // 1 week;
+    private long nbNodesToScanCalculationDuration = 0L;
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
     private long integrityChecksIdGenerator = 0;
@@ -182,7 +182,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
             integrityCheck.resetOwnTime();
         }
-        nbNodestoScanCalculationDuration = 0L;
+        nbNodesToScanCalculationDuration = 0L;
         ownTime = 0L;
         ownTimeIntervalStart = 0L;
         nbNodesToScan = 0L;
@@ -203,7 +203,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     private void printChecksDuration() {
         if (logger.isDebugEnabled())
-            logger.debug(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodestoScanCalculationDuration)));
+            logger.debug(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodesToScanCalculationDuration)));
         logger.info(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)));
         final List<ContentIntegrityCheck> sortedChecks = integrityChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
         for (ContentIntegrityCheck integrityCheck : sortedChecks) {
@@ -289,7 +289,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         } catch (RepositoryException e) {
             logger.error("", e);
         }
-        nbNodestoScanCalculationDuration = System.currentTimeMillis() - start;
+        nbNodesToScanCalculationDuration = System.currentTimeMillis() - start;
     }
 
     private long calculateNbNodesToScan(JCRNodeWrapper node, Set<String> excludedPaths, long currentCount) throws RepositoryException {

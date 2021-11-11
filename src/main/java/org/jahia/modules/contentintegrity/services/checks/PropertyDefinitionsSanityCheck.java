@@ -272,7 +272,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 continue;
             }
 
-            // from here, the property is declared, propertyDefinition can be null, but in that case epd has been is not null
+            // from here, the property is declared, propertyDefinition can be null, but in that case epd is not null
             if (epd == null)
                 epd = getExtendedPropertyDefinition(propertyDefinition, property, isI18n, namedPropertyDefinitions, unstructuredPropertyDefinitions);
             if (epd == null) {
