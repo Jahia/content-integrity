@@ -339,6 +339,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     logger.error("An error occurred while fixing a content integrity error", e);
                 }
             errors.add(integrityError);
+            if (errors.size() % 1000 == 0) {
+                logger.info(String.format("%d errors tracked so far", errors.size()));
+            }
         }
     }
 
