@@ -1,0 +1,101 @@
+package org.jahia.modules.contentintegrity.services.checks;
+
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.jcr.RepositoryException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+
+import static org.jahia.api.Constants.JCR_MIXINTYPES;
+import static org.jahia.api.Constants.JCR_PRIMARYTYPE;
+
+@Component(service = ContentIntegrityCheck.class, immediate = true)
+public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
+
+    private static final Logger logger = LoggerFactory.getLogger(UndeclaredNodeTypesCheck.class);
+
+    private final Set<String> existingNodetypes = new HashSet<>();
+    private final Set<String> missingNodetypes = new HashSet<>();
+    private final Set<String> existingMixins = new HashSet<>();
+    private final Set<String> missingMixins = new HashSet<>();
+
+    @Override
+    protected void initializeIntegrityTestInternal() {
+        super.initializeIntegrityTestInternal();
+
+        existingNodetypes.clear();
+        existingMixins.clear();
+        missingNodetypes.clear();
+        missingMixins.clear();
+    }
+
+    @Override
+    public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
+        final ContentIntegrityErrorList errors = createEmptyErrorsList();
+        final String pt = node.getPropertyAsString(JCR_PRIMARYTYPE);
+        checkPrimaryType(node, errors, existingNodetypes, missingNodetypes, "primary type", false, pt);
+        try {
+            if (node.hasProperty(JCR_MIXINTYPES)) {
+                final String[] types = Arrays.stream(node.getProperty(JCR_MIXINTYPES).getValues())
+                        .map(getStringValue())
+                        .filter(Objects::nonNull)
+                        .toArray(String[]::new);
+                checkPrimaryType(node, errors, existingMixins, missingMixins, "mixin type", true, types);
+            }
+        } catch (RepositoryException re) {
+            logger.error("Impossible to read the mixins of the node " + node, re);
+        }
+        return errors;
+    }
+
+    private Function<JCRValueWrapper, String> getStringValue() {
+        return jcrValueWrapper -> {
+            try {
+                return jcrValueWrapper.getString();
+            } catch (RepositoryException e) {
+                logger.error("", e);
+                return null;
+            }
+        };
+    }
+
+    private void checkPrimaryType(JCRNodeWrapper node, ContentIntegrityErrorList errors,
+                                  Set<String> existingTypes, Set<String> missingTypes,
+                                  String text, boolean isMixin,
+                                  String... types) {
+        for (String type : types) {
+            if (existingTypes.contains(type)) continue;
+
+            if (!missingTypes.contains(type)) {
+                try {
+                    final ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(type);
+                    if (nodeType.isMixin() == isMixin) {
+                        existingTypes.add(type);
+                        continue;
+                    } else {
+                        missingTypes.add(type);
+                    }
+                } catch (NoSuchNodeTypeException e) {
+                    missingTypes.add(type);
+                }
+            }
+            errors.addError(createError(node, String.format("Undeclared %s", text))
+                    .addExtraInfo(text, type));
+        }
+    }
+
+
+}
