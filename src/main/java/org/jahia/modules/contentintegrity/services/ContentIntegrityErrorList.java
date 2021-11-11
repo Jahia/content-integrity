@@ -21,7 +21,8 @@ public class ContentIntegrityErrorList {
     }
 
     public ContentIntegrityErrorList addError(ContentIntegrityError error) {
-        nestedErrors.add(error);
+        if (error != null)
+            nestedErrors.add(error);
         return this;
     }
 
