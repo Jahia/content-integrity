@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 
+import static org.jahia.api.Constants.EDIT_WORKSPACE;
 import static org.jahia.api.Constants.JAHIANT_PAGE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
@@ -110,7 +111,7 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
                     }
                     return true;
                 } else {
-                    final JCRSessionWrapper session_default = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null);
+                    final JCRSessionWrapper session_default = getSystemSession(EDIT_WORKSPACE, false);
                     JCRNodeWrapper home_default = null;
                     final JCRNodeWrapper site_default = session_default.getNode(site.getPath());
                     for (JCRNodeWrapper child : site_default.getNodes()) {

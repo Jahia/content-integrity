@@ -45,7 +45,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
-            final JCRSessionWrapper liveSession = JCRSessionFactory.getInstance().getCurrentSystemSession(LIVE_WORKSPACE, null, null);
+            final JCRSessionWrapper liveSession = getSystemSession(LIVE_WORKSPACE, true);
             if (node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean()) {
                 final JCRNodeWrapper liveNode;
                 try {

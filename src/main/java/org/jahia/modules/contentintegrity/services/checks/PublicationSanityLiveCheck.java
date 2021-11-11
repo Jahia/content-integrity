@@ -33,7 +33,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
-            final JCRSessionWrapper defaultSession = JCRSessionFactory.getInstance().getCurrentSystemSession(EDIT_WORKSPACE, null, null);
+            final JCRSessionWrapper defaultSession = getSystemSession(EDIT_WORKSPACE, true);
             if (node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString())) {
                 // UGC
                 return null;

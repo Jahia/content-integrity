@@ -48,6 +48,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(ContentIntegrityServiceImpl.class);
 
     private static final long NODES_COUNT_LOG_INTERVAL = 10000L;
+    private static final long SESSION_REFRESH_INTERVAL = 10000L;
 
     private List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
     private Cache errorsCache;
@@ -136,7 +137,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             JCRSessionFactory.getInstance().closeAllSessions();
             final JCRSessionWrapper session;
             try {
-                session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
+                session = getSystemSession(workspace);
             } catch (RepositoryException e) {
                 logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
                 return null;
@@ -251,6 +252,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
         checkNode(node, errors, fixErrors, false);
         ProgressMonitor.getInstance().progress();
+        if (ProgressMonitor.getInstance().getCounter() % SESSION_REFRESH_INTERVAL == 0) {
+            try {
+                node.getSession().refresh(false);
+            } catch (RepositoryException e) {
+                logger.error("", e);
+            }
+        }
     }
 
     private void checkNode(JCRNodeWrapper node, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren) {
@@ -292,6 +300,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         long count = currentCount + 1L;
         if (count % NODES_COUNT_LOG_INTERVAL == 0)
             logger.info(String.format("Counted %d nodes to scan so far", count));
+
+        if (count % SESSION_REFRESH_INTERVAL == 0)
+            node.getSession().refresh(false);
 
         final JCRNodeIteratorWrapper children;
         try {
@@ -349,8 +360,12 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             final String workspace = error.getWorkspace();
             JCRSessionWrapper session = sessions.get(workspace);
             if (session == null) {
-                session = getSystemSession(workspace);
-                if (session == null) continue;
+                try {
+                    session = getSystemSession(workspace);
+                } catch (RepositoryException e) {
+                    logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
+                    continue;
+                }
                 sessions.put(workspace, session);
             }
             try {
@@ -365,13 +380,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private JCRSessionWrapper getSystemSession(String workspace) {
-        try {
-            return JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
-        } catch (RepositoryException e) {
-            logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
-            return null;
-        }
+    private JCRSessionWrapper getSystemSession(String workspace) throws RepositoryException {
+        return JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
     }
 
     @Override

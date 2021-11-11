@@ -57,7 +57,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public void initializeIntegrityTestInternal() {
         final JCRSessionWrapper defaultSession;
         try {
-            defaultSession = JCRSessionFactory.getInstance().getCurrentSystemSession(EDIT_WORKSPACE, null, null);
+            defaultSession = getSystemSession(EDIT_WORKSPACE, false);
             final String statement = "SELECT * FROM [jnt:role] WHERE ISDESCENDANTNODE('/roles')";
             final Query query = defaultSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2);
 
@@ -139,7 +139,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 if (srcAce == null) {
                     boolean isFalsePositive = false;
                     if (isInLiveWorkspace(node)) {
-                        final JCRSessionWrapper defaultSession = JCRSessionFactory.getInstance().getCurrentSystemSession(EDIT_WORKSPACE, null, null);
+                        final JCRSessionWrapper defaultSession = getSystemSession(EDIT_WORKSPACE, true);
                         if (nodeExists(value.getString(), defaultSession)) isFalsePositive = true;
                     }
                     if (!isFalsePositive)

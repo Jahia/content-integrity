@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
@@ -250,6 +251,17 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected boolean isInLiveWorkspace(JCRNodeWrapper node) {
         return !isInDefaultWorkspace(node);
+    }
+
+    protected JCRSessionWrapper getSystemSession(String workspace, boolean refresh) {
+        try {
+            final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
+            if (refresh) session.refresh(false);
+            return session;
+        } catch (RepositoryException e) {
+            logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
+            return null;
+        }
     }
 
     protected boolean nodeExists(String uuid, JCRSessionWrapper session) {

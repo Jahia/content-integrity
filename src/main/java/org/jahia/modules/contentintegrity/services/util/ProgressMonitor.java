@@ -11,11 +11,11 @@ public class ProgressMonitor {
 
     private Logger logger;
     private String message;
-    private int counter;
+    private long counter;
     private long targetCount;
     private long lastMoment;
     private long firstMoment;
-    private int lastCounter;
+    private long lastCounter;
 
     private ProgressMonitor() {
     }
@@ -28,8 +28,8 @@ public class ProgressMonitor {
         this.targetCount = targetCount;
         this.message = message;
         this.logger = logger;
-        counter = 0;
-        lastCounter = -1;
+        counter = 0L;
+        lastCounter = -1L;
         lastMoment = System.currentTimeMillis();
         firstMoment = System.currentTimeMillis();
     }
@@ -73,5 +73,9 @@ public class ProgressMonitor {
             lastMoment = now;
             lastCounter = counter;
         }
+    }
+
+    public long getCounter() {
+        return counter;
     }
 }
