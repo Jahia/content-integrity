@@ -40,6 +40,7 @@ Name | alias | Value | Mandatory | Multiple | Description
  --- | --- | :---: | :---: | :---: | ---
  -l | --limit | positive integer, [20] | | | Specifies the maximum number of errors to print out
  -x | --exclude | string | | x | Specifies one or several subtrees to exclude
+ -c | --checks | string | | x | Specifies the checks to execute, specified by their ID. <br/> Only the specified checks will be executed during the current scan, no matter the global configuration.<br/> The check IDs can also be prefixed with ':' to specify a check to be skipped. In such case, the scan will execute all the currently active checks but those specified to be skipped during the current scan.
  
 **Examples:**
 
@@ -370,3 +371,4 @@ Version | Required Jahia version | Changes
 2.17 | 7.3.0.0 | <ul><li>Refactored the test results ID to embed the workspace name</li><li>Log the intermediate counts while counting the nodes to be scanned</li><li>Unified the output of the errors</li><li>[bugfix] Fixed the calculation of the number of nodes to scan when there's an error while iterating the JCR</li><li>PropertyDefinitionsSanityCheck<ul><li>[bugfix] Fixed the calculation of the fact that the external permission path is relative to the current site</li><li>[bugfix] Fixed the creation of errors when an ACE and its related currentSite external ACE are in different sites</li><li>[bugfix] When calculating the effective type of the values of a multi-valued property, return `weakreference` instead of `undefined` when the values are a mix of `weakreference` and `reference`</li></ul></li><li>PublicationSanityLiveCheck<ul><li>[bugfix] Fixed the execution condition to catch every node having the property `j:originWS`</li></ul></li></ul>
 2.18 | 7.3.0.0 | <ul><li>PropertyDefinitionsSanityCheck:<ul><li>[bugfix] consider Reference and Weakreference as the same type when comparing the value type with the property type</li></ul></li><li>AceSanityCheck:<ul><li>Added some more info to explain & ease toubleshoot the "invalid principal" errors</li></ul></li></ul>
 2.19 | 7.3.0.0 | <ul><li>Implemented a check to detect nodes based on a missing type</li><li>Reduce the memory footprint of the scan</li><li>[bugfix] Fixed NPE when the error has no extra infos</li><li>[bugfix] Avoid NPE on null errors</li></ul>
+2.20 | 7.3.0.0 | <ul><li>Command jcr:integrity-check<ul><li>Added the possibility to specify the checks to execute</li><li>Added the possibility to specify some checks to skip</li></ul></li></ul>

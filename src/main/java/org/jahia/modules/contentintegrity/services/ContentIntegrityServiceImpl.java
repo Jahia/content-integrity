@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BinaryOperator;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
@@ -124,15 +125,15 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Override
     public ContentIntegrityResults validateIntegrity(String path, String workspace) {
-        return validateIntegrity(path, null, workspace);
+        return validateIntegrity(path, null, workspace, null);
     }
 
     @Override
-    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace) {
-        return validateIntegrity(path, excludedPaths, workspace, false);
+    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<Long> checksToExecute) {
+        return validateIntegrity(path, excludedPaths, workspace, checksToExecute, false);
     }
 
-    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<Long> checksToExecute, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
         try {
             JCRSessionFactory.getInstance().closeAllSessions();
             final JCRSessionWrapper session;
@@ -156,11 +157,12 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 }
                 calculateNbNodesToScan(node, trimmedExcludedPaths);
                 ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger);
-                for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+                final List<ContentIntegrityCheck> activeChecks = getActiveChecks(checksToExecute);
+                for (ContentIntegrityCheck integrityCheck : activeChecks) {
                     integrityCheck.initializeIntegrityTest();
                 }
-                validateIntegrity(node, trimmedExcludedPaths, errors, fixErrors);
-                for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+                validateIntegrity(node, trimmedExcludedPaths, activeChecks, errors, fixErrors);
+                for (ContentIntegrityCheck integrityCheck : activeChecks) {
                     integrityCheck.finalizeIntegrityTest();
                 }
                 final long testDuration = System.currentTimeMillis() - start;
@@ -211,7 +213,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void validateIntegrity(JCRNodeWrapper node, Set<String> excludedPaths, List<ContentIntegrityError> errors, boolean fixErrors) {
+    private void validateIntegrity(JCRNodeWrapper node, Set<String> excludedPaths, List<ContentIntegrityCheck> activeChecks, List<ContentIntegrityError> errors, boolean fixErrors) {
         // TODO add a mechanism to stop , prevent concurrent run
         try {
             beginComputingOwnTime();
@@ -223,7 +225,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         } finally {
             endComputingOwnTime();
         }
-        checkNode(node, errors, fixErrors, true);
+        checkNode(node, activeChecks, errors, fixErrors, true);
         try {
             final JCRNodeIteratorWrapper it = node.getNodes();
             boolean hasNext = it.hasNext();
@@ -238,7 +240,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 } finally {
                     endComputingOwnTime();
                 }
-                validateIntegrity(child, excludedPaths, errors, fixErrors);
+                validateIntegrity(child, excludedPaths, activeChecks, errors, fixErrors);
             }
         } catch (RepositoryException e) {
             String ws = "unknown";
@@ -250,7 +252,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             logger.error(String.format("An error occured while iterating over the children of the node %s in the workspace %s",
                     node, ws), e);
         }
-        checkNode(node, errors, fixErrors, false);
+        checkNode(node, activeChecks, errors, fixErrors, false);
         ProgressMonitor.getInstance().progress();
         if (ProgressMonitor.getInstance().getCounter() % SESSION_REFRESH_INTERVAL == 0) {
             try {
@@ -261,8 +263,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void checkNode(JCRNodeWrapper node, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren) {
-        for (ContentIntegrityCheck integrityCheck : integrityChecks) {
+    private void checkNode(JCRNodeWrapper node, List<ContentIntegrityCheck> activeChecks, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren) {
+        for (ContentIntegrityCheck integrityCheck : activeChecks) {
             final long start = System.currentTimeMillis();
             if (integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
@@ -394,6 +396,21 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             if (integrityCheck.getId() == id) return integrityCheck;
         }
         return null;
+    }
+
+    @Override
+    public List<Long> getContentIntegrityChecksIdentifiers(boolean activeOnly) {
+        final Predicate<ContentIntegrityCheck> predicate = activeOnly ?
+                ContentIntegrityCheck::isEnabled :
+                c -> true;
+        return integrityChecks.stream().filter(predicate).map(ContentIntegrityCheck::getId).collect(Collectors.toList());
+    }
+
+    private List<ContentIntegrityCheck> getActiveChecks(List<Long> checksToExecute) {
+        final Predicate<ContentIntegrityCheck> predicate = checksToExecute == null ?
+                ContentIntegrityCheck::isEnabled :
+                c -> checksToExecute.contains(c.getId());
+        return integrityChecks.stream().filter(predicate).collect(Collectors.toList());
     }
 
     private void storeErrorsInCache(ContentIntegrityResults results) {

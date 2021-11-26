@@ -9,7 +9,7 @@ public interface ContentIntegrityService {
 
     ContentIntegrityResults validateIntegrity(String path, String workspace);
 
-    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace);
+    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<Long> checksToExecute);
 
     void fixError(ContentIntegrityError error);
 
@@ -22,4 +22,6 @@ public interface ContentIntegrityService {
     List<String> getTestIDs();
 
     List<String> printIntegrityChecksList(boolean simpleOutput);
+
+    List<Long> getContentIntegrityChecksIdentifiers(boolean activeOnly);
 }
