@@ -309,8 +309,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         final JCRNodeIteratorWrapper children;
         try {
             children = node.getNodes();
-        } catch (RepositoryException re) {
-            logger.error(String.format("Impossible to load the child nodes of %s , skipping them in the calculation of the number of nodes to scan", node.getPath()), re);
+        } catch (Throwable t) {
+            logger.error(String.format("Impossible to load the child nodes of %s , skipping them in the calculation of the number of nodes to scan", node.getPath()), t);
             return count;
         }
         for (JCRNodeWrapper child : children) {
