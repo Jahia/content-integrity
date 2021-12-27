@@ -84,6 +84,10 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck {
                                 errors.addError(error);
                             }
                             break;
+                        default:
+                            errors.addError(createError(node, String.format("Unexpected value for the property %s", WORKINPROGRESS_STATUS))
+                                    .addExtraInfo("property-value", status));
+                            break;
                     }
                 } else if (propertyLangsIsDefined) {
                     final ContentIntegrityError error = createError(node, String.format("Unexpected property %s on a node without the property %s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS));
