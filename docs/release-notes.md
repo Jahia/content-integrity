@@ -9,9 +9,9 @@
 
 ### Jahia 8
 
-| Version | Required Jahia version | Changes                                                                                             |
-|---------|------------------------|-----------------------------------------------------------------------------------------------------|
-| 3.0     | 8.0.2.0                | <ul><li>First version for Jahia 8.x family</li><li>Equivalent to `content-integrity 2.20`</li></ul> |
+| Version | Required Jahia version | Changes                                                                                                 |
+|---------|------------------------|---------------------------------------------------------------------------------------------------------|
+| 3.0     | 8.0.2.0                | <ul><li>First version for the Jahia 8.x family</li><li>Equivalent to `content-integrity 2.20`</li></ul> |
 
 ### Jahia 7
 
