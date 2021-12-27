@@ -54,7 +54,7 @@
     <groupId>org.jahia.modules</groupId>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
-    <version>3.0-SNAPSHOT</version>
+    <version>3.0</version>
     <packaging>bundle</packaging>
     <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
 
@@ -69,7 +69,7 @@
     <scm>
         <connection>scm:git:git@github.com:Jahia/content-integrity</connection>
         <developerConnection>scm:git:git@github.com:Jahia/content-integrity</developerConnection>
-      <tag>HEAD</tag>
+      <tag>content-integrity-3.0</tag>
   </scm>
 
     <repositories>
