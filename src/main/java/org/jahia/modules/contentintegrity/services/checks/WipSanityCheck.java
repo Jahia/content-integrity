@@ -68,19 +68,19 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck {
                                     }
                                 }
                             } else {
-                                final ContentIntegrityError error = createError(node, String.format("Missing property %s on a node without the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_LANG));
+                                final ContentIntegrityError error = createError(node, String.format("Missing property %s on a node with the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_LANG));
                                 errors.addError(error);
                             }
                             break;
                         case WORKINPROGRESS_STATUS_ALLCONTENT:
                             if (propertyLangsIsDefined) {
-                                final ContentIntegrityError error = createError(node, String.format("Unexpected property %s on a node without the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_ALLCONTENT));
+                                final ContentIntegrityError error = createError(node, String.format("Unexpected property %s on a node with the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_ALLCONTENT));
                                 errors.addError(error);
                             }
                             break;
                         case WORKINPROGRESS_STATUS_DISABLED:
                             if (propertyLangsIsDefined) {
-                                final ContentIntegrityError error = createError(node, String.format("Unexpected property %s on a node without the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_DISABLED));
+                                final ContentIntegrityError error = createError(node, String.format("Unexpected property %s on a node with the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_DISABLED));
                                 errors.addError(error);
                             }
                             break;
