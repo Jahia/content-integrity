@@ -9,6 +9,7 @@ import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
@@ -50,6 +51,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     private static final long NODES_COUNT_LOG_INTERVAL = 10000L;
     private static final long SESSION_REFRESH_INTERVAL = 10000L;
+    private static final String INTERRUPT_PROP_NAME = "modules.contentIntegrity.interrupt";
 
     private final List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
     private Cache errorsCache;
@@ -156,6 +158,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     }
                 }
                 calculateNbNodesToScan(node, trimmedExcludedPaths);
+                if (nbNodesToScan < 1) {
+                    logger.warn("Interrupting the scan");
+                    return null;
+                }
                 ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger);
                 final List<ContentIntegrityCheck> activeChecks = getActiveChecks(checksToExecute);
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
@@ -173,9 +179,12 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 return results;
             } catch (RepositoryException e) {
                 logger.error("", e);
+            } catch (InterruptedScanException e) {
+                logger.warn("Scan interrupted before the end");
             }
         } finally {
             JCRSessionFactory.getInstance().closeAllSessions();
+            System.clearProperty(INTERRUPT_PROP_NAME);
         }
         return null;
     }
@@ -214,7 +223,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private void validateIntegrity(JCRNodeWrapper node, Set<String> excludedPaths, List<ContentIntegrityCheck> activeChecks, List<ContentIntegrityError> errors, boolean fixErrors) {
-        // TODO add a mechanism to stop , prevent concurrent run
+        // TODO add a mechanism to prevent concurrent run
+        if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
+            return;
+        }
         try {
             beginComputingOwnTime();
             final String path = node.getPath();
@@ -283,7 +295,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void calculateNbNodesToScan(JCRNodeWrapper node, Set<String> excludedPaths) {
+    private void calculateNbNodesToScan(JCRNodeWrapper node, Set<String> excludedPaths) throws InterruptedScanException {
         final long start = System.currentTimeMillis();
         try {
             nbNodesToScan = calculateNbNodesToScan(node, excludedPaths, 0L);
@@ -294,7 +306,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         nbNodesToScanCalculationDuration = System.currentTimeMillis() - start;
     }
 
-    private long calculateNbNodesToScan(JCRNodeWrapper node, Set<String> excludedPaths, long currentCount) throws RepositoryException {
+    private long calculateNbNodesToScan(JCRNodeWrapper node, Set<String> excludedPaths, long currentCount) throws RepositoryException, InterruptedScanException {
+        if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
+            throw new InterruptedScanException();
+        }
         if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(node.getPath())) {
             return currentCount;
         }

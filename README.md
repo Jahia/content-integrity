@@ -10,6 +10,7 @@ Jahia module that provides an extensible service to test the integrity of the co
     * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
     * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
     * [jcr:integrity-configureCheck](#jcr-integrity-configureCheck) 
+* [FAQ](#faq)
 * [How to extend it](docs/how-to-extend.md#summary) 
 * [Release notes](docs/release-notes.md#summary) 
 
@@ -52,7 +53,9 @@ Runs a scan of the current tree and current workspace.
     jcr:cd /sites
     jcr:integrity-check -x /sites/aHugeSite
     jcr:integrity-check -x /sites/aHugeSite -x /sites/anotherHugeSite/files 
-      
+                                                              
+A scan can be interrupted before the end of its execution. Refer to the [FAQ section](#scan-interruption) for more details.
+
 #### <a name="jcr-integrity-printError"></a>jcr:integrity-printError
 Prints out some extended information about an error.
 
@@ -176,3 +179,12 @@ or when restarting the server.
  
 #### jcr:integrity-fix
 Coming soon    
+
+## FAQ
+
+### Scan interruption
+
+You can interrupt a running scan by defining a system property named `modules.contentIntegrity.interrupt`. 
+You can for example run the following script in a groovy console:
+
+    System.setProperty("modules.contentIntegrity.interrupt", "true")
