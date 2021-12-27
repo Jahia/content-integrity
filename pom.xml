@@ -49,18 +49,19 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.3.0.0</version>
+        <version>8.0.2.0</version>
     </parent>
     <groupId>org.jahia.modules</groupId>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
-    <version>2.20-SNAPSHOT</version>
+    <version>3.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
 
     <properties>
         <jahia-depends>default</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
+        <jahia-module-signature>MCwCFEVM1LEFagtzDCUrcuIyZDkQsXjJAhQC2d2Zf8Bxc91kc11fOTSjw7P5tQ==</jahia-module-signature>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
     </properties>
@@ -122,7 +123,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>external-provider</artifactId>
-            <version>3.1.5</version>
+            <version>4.0.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
