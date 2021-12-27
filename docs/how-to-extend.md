@@ -1,7 +1,15 @@
 # Content Integrity - Release notes
-* [How to use it](../README.md#how-to-use)
+* [How to use it](../README.md#summary)
 * [How to extend it](#how-to-extend)
-* [Release notes](release-notes.md)
+  * [pom.xml](#pomxml)
+  * [Implementation of the check](#implementation-of-the-check)
+  * [Java code](#java-code)
+  * [Registration into the service](#registration-into-the-service)
+  * [Priority](#priority)
+  * [Enabled](#enabled)
+  * [Minimum Jahia version](#minimum-jahia-version)
+  * [Execution conditions](#execution-conditions)
+* [Release notes](release-notes.md#summary)
 
 ## <a name="how-to-extend"></a>How to extend?
 
@@ -55,7 +63,7 @@ You need as well to configure the BND plugin to scan the OSGi declarative servic
 
 ### Implementation of the check
 
-#### java code
+#### Java code
 You have to write a java class to implement your custom check.
 
     public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {

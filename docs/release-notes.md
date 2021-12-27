@@ -1,6 +1,6 @@
 # Content Integrity - Release notes
-* [How to use it](../README.md#how-to-use)
-* [How to extend it](how-to-extend.md)
+* [How to use it](../README.md#summary)
+* [How to extend it](how-to-extend.md#summary)
 * [Release notes](#release-notes)
 
 ## <a name="release-notes"></a>Release notes
