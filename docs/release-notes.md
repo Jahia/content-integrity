@@ -1,4 +1,4 @@
-# Content Integrity - Release notes
+# <a name="summary"></a>Content Integrity - Release notes
 * [How to use it](../README.md#summary)
 * [How to extend it](how-to-extend.md#summary)
 * [Release notes](#release-notes)

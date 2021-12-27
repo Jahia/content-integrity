@@ -2,7 +2,7 @@
     <img src="https://www.jahia.com/modules/jahiacom-templates/images/jahia-3x.png" alt="Jahia logo" title="Jahia" align="right" height="60" />
 </a>
 
-# Content Integrity
+# <a name="summary"></a>Content Integrity
 Jahia module that provides an extensible service to test the integrity of the content
 * [How to use it](#how-to-use)
     * [jcr:integrity-check](#jcr-integrity-check) 
