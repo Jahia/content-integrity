@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
@@ -34,12 +35,14 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(WipSanityCheck.class);
 
+    private static final List<String> UNEXPECTED_PROPS_ON_I18N = Arrays.asList(WORKINPROGRESS, WORKINPROGRESS_STATUS, WORKINPROGRESS_LANGUAGES);
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
             final ContentIntegrityErrorList errors = createEmptyErrorsList();
             if (node.isNodeType(JAHIANT_TRANSLATION)) {
-                for (String p : Arrays.asList(WORKINPROGRESS, WORKINPROGRESS_STATUS, WORKINPROGRESS_LANGUAGES)) {
+                for (String p : UNEXPECTED_PROPS_ON_I18N) {
                     if (node.hasProperty(p)) {
                         final ContentIntegrityError error = createError(node, "Unexpected WIP property on a translation node")
                                 .addExtraInfo("property-name", p);
@@ -54,9 +57,10 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck {
                 }
                 final boolean propertyLangsIsDefined = node.hasProperty(WORKINPROGRESS_LANGUAGES);
                 if (node.hasProperty(WORKINPROGRESS_STATUS)) {
-                    switch (node.getPropertyAsString(WORKINPROGRESS_STATUS)) {
+                    final String status = node.getPropertyAsString(WORKINPROGRESS_STATUS);
+                    switch (status) {
                         case WORKINPROGRESS_STATUS_LANG:
-                            if (node.hasProperty(WORKINPROGRESS_LANGUAGES)) {
+                            if (propertyLangsIsDefined) {
                                 final Set<String> siteLanguages = node.getResolveSite().getLanguages();
                                 for (JCRValueWrapper value : node.getProperty(WORKINPROGRESS_LANGUAGES).getValues()) {
                                     final String lang = value.getString();
