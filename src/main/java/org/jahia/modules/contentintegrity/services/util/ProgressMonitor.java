@@ -7,7 +7,7 @@ import java.util.Calendar;
 
 public class ProgressMonitor {
     private static final ProgressMonitor instance = new ProgressMonitor();
-    private static final long DISLAY_INTERVAL_MS = 5000;
+    private static final long DISPLAY_INTERVAL_MS = 5000L;
 
     private Logger logger;
     private String message;
@@ -37,7 +37,7 @@ public class ProgressMonitor {
     public void progress() {
         final long now = System.currentTimeMillis();
         counter++;
-        final boolean doDisplay = counter == 1 || counter == targetCount || (now - lastMoment) / DISLAY_INTERVAL_MS > 0;
+        final boolean doDisplay = counter == 1 || counter == targetCount || (now - lastMoment) / DISPLAY_INTERVAL_MS > 0;
         if (doDisplay) {
             // Percentage
             final String percent = String.format("%2.0f%%", (100.0f * counter) / targetCount);
@@ -53,7 +53,7 @@ public class ProgressMonitor {
             if (counter == 1) {
                 firstMoment = now;
             }
-            final boolean longEnoughForETA = (now - firstMoment) / DISLAY_INTERVAL_MS >= 2;
+            final boolean longEnoughForETA = (now - firstMoment) / DISPLAY_INTERVAL_MS >= 2;
 
             final String etaText;
             if (longEnoughForETA && counter > 1) {
