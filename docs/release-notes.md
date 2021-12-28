@@ -1,5 +1,6 @@
 # <a name="summary"></a>Content Integrity - Release notes
 * [How to use it](../README.md#summary)
+* [Embedded tests](embedded-tests.md#summary)
 * [How to extend it](how-to-extend.md#summary)
 * [Release notes](#release-notes)
   * [Jahia 8](#jahia-8)

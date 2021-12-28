@@ -1,5 +1,6 @@
-# <a name="summary"></a>Content Integrity - Release notes
+# <a name="summary"></a>Content Integrity - How to extend
 * [How to use it](../README.md#summary)
+* [Embedded tests](embedded-tests.md#summary)
 * [How to extend it](#how-to-extend)
   * [pom.xml](#pomxml)
   * [Implementation of the check](#implementation-of-the-check)

@@ -10,6 +10,7 @@ Jahia module that provides an extensible service to test the integrity of the co
     * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
     * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
     * [jcr:integrity-configureCheck](#jcr-integrity-configureCheck) 
+* [Embedded tests](docs/embedded-tests.md#summary)
 * [FAQ](#faq)
 * [How to extend it](docs/how-to-extend.md#summary) 
 * [Release notes](docs/release-notes.md#summary) 
