@@ -240,17 +240,21 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         Utility methods
     */
 
-    protected boolean isInDefaultWorkspace(JCRNodeWrapper node) {
+    private boolean isInWorkspace(JCRNodeWrapper node, String workspace) {
         try {
-            return Constants.EDIT_WORKSPACE.equals(node.getSession().getWorkspace().getName());
+            return StringUtils.equals(node.getSession().getWorkspace().getName(), workspace);
         } catch (RepositoryException e) {
             logger.error("", e);
             return false;
         }
     }
 
+    protected boolean isInDefaultWorkspace(JCRNodeWrapper node) {
+        return isInWorkspace(node, Constants.EDIT_WORKSPACE);
+    }
+
     protected boolean isInLiveWorkspace(JCRNodeWrapper node) {
-        return !isInDefaultWorkspace(node);
+        return isInWorkspace(node, Constants.LIVE_WORKSPACE);
     }
 
     protected JCRSessionWrapper getSystemSession(String workspace, boolean refresh) {
