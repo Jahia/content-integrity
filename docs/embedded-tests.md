@@ -104,6 +104,11 @@ The page node should be republished to propagate the fix to the `live` workspace
 
 ## TemplatesIndexationCheck
 
+If a template is not correctly indexed, you can simply reindex it from the `JCR browser` in the tools. If several templates are identified, you can also reindex the whole subtree of the module.  
+Then, you need to flush the cache, or at least the cache named `RenderService.TemplatesCache`.
+
+If you suspect that the issue is not related to a module deployment error, then you should consider a full reindexation of the JCR.
+
 ## UndeclaredNodeTypesCheck
 
 ## UndeployedModulesReferencesCheck
