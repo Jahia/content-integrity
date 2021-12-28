@@ -115,5 +115,16 @@ If you suspect that the issue is not related to a module deployment error, then 
 
 ## VersionHistoryCheck
 
+Detects the nodes having a too long linear version history (100 versions by default, can be configured).  
+Such nodes will impact the performance.
+
+You can purge the version history of every node in the tools, keeping only the most recent versions. Otherwise, you can write a script to purge the complete history of some specific nodes. Example:
+
+```groovy
+import org.jahia.services.history.NodeVersionHistoryHelper
+
+NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(nodeIdentifier))
+```
+
 ## WipSanityCheck
 
