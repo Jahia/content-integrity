@@ -61,7 +61,7 @@
     <properties>
         <jahia-depends>default</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MCwCFEVM1LEFagtzDCUrcuIyZDkQsXjJAhQC2d2Zf8Bxc91kc11fOTSjw7P5tQ==</jahia-module-signature>
+        <jahia-module-signature>MCwCFGyy6sThNz9EfRTkKYHPPZzkSEbWAhQPYon7cNUFXSg9RLCRDopBCvQ5lQ==</jahia-module-signature>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
     </properties>
