@@ -62,6 +62,7 @@
         <jahia-depends>default</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-module-signature>MCwCFGyy6sThNz9EfRTkKYHPPZzkSEbWAhQPYon7cNUFXSg9RLCRDopBCvQ5lQ==</jahia-module-signature>
+        <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
     </properties>
