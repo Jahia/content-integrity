@@ -193,17 +193,24 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                         .addExtraInfo("role", role)
                                         .addExtraInfo("external-permissions-name", externalPermissionsName)
                                         .addExtraInfo("expected-external-permissions-names", roleExternalPermissions.keySet()));
-                            } else if (CURRENT_SITE_PATTERN.matcher(externalPermissionsName).find()) {
-                                final String aceSiteKey = resolveSiteKey(node);
-                                if (!StringUtils.equals(aceSiteKey, resolveSiteKey(srcAce))) {
-                                    errors.addError(createError(node, "The external ACE and the source ACE are stored in different sites")
-                                            .setErrorType(ErrorType.SOURCE_ACE_DIFFERENT_SITE)
+                            } else {
+                                final String externalAcePathPattern = roleExternalPermissions.get(externalPermissionsName);
+                                final StringBuilder expectedPath = new StringBuilder();
+                                if (CURRENT_SITE_PATTERN.matcher(externalPermissionsName).find()) {
+                                    expectedPath.append(CURRENT_SITE_PATTERN.matcher(externalAcePathPattern).replaceFirst(srcAce.getResolveSite().getPath()));
+                                } else {
+                                    expectedPath.append(externalAcePathPattern);
+                                }
+                                expectedPath.append("/j:acl/").append(node.getName());
+                                if (!StringUtils.equals(expectedPath.toString(), node.getPath())) {
+                                    errors.addError(createError(node, "The external ACE has not the expected path")
+                                            .setErrorType(ErrorType.INVALID_EXTERNAL_ACE_PATH)
                                             .addExtraInfo("ace-uuid", srcAceIdentifier)
                                             .addExtraInfo("ace-path", srcAce.getPath())
-                                            .addExtraInfo("ace-site", aceSiteKey)
                                             .addExtraInfo("role", role)
                                             .addExtraInfo("external-permissions-name", externalPermissionsName)
-                                            .setExtraMsg("When external permissions are defined with a scope relative to the current site, then the ACE and the external ACE are expected to be in the same site"));
+                                            .addExtraInfo("external-permissions-path", externalAcePathPattern)
+                                            .addExtraInfo("external-ace-expected-path", expectedPath));
                                 }
                             }
 
@@ -374,7 +381,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     private enum ErrorType {
         NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
-        NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, SOURCE_ACE_DIFFERENT_SITE, SOURCE_ACE_NOT_TYPE_GRANT,
+        NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, INVALID_EXTERNAL_ACE_PATH, SOURCE_ACE_NOT_TYPE_GRANT,
         INVALID_EXTERNAL_PERMISSIONS, MISSING_EXTERNAL_ACE,
         NO_ROLES_PROP, INVALID_ROLES_PROP, ACE_NON_GRANT_WITH_EXTERNAL_ACE,
         ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
