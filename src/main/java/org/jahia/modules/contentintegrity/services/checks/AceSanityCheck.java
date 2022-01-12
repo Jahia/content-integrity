@@ -246,25 +246,14 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         errors.addAll(checkPrincipalOnAce(aceNode));
 
-        final String aceType;
-        boolean compareAceWithExternalAce = true;
+        final boolean isGrantAce;
         if (!aceNode.hasProperty(J_ACE_TYPE)) {
+            isGrantAce = false;
             errors.addError(createError(aceNode, "ACE without property ".concat(J_ACE_TYPE))
                     .setErrorType(ErrorType.NO_ACE_TYPE_PROP));
         }
-        else if (!StringUtils.equals(aceType = aceNode.getPropertyAsString(J_ACE_TYPE), "GRANT")) {
-            compareAceWithExternalAce = false;
-            final PropertyIterator references = aceNode.getWeakReferences();
-            while (references.hasNext()) {
-                final Node extAce = references.nextProperty().getParent();
-                if (!extAce.isNodeType(JNT_EXTERNAL_ACE)) continue;
-                errors.addError(createError(aceNode, "ACE not of type GRANT referenced by an external ACE")
-                        .setErrorType(ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
-                        .addExtraInfo("ace-type", aceType)
-                        .addExtraInfo("external-ace-uuid", extAce.getIdentifier())
-                        .addExtraInfo("external-ace-path", extAce.getPath())
-                        .setExtraMsg("An external ACE is created only when the ACE is of type GRANT"));
-            }
+        else {
+            isGrantAce = StringUtils.equals(aceNode.getPropertyAsString(J_ACE_TYPE), "GRANT");
         }
 
         if (!aceNode.hasProperty(J_ROLES)) {
@@ -277,7 +266,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     errors.addError(createError(aceNode, "ACE with a role that doesn't exist")
                             .setErrorType(ErrorType.ROLE_DOESNT_EXIST)
                             .addExtraInfo("role", roleName));
-                } else if (compareAceWithExternalAce) {
+                } else if (isGrantAce) {
                     final Role role = roles.get(roleName);
                     for (String extPerm : role.getExternalPermissions().keySet()) {
                         final PropertyIterator references = aceNode.getWeakReferences();
