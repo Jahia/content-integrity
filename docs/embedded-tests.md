@@ -109,7 +109,8 @@ Example of valid translation node:
 
 Errors are usually located under `/modules`, in a node part of a template. The root cause is usually an uncontrolled copy/paste in the `repository.xml` file. In such case, just fix the issue in the XML file, and redeploy the module.
 
-Otherwise, you will need to fix the node in the JCR, updating the property value to match the node name.
+Otherwise, you will need to fix the node in the JCR, updating the property value to match the node name.  
+If the impacted nodes are automatically created, for example from some custom java code, it is important as well to identify & fix the faulty code, in order to avoid reintroducing the issue.
 
 ## LockSanityCheck
 
