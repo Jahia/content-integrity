@@ -22,6 +22,8 @@
 
 ## AceSanityCheck
 
+_work in progress_
+
 ## BinaryPropertiesSanityCheck
 
 Detects the properties of type `binary` for which the value can't be loaded. 
@@ -90,17 +92,31 @@ The page node should be republished to propagate the fix to the `live` workspace
 
 ## JCRLanguagePropertyCheck
 
+_work in progress_
+
 ## LockSanityCheck
+
+_work in progress_
 
 ## MarkForDeletionCheck
 
+_work in progress_
+
 ## PropertyDefinitionsSanityCheck
+
+_work in progress_
 
 ## PublicationSanityDefaultCheck
 
+_work in progress_
+
 ## PublicationSanityLiveCheck
 
+_work in progress_
+
 ## SiteLevelSystemGroupsCheck
+
+_work in progress_
 
 ## TemplatesIndexationCheck
 
@@ -111,7 +127,11 @@ If you suspect that the issue is not related to a module deployment error, then 
 
 ## UndeclaredNodeTypesCheck
 
+_work in progress_
+
 ## UndeployedModulesReferencesCheck
+
+_work in progress_
 
 ## VersionHistoryCheck
 
@@ -127,4 +147,6 @@ NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(nodeI
 ```
 
 ## WipSanityCheck
+
+_work in progress_
 
