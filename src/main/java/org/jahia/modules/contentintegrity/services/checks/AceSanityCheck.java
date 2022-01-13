@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -196,8 +197,9 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             } else {
                                 final String externalAcePathPattern = roleExternalPermissions.get(externalPermissionsName);
                                 final StringBuilder expectedPath = new StringBuilder();
-                                if (CURRENT_SITE_PATTERN.matcher(externalPermissionsName).find()) {
-                                    expectedPath.append(CURRENT_SITE_PATTERN.matcher(externalAcePathPattern).replaceFirst(srcAce.getResolveSite().getPath()));
+                                final Matcher matcher = CURRENT_SITE_PATTERN.matcher(externalAcePathPattern);
+                                if (matcher.find()) {
+                                    expectedPath.append(matcher.replaceFirst(srcAce.getResolveSite().getPath()));
                                 } else {
                                     expectedPath.append(externalAcePathPattern);
                                 }
