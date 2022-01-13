@@ -92,7 +92,24 @@ The page node should be republished to propagate the fix to the `live` workspace
 
 ## JCRLanguagePropertyCheck
 
-_work in progress_
+Translation nodes (nodes of type `jnt:translation`) are named after a naming convention. The node must be `j:translation_xx`, where `xx` is the language code. The node also holds a property named `jcr:language`, which has the language code as a value.  
+The language code must be the same in the node name and the value of the property.
+
+Example of valid translation node:
+
+    Name: j:translation_en
+    Path: /sites/digitall/home/about/area-main/rich-text/j:translation_en
+    Type: jnt:translation
+        
+    Properties: 
+        jcr:language:  en
+        jcr:primaryType:  jnt:translation
+
+### Dealing with errors
+
+Errors are usually located under `/modules`, in a node part of a template. The root cause is usually an uncontrolled copy/paste in the `repository.xml` file. In such case, just fix the issue in the XML file, and redeploy the module.
+
+Otherwise, you will need to fix the node in the JCR, updating the property value to match the node name.
 
 ## LockSanityCheck
 
