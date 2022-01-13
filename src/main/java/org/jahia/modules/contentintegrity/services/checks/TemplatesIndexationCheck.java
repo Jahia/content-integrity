@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 
-
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=jnt:template",
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/modules"
@@ -26,16 +25,15 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper template) {
+        // Example: /modules/templates-system/9.0.0/templates/base/home
         final String templatePath = template.getPath();
-        int idx = 0;
-        for (int i = 0; i < 3; i++) {
-            idx = templatePath.indexOf('/', idx + 1);
-            if (idx == -1) {
-                logger.error(String.format("Unexpected template path: %s", templatePath));
-                return null;
-            }
+        final String[] parts = StringUtils.split(templatePath, "/", 4);
+        if (parts.length != 4) {
+            logger.error(String.format("Unexpected template path: %s", templatePath));
+            return null;
         }
-        final String modulePath = templatePath.substring(0, idx);
+        final int modulePathLength = parts[0].length() + parts[1].length() + parts[2].length() + 3;
+        final String modulePath = templatePath.substring(0, modulePathLength);
 
         final String query = String.format("select * from [jnt:template] as w where isdescendantnode(w, ['%s']) and name(w)='%s'",
                 JCRContentUtils.sqlEncode(modulePath), JCRContentUtils.sqlEncode(template.getName()));
