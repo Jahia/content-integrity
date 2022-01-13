@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.jahia.api.Constants.ACL;
@@ -52,6 +54,7 @@ public class AceSanityCheck {
     private static final String J_LAST_PUBLISHED = "j:lastPublished";
     private static final String J_PUBLISHED = "j:published";
     private static final String JCR_LAST_MODIFIED = "jcr:lastModified";
+    private static final Pattern CURRENT_SITE_PATTERN = Pattern.compile("^currentSite");
 
     final ScriptLogger logger = new ScriptLogger(log);
 
@@ -211,16 +214,28 @@ public class AceSanityCheck {
                                 final String role = externalAceRoles.get(0);
                                 final String srcAceIdentifier = srcAce.getIdentifier();
 
-                                if (roles.containsKey(role) && roles.get(role).getExternalPermissions().getOrDefault(node.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME), "").equals("currentSite")) {
-                                    final String aceSiteKey = resolveSiteKey(node);
-                                    if (!StringUtils.equals(aceSiteKey, resolveSiteKey(srcAce))) {
+                                if (roles.containsKey(role)) {
+                                    final String externalPermissionsName = node.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME);
+                                    final String externalAcePathPattern = roles.get(role).getExternalPermissions().getOrDefault(externalPermissionsName, "");
+                                    final StringBuilder expectedPath = new StringBuilder();
+                                    final Matcher matcher = CURRENT_SITE_PATTERN.matcher(externalAcePathPattern);
+                                    if (matcher.find()) {
+                                        expectedPath.append(matcher.replaceFirst(srcAce.getResolveSite().getPath()));
+                                    } else {
+                                        expectedPath.append(externalAcePathPattern);
+                                    }
+                                    expectedPath.append("/j:acl/").append(node.getName());
+                                    if (!StringUtils.equals(expectedPath.toString(), node.getPath())) {
                                         valueIsValid = false;
                                         final Map<String, Object> infos = new HashMap<>(4);
-                                        infos.put("error-type", ErrorType.SOURCE_ACE_DIFFERENT_SITE);
+                                        infos.put("error-type", ErrorType.INVALID_EXTERNAL_ACE_PATH);
                                         infos.put("ace-uuid", srcAceIdentifier);
                                         infos.put("ace-path", srcAce.getPath());
-                                        infos.put("ace-site", aceSiteKey);
-                                        createErrorWithInfos(node, null, "The external ACE and the source ACE are stored in different sites", infos);
+                                        infos.put("role", role);
+                                        infos.put("external-permissions-name", externalPermissionsName);
+                                        infos.put("external-permissions-path", externalAcePathPattern);
+                                        infos.put("external-ace-expected-path", expectedPath);
+                                        createErrorWithInfos(node, null, "The external ACE has not the expected path", infos);
                                         if (fixErrors) {
                                             logger.info("  > removing the ACE from the list of sources of the external ACE");
                                         }
@@ -633,7 +648,7 @@ public class AceSanityCheck {
 
     private enum ErrorType {
         NO_PRINCIPAL, INVALID_PRINCIPAL, NO_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, NO_ROLES_PROP, INVALID_ROLES_PROP,
-        SOURCE_ACE_DIFFERENT_SITE, ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
+        INVALID_EXTERNAL_ACE_PATH, ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
     }
 
     private class Role {

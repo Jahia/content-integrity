@@ -49,13 +49,25 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
         final Node realNode = node.getRealNode();
         if (realNode instanceof ExternalNodeImpl || realNode instanceof ExtensionNode) return null;
 
+        final String identifier;
+        try {
+            identifier = node.getIdentifier();
+        } catch (RepositoryException e) {
+            logger.error("Impossible to calculate the node identifier", e);
+            return null;
+        }
+
+        // skip the node if it can have been checked while scanning the default workspace
+        if (isInLiveWorkspace(node) && nodeExists(identifier, getSystemSession(Constants.EDIT_WORKSPACE, false)))
+            return null;
+
         try {
             final JCRSessionWrapper session = node.getSession();
             final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode("/").getProvider());
             final InternalVersionManager vm = providerSession.getInternalVersionManager();
             final InternalVersionHistory history;
             try {
-                history = vm.getVersionHistoryOfNode(NodeId.valueOf(node.getIdentifier()));
+                history = vm.getVersionHistoryOfNode(NodeId.valueOf(identifier));
             } catch (ItemNotFoundException infe) {
                 logger.error(infe.getMessage());
                 if (logger.isDebugEnabled()) logger.debug("Impossible to load the version history for the node " + node.getPath(), infe);
@@ -67,7 +79,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
                 return createSingleError(createError(node, String.format("The node has over %s versions", threshold))
                         .addExtraInfo("versions-count", numVersions));
         } catch (RepositoryException e) {
-            logger.error("", e);
+            logger.error(String.format("Error while checking the version history of the node %s", identifier), e);
         }
 
         return null;
@@ -97,3 +109,10 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
         return configurations;
     }
 }
+
+/*
+Notes
+
+It would be better to be able to configure if the nodes existing in each workspace have to be checked when scanning the default or the live.
+Currently, they are checked when scanning the default.
+ */

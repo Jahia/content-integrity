@@ -5,11 +5,12 @@
 # <a name="summary"></a>Content Integrity
 Jahia module that provides an extensible service to test the integrity of the content
 * [How to use it](#how-to-use)
-    * [jcr:integrity-check](#jcr-integrity-check) 
+    * [jcr:integrity-check](#jcrintegrity-check) 
     * [jcr:integrity-printError](#jcr-integrity-printError) 
     * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
     * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
     * [jcr:integrity-configureCheck](#jcr-integrity-configureCheck) 
+* [Embedded tests](docs/embedded-tests.md#summary)
 * [FAQ](#faq)
 * [How to extend it](docs/how-to-extend.md#summary) 
 * [Release notes](docs/release-notes.md#summary) 
@@ -33,7 +34,7 @@ Use `jcr:integrity-check` to run a content integrity test.
     jahia@dx()>
     
 ### Commands
-#### <a name="jcr-integrity-check"></a>jcr:integrity-check  
+#### jcr:integrity-check  
 Runs a scan of the current tree and current workspace.
 
 **Options:**  
@@ -188,3 +189,12 @@ You can interrupt a running scan by defining a system property named `modules.co
 You can for example run the following script in a groovy console:
 
     System.setProperty("modules.contentIntegrity.interrupt", "true")
+
+### Clustered environment
+
+Most of the checks are purely related to the JCR, and do not need to be executed on every server in the cluster. The scan can be run on any server, not just the processing server.
+
+The following checks rely on some local resources, and should be run on every server in a cluster:
+* TemplatesIndexationCheck
+
+Refer to [jcr:integrity-check](#jcrintegrity-check) to run a scan with a specified list of checks to execute.
