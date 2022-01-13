@@ -51,7 +51,6 @@
         <groupId>org.jahia.modules</groupId>
         <version>8.0.2.0</version>
     </parent>
-    <groupId>org.jahia.modules</groupId>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
     <version>3.2-SNAPSHOT</version>
