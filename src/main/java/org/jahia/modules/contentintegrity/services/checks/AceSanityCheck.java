@@ -329,13 +329,6 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         return p;
     }
 
-    private String resolveSiteKey(JCRNodeWrapper node) {
-        if (node == null) return null;
-        final String path = node.getPath();
-        if (!path.startsWith("/sites/")) return null;
-        return StringUtils.split(path, '/')[1];
-    }
-
     @Override
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
         if (!Constants.EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
