@@ -31,7 +31,7 @@ Detects the properties of type `binary` for which the value can't be loaded.
 ### Dealing with errors
 
 If the number of errors is limited, it should be analyzed on a node by node basis.  
-Usualy, the missing binary will be the value of the `jcr:data` property of the `jcr:content` subnode of a `jnt:file` node. In such case, you should first make the users aware of the issue, since they might be able to reupload the file or accept to delete the whole file node.
+Usually, the missing binary will be the value of the `jcr:data` property of the `jcr:content` sub-node of a `jnt:file` node. In such case, you should first make the users aware of the issue, since they might be able to re-upload the file or accept to delete the whole file node.
 
 If the number of errors is important, then it is probably the consequence of an inappropriate system operation. Then, a generic solution should be evaluated.  
 Since the binary data can be store either in the database or on the filesystem (choice done at Jahia installation time), the way to deal with the errors differs depending on the type of storage.
@@ -40,7 +40,7 @@ Since the binary data can be store either in the database or on the filesystem (
 
 With this storage type, there is no possibility to fix the issue directly in the database. If the binaries are missing as a consequence of a recent operation, then the Jahia environment should be restored from a backup taken before the faulty operation. If you are not sure of the time of the operation, and need to confirm that the backup to be restored will solve the issue, the only solution is to restore this backup on another environment and run an integrity check.  
 
-If restoring the production from a backup is not an option, then you can restore the backup on another server and extract the missing binaries from this environment to fix the data on production. For nodes of type `jnt:file`, the files can be downloaded from this environment and reuploaded on production. To avoid breaking references to the files, do not delete/recreate the file. You can upload a new binary on an existing file node.  
+If restoring the production from a backup is not an option, then you can restore the backup on another server and extract the missing binaries from this environment to fix the data on production. For nodes of type `jnt:file`, the files can be downloaded from this environment and re-uploaded on production. To avoid breaking references to the files, do not delete/recreate the file. You can upload a new binary on an existing file node.  
 If the production is clustered, this temporary environment can be simply restored as a standalone environment. 
 
 #### Filesystem storage 
@@ -53,7 +53,7 @@ If the number of errors is important, you can also merge the `datastore` folder 
 
 ## FlatStorageCheck
 
-Detects the nodes having too many direct subnodes (500 by default, can be configured).   
+Detects the nodes having too many direct sub-nodes (500 by default, can be configured).   
 The JCR is not designed to handle flat storage, and such structure has an impact on the performance.
 
 ### Dealing with errors
@@ -87,7 +87,7 @@ Every updated page node should be republished to propagate the fix to the `live`
 
 #### Fallback on the page named `home`
 
-It is preferable to explicitely flag the home page as such. Simply open the `repository explorer`, activate the display of the hidden properties, and check the option `j:isHomePage` on your home page.  
+It is preferable to explicitly flag the home page as such. Simply open the `repository explorer`, activate the display of the hidden properties, and check the option `j:isHomePage` on your home page.  
 The page node should be republished to propagate the fix to the `live` workspace.
 
 ## JCRLanguagePropertyCheck
@@ -151,7 +151,7 @@ _work in progress_
 If a template is not correctly indexed, you can simply reindex it from the `JCR browser` in the tools. If several templates are identified, you can also reindex the whole subtree of the module.  
 Then, you need to flush the cache, or at least the cache named `RenderService.TemplatesCache`.
 
-If you suspect that the issue is not related to a module deployment error, then you should consider a full reindexation of the JCR.
+If you suspect that the issue is not related to a module deployment error, then you should consider a full re-indexation of the JCR.
 
 ## UndeclaredNodeTypesCheck
 
