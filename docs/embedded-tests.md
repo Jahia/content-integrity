@@ -118,7 +118,17 @@ _work in progress_
 
 ## MarkForDeletionCheck
 
-_work in progress_
+When deleting a piece of content from the UI, the node is not technically deleted from the `default` workspace, but marked for deletion. This results in adding some mixins on the node as well as on its sub-nodes.
+* `jmix:markedForDeletionRoot` is added on the node which you have deleted
+* `jmix:markedForDeletion` is added on every node in the subtree, including the root node.
+
+A node flagged as deleted, but without deletion root, is inconsistent. From the UI, you can trigger the publication or the undeletion of the tree only on the root node of the deletion. 
+
+### Dealing with errors
+
+If a few pieces of content are impacted, you can delete again the root node of the deletion from the UI. This will add back the missing mixins, allowing then to publish or undelete the tree, still from the UI.
+
+If an important number of nodes are impacted, you will need to write a script to clean the mixins on the inconsistent nodes.
 
 ## PropertyDefinitionsSanityCheck
 
