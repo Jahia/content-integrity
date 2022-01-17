@@ -25,7 +25,7 @@ You need to declare a Maven dependency to the core module.
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>content-integrity</artifactId>
-            <version>2.19</version>
+            <version>3.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
