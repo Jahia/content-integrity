@@ -164,7 +164,17 @@ If you suspect that the issue is not related to a module deployment error, then 
 
 ## UndeclaredNodeTypesCheck
 
-_work in progress_
+Each node has a primary type, and can have been added some mixin types. If a type assigned to a node can't be loaded, then you might encounter some issues when manipulating the node. 
+
+### Dealing with errors
+
+First, check the reason why some node types / mixin types are missing. The module which define them might be missing or not correctly installed. In such case, you need to restore the module in a correct state to fix the issue.
+
+Otherwise, if the missing types have been decommissioned, then no node should refer to them anymore. 
+
+**Primary type**: you will probably need to delete every related node. If you need to recover some data from the properties of the node, you will need to write a script to copy the values to a new node, of another type. It is not possible to change the primary type of a node. You might need to introduce back the removed node type definition for the good execution of the script, and then remove it forever.
+
+**Mixin type**: you can remove the mixin from the nodes. If a few nodes are impacted, you can do it from the JCR browser. Otherwise, you will need to write a script. If the mixin used to define some properties, then you should clean them from the node as well. In such case, writing a script will be the best option. You might need to introduce back the removed mixin type definition for the good execution of the script, and then remove it forever. 
 
 ## UndeployedModulesReferencesCheck
 
