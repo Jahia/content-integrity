@@ -144,7 +144,16 @@ _work in progress_
 
 ## SiteLevelSystemGroupsCheck
 
-_work in progress_
+A Jahia server must have a server level group named `privileged`, and each site must have a site level group named `site-privileged`.  
+Each `site-privileged` group must be member of the `privileged` group.
+
+### Dealing with errors
+
+If a `site-privileged` group is not member of the `privileged` group, you need to restore this membership.
+
+If the `privileged` group is missing, you will need to recreate it, and then add every `site-privileged` group as a member.
+
+If the `site-privileged` group is missing, you will need to recreate it. Then, it will be required to identify the users/groups which need to be member of this group. 
 
 ## TemplatesIndexationCheck
 
