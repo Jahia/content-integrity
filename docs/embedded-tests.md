@@ -168,7 +168,17 @@ _work in progress_
 
 ## UndeployedModulesReferencesCheck
 
-_work in progress_
+When you enable a module on a site, then a property is written on the site node to track this information.  
+Only currently deployed modules should be referred to in this list.  
+                                                                   
+### Dealing with errors
+
+If the module should be deployed, then deploying it back on the server will fix the issue on the site.
+
+If the module was undeployed for good reasons, then you need to clean the site node. You can easily achieve it from the Karaf shell.
+
+    root@dx()> jcr:cd /sites/digitall
+    root@dx()> jcr:prop-set -multiple -op remove j:installedModules myOldModule 
 
 ## VersionHistoryCheck
 
