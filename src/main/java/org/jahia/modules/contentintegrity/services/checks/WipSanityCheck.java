@@ -28,7 +28,7 @@ import static org.jahia.api.Constants.WORKINPROGRESS_STATUS_LANG;
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + EDIT_WORKSPACE,
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + JAHIAMIX_LASTPUBLISHED + "," + JAHIANT_TRANSLATION,
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + WORKINPROGRESS + "," + WORKINPROGRESS_STATUS,
+        ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=" + WORKINPROGRESS + "," + WORKINPROGRESS_STATUS,
         ContentIntegrityCheck.ValidityCondition.APPLY_ON_VERSION_GTE + "=7.2.3.1"
 })
 public class WipSanityCheck extends AbstractContentIntegrityCheck {
