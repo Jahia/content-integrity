@@ -179,4 +179,10 @@ Specifies on which workspace the check has to be executed.
 
 Specifies on which subtrees the check has to be executed. The root node of a specified subtree is checked. Several subtrees can be listed, comma separated.
 
-    ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/sites"
+    ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=/sites"
+
+#### Apply if has properties / skip if has properties  
+
+Specifies some properties which the node must have (or not have) to be checked. Several property names can be listed, comma separated.
+
+    ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=j:workInProgress,j:workInProgressStatus"

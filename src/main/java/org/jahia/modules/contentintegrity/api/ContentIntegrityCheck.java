@@ -81,6 +81,10 @@ public interface ContentIntegrityCheck {
         String ON_WS = "OnWorkspace";
         String APPLY_ON_WS = APPLY + ON_WS;
         String SKIP_ON_WS = SKIP + ON_WS;
+
+        String IF_HAS_PROP = "IfHasProperties";
+        String APPLY_IF_HAS_PROP = APPLY + IF_HAS_PROP;
+        String SKIP_IF_HAS_PROP = SKIP + IF_HAS_PROP;
     }
 
     public interface ValidityCondition {
