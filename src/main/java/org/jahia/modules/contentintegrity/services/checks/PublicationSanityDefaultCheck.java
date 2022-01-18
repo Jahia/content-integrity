@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +39,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     private final Map<String, Object> inheritedErrors = new HashMap<>();
 
     @Override
-    public void finalizeIntegrityTestInternal() {
+    public void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         inheritedErrors.clear();
     }
 

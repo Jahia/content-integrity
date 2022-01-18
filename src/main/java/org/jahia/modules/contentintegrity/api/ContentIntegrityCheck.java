@@ -5,6 +5,7 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
+import java.util.Collection;
 
 public interface ContentIntegrityCheck {
 
@@ -39,9 +40,9 @@ public interface ContentIntegrityCheck {
 
     void trackFatalError();
 
-    void initializeIntegrityTest();
+    void initializeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths);
 
-    void finalizeIntegrityTest();
+    void finalizeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths);
 
     boolean isValid();
 

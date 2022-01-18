@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -33,9 +34,7 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
     private final Set<String> missingMixins = new HashSet<>();
 
     @Override
-    protected void initializeIntegrityTestInternal() {
-        super.initializeIntegrityTestInternal();
-
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         existingNodeTypes.clear();
         existingMixins.clear();
         missingNodeTypes.clear();

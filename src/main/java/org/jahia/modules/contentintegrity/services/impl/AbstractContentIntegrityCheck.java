@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -207,23 +208,29 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public final void initializeIntegrityTest() {
+    public final void initializeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
         fatalErrorCount = 0;
-        initializeIntegrityTestInternal();
+        initializeIntegrityTestInternal(node, excludedPaths);
     }
 
-    protected void initializeIntegrityTestInternal() {}
+    /**
+     * This method is run once on each check before starting a scan
+     */
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {}
 
     @Override
-    public final void finalizeIntegrityTest() {
-        finalizeIntegrityTestInternal();
+    public final void finalizeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        finalizeIntegrityTestInternal(node, excludedPaths);
         if (!enabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
             this.setEnabled(true);
         }
     }
 
-    protected void finalizeIntegrityTestInternal() {}
+    /**
+     * This method is run once on each check after finishing a scan
+     */
+    protected void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {}
 
     @Override
     public boolean isValid() {

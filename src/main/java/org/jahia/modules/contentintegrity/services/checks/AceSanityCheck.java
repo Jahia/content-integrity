@@ -25,6 +25,7 @@ import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private final Map<String, Role> roles = new HashMap<>();
 
     @Override
-    public void initializeIntegrityTestInternal() {
+    public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         final JCRSessionWrapper defaultSession;
         try {
             defaultSession = getSystemSession(EDIT_WORKSPACE, false);
@@ -81,7 +82,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     @Override
-    public void finalizeIntegrityTestInternal() {
+    public void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         roles.clear();
     }
 

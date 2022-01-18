@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 
+import java.util.Collection;
+
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
 import static org.jahia.api.Constants.JAHIANT_VIRTUALSITE;
 import static org.jahia.services.usermanager.JahiaGroupManagerService.PRIVILEGED_GROUPNAME;
@@ -33,7 +35,7 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
     private boolean missingRootPrivilegedGroupLogged = false;
 
     @Override
-    public void initializeIntegrityTestInternal() {
+    public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         missingRootPrivilegedGroupLogged = false;
         if (jgms == null)
             jgms = ServicesRegistry.getInstance().getJahiaGroupManagerService();

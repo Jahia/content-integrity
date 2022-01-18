@@ -165,11 +165,11 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger);
                 final List<ContentIntegrityCheck> activeChecks = getActiveChecks(checksToExecute);
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
-                    integrityCheck.initializeIntegrityTest();
+                    integrityCheck.initializeIntegrityTest(node, trimmedExcludedPaths);
                 }
                 validateIntegrity(node, trimmedExcludedPaths, activeChecks, errors, fixErrors);
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
-                    integrityCheck.finalizeIntegrityTest();
+                    integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
                 }
                 final long testDuration = System.currentTimeMillis() - start;
                 logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration)));
