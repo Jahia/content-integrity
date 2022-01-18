@@ -147,7 +147,17 @@ If the node has no pending modification but its path differs in the `live` works
 
 ## PublicationSanityLiveCheck
 
-_work in progress_
+In the `live` workspace, UGC nodes are flagged as such. All the other nodes are expected to exist as well in the `default` workspace, with the same identifier.
+
+### Dealing with errors
+
+Errors require a case by case analysis.
+
+If the node should be flagged as a UGC node, you need to set the property `j:originWS` to `live` on the node.
+
+If the node is the remaining of a failed deletion, which has been completed only in the `default` workspace, then you need to delete the remaining `live` node.
+
+If the node is incorrectly missing in `default`, you need to delete the `live` node, recreate the `default` node, and republish it.
 
 ## SiteLevelSystemGroupsCheck
 
