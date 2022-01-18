@@ -114,7 +114,15 @@ If the impacted nodes are automatically created, for example from some custom ja
 
 ## LockSanityCheck
 
-_work in progress_
+When a node is locked, several properties are written on it. When the lock is released, all those properties should be removed.
+
+A node should have all those properties or none.
+
+### Dealing with errors
+
+First, check in the UI if the node is shown as locked. If it is, try to unlock it. Otherwise, try to lock it and then unlock it. Most of the time, this will be enough to clean the lock related properties on the node.
+
+If the above actions fail, you will need to write a script to clean the node.
 
 ## MarkForDeletionCheck
 
