@@ -18,7 +18,8 @@ import static org.jahia.api.Constants.JCR_LOCKISDEEP;
 import static org.jahia.api.Constants.JCR_LOCKOWNER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE,
+        ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=j:lockTypes,j:locktoken," + JCR_LOCKISDEEP + "," + JCR_LOCKOWNER
 })
 public class LockSanityCheck extends AbstractContentIntegrityCheck {
 
@@ -60,11 +61,5 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
         lockRelatedProperties.add("j:locktoken");
         lockRelatedProperties.add(JCR_LOCKISDEEP);
         lockRelatedProperties.add(JCR_LOCKOWNER);
-
-        final AnyOfCondition anyOfCondition = new AnyOfCondition();
-        for (String property : lockRelatedProperties) {
-            anyOfCondition.add(new HasPropertyCondition(property));
-        }
-        addCondition(anyOfCondition);
     }
 }
