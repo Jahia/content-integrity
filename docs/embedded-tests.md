@@ -230,5 +230,10 @@ NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(nodeI
 
 ## WipSanityCheck
 
-_work in progress_
+The `work in progress` feature has been redesigned in Jahia 7.2.3.1 .  
+As a consequence, the data model of the technical information stored on the nodes flagged as `work in progress` has been updated. If your project has started before Jahia 7.2.3.1 , the data related to the `work in progress` is supposed to have been converted to the new model while migrating, and no property related to the legacy model should remain on your nodes.
+
+### Dealing with errors
+
+If some properties related to the legacy model are identified on some nodes, you should write a script to clean them up. Those properties are completely ignored after the refactoring, so deleting them will have no functional impact.
 
