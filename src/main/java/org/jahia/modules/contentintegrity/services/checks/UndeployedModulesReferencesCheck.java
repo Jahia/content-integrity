@@ -74,7 +74,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
         final List<String> siteModules = site.getInstalledModules();
         final boolean remove = siteModules.remove(missingModule);
         if (!remove) {
-            logger.info(String.format("The module %s is arlready unreferenced from the site %s",
+            logger.info(String.format("The module %s is already unreferenced from the site %s",
                     missingModule, site.getSiteKey()));
             return true;
         }

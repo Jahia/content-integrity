@@ -27,8 +27,8 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(UndeclaredNodeTypesCheck.class);
 
-    private final Set<String> existingNodetypes = new HashSet<>();
-    private final Set<String> missingNodetypes = new HashSet<>();
+    private final Set<String> existingNodeTypes = new HashSet<>();
+    private final Set<String> missingNodeTypes = new HashSet<>();
     private final Set<String> existingMixins = new HashSet<>();
     private final Set<String> missingMixins = new HashSet<>();
 
@@ -36,9 +36,9 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
     protected void initializeIntegrityTestInternal() {
         super.initializeIntegrityTestInternal();
 
-        existingNodetypes.clear();
+        existingNodeTypes.clear();
         existingMixins.clear();
-        missingNodetypes.clear();
+        missingNodeTypes.clear();
         missingMixins.clear();
     }
 
@@ -46,14 +46,14 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         final String pt = node.getPropertyAsString(JCR_PRIMARYTYPE);
-        checkPrimaryType(node, errors, existingNodetypes, missingNodetypes, "primary type", false, pt);
+        checkNodeType(node, errors, existingNodeTypes, missingNodeTypes, "primary type", false, pt);
         try {
             if (node.hasProperty(JCR_MIXINTYPES)) {
                 final String[] types = Arrays.stream(node.getProperty(JCR_MIXINTYPES).getValues())
                         .map(getStringValue())
                         .filter(Objects::nonNull)
                         .toArray(String[]::new);
-                checkPrimaryType(node, errors, existingMixins, missingMixins, "mixin type", true, types);
+                checkNodeType(node, errors, existingMixins, missingMixins, "mixin type", true, types);
             }
         } catch (RepositoryException re) {
             logger.error("Impossible to read the mixins of the node " + node, re);
@@ -72,10 +72,10 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
         };
     }
 
-    private void checkPrimaryType(JCRNodeWrapper node, ContentIntegrityErrorList errors,
-                                  Set<String> existingTypes, Set<String> missingTypes,
-                                  String text, boolean isMixin,
-                                  String... types) {
+    private void checkNodeType(JCRNodeWrapper node, ContentIntegrityErrorList errors,
+                               Set<String> existingTypes, Set<String> missingTypes,
+                               String text, boolean isMixin,
+                               String... types) {
         for (String type : types) {
             if (existingTypes.contains(type)) continue;
 
