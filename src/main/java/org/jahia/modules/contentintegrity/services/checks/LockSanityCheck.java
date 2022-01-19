@@ -25,7 +25,7 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(LockSanityCheck.class);
 
-    private HashSet<String> lockRelatedProperties;
+    private final HashSet<String> lockRelatedProperties = new HashSet<>();
 
     @Override
     protected void activate(ComponentContext context) {
@@ -56,7 +56,7 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
     }
 
     private void init() {
-        lockRelatedProperties = new HashSet<>();
+        lockRelatedProperties.clear();
         lockRelatedProperties.add("j:lockTypes");
         lockRelatedProperties.add("j:locktoken");
         lockRelatedProperties.add(JCR_LOCKISDEEP);

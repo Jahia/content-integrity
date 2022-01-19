@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
-
 import java.util.Collection;
 
 import static org.jahia.api.Constants.EDIT_WORKSPACE;

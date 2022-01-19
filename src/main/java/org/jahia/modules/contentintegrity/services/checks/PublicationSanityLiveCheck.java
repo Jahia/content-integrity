@@ -6,7 +6,6 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
