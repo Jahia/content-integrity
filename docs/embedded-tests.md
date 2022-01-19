@@ -90,6 +90,8 @@ Every updated page node should be republished to propagate the fix to the `live`
 It is preferable to explicitly flag the home page as such. Simply open the `repository explorer`, activate the display of the hidden properties, and check the option `j:isHomePage` on your home page.  
 The page node should be republished to propagate the fix to the `live` workspace.
 
+If no page is flagged as home, but a direct sub-node of the site node is named `home`, then it is critical to flag a page as the home.
+
 ## JCRLanguagePropertyCheck
 
 Translation nodes (nodes of type `jnt:translation`) are named after a naming convention. The node must be `j:translation_xx`, where `xx` is the language code. The node also holds a property named `jcr:language`, which has the language code as a value.  
