@@ -22,9 +22,9 @@ import static org.jahia.api.Constants.JAHIANT_PAGE;
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/sites"
 })
-public class HomePageDeclaration extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
-    private static final Logger logger = LoggerFactory.getLogger(HomePageDeclaration.class);
+    private static final Logger logger = LoggerFactory.getLogger(HomePageDeclarationCheck.class);
     private static final String HOME_PAGE_FLAG = "j:isHomePage";
     private static final String HOME_PAGE_FALLBACK_NAME = "home";
 

@@ -4,7 +4,7 @@
   * [AceSanityCheck](#acesanitycheck)
   * [BinaryPropertiesSanityCheck](#binarypropertiessanitycheck)
   * [FlatStorageCheck](#flatstoragecheck)
-  * [HomePageDeclaration](#homepagedeclaration)
+  * [HomePageDeclarationCheck](#homepagedeclarationcheck)
   * [JCRLanguagePropertyCheck](#jcrlanguagepropertycheck)
   * [LockSanityCheck](#locksanitycheck)
   * [MarkForDeletionCheck](#markfordeletioncheck)
@@ -62,7 +62,7 @@ You need to refactor your data model, usually splitting those nodes into some su
 
 If the problem is related to regular nodes (as opposed to UGC), then it has to be fixed in the `default` workspace and then propagated to the `live` workspace through publication.
 
-## HomePageDeclaration 
+## HomePageDeclarationCheck 
 
 Each site must have a unique home page node.  
 The home page node is a node of type `jnt:page`, with a boolean property named `j:isHomePage` having `true` as a value, and is a direct child node of the site node. If there's no node matching those conditions, but the site has a direct child node of type `jnt:page` named `home`, then this one will be used as the home page of the site.  
