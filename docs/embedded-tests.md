@@ -56,6 +56,12 @@ If the number of errors is important, you can also merge the `datastore` folder 
 Detects the nodes having too many direct sub-nodes (500 by default, can be configured).   
 The JCR is not designed to handle flat storage, and such structure has an impact on the performance.
 
+### Configuration
+
+| Name      |       Type        | Default Value  | Description                                              |
+|-----------|:-----------------:|:--------------:|----------------------------------------------------------|
+| threshold | positive integer  |      500       | Number of children nodes beyond which an error is raised |
+
 ### Dealing with errors
 
 You need to refactor your data model, usually splitting those nodes into some subtrees. One possible solution involves the Jahia built-in [auto split feature](https://academy.jahia.com/documentation/developer/jahia/8/advanced-guide-v8/manipulating-content-with-apis/jcr-api#Auto_splitting_nodes).
@@ -221,6 +227,14 @@ If the module was undeployed for good reasons, then you need to clean the site n
 
 Detects the nodes having a too long linear version history (100 versions by default, can be configured).  
 Such nodes will impact the performance.
+
+### Configuration
+
+| Name      |       Type        | Default Value | Description                                                           |
+|-----------|:-----------------:|:-------------:|-----------------------------------------------------------------------|
+| threshold | positive integer  |      100      | Number of versions for a single node beyond which an error is raised  |
+
+### Dealing with errors
 
 You can purge the version history of every node in the tools, keeping only the most recent versions. Otherwise, you can write a script to purge the complete history of some specific nodes. 
 
