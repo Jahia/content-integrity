@@ -17,7 +17,7 @@ public abstract class SimpleCompleter implements Completer {
 
     @Override
     public int complete(Session session, CommandLine commandLine, List<String> candidates) {
-        final List<String> allowedValues = getAllowedValues();
+        final List<String> allowedValues = getAllowedValues(session, commandLine);
         if (CollectionUtils.isEmpty(allowedValues)) return -1;
         final StringsCompleter delegate = new StringsCompleter();
         final String argument = commandLine.getCursorArgument();
@@ -31,5 +31,5 @@ public abstract class SimpleCompleter implements Completer {
         return delegate.complete(session, commandLine, candidates);
     }
 
-    public abstract List<String> getAllowedValues();
+    public abstract List<String> getAllowedValues(Session session, CommandLine commandLine);
 }

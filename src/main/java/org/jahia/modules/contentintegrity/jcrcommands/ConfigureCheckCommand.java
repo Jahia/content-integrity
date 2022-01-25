@@ -11,6 +11,7 @@ import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.BooleanCompleter;
+import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckConfigParamCompleter;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
     private String enabled;
 
     @Option(name = "-p", aliases = "--param", description = "Parameter to configure. If no value is specified, the current value is printed out")
+    @Completion(CheckConfigParamCompleter.class)
     private String paramName;
 
     @Option(name = "-v", aliases = "--value", description = "Parameter value to set")

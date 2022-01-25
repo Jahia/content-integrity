@@ -1,6 +1,8 @@
 package org.jahia.modules.contentintegrity.jcrcommands.completers;
 
 import org.apache.karaf.shell.api.action.lifecycle.Service;
+import org.apache.karaf.shell.api.console.CommandLine;
+import org.apache.karaf.shell.api.console.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +21,7 @@ public class BooleanCompleter extends SimpleCompleter {
     private static final List<String> VALUES = Arrays.asList("true", "false");
 
     @Override
-    public List<String> getAllowedValues() {
+    public List<String> getAllowedValues(Session session, CommandLine commandLine) {
         return VALUES;
     }
 
