@@ -148,6 +148,27 @@ If an important number of nodes are impacted, you will need to write a script to
 
 ## PropertyDefinitionsSanityCheck
 
+Checks the validity of the content against the property definitions. 
+
+The content must fit the definitions at the time it is written. But if the definitions are updated afterwards, then some pieces of content might not fit the new definitions. This can impact some features, such as updating some existing content through the UI, publishing, importing, ...
+
+### Configuration
+
+| Name            |  Type   | Default Value | Description                                                                                                  |
+|-----------------|:-------:|:-------------:|--------------------------------------------------------------------------------------------------------------|
+| site-langs-only | boolean |     false     | If true, only the translation sub-nodes related to an active language are checked when the node is in a site |
+
+### Dealing with errors
+                                                                 
+#### Missing mandatory property
+
+`Error code: EMPTY_MANDATORY_PROPERTY`
+                                     
+If a few nodes are impacted, you should provide the list of nodes to the editors, and ask them to fill the invalid properties. Content should be updated in the `default` workspace, and the errors should be fixed in `live` through publication.
+
+If an important number of nodes are impacted, then you should consider writing a script. The main difficulty is to define the appropriate value to set to those properties, without altering the output of the pages (a single value might not be enough to cover all the cases). If the definitions file declares a default value, then this one is usually a good candidate, but you should nevertheless evaluate if switching from a `null` value to this default value will have an impact on the pages output.  
+The script should be run with the listeners deactivated, and should be run on each workspace.
+
 _work in progress_
 
 ## PublicationSanityDefaultCheck
