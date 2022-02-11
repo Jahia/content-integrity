@@ -122,15 +122,29 @@ If the impacted nodes are automatically created, for example from some custom ja
 
 ## LockSanityCheck
 
-When a node is locked, several properties are written on it. When the lock is released, all those properties should be removed.
-
-A node should have all those properties or none.
+Detects the inconsistencies related to the JCR locks.
 
 ### Dealing with errors
+
+#### Inconsistent lock
+
+`Error code: INCONSISTENT_LOCK`
+
+When a node is locked, several properties are written on it. When the lock is released, all those properties should be removed.  
+A node should have all those properties or none.
 
 First, check in the UI if the node is shown as locked. If it is, try to unlock it. Otherwise, try to lock it and then unlock it. Most of the time, this will be enough to clean the lock related properties on the node.
 
 If the above actions fail, you will need to write a script to clean the node.
+
+#### Remaining deletion lock on a translation node
+
+`Error code: DELETION_LOCK_ON_I18N`
+
+When a node is marked for deletion, a lock is set on the node, and its translation sub-nodes as well. If the node is undeleted, all those locks are supposed to be removed.  
+This error is raised when a deletion lock is detected on a translation node, but the parent node is not marked for deletion.
+
+To clear this lock, open the page composer in the language of the detected translation node, delete the piece of content, and undelete it. 
 
 ## MarkForDeletionCheck
 
