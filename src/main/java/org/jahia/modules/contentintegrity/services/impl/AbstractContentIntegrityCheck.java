@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -78,6 +79,11 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         if (prop instanceof String) setApplyOnWorkspace((String) prop);
         prop = context.getProperties().get(ExecutionCondition.SKIP_ON_WS);
         if (prop instanceof String) setSkipOnWorkspace((String) prop);
+
+        prop = context.getProperties().get(ExecutionCondition.APPLY_IF_HAS_PROP);
+        if (prop instanceof String) setApplyIfHasProp((String) prop);
+        prop = context.getProperties().get(ExecutionCondition.SKIP_IF_HAS_PROP);
+        if (prop instanceof String) setSkipIfHasProp((String) prop);
     }
 
     @Override
@@ -202,23 +208,29 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public final void initializeIntegrityTest() {
+    public final void initializeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
         fatalErrorCount = 0;
-        initializeIntegrityTestInternal();
+        initializeIntegrityTestInternal(node, excludedPaths);
     }
 
-    protected void initializeIntegrityTestInternal() {}
+    /**
+     * This method is run once on each check before starting a scan
+     */
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {}
 
     @Override
-    public final void finalizeIntegrityTest() {
-        finalizeIntegrityTestInternal();
+    public final void finalizeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        finalizeIntegrityTestInternal(node, excludedPaths);
         if (!enabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
             this.setEnabled(true);
         }
     }
 
-    protected void finalizeIntegrityTestInternal() {}
+    /**
+     * This method is run once on each check after finishing a scan
+     */
+    protected void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {}
 
     @Override
     public boolean isValid() {
@@ -489,7 +501,6 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         if (condition != null) {
             addCondition(new NotCondition(condition));
         }
-
     }
 
     protected static class HasPropertyCondition implements ExecutionCondition {
@@ -514,5 +525,34 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         public String toString() {
             return String.format("has property %s", propertyName);
         }
+    }
+
+    private void setApplyIfHasProp(String properties) {
+        if (properties.contains(",")) {
+            final AnyOfCondition condition = new AnyOfCondition();
+            for (String prop : Patterns.COMMA.split(properties)) {
+                condition.add(new HasPropertyCondition(prop.trim()));
+            }
+            addCondition(condition);
+        } else if (StringUtils.isNotBlank(properties)) {
+            addCondition(new HasPropertyCondition(properties.trim()));
+        }
+    }
+
+    private void setSkipIfHasProp(String properties) {
+        ExecutionCondition condition = null;
+        if (properties.contains(",")) {
+            final AnyOfCondition anyOf = new AnyOfCondition();
+            for (String prop : Patterns.COMMA.split(properties)) {
+                anyOf.add(new HasPropertyCondition(prop.trim()));
+            }
+            condition = anyOf;
+        } else if (StringUtils.isNotBlank(properties)) {
+            condition = new HasPropertyCondition(properties);
+        }
+        if (condition != null) {
+            addCondition(new NotCondition(condition));
+        }
+
     }
 }

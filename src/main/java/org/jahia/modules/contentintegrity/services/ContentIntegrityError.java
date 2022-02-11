@@ -18,15 +18,15 @@ public class ContentIntegrityError {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityError.class);
 
-    private String path;
-    private String uuid;
-    private String primaryType;
-    private String mixins;
-    private String locale;
-    private String workspace;
-    private String constraintMessage;
-    private String integrityCheckName;
-    private long integrityCheckID = -1L;
+    private final String path;
+    private final String uuid;
+    private final String primaryType;
+    private final String mixins;
+    private final String locale;
+    private final String workspace;
+    private final String constraintMessage;
+    private final String integrityCheckName;
+    private final long integrityCheckID;
     private boolean fixed = false;
     private Map<String,Object> extraInfos;
 

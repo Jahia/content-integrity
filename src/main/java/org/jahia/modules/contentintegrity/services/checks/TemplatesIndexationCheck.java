@@ -53,3 +53,11 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
         return null;
     }
 }
+
+/*
+Notes:
+
+The check is done on every installed module/version, no matter if the current version is started or not.
+If a not indexed template is identified for a stopped version, this will have no functional impact immediately,
+but it would if the version was started, reason why such error is not ignored.
+ */

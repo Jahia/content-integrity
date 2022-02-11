@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
+import java.util.Collection;
 
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
 import static org.jahia.api.Constants.JAHIANT_VIRTUALSITE;
@@ -30,9 +31,11 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
     private static final Logger logger = LoggerFactory.getLogger(SiteLevelSystemGroupsCheck.class);
 
     private JahiaGroupManagerService jgms;
+    private boolean missingRootPrivilegedGroupLogged = false;
 
     @Override
-    public void initializeIntegrityTestInternal() {
+    public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        missingRootPrivilegedGroupLogged = false;
         if (jgms == null)
             jgms = ServicesRegistry.getInstance().getJahiaGroupManagerService();
     }
@@ -48,13 +51,14 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         try {
             privGroup = jgms.lookupGroup(null, PRIVILEGED_GROUPNAME, site.getSession());
-            if (privGroup == null) {
-                // The 'privileged' group is defined at server level. If missing, this unique error will be logged for each site
-                final ContentIntegrityError error = createError(site, String.format("The '%s' group does not exist", PRIVILEGED_GROUPNAME))
+            if (privGroup == null && !missingRootPrivilegedGroupLogged) {
+                // The 'privileged' group is defined at server level. If missing, a unique error will be logged while scanning the first site
+                final ContentIntegrityError error = createError(site.getSession().getRootNode(), String.format("The '%s' group does not exist", PRIVILEGED_GROUPNAME))
                         .setErrorType(ErrorType.GROUP_DOES_NOT_EXIST)
                         .addExtraInfo("group-name", PRIVILEGED_GROUPNAME)
                         .setExtraMsg(String.format("The '%s' group is created at server installation time, at server level, and should never be deleted", PRIVILEGED_GROUPNAME));
                 errors.addError(error);
+                missingRootPrivilegedGroupLogged = true;
             }
 
             final JCRGroupNode sitePrivGroup = jgms.lookupGroup(site.getSiteKey(), SITE_PRIVILEGED_GROUPNAME, site.getSession());

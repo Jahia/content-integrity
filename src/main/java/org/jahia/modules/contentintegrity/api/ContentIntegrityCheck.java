@@ -5,6 +5,7 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
+import java.util.Collection;
 
 public interface ContentIntegrityCheck {
 
@@ -39,9 +40,9 @@ public interface ContentIntegrityCheck {
 
     void trackFatalError();
 
-    void initializeIntegrityTest();
+    void initializeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths);
 
-    void finalizeIntegrityTest();
+    void finalizeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths);
 
     boolean isValid();
 
@@ -81,6 +82,10 @@ public interface ContentIntegrityCheck {
         String ON_WS = "OnWorkspace";
         String APPLY_ON_WS = APPLY + ON_WS;
         String SKIP_ON_WS = SKIP + ON_WS;
+
+        String IF_HAS_PROP = "IfHasProperties";
+        String APPLY_IF_HAS_PROP = APPLY + IF_HAS_PROP;
+        String SKIP_IF_HAS_PROP = SKIP + IF_HAS_PROP;
     }
 
     public interface ValidityCondition {

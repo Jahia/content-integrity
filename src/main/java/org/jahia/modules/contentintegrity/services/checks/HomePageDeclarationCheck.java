@@ -7,7 +7,6 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -23,13 +22,13 @@ import static org.jahia.api.Constants.JAHIANT_PAGE;
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/sites"
 })
-public class HomePageDeclaration extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
 
-    private static final Logger logger = LoggerFactory.getLogger(HomePageDeclaration.class);
+    private static final Logger logger = LoggerFactory.getLogger(HomePageDeclarationCheck.class);
     private static final String HOME_PAGE_FLAG = "j:isHomePage";
     private static final String HOME_PAGE_FALLBACK_NAME = "home";
 
-    private enum ErrorType {NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME}
+    private enum ErrorType {NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME, FALLBACK_ON_NAME_WRONG_TYPE}
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -42,27 +41,32 @@ public class HomePageDeclaration extends AbstractContentIntegrityCheck implement
                     flaggedAsHomeCount++;
             }
             if (flaggedAsHomeCount != 1) {
-                final String msg;
-                final ErrorType errortype;
                 if (flaggedAsHomeCount > 1) {
-                    errortype = ErrorType.MULTIPLE_HOMES;
-                    msg = "The site has several pages flagged as home";
+                    return createSingleError(createError(node, "The site has several pages flagged as home")
+                            .setErrorType(ErrorType.MULTIPLE_HOMES)
+                            .addExtraInfo("nb-pages-flagged", flaggedAsHomeCount));
                 } else if (node.hasNode(HOME_PAGE_FALLBACK_NAME)) {
-                    if (isInLiveWorkspace(node))
-                        return null; // Let's consider it is not an error, if fixed in default, then it will get fixed in live after publishing
-                    errortype = ErrorType.FALLBACK_ON_NAME;
-                    msg = "The site has no page flagged as home, but one is named 'home'";
+                    final JCRNodeWrapper homeNode = node.getNode(HOME_PAGE_FALLBACK_NAME);
+                    if (homeNode.isNodeType(JAHIANT_PAGE)) {
+                        if (isInLiveWorkspace(node))
+                            return null; // Let's consider it is not an error, if fixed in default, then it will get fixed in live after publishing
+                        final String msg = String.format("The site has no page flagged as home, but one is named '%s'", HOME_PAGE_FALLBACK_NAME);
+                        return createSingleError(createError(node, msg)
+                                .setErrorType(ErrorType.FALLBACK_ON_NAME));
+                    } else {
+                        final String msg = String.format("The site has no page flagged as home. It has a sub-node named '%s', but this node is not of type %s",
+                                HOME_PAGE_FALLBACK_NAME, JAHIANT_PAGE);
+                        return createSingleError(createError(node, msg)
+                                .setErrorType(ErrorType.FALLBACK_ON_NAME_WRONG_TYPE)
+                                .addExtraInfo("home-node-type", homeNode.getPrimaryNodeTypeName()));
+                    }
                 } else {
                     if (isInLiveWorkspace(node))
                         return null; // Not an error, the home page has maybe not yet been published
-                    errortype = ErrorType.NO_HOME;
-                    msg = "The site has no page flagged as home and no one is named 'home'";
+                    final String msg = String.format("The site has no page flagged as home and no one is named '%s'", HOME_PAGE_FALLBACK_NAME);
+                    return createSingleError(createError(node, msg)
+                            .setErrorType(ErrorType.NO_HOME));
                 }
-
-                final ContentIntegrityError error = createError(node, msg)
-                        .setErrorType(errortype)
-                        .addExtraInfo("site", node.getName());
-                return createSingleError(error);
             }
         } catch (RepositoryException e) {
             logger.error("", e);

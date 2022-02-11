@@ -32,7 +32,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
 
     // If the root node of the scan is listed, then no node is scanned
     // if a node stored outside from the scanned subtree is listed, then excluding it has no effect
-    // If a parent node of the root node of the scan is listed, then excluding it has no effect (e.g. exluding /sites when scanning from /sites/digitall will not prevent from scanning)
+    // If a parent node of the root node of the scan is listed, then excluding it has no effect (e.g. excluding /sites when scanning from /sites/digitall will not prevent from scanning)
     @Option(name = "-x", aliases = "--exclude", multiValued = true, description = "Path(s) to exclude from the scan")
     @Completion(JCRNodeCompleter.class)
     private List<String> excludedPaths;

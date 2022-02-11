@@ -55,7 +55,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
-        getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, "If true, only the translation subnodes related to an active language are checked when the node is in a site");
+        getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, "If true, only the translation sub-nodes related to an active language are checked when the node is in a site");
     }
 
     @Override
@@ -222,7 +222,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 try {
                     p = jahiaNode.getSession().getNode(node.getPath()).getProperty(pName);
                     /*
-                    in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtal node), the extension node inherits from
+                    in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtual node), the extension node inherits from
                     jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
                     if this case happens again with other types, a more generic solution would be
                         if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
@@ -243,7 +243,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 try {
                     propertyDefinition = property.getDefinition();
                     /*
-                    in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtal node), the extension node inherits from
+                    in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtual node), the extension node inherits from
                     jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
                     if this case happens again with other types, a more generic solution would be
                         if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;

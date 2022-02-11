@@ -4,7 +4,7 @@
   * [AceSanityCheck](#acesanitycheck)
   * [BinaryPropertiesSanityCheck](#binarypropertiessanitycheck)
   * [FlatStorageCheck](#flatstoragecheck)
-  * [HomePageDeclaration](#homepagedeclaration)
+  * [HomePageDeclarationCheck](#homepagedeclarationcheck)
   * [JCRLanguagePropertyCheck](#jcrlanguagepropertycheck)
   * [LockSanityCheck](#locksanitycheck)
   * [MarkForDeletionCheck](#markfordeletioncheck)
@@ -22,6 +22,8 @@
 
 ## AceSanityCheck
 
+_work in progress_
+
 ## BinaryPropertiesSanityCheck
 
 Detects the properties of type `binary` for which the value can't be loaded. 
@@ -29,7 +31,7 @@ Detects the properties of type `binary` for which the value can't be loaded.
 ### Dealing with errors
 
 If the number of errors is limited, it should be analyzed on a node by node basis.  
-Usualy, the missing binary will be the value of the `jcr:data` property of the `jcr:content` subnode of a `jnt:file` node. In such case, you should first make the users aware of the issue, since they might be able to reupload the file or accept to delete the whole file node.
+Usually, the missing binary will be the value of the `jcr:data` property of the `jcr:content` sub-node of a `jnt:file` node. In such case, you should first make the users aware of the issue, since they might be able to re-upload the file or accept to delete the whole file node.
 
 If the number of errors is important, then it is probably the consequence of an inappropriate system operation. Then, a generic solution should be evaluated.  
 Since the binary data can be store either in the database or on the filesystem (choice done at Jahia installation time), the way to deal with the errors differs depending on the type of storage.
@@ -38,7 +40,7 @@ Since the binary data can be store either in the database or on the filesystem (
 
 With this storage type, there is no possibility to fix the issue directly in the database. If the binaries are missing as a consequence of a recent operation, then the Jahia environment should be restored from a backup taken before the faulty operation. If you are not sure of the time of the operation, and need to confirm that the backup to be restored will solve the issue, the only solution is to restore this backup on another environment and run an integrity check.  
 
-If restoring the production from a backup is not an option, then you can restore the backup on another server and extract the missing binaries from this environment to fix the data on production. For nodes of type `jnt:file`, the files can be downloaded from this environment and reuploaded on production. To avoid breaking references to the files, do not delete/recreate the file. You can upload a new binary on an existing file node.  
+If restoring the production from a backup is not an option, then you can restore the backup on another server and extract the missing binaries from this environment to fix the data on production. For nodes of type `jnt:file`, the files can be downloaded from this environment and re-uploaded on production. To avoid breaking references to the files, do not delete/recreate the file. You can upload a new binary on an existing file node.  
 If the production is clustered, this temporary environment can be simply restored as a standalone environment. 
 
 #### Filesystem storage 
@@ -51,8 +53,14 @@ If the number of errors is important, you can also merge the `datastore` folder 
 
 ## FlatStorageCheck
 
-Detects the nodes having too many direct subnodes (500 by default, can be configured).   
+Detects the nodes having too many direct sub-nodes (500 by default, can be configured).   
 The JCR is not designed to handle flat storage, and such structure has an impact on the performance.
+
+### Configuration
+
+| Name      |       Type        | Default Value  | Description                                              |
+|-----------|:-----------------:|:--------------:|----------------------------------------------------------|
+| threshold | positive integer  |      500       | Number of children nodes beyond which an error is raised |
 
 ### Dealing with errors
 
@@ -60,7 +68,7 @@ You need to refactor your data model, usually splitting those nodes into some su
 
 If the problem is related to regular nodes (as opposed to UGC), then it has to be fixed in the `default` workspace and then propagated to the `live` workspace through publication.
 
-## HomePageDeclaration 
+## HomePageDeclarationCheck 
 
 Each site must have a unique home page node.  
 The home page node is a node of type `jnt:page`, with a boolean property named `j:isHomePage` having `true` as a value, and is a direct child node of the site node. If there's no node matching those conditions, but the site has a direct child node of type `jnt:page` named `home`, then this one will be used as the home page of the site.  
@@ -85,40 +93,187 @@ Every updated page node should be republished to propagate the fix to the `live`
 
 #### Fallback on the page named `home`
 
-It is preferable to explicitely flag the home page as such. Simply open the `repository explorer`, activate the display of the hidden properties, and check the option `j:isHomePage` on your home page.  
+It is preferable to explicitly flag the home page as such. Simply open the `repository explorer`, activate the display of the hidden properties, and check the option `j:isHomePage` on your home page.  
 The page node should be republished to propagate the fix to the `live` workspace.
+
+If no page is flagged as home, but a direct sub-node of the site node is named `home`, then it is critical to flag a page as the home.
 
 ## JCRLanguagePropertyCheck
 
+Translation nodes (nodes of type `jnt:translation`) are named after a naming convention. The node must be `j:translation_xx`, where `xx` is the language code. The node also holds a property named `jcr:language`, which has the language code as a value.  
+The language code must be the same in the node name and the value of the property.
+
+Example of valid translation node:
+
+    Name: j:translation_en
+    Path: /sites/digitall/home/about/area-main/rich-text/j:translation_en
+    Type: jnt:translation
+        
+    Properties: 
+        jcr:language:  en
+        jcr:primaryType:  jnt:translation
+
+### Dealing with errors
+
+Errors are usually located under `/modules`, in a node part of a template. The root cause is usually an uncontrolled copy/paste in the `repository.xml` file. In such case, just fix the issue in the XML file, and redeploy the module.
+
+Otherwise, you will need to fix the node in the JCR, updating the property value to match the node name.  
+If the impacted nodes are automatically created, for example from some custom java code, it is important as well to identify & fix the faulty code, in order to avoid reintroducing the issue.
+
 ## LockSanityCheck
+
+Detects the inconsistencies related to the JCR locks.
+
+### Dealing with errors
+
+#### Inconsistent lock
+
+`Error code: INCONSISTENT_LOCK`
+
+When a node is locked, several properties are written on it. When the lock is released, all those properties should be removed.  
+A node should have all those properties or none.
+
+First, check in the UI if the node is shown as locked. If it is, try to unlock it. Otherwise, try to lock it and then unlock it. Most of the time, this will be enough to clean the lock related properties on the node.
+
+If the above actions fail, you will need to write a script to clean the node.
+
+#### Remaining deletion lock on a translation node
+
+`Error code: DELETION_LOCK_ON_I18N`
+
+When a node is marked for deletion, a lock is set on the node, and its translation sub-nodes as well. If the node is undeleted, all those locks are supposed to be removed.  
+This error is raised when a deletion lock is detected on a translation node, but the parent node is not marked for deletion.
+
+To clear this lock, open the page composer in the language of the detected translation node, delete the piece of content, and undelete it. 
 
 ## MarkForDeletionCheck
 
+When deleting a piece of content from the UI, the node is not technically deleted from the `default` workspace, but marked for deletion. This results in adding some mixins on the node as well as on its sub-nodes.
+* `jmix:markedForDeletionRoot` is added on the node which you have deleted
+* `jmix:markedForDeletion` is added on every node in the subtree, including the root node.
+
+A node flagged as deleted, but without deletion root, is inconsistent. From the UI, you can trigger the publication or the undeletion of the tree only on the root node of the deletion. 
+
+### Dealing with errors
+
+If a few pieces of content are impacted, you can delete again the root node of the deletion from the UI. This will add back the missing mixins, allowing then to publish or undelete the tree, still from the UI.
+
+If an important number of nodes are impacted, you will need to write a script to clean the mixins on the inconsistent nodes.
+
 ## PropertyDefinitionsSanityCheck
+
+Checks the validity of the content against the property definitions. 
+
+The content must fit the definitions at the time it is written. But if the definitions are updated afterwards, then some pieces of content might not fit the new definitions. This can impact some features, such as updating some existing content through the UI, publishing, importing, ...
+
+### Configuration
+
+| Name            |  Type   | Default Value | Description                                                                                                  |
+|-----------------|:-------:|:-------------:|--------------------------------------------------------------------------------------------------------------|
+| site-langs-only | boolean |     false     | If true, only the translation sub-nodes related to an active language are checked when the node is in a site |
+
+### Dealing with errors
+                                                                 
+#### Missing mandatory property
+
+`Error code: EMPTY_MANDATORY_PROPERTY`
+                                     
+If a few nodes are impacted, you should provide the list of nodes to the editors, and ask them to fill the invalid properties. Content should be updated in the `default` workspace, and the errors should be fixed in `live` through publication.
+
+If an important number of nodes are impacted, then you should consider writing a script. The main difficulty is to define the appropriate value to set to those properties, without altering the output of the pages (a single value might not be enough to cover all the cases). If the definitions file declares a default value, then this one is usually a good candidate, but you should nevertheless evaluate if switching from a `null` value to this default value will have an impact on the pages output.  
+The script should be run with the listeners deactivated, and should be run on each workspace.
+
+_work in progress_
 
 ## PublicationSanityDefaultCheck
 
+When a node is flagged as published in the `default` workspace, then a node with the same identifier must exist in the `live` workspace.  
+If the node has no pending modification, then the path must be the same in the two workspaces.
+
+### Dealing with errors
+
+If the node is flagged as published, but there's no live node with the same identifier, then you need to remove the property `j:published` from the node in the default workspace. Then you can republish the node if needed.
+
+If the node has no pending modification but its path differs in the `live` workspace, then you can do a fake modification on the node (for example, adding some blank at the end of a richtext, or changing the value of a property, and then setting back the initial value) in order to get back the possibility to publish the node. 
+
 ## PublicationSanityLiveCheck
 
+In the `live` workspace, UGC nodes are flagged as such. All the other nodes are expected to exist as well in the `default` workspace, with the same identifier.
+
+### Dealing with errors
+
+Errors require a case by case analysis.
+
+If the node should be flagged as a UGC node, you need to set the property `j:originWS` to `live` on the node.
+
+If the node is the remaining of a failed deletion, which has been completed only in the `default` workspace, then you need to delete the remaining `live` node.
+
+If the node is incorrectly missing in `default`, you need to delete the `live` node, recreate the `default` node, and republish it.
+
 ## SiteLevelSystemGroupsCheck
+
+A Jahia server must have a server level group named `privileged`, and each site must have a site level group named `site-privileged`.  
+Each `site-privileged` group must be member of the `privileged` group.
+
+### Dealing with errors
+
+If a `site-privileged` group is not member of the `privileged` group, you need to restore this membership.
+
+If the `privileged` group is missing, you will need to recreate it, and then add every `site-privileged` group as a member.
+
+If the `site-privileged` group is missing, you will need to recreate it. Then, it will be required to identify the users/groups which need to be member of this group. 
 
 ## TemplatesIndexationCheck
 
 If a template is not correctly indexed, you can simply reindex it from the `JCR browser` in the tools. If several templates are identified, you can also reindex the whole subtree of the module.  
 Then, you need to flush the cache, or at least the cache named `RenderService.TemplatesCache`.
 
-If you suspect that the issue is not related to a module deployment error, then you should consider a full reindexation of the JCR.
+If you suspect that the issue is not related to a module deployment error, then you should consider a full re-indexation of the JCR.
 
 ## UndeclaredNodeTypesCheck
 
+Each node has a primary type, and can have been added some mixin types. If a type assigned to a node can't be loaded, then you might encounter some issues when manipulating the node. 
+
+### Dealing with errors
+
+First, check the reason why some node types / mixin types are missing. The module which define them might be missing or not correctly installed. In such case, you need to restore the module in a correct state to fix the issue.
+
+Otherwise, if the missing types have been decommissioned, then no node should refer to them anymore. 
+
+**Primary type**: you will probably need to delete every related node. If you need to recover some data from the properties of the node, you will need to write a script to copy the values to a new node, of another type. It is not possible to change the primary type of a node. You might need to introduce back the removed node type definition for the good execution of the script, and then remove it forever.
+
+**Mixin type**: you can remove the mixin from the nodes. If a few nodes are impacted, you can do it from the JCR browser. Otherwise, you will need to write a script. If the mixin used to define some properties, then you should clean them from the node as well. In such case, writing a script will be the best option. You might need to introduce back the removed mixin type definition for the good execution of the script, and then remove it forever. 
+
 ## UndeployedModulesReferencesCheck
+
+When you enable a module on a site, then a property is written on the site node to track this information.  
+Only currently deployed modules should be referred to in this list.  
+                                                                   
+### Dealing with errors
+
+If the module should be deployed, then deploying it back on the server will fix the issue on the site.
+
+If the module was undeployed for good reasons, then you need to clean the site node. You can easily achieve it from the Karaf shell.
+
+    root@dx()> jcr:cd /sites/digitall
+    root@dx()> jcr:prop-set -multiple -op remove j:installedModules myOldModule 
 
 ## VersionHistoryCheck
 
 Detects the nodes having a too long linear version history (100 versions by default, can be configured).  
 Such nodes will impact the performance.
 
-You can purge the version history of every node in the tools, keeping only the most recent versions. Otherwise, you can write a script to purge the complete history of some specific nodes. Example:
+### Configuration
+
+| Name      |       Type        | Default Value | Description                                                           |
+|-----------|:-----------------:|:-------------:|-----------------------------------------------------------------------|
+| threshold | positive integer  |      100      | Number of versions for a single node beyond which an error is raised  |
+
+### Dealing with errors
+
+You can purge the version history of every node in the tools, keeping only the most recent versions. Otherwise, you can write a script to purge the complete history of some specific nodes. 
+
+Example:
 
 ```groovy
 import org.jahia.services.history.NodeVersionHistoryHelper
@@ -127,4 +282,11 @@ NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(nodeI
 ```
 
 ## WipSanityCheck
+
+The `work in progress` feature has been redesigned in Jahia 7.2.3.1 .  
+As a consequence, the data model of the technical information stored on the nodes flagged as `work in progress` has been updated. If your project has started before Jahia 7.2.3.1 , the data related to the `work in progress` is supposed to have been converted to the new model while migrating, and no property related to the legacy model should remain on your nodes.
+
+### Dealing with errors
+
+If some properties related to the legacy model are identified on some nodes, you should write a script to clean them up. Those properties are completely ignored after the refactoring, so deleting them will have no functional impact.
 
