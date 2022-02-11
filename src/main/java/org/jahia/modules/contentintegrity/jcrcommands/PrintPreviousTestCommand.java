@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 @Command(scope = "jcr", name = "integrity-printTestResults", description = "Reprints the result of some previous test")
@@ -72,32 +73,53 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
 
         session.put(LAST_PRINTED_TEST, testDate);
         if (dumpToCSV) {
-            final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
-            final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
-
-            if (folderCreated && outputDir.canWrite()) {
-                final File csvFile = new File(outputDir, String.format("%s-%s.csv",
-                        results.getID(), excludeFixedErrors ? "remainingErrors" : "full"));
-                final boolean exists = csvFile.exists();
-                if (!exists) csvFile.createNewFile();
-                final List<String> lines = (List<String>) CollectionUtils.collect(results.getErrors(), new Transformer() {
-                    @Override
-                    public Object transform(Object input) {
-                        return ((ContentIntegrityError) input).toCSV();
-                    }
-                });
-                if (!noCsvHeader) {
-                    final String header = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", DEFAULT_CSV_HEADER);
-                    lines.add(0, header);
-                }
-                FileUtils.writeLines(csvFile, "UTF-8", lines);
-                System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", csvFile.getPath()));
-            } else {
-                logger.error("Impossible to write the folder " + outputDir.getPath());
+            if (!writeDumpOnTheFilesystem(results)) {
+                System.out.println("Failed to write the report on the filesystem");
             }
         } else {
             printContentIntegrityErrors(results, limit, !excludeFixedErrors);
         }
         return null;
+    }
+
+    private boolean writeDumpOnTheFilesystem(ContentIntegrityResults results) {
+        final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
+        final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
+
+        if (folderCreated && outputDir.canWrite()) {
+            final File csvFile = new File(outputDir, String.format("%s-%s.csv",
+                    results.getID(), excludeFixedErrors ? "remainingErrors" : "full"));
+            final boolean exists = csvFile.exists();
+            if (!exists) {
+                try {
+                    csvFile.createNewFile();
+                } catch (IOException e) {
+                    logger.error("Impossible to create the file", e);
+                    return false;
+                }
+            }
+            final List<String> lines = (List<String>) CollectionUtils.collect(results.getErrors(), new Transformer() {
+                @Override
+                public Object transform(Object input) {
+                    return ((ContentIntegrityError) input).toCSV();
+                }
+            });
+            if (!noCsvHeader) {
+                final String header = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", DEFAULT_CSV_HEADER);
+                lines.add(0, header);
+            }
+            try {
+                FileUtils.writeLines(csvFile, "UTF-8", lines);
+            } catch (IOException e) {
+                logger.error("Impossible to write the file content", e);
+                return false;
+            }
+            System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", csvFile.getPath()));
+        } else {
+            logger.error("Impossible to write the folder " + outputDir.getPath());
+            return false;
+        }
+
+        return true;
     }
 }
