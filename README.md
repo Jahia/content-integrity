@@ -126,12 +126,13 @@ Allows to reprint the result of a previous test.
                          
 **Options:**
 
-| Name | alias                |         Value          | Mandatory | Multiple | Description                                                                                                   |
-|------|----------------------|:----------------------:|:---------:|:--------:|---------------------------------------------------------------------------------------------------------------|
-| -l   | --limit              | positive integer, [20] |           |          | Specifies the maximum number of errors to print out                                                           |
-| -d   | --dump , --dumpToCSV |                        |           |          | Dumps the errors into a CSV file in temp/content-integrity/ if used. The limit option is ignored when dumping |
-| -nh  | --noCSVHeader        |                        |           |          | Generates a CSV file without header. This option is ignored when not generating a CSV file                    |
-| -ef  | --excludeFixedErrors |                        |           |          | Coming soon                                                                                                   |
+| Name | alias                |         Value          | Mandatory | Multiple | Description                                                                                                              |
+|------|----------------------|:----------------------:|:---------:|:--------:|--------------------------------------------------------------------------------------------------------------------------|
+| -l   | --limit              | positive integer, [20] |           |          | Specifies the maximum number of errors to print out                                                                      |
+| -d   | --dump , --dumpToCSV |                        |           |          | Dumps the errors into a CSV file in temp/content-integrity/ if used. The limit option is ignored when dumping            |
+| -u   | --upload             |                        |           |          | Uploads the dump in the JCR instead of writing in on the filesystem. This option has no effect if not combined with `-d` |
+| -nh  | --noCSVHeader        |                        |           |          | Generates a CSV file without header. This option is ignored when not generating a CSV file                               |
+| -ef  | --excludeFixedErrors |                        |           |          | Coming soon                                                                                                              |
 
 **Example:**
 
