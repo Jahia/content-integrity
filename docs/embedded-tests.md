@@ -18,7 +18,10 @@
   * [VersionHistoryCheck](#versionhistorycheck)
   * [WipSanityCheck](#wipsanitycheck)
 * [How to extend it](how-to-extend.md#summary)
+* [Groovy scripts](groovy-scripts.md#summary)
 * [Release notes](release-notes.md#summary)
+
+Fixing integrity issues can be a complex operation. This page will help you to deal with the various issues you might identify, giving a general way to solve those issues. But some project specificities might need to be considered to build a tailored made answer. If you need some assistance, do not hesitate to reach out to the [Jahia Professional Services Team](services@jahia.com).
 
 ## AceSanityCheck
 
@@ -177,10 +180,25 @@ The content must fit the definitions at the time it is written. But if the defin
 #### Missing mandatory property
 
 `Error code: EMPTY_MANDATORY_PROPERTY`
+
+**Description**: A property is flagged as `mandatory` in the definitions, but has been detected with no value.
                                      
 If a few nodes are impacted, you should provide the list of nodes to the editors, and ask them to fill the invalid properties. Content should be updated in the `default` workspace, and the errors should be fixed in `live` through publication.
 
-If an important number of nodes are impacted, then you should consider writing a script. The main difficulty is to define the appropriate value to set to those properties, without altering the output of the pages (a single value might not be enough to cover all the cases). If the definitions file declares a default value, then this one is usually a good candidate, but you should nevertheless evaluate if switching from a `null` value to this default value will have an impact on the pages output.  
+If an important number of nodes are impacted, then you should consider writing a script. The main difficulty is to define the appropriate value to set on those properties, without altering the output of the pages (a unique value might not be enough to cover all the cases). If the definitions file declares a default value, then this one is usually a good candidate, but you should nevertheless evaluate if switching from a `null` value to this default value will have an impact on the pages output.  
+The script should be run with the listeners deactivated, and should be run on each workspace.
+
+#### Invalid value type
+
+`Error code: INVALID_VALUE_TYPE`
+
+**Description**: A property has been detected with a value that does not match the declared type for the property.
+
+Changing the type of a property is not a supported operation.  
+
+Nevertheless, it is something pretty usual during the initial development phase. In such case, you should consider deleting every node based on the type holding your property, in each workspace, and recreate some fresh test content, based on the updated definitions.  
+                                                                        
+If you need to change the type of a property on some production content, you should make the property `hidden` (and not indexed if of type `string`), and declare a new property of the desired type. Then, if you need to recover the content from the former property, you will need to write a script to copy the value (after a conversion if required).  
 The script should be run with the listeners deactivated, and should be run on each workspace.
 
 _work in progress_
