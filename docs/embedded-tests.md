@@ -201,6 +201,19 @@ Nevertheless, it is something pretty usual during the initial development phase.
 If you need to change the type of a property on some production content, you should make the property `hidden` (and not indexed if of type `string`), and declare a new property of the desired type. Then, if you need to recover the content from the former property, you will need to write a script to copy the value (after a conversion if required).  
 The script should be run with the listeners deactivated, and should be run on each workspace.
 
+#### Invalid single/multi valued status
+
+`Error code: INVALID_MULTI_VALUE_STATUS`
+
+**Description**: A property has been detected with a value that does not match the declared single-value/multi-value type for the property.
+
+Changing the type of a property is not a supported operation.
+
+Nevertheless, it is something pretty usual during the initial development phase. In such case, you should consider deleting every node based on the type holding your property, in each workspace, and recreate some fresh test content, based on the updated definitions.
+
+If you need to change the type of a property on some production content, you should make the property `hidden` (and not indexed if of type `string`), and declare a new property of the desired type. Then, if you need to recover the content from the former property, you will need to write a script to copy the value (after a conversion if required).  
+The script should be run with the listeners deactivated, and should be run on each workspace.
+
 _work in progress_
 
 ## PublicationSanityDefaultCheck
