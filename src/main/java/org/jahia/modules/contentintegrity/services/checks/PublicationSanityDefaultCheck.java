@@ -76,6 +76,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                         final ContentIntegrityError error = createError(node, msg)
                                 .addExtraInfo("live-node-path", liveNode.getPath());
                         if (!StringUtils.equals(nodePath, "/") && StringUtils.equals(nodePath, scanRoot)) {
+                            inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
                             error.setErrorType(ErrorType.DIFFERENT_PATH_POTENTIAL_FP);
                             error.setExtraMsg("Warning: this node is the root of the scan, but not the root of the JCR. So the error might be a false positive, if the node is under a node which has been moved, but this move operation has not been published yet. To clarify this, you need to analyze the parent nodes, or redo the scan from a higher level");
                         } else {
