@@ -41,7 +41,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
 
     public VersionHistoryCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
-        configurations.declareDefaultParameter(THRESHOLD_KEY, defaultThreshold, "Number of versions for a single node beyond which an error is raised");
+        configurations.declareDefaultParameter(THRESHOLD_KEY, defaultThreshold, ContentIntegrityCheckConfigurationImpl.INTEGER_PARSER, "Number of versions for a single node beyond which an error is raised");
     }
 
     @Override
@@ -92,16 +92,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
     }
 
     private int getThreshold() {
-        final Object o = getConfigurations().getParameter(THRESHOLD_KEY);
-        if (o instanceof Integer) return (Integer) o;
-        if (o instanceof String) {
-            try {
-                return Integer.parseInt((String) o);
-            } catch (NumberFormatException nfe) {
-                logger.error(String.format("Invalid threshold: %s", o));
-            }
-        }
-        return defaultThreshold;
+        return (int) getConfigurations().getParameter(THRESHOLD_KEY);
     }
 
     @Override

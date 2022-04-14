@@ -26,7 +26,7 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
 
     public FlatStorageCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
-        getConfigurations().declareDefaultParameter(THRESHOLD_KEY, DEFAULT_THRESHOLD, "Number of children nodes beyond which an error is raised");
+        getConfigurations().declareDefaultParameter(THRESHOLD_KEY, DEFAULT_THRESHOLD, ContentIntegrityCheckConfigurationImpl.INTEGER_PARSER, "Number of children nodes beyond which an error is raised");
     }
 
     @Override
@@ -44,16 +44,7 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
     }
 
     private int getThreshold() {
-        final Object o = getConfigurations().getParameter(THRESHOLD_KEY);
-        if (o instanceof Integer) return (Integer) o;
-        if (o instanceof String) {
-            try {
-                return Integer.parseInt((String) o);
-            } catch (NumberFormatException nfe) {
-                logger.error(String.format("Invalid threshold: %s", o));
-            }
-        }
-        return DEFAULT_THRESHOLD;
+        return (int) getConfigurations().getParameter(THRESHOLD_KEY);
     }
 
     @Override

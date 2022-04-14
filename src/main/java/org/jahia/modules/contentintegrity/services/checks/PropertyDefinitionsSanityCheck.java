@@ -55,7 +55,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
-        getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, "If true, only the translation sub-nodes related to an active language are checked when the node is in a site");
+        getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER, "If true, only the translation sub-nodes related to an active language are checked when the node is in a site");
     }
 
     @Override
@@ -575,10 +575,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     private boolean checkSiteLangsOnly() {
-        final Object o = getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
-        if (o instanceof Boolean) return (boolean) o;
-        if (o instanceof String) return Boolean.parseBoolean((String) o);
-        return DEFAULT_CHECK_SITE_LANGS_ONLY_KEY;
+        return (boolean) getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
     }
 
     private enum ErrorType {
