@@ -28,7 +28,7 @@ import java.util.Set;
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/sites"
 })
-public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(UndeployedModulesReferencesCheck.class);
 

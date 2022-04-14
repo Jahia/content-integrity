@@ -29,7 +29,7 @@ import static org.jahia.api.Constants.PUBLISHED;
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_LASTPUBLISHED,
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE
 })
-public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
     private static final String DIFFERENT_PATH_ROOT = "different-path-root";

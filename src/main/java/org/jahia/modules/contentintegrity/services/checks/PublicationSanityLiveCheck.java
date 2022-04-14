@@ -22,7 +22,7 @@ import static org.jahia.api.Constants.ORIGIN_WORKSPACE;
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=jmix:originWS",
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.LIVE_WORKSPACE
 })
-public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityLiveCheck.class);
 
