@@ -173,14 +173,10 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private Set<String> getUgcProperties(JCRNodeWrapper liveNode) throws RepositoryException {
         if (!liveNode.hasProperty(J_LIVE_PROPERTIES)) return null;
 
-        return Arrays.stream(liveNode.getProperty(J_LIVE_PROPERTIES).getValues()).map(value -> {
-            try {
-                return value.getString();
-            } catch (RepositoryException e) {
-                logger.error("", e);
-                return null;
-            }
-        }).filter(Objects::nonNull).collect(Collectors.toSet());
+        return Arrays.stream(liveNode.getProperty(J_LIVE_PROPERTIES).getValues())
+                .map(this::getStringValue)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     private void compareMixins(JCRNodeWrapper defaultNode, JCRNodeWrapper liveNode, ContentIntegrityErrorList errors) {
