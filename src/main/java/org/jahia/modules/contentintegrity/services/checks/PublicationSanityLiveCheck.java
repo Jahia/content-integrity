@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
@@ -99,6 +100,14 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
 
     private void deepComparePublishedNodes(JCRNodeWrapper defaultNode, JCRNodeWrapper liveNode, ContentIntegrityErrorList errors) {
         if (!isDeepComparePublishedNodes()) return;
+
+        /*
+        The repository root is not auto published.
+        When ACL are defined on the repository root, jmix:accessControlled is added to the node in default , but not in live,
+        what makes differences on the property jcr:mixinTypes
+        */
+        if (StringUtils.equals(defaultNode.getPath(), "/")) return;
+
         if (hasPendingModifications(defaultNode)) return;
 
         try {
