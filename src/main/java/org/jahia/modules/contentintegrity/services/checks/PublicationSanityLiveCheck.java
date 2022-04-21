@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
@@ -10,6 +11,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +20,9 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
+import javax.jcr.Value;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -37,6 +41,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityLiveCheck.class);
 
     private static final String DEEP_COMPARE_PUBLISHED_NODES = "deep-compare-published-nodes";
+    private static final String JMIX_LIVE_PROPERTIES = "jmix:liveProperties";
     private static final String J_LIVE_PROPERTIES = "j:liveProperties";
     private static final String JMIX_ORIGIN_WS = "jmix:originWS";
     /*
@@ -51,12 +56,15 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     /*
     JCR_LASTMODIFIED is not compared, because it can be updated in live when writing UCG properties
     Versioning related properties are not compared because each workspace works with its own graph
+    JCR_MIXINTYPES might differ if some mixins are added in live. Mixins are compared separately, without using this property
      */
-    private static final List<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED, Constants.JCR_BASEVERSION, Constants.JCR_PREDECESSORS);
+    private static final List<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED,
+            Constants.JCR_BASEVERSION, Constants.JCR_PREDECESSORS,
+            Constants.JCR_MIXINTYPES);
 
     private final ContentIntegrityCheckConfiguration configurations;
 
-    private enum ErrorType {NO_DEFAULT_NODE, MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL}
+    private enum ErrorType {NO_DEFAULT_NODE, MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL, DIFFERENT_MIXINS}
 
     public PublicationSanityLiveCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
@@ -154,6 +162,9 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                     }
                 }
             }
+
+            compareMixins(defaultNode, liveNode, errors);
+
         } catch (RepositoryException e) {
             logger.error("", e);
         }
@@ -170,6 +181,58 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 return null;
             }
         }).filter(Objects::nonNull).collect(Collectors.toSet());
+    }
+
+    private void compareMixins(JCRNodeWrapper defaultNode, JCRNodeWrapper liveNode, ContentIntegrityErrorList errors) {
+        try {
+            final Set<String> defaultMixins = getNodeMixins(defaultNode);
+            final Set<String> liveMixins = getNodeMixins(liveNode);
+            final Collection<String> liveOnlyMixins = CollectionUtils.subtract(liveMixins, defaultMixins);
+
+            if (CollectionUtils.isEmpty(liveOnlyMixins)) {
+                if (defaultMixins.size() == liveMixins.size()) {
+                    // No mixin is only in live, and the collections have the same size, so they are equal
+                    return;
+                } else {
+                    // In this case, there are some additional mixins in default
+                    errors.addError(createError(liveNode, "Different mixins on a published node")
+                            .setErrorType(ErrorType.DIFFERENT_MIXINS));
+                }
+                return;
+            }
+
+            Set<String> ugcMixins = null;
+            if (liveNode.isNodeType(JMIX_LIVE_PROPERTIES) && liveNode.hasProperty(J_LIVE_PROPERTIES)) {
+                ugcMixins = Arrays.stream(liveNode.getProperty(J_LIVE_PROPERTIES).getValues())
+                        .map(this::getStringValue)
+                        .filter(v -> StringUtils.startsWith(v, "jcr:mixinTypes="))
+                        .map(v -> StringUtils.substring(v, "jcr:mixinTypes=".length()))
+                        .collect(Collectors.toSet());
+            }
+            final Set<String> finalUgcMixins = ugcMixins;
+            if (liveOnlyMixins.stream().anyMatch(s -> {
+                if (StringUtils.equals(s, JMIX_LIVE_PROPERTIES)) return false;
+                return finalUgcMixins == null || !finalUgcMixins.contains(s);
+            })) {
+                errors.addError(createError(liveNode, "Different mixins on a published node")
+                        .setErrorType(ErrorType.DIFFERENT_MIXINS));
+            }
+        } catch (RepositoryException e) {
+            logger.error("", e);
+        }
+    }
+
+    private String getStringValue(Value v) {
+        try {
+            return v.getString();
+        } catch (RepositoryException e) {
+            logger.error("", e);
+            return null;
+        }
+    }
+
+    private Set<String> getNodeMixins(JCRNodeWrapper node) throws RepositoryException {
+        return Arrays.stream(node.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toSet());
     }
 
     @Override
