@@ -39,8 +39,18 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
 
     private static final String DEEP_COMPARE_PUBLISHED_NODES = "deep-compare-published-nodes";
     private static final String J_LIVE_PROPERTIES = "j:liveProperties";
+    /*
+    Lock related properties are ignored because they are set only in the default WS, and do not alter the publication status
+     */
     private static final List<String> IGNORED_DEFAULT_ONLY_PROPS = Arrays.asList("jcr:lockOwner", "j:lockTypes", "j:locktoken", "jcr:lockIsDeep");
+    /*
+    J_LIVE_PROPERTIES is set on the node only in the live WS to keep track of the UGC properties
+     */
     private static final List<String> IGNORED_LIVE_ONLY_PROPS = Collections.singletonList(J_LIVE_PROPERTIES);
+    /*
+    JCR_LASTMODIFIED is not compared, because it can be updated in live when writing UCG properties
+    Versioning related properties are not compared because each workspace works with its own graph
+     */
     private static final List<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED, Constants.JCR_BASEVERSION, Constants.JCR_PREDECESSORS);
 
     private final ContentIntegrityCheckConfiguration configurations;
