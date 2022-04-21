@@ -54,11 +54,11 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
      */
     private static final List<String> IGNORED_LIVE_ONLY_PROPS = Arrays.asList(J_LIVE_PROPERTIES, Constants.NODENAME);
     /*
-    JCR_LASTMODIFIED is not compared, because it can be updated in live when writing UCG properties
+    JCR_LASTMODIFIED / JCR_LASTMODIFIEDBY are not compared, because the node can be updated in live when writing UCG properties
     Versioning related properties are not compared because each workspace works with its own graph
     JCR_MIXINTYPES might differ if some mixins are added in live. Mixins are compared separately, without using this property
      */
-    private static final List<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED,
+    private static final List<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED, Constants.JCR_LASTMODIFIEDBY,
             Constants.JCR_BASEVERSION, Constants.JCR_PREDECESSORS,
             Constants.JCR_MIXINTYPES);
 
