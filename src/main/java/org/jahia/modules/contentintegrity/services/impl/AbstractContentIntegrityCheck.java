@@ -325,6 +325,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
                 throw new IllegalArgumentException("The publication status can be tested only in the default workspace");
 
             if (!node.isNodeType(JAHIAMIX_LASTPUBLISHED)) return false;
+            if (node.isNodeType(Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT)) return true;
             if (!node.hasProperty(LASTPUBLISHED)) return true;
             final Calendar lastPublished = node.getProperty(LASTPUBLISHED).getDate();
             if (lastPublished == null) return true;
