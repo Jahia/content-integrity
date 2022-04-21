@@ -38,6 +38,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
 
     private static final String DEEP_COMPARE_PUBLISHED_NODES = "deep-compare-published-nodes";
     private static final String J_LIVE_PROPERTIES = "j:liveProperties";
+    private static final String JMIX_ORIGIN_WS = "jmix:originWS";
     /*
     Lock related properties are ignored because they are set only in the default WS, and do not alter the publication status
      */
@@ -76,7 +77,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
             final JCRSessionWrapper defaultSession = getSystemSession(EDIT_WORKSPACE, true);
-            if (node.isNodeType("jmix:originWS") && node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString())) {
+            if (node.isNodeType(JMIX_ORIGIN_WS) && node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString())) {
                 // UGC
                 // TODO: check if there's a node with the same ID in default
                 return null;
