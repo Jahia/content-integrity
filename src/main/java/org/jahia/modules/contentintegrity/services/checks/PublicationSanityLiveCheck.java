@@ -31,7 +31,6 @@ import static org.jahia.api.Constants.ORIGIN_WORKSPACE;
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        //ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=jmix:originWS",
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.LIVE_WORKSPACE
 })
 public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
@@ -67,7 +66,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
             final JCRSessionWrapper defaultSession = getSystemSession(EDIT_WORKSPACE, true);
-            if (node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString())) {
+            if (node.isNodeType("jmix:originWS") && node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString())) {
                 // UGC
                 // TODO: check if there's a node with the same ID in default
                 return null;
