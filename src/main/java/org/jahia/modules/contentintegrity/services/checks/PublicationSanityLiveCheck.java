@@ -19,7 +19,6 @@ import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -45,8 +44,9 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private static final List<String> IGNORED_DEFAULT_ONLY_PROPS = Arrays.asList("jcr:lockOwner", "j:lockTypes", "j:locktoken", "jcr:lockIsDeep");
     /*
     J_LIVE_PROPERTIES is set on the node only in the live WS to keep track of the UGC properties
+    NODENAME is sometimes missing in the default WS. Since it reflects the node name, let's ignore it
      */
-    private static final List<String> IGNORED_LIVE_ONLY_PROPS = Collections.singletonList(J_LIVE_PROPERTIES);
+    private static final List<String> IGNORED_LIVE_ONLY_PROPS = Arrays.asList(J_LIVE_PROPERTIES, Constants.NODENAME);
     /*
     JCR_LASTMODIFIED is not compared, because it can be updated in live when writing UCG properties
     Versioning related properties are not compared because each workspace works with its own graph
