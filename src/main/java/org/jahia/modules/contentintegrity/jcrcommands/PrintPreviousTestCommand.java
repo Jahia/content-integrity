@@ -95,7 +95,7 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
                 System.out.println("Failed to write the report on the filesystem");
             }
         } else {
-            printContentIntegrityErrors(results, limit, !excludeFixedErrors);
+            printContentIntegrityErrors(results, limit, !excludeFixedErrors, session);
         }
         return null;
     }

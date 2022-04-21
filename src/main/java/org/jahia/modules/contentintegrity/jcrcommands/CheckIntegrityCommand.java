@@ -45,7 +45,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         final String currentPath = StringUtils.defaultString(getCurrentPath(session), "/");
         final ContentIntegrityService service = Utils.getContentIntegrityService();
         final ContentIntegrityResults integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service));
-        printContentIntegrityErrors(integrityResults, limit);
+        printContentIntegrityErrors(integrityResults, limit, session);
         return null;
     }
 
