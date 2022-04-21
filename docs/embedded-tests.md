@@ -229,9 +229,23 @@ If the node has no pending modification but its path differs in the `live` works
 
 ## PublicationSanityLiveCheck
 
-In the `live` workspace, UGC nodes are flagged as such. All the other nodes are expected to exist as well in the `default` workspace, with the same identifier.
+In the `live` workspace, nodes are either published nodes or UGC nodes.   
+UGC nodes are flagged as such. All the other nodes are expected to exist as well in the `default` workspace, with the same identifier.  
+For the published nodes, if the node with the same identifier in the `default` workspace has no pending modification, then the various properties set on the nodes must have the same value in the two workspaces (optional check).
+
+### Configuration
+
+| Name                         |  Type   | Default Value | Description                                                                                                              |
+|------------------------------|:-------:|:-------------:|--------------------------------------------------------------------------------------------------------------------------|
+| deep-compare-published-nodes | boolean |     false     | If true, the value of every property will be compared between default and live on the nodes without pending modification |
 
 ### Dealing with errors
+
+#### Missing node in the `default` workspace for a non UGC node
+
+`Error code: NO_DEFAULT_NODE`
+
+**Description**: The node is not flagged as UGC, but no node exists in the `default` workspace with the same identifier
 
 Errors require a case by case analysis.
 
@@ -240,6 +254,8 @@ If the node should be flagged as a UGC node, you need to set the property `j:ori
 If the node is the remaining of a failed deletion, which has been completed only in the `default` workspace, then you need to delete the remaining `live` node.
 
 If the node is incorrectly missing in `default`, you need to delete the `live` node, recreate the `default` node, and republish it.
+
+_work in progress_
 
 ## SiteLevelSystemGroupsCheck
 
