@@ -101,6 +101,13 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                     */
                     return null;
                 }
+                if (node.isNodeType(Constants.JAHIANT_PERMISSION) && StringUtils.startsWith(node.getPath(), "/modules")) {
+                /*
+                It seems that some permissions are autocreated when the module is installed,
+                in the live workspace, but they do not have any j:originWS property
+                 */
+                    return null;
+                }
 
                 final String msg = "Found not-UGC node which exists only in live";
                 final ContentIntegrityError error = createError(node, msg)
