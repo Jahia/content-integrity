@@ -183,6 +183,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         return Arrays.stream(liveNode.getProperty(J_LIVE_PROPERTIES).getValues())
                 .map(this::getStringValue)
                 .filter(Objects::nonNull)
+                .filter(v -> !StringUtils.startsWith(v, "jcr:mixinTypes="))
                 .collect(Collectors.toSet());
     }
 
