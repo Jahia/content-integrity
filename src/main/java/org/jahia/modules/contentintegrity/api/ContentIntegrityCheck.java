@@ -22,9 +22,9 @@ public interface ContentIntegrityCheck {
 
     void setEnabled(boolean enabled);
 
-    long getId();
+    String getId();
 
-    void setId(long id);
+    void setId(String id);
 
     float getPriority();
 

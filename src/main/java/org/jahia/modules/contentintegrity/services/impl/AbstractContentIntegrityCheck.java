@@ -43,7 +43,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private boolean enabled = true;
     private String description;
     private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
-    private long id = -1L;
+    private String id = null;
     private long ownTime = 0L;
     private int fatalErrorCount = 0;
     private final int FATAL_ERRORS_THRESHOLD = 10;  // TODO make this configurable
@@ -150,12 +150,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public long getId() {
+    public String getId() {
         return id;
     }
 
     @Override
-    public void setId(long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

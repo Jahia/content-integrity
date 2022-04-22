@@ -149,14 +149,14 @@ or when restarting the server.
                          
 **Options:**
 
-| Name | alias          |      Value       | Mandatory | Multiple | Description                                                                                                                                         |
-|------|----------------|:----------------:|:---------:|:--------:|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| -id  |                | positive integer |     x     |          | Specifies the identifier of the integrity check to configure                                                                                        |
-| -e   | --enabled      |   true, false    |           |          | Enables the integrity check if `true`, disable it if `false`. Do not change the current status if not defined                                       |
-| -p   | --param        |      string      |           |          | Name of the parameter to configure. Depends on the integrity check specified with `-id`. If no value is specified, the current value is printed out |
-| -v   | --value        |      string      |           |          | Value of the parameter to configure. Depends on the parameter specified with `-p`. Depends on the integrity check specified with `-id`              |
-| -rp  | --resetParam   |      string      |           |          | Name of the parameter to reset to its default value                                                                                                 |
-| -pc  | --printConfigs |      string      |           |          | Print all the configurations of the specified check                                                                                                 |
+| Name | alias          |    Value    | Mandatory | Multiple | Description                                                                                                                                         |
+|------|----------------|:-----------:|:---------:|:--------:|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| -id  |                |   string    |     x     |          | Specifies the identifier of the integrity check to configure                                                                                        |
+| -e   | --enabled      | true, false |           |          | Enables the integrity check if `true`, disable it if `false`. Do not change the current status if not defined                                       |
+| -p   | --param        |   string    |           |          | Name of the parameter to configure. Depends on the integrity check specified with `-id`. If no value is specified, the current value is printed out |
+| -v   | --value        |   string    |           |          | Value of the parameter to configure. Depends on the parameter specified with `-p`. Depends on the integrity check specified with `-id`              |
+| -rp  | --resetParam   |   string    |           |          | Name of the parameter to reset to its default value                                                                                                 |
+| -pc  | --printConfigs |   string    |           |          | Print all the configurations of the specified check                                                                                                 |
 
 **Example:**
 

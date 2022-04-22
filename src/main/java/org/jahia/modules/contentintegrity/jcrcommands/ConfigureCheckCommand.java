@@ -26,7 +26,7 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
     Session session;
 
     @Option(name = "-id", description = "ID of the check to configure")
-    private long checkID;
+    private String checkID;
 
     @Option(name = "-e", aliases = "--enabled", description = "Specifies if the check has to be enabled/disabled")
     @Completion(BooleanCompleter.class)

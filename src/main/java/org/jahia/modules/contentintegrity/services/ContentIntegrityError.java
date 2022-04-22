@@ -26,12 +26,12 @@ public class ContentIntegrityError {
     private final String workspace;
     private final String constraintMessage;
     private final String integrityCheckName;
-    private final long integrityCheckID;
+    private final String integrityCheckID;
     private boolean fixed = false;
     private Map<String,Object> extraInfos;
 
     private ContentIntegrityError(String path, String uuid, String primaryType, String mixins, String workspace,
-                                  String locale, String constraintMessage, String integrityCheckName, long integrityCheckID) {
+                                  String locale, String constraintMessage, String integrityCheckName, String integrityCheckID) {
         this.path = path;
         this.uuid = uuid;
         this.primaryType = primaryType;
@@ -143,7 +143,7 @@ public class ContentIntegrityError {
         return integrityCheckName;
     }
 
-    public long getIntegrityCheckID() {
+    public String getIntegrityCheckID() {
         return integrityCheckID;
     }
 

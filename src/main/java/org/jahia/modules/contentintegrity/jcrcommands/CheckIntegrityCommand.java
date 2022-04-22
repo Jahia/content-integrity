@@ -49,14 +49,13 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         return null;
     }
 
-    private List<Long> getChecksToExecute(ContentIntegrityService service) {
+    private List<String> getChecksToExecute(ContentIntegrityService service) {
         if (CollectionUtils.isEmpty(checks)) return null;
 
         final Map<Boolean, List<String>> checkIDs = checks.stream().collect(Collectors.partitioningBy(id -> id.trim().charAt(0) != SKIP_MARKER));
-        final List<Long> whiteList = checkIDs.get(true).stream()
-                .map(id -> parseID(id.trim())).filter(Objects::nonNull).collect(Collectors.toList());
-        final List<Long> blackList = checkIDs.get(false).stream()
-                .map(id -> parseID(id.trim().substring(1))).filter(Objects::nonNull).collect(Collectors.toList());
+        final List<String> whiteList = checkIDs.get(true);
+        final List<String> blackList = checkIDs.get(false).stream()
+                .map(id -> id.trim().substring(1)).filter(StringUtils::isBlank).collect(Collectors.toList());
 
         if (!CollectionUtils.isEmpty(whiteList)) {
             whiteList.removeAll(blackList);
@@ -67,18 +66,6 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
             }).filter(Objects::nonNull).collect(Collectors.toList());
         } else {
             return service.getContentIntegrityChecksIdentifiers(true).stream().filter(id -> !blackList.contains(id)).collect(Collectors.toList());
-        }
-    }
-
-    private Long parseID(String str) {
-        if (str == null) {
-            return null;
-        }
-        try {
-            return Long.parseLong(str);
-        } catch (NumberFormatException nfe) {
-            System.out.println("Skipping invalid ID: " + str);
-            return null;
         }
     }
 }

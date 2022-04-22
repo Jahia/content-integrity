@@ -61,7 +61,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private long nbNodesToScanCalculationDuration = 0L;
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
-    private long integrityChecksIdGenerator = 0;
     private long nbNodesToScan = 0;
 
     @Activate
@@ -94,7 +93,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             return;
         }
 
-        integrityCheck.setId(getNextIntegrityCheckID());
+        integrityCheck.setId(generateCheckID(integrityCheck));
         integrityChecks.add(integrityCheck);
         Collections.sort(integrityChecks, new Comparator<ContentIntegrityCheck>() {
             @Override
@@ -121,8 +120,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             logger.error(String.format("Failed to unregister %s in the contentIntegrity service, number of checks: %s", integrityCheck, integrityChecks.size()));
     }
 
-    private synchronized long getNextIntegrityCheckID() {
-        return ++integrityChecksIdGenerator;
+    private synchronized String generateCheckID(ContentIntegrityCheck integrityCheck) {
+        return integrityCheck.getClass().getSimpleName();
     }
 
     @Override
@@ -131,11 +130,11 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<Long> checksToExecute) {
+    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute) {
         return validateIntegrity(path, excludedPaths, workspace, checksToExecute, false);
     }
 
-    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<Long> checksToExecute, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
         try {
             JCRSessionFactory.getInstance().closeAllSessions();
             final JCRSessionWrapper session;
@@ -405,23 +404,27 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public ContentIntegrityCheck getContentIntegrityCheck(long id) {
+    public ContentIntegrityCheck getContentIntegrityCheck(String id) {
         // TODO: a double storage of the integrity checks in a map where the keys are the IDs should fasten this method
+
+        if (StringUtils.isBlank(id)) return null;
+
         for (ContentIntegrityCheck integrityCheck : integrityChecks) {
-            if (integrityCheck.getId() == id) return integrityCheck;
+            if (StringUtils.equals(integrityCheck.getId(), id)) return integrityCheck;
         }
+
         return null;
     }
 
     @Override
-    public List<Long> getContentIntegrityChecksIdentifiers(boolean activeOnly) {
+    public List<String> getContentIntegrityChecksIdentifiers(boolean activeOnly) {
         final Predicate<ContentIntegrityCheck> predicate = activeOnly ?
                 ContentIntegrityCheck::isEnabled :
                 c -> true;
         return integrityChecks.stream().filter(predicate).map(ContentIntegrityCheck::getId).collect(Collectors.toList());
     }
 
-    private List<ContentIntegrityCheck> getActiveChecks(List<Long> checksToExecute) {
+    private List<ContentIntegrityCheck> getActiveChecks(List<String> checksToExecute) {
         final Predicate<ContentIntegrityCheck> predicate = checksToExecute == null ?
                 ContentIntegrityCheck::isEnabled :
                 c -> checksToExecute.contains(c.getId());
