@@ -7,13 +7,14 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityCheckConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityCheckConfigurationImpl.class);
 
-    private final Map<String,DefaultConfiguration> defaultParameters = new HashMap<>();
-    private final Map<String,Object> customParameters = new HashMap<>();
+    private final Map<String, DefaultConfiguration> defaultParameters = new HashMap<>();
+    private final Map<String, Object> customParameters = new HashMap<>();
 
     @Override
     public Set<String> getConfigurationNames() {
@@ -21,20 +22,37 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
     }
 
     @Override
-    public void declareDefaultParameter(String name, Object value, String description) {
-        defaultParameters.put(name, new DefaultConfiguration(value, description));
+    public void declareDefaultParameter(String name, Object value, Function<String, Object> stringValueParser, String description) {
+        defaultParameters.put(name, new DefaultConfiguration(value, stringValueParser, description));
     }
 
     @Override
-    public void setParameter(String name, Object value) throws IllegalArgumentException {
-        if (!defaultParameters.containsKey(name)) throw new IllegalArgumentException(String.format("Illegal parameter: %s", name));
-        if (value == null) customParameters.remove(name);
-        else customParameters.put(name, value);
+    public void setParameter(String name, String value) throws IllegalArgumentException {
+        if (!defaultParameters.containsKey(name))
+            throw new IllegalArgumentException(String.format("Illegal parameter: %s", name));
+
+        if (value == null) {
+            customParameters.remove(name);
+            return;
+        }
+
+        final Function<String, Object> parser = defaultParameters.get(name).getStringValueParser();
+        final Object parsedValue;
+        try {
+            parsedValue = parser.apply(value);
+        } catch (Exception e) {
+            logger.error(String.format("Invalid value for the parameter %s : %s", name, value), e);
+            // Here, we keep the last valid custom value, if there's one
+            // As an alternative, we could have executed customParameters.remove(name) to reset back to the default value
+            return;
+        }
+        customParameters.put(name, parsedValue);
     }
 
     @Override
     public Object getParameter(String name) {
-        if (!defaultParameters.containsKey(name)) throw new IllegalArgumentException(String.format("Illegal parameter: %s", name));
+        if (!defaultParameters.containsKey(name))
+            throw new IllegalArgumentException(String.format("Illegal parameter: %s", name));
         if (customParameters.containsKey(name)) return customParameters.get(name);
         return defaultParameters.get(name).getValue();
     }
@@ -45,12 +63,16 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
         return defaultParameters.get(name).getDescription();
     }
 
-    private class DefaultConfiguration {
+    private static class DefaultConfiguration {
         final String description;
         final Object value;
+        final Function<String, Object> stringValueParser;
 
-        private DefaultConfiguration(Object value, String description) {
+        static final Function<String, Object> NO_TRANSFORMATION = s -> s;
+
+        private DefaultConfiguration(Object value, Function<String, Object> stringValueParser, String description) {
             this.value = value;
+            this.stringValueParser = stringValueParser;
             this.description = description;
         }
 
@@ -61,5 +83,19 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
         public Object getValue() {
             return value;
         }
+
+        public Function<String, Object> getStringValueParser() {
+            return stringValueParser == null ? NO_TRANSFORMATION : stringValueParser;
+        }
     }
+
+    public static final Function<String, Object> BOOLEAN_PARSER = Boolean::valueOf;
+
+    public static final Function<String, Object> INTEGER_PARSER = s -> {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException(nfe);
+        }
+    };
 }

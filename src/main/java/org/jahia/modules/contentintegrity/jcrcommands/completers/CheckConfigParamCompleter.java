@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.jcrcommands.completers;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.CommandLine;
 import org.apache.karaf.shell.api.console.Session;
@@ -28,20 +29,17 @@ public class CheckConfigParamCompleter extends SimpleCompleter {
         return new ArrayList<>(configurableCheck.getConfigurations().getConfigurationNames());
     }
 
-    private long getCheckID(CommandLine commandLine) {
+    private String getCheckID(CommandLine commandLine) {
         if (commandLine.getArguments().length > 0) {
             final List<String> arguments = Arrays.asList(commandLine.getArguments());
             if (arguments.contains(OPTION)) {
                 final int index = arguments.indexOf(OPTION);
                 if (arguments.size() > index) {
-                    try {
-                        return Long.parseLong(arguments.get(index + 1));
-                    } catch (NumberFormatException ignored) {
-                    }
+                    return StringUtils.trim(arguments.get(index + 1));
                 }
             }
         }
 
-        return -1L;
+        return null;
     }
 }

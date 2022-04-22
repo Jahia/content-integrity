@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.jcrcommands;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.console.Session;
+import org.apache.karaf.shell.api.console.Terminal;
 import org.apache.karaf.shell.support.table.Col;
 import org.apache.karaf.shell.support.table.Row;
 import org.apache.karaf.shell.support.table.ShellTable;
@@ -76,13 +77,13 @@ public class JCRCommandSupport {
         }
     }
 
-    protected void printContentIntegrityErrors(ContentIntegrityResults results, String limitStr) throws JSONException {
-        printContentIntegrityErrors(results, limitStr, true);
+    protected void printContentIntegrityErrors(ContentIntegrityResults results, String limitStr, Session session) throws JSONException {
+        printContentIntegrityErrors(results, limitStr, true, session);
     }
 
-    protected void printContentIntegrityErrors(ContentIntegrityResults results, String limitStr, boolean printFixedErrors) throws JSONException {
+    protected void printContentIntegrityErrors(ContentIntegrityResults results, String limitStr, boolean printFixedErrors, Session session) throws JSONException {
         if (results == null) {
-            System.out.println("An error occured while testing the content integrity");
+            System.out.println("An error occurred while testing the content integrity");
             return;
         }
         System.out.println(String.format("Content integrity tested in %s", results.getFormattedTestDuration()));
@@ -91,16 +92,18 @@ public class JCRCommandSupport {
             System.out.println("No error found");
             return;
         }
-        final ShellTable table = new ShellTable();
+        final Terminal term = session.getTerminal();
+        final int termWidth = term != null ? term.getWidth() : 180;
+        final ShellTable table = new ShellTable().size(termWidth - 1);
         table.column(new Col("ID"));
-        table.column(new Col("Fixed"));
+        table.column(new Col("Fixed").alignCenter());
         table.column(new Col("Error"));
-        table.column(new Col("Workspace"));
+        table.column(new Col("Workspace").alignCenter());
         //table.column(new Col("Path"));
         table.column(new Col("UUID"));
         table.column(new Col("Node type"));
-        table.column(new Col("Locale"));
-        table.column(new Col("Message"));
+        table.column(new Col("Locale").alignCenter());
+        table.column(new Col("Message").wrap());
 
         int errorID = 0;
         int nbPrintedErrors = 0;
@@ -112,15 +115,15 @@ public class JCRCommandSupport {
                 nbPrintedErrors++;
                 final Row row = table.addRow();
                 final JSONObject json = error.toJSON();
-                row.addContent(errorID);
-                row.addContent(fixed ? "X" : "");
-                row.addContent(json.get("errorType"));
-                row.addContent(json.get("workspace"));
-                //row.addContent(json.get("path"));
-                row.addContent(json.get("uuid"));
-                row.addContent(json.get("nt"));
-                row.addContent(json.get("locale"));
-                row.addContent(json.get("message"));
+                row.addContent(errorID,
+                        fixed ? "X" : "",
+                        json.get("errorType"),
+                        json.get("workspace"),
+                        //json.get("path"),
+                        json.get("uuid"),
+                        error.getPrimaryType(),
+                        json.get("locale"),
+                        json.get("message"));
             }
             errorID++;
         }

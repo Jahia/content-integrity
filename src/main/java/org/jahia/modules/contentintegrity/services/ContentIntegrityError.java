@@ -26,12 +26,12 @@ public class ContentIntegrityError {
     private final String workspace;
     private final String constraintMessage;
     private final String integrityCheckName;
-    private final long integrityCheckID;
+    private final String integrityCheckID;
     private boolean fixed = false;
     private Map<String,Object> extraInfos;
 
     private ContentIntegrityError(String path, String uuid, String primaryType, String mixins, String workspace,
-                                  String locale, String constraintMessage, String integrityCheckName, long integrityCheckID) {
+                                  String locale, String constraintMessage, String integrityCheckName, String integrityCheckID) {
         this.path = path;
         this.uuid = uuid;
         this.primaryType = primaryType;
@@ -83,16 +83,16 @@ public class ContentIntegrityError {
         final StringBuilder sb = new StringBuilder();
 
         appendToCSVLine(sb, String.valueOf(integrityCheckID), separator, escapedSeparator);
-        appendToCSVLine(sb, String.valueOf(fixed),separator, escapedSeparator);
-        appendToCSVLine(sb, integrityCheckName,separator, escapedSeparator);
-        appendToCSVLine(sb, workspace,separator, escapedSeparator);
-        appendToCSVLine(sb, uuid,separator, escapedSeparator);
-        appendToCSVLine(sb, path,separator, escapedSeparator);
-        appendToCSVLine(sb, primaryType,separator, escapedSeparator);
-        appendToCSVLine(sb, mixins,separator, escapedSeparator);
-        appendToCSVLine(sb, locale,separator, escapedSeparator);
-        appendToCSVLine(sb, constraintMessage,separator, escapedSeparator);
-        appendToCSVLine(sb, String.valueOf(extraInfos),separator, escapedSeparator);
+        appendToCSVLine(sb, String.valueOf(fixed), separator, escapedSeparator);
+        appendToCSVLine(sb, integrityCheckName, separator, escapedSeparator);
+        appendToCSVLine(sb, workspace, separator, escapedSeparator);
+        appendToCSVLine(sb, uuid, separator, escapedSeparator);
+        appendToCSVLine(sb, path, separator, escapedSeparator);
+        appendToCSVLine(sb, primaryType, separator, escapedSeparator);
+        appendToCSVLine(sb, mixins, separator, escapedSeparator);
+        appendToCSVLine(sb, locale, separator, escapedSeparator);
+        appendToCSVLine(sb, constraintMessage, separator, escapedSeparator);
+        appendToCSVLine(sb, String.valueOf(extraInfos), separator, escapedSeparator);
 
         return sb.toString();
     }
@@ -143,7 +143,7 @@ public class ContentIntegrityError {
         return integrityCheckName;
     }
 
-    public long getIntegrityCheckID() {
+    public String getIntegrityCheckID() {
         return integrityCheckID;
     }
 

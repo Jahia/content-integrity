@@ -13,6 +13,7 @@ Jahia module that provides an extensible service to test the integrity of the co
 * [Embedded tests](docs/embedded-tests.md#summary)
 * [FAQ](#faq)
 * [How to extend it](docs/how-to-extend.md#summary) 
+* [Groovy scripts](docs/groovy-scripts.md#summary)
 * [Release notes](docs/release-notes.md#summary) 
 
 ## <a name="how-to-use"></a>How to use?
@@ -126,12 +127,13 @@ Allows to reprint the result of a previous test.
                          
 **Options:**
 
-| Name | alias                |         Value          | Mandatory | Multiple | Description                                                                                                   |
-|------|----------------------|:----------------------:|:---------:|:--------:|---------------------------------------------------------------------------------------------------------------|
-| -l   | --limit              | positive integer, [20] |           |          | Specifies the maximum number of errors to print out                                                           |
-| -d   | --dump , --dumpToCSV |                        |           |          | Dumps the errors into a CSV file in temp/content-integrity/ if used. The limit option is ignored when dumping |
-| -nh  | --noCSVHeader        |                        |           |          | Generates a CSV file without header. This option is ignored when not generating a CSV file                    |
-| -ef  | --excludeFixedErrors |                        |           |          | Coming soon                                                                                                   |
+| Name | alias                |         Value          | Mandatory | Multiple | Description                                                                                                              |
+|------|----------------------|:----------------------:|:---------:|:--------:|--------------------------------------------------------------------------------------------------------------------------|
+| -l   | --limit              | positive integer, [20] |           |          | Specifies the maximum number of errors to print out                                                                      |
+| -d   | --dump , --dumpToCSV |                        |           |          | Dumps the errors into a CSV file in temp/content-integrity/ if used. The limit option is ignored when dumping            |
+| -u   | --upload             |                        |           |          | Uploads the dump in the JCR instead of writing in on the filesystem. This option has no effect if not combined with `-d` |
+| -nh  | --noCSVHeader        |                        |           |          | Generates a CSV file without header. This option is ignored when not generating a CSV file                               |
+| -ef  | --excludeFixedErrors |                        |           |          | Coming soon                                                                                                              |
 
 **Example:**
 
@@ -147,14 +149,14 @@ or when restarting the server.
                          
 **Options:**
 
-| Name | alias          |      Value       | Mandatory | Multiple | Description                                                                                                                                         |
-|------|----------------|:----------------:|:---------:|:--------:|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| -id  |                | positive integer |     x     |          | Specifies the identifier of the integrity check to configure                                                                                        |
-| -e   | --enabled      |   true, false    |           |          | Enables the integrity check if `true`, disable it if `false`. Do not change the current status if not defined                                       |
-| -p   | --param        |      string      |           |          | Name of the parameter to configure. Depends on the integrity check specified with `-id`. If no value is specified, the current value is printed out |
-| -v   | --value        |      string      |           |          | Value of the parameter to configure. Depends on the parameter specified with `-p`. Depends on the integrity check specified with `-id`              |
-| -rp  | --resetParam   |      string      |           |          | Name of the parameter to reset to its default value                                                                                                 |
-| -pc  | --printConfigs |      string      |           |          | Print all the configurations of the specified check                                                                                                 |
+| Name | alias          |    Value    | Mandatory | Multiple | Description                                                                                                                                         |
+|------|----------------|:-----------:|:---------:|:--------:|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| -id  |                |   string    |     x     |          | Specifies the identifier of the integrity check to configure                                                                                        |
+| -e   | --enabled      | true, false |           |          | Enables the integrity check if `true`, disable it if `false`. Do not change the current status if not defined                                       |
+| -p   | --param        |   string    |           |          | Name of the parameter to configure. Depends on the integrity check specified with `-id`. If no value is specified, the current value is printed out |
+| -v   | --value        |   string    |           |          | Value of the parameter to configure. Depends on the parameter specified with `-p`. Depends on the integrity check specified with `-id`              |
+| -rp  | --resetParam   |   string    |           |          | Name of the parameter to reset to its default value                                                                                                 |
+| -pc  | --printConfigs |   string    |           |          | Print all the configurations of the specified check                                                                                                 |
 
 **Example:**
 

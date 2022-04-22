@@ -9,11 +9,11 @@ public interface ContentIntegrityService {
 
     ContentIntegrityResults validateIntegrity(String path, String workspace);
 
-    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<Long> checksToExecute);
+    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute);
 
     void fixError(ContentIntegrityError error);
 
-    ContentIntegrityCheck getContentIntegrityCheck(long id);
+    ContentIntegrityCheck getContentIntegrityCheck(String id);
 
     ContentIntegrityResults getLatestTestResults();
 
@@ -23,5 +23,5 @@ public interface ContentIntegrityService {
 
     List<String> printIntegrityChecksList(boolean simpleOutput);
 
-    List<Long> getContentIntegrityChecksIdentifiers(boolean activeOnly);
+    List<String> getContentIntegrityChecksIdentifiers(boolean activeOnly);
 }

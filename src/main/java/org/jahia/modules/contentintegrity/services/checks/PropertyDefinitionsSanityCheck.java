@@ -55,7 +55,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
-        getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, "If true, only the translation sub-nodes related to an active language are checked when the node is in a site");
+        getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER, "If true, only the translation sub-nodes related to an active language are checked when the node is in a site");
     }
 
     @Override
@@ -453,7 +453,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private void trackInvalidMultiValuedStatus(String propertyName, ExtendedPropertyDefinition epd,
                                                JCRNodeWrapper node, String locale,
                                                ContentIntegrityErrorList errors) {
-        trackError(ErrorType.INVALID_MULTI_VALUED_STATUS, propertyName, epd, null, -1, -1, node, locale, null, errors);
+        trackError(ErrorType.INVALID_MULTI_VALUE_STATUS, propertyName, epd, null, -1, -1, node, locale, null, errors);
     }
 
     private void trackUndeclaredProperty(String propertyName,
@@ -575,16 +575,13 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     private boolean checkSiteLangsOnly() {
-        final Object o = getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
-        if (o instanceof Boolean) return (boolean) o;
-        if (o instanceof String) return Boolean.parseBoolean((String) o);
-        return DEFAULT_CHECK_SITE_LANGS_ONLY_KEY;
+        return (boolean) getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
     }
 
     private enum ErrorType {
         EMPTY_MANDATORY_PROPERTY("Missing mandatory property"),
         INVALID_VALUE_TYPE("The value does not match the type declared in the property definition"),
-        INVALID_MULTI_VALUED_STATUS("The single/multi valued status differs between the value and the definition"),
+        INVALID_MULTI_VALUE_STATUS("The single/multi value status differs between the value and the definition"),
         INVALID_VALUE_CONSTRAINT("The value does not match the constraint declared in the property definition"),
         UNDECLARED_PROPERTY("Undeclared property");
 

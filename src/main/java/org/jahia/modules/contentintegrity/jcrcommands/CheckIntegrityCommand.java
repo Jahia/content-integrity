@@ -10,6 +10,7 @@ import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckIdCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.JCRNodeCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
@@ -38,6 +39,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     private List<String> excludedPaths;
 
     @Option(name = "-c", aliases = "--checks", multiValued = true, description = "Checks to execute, specified by their ID. Only the specified checks will be executed during the current scan, no matter the global configuration. The check IDs can also be prefixed with '" + SKIP_MARKER + "' to specify a check to be skipped. In such case, the scan will execute all the currently active checks but those specified to be skipped during the current scan")
+    @Completion(CheckIdCompleter.class)
     private List<String> checks;
 
     @Override
@@ -45,18 +47,17 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         final String currentPath = StringUtils.defaultString(getCurrentPath(session), "/");
         final ContentIntegrityService service = Utils.getContentIntegrityService();
         final ContentIntegrityResults integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service));
-        printContentIntegrityErrors(integrityResults, limit);
+        printContentIntegrityErrors(integrityResults, limit, session);
         return null;
     }
 
-    private List<Long> getChecksToExecute(ContentIntegrityService service) {
+    private List<String> getChecksToExecute(ContentIntegrityService service) {
         if (CollectionUtils.isEmpty(checks)) return null;
 
         final Map<Boolean, List<String>> checkIDs = checks.stream().collect(Collectors.partitioningBy(id -> id.trim().charAt(0) != SKIP_MARKER));
-        final List<Long> whiteList = checkIDs.get(true).stream()
-                .map(id -> parseID(id.trim())).filter(Objects::nonNull).collect(Collectors.toList());
-        final List<Long> blackList = checkIDs.get(false).stream()
-                .map(id -> parseID(id.trim().substring(1))).filter(Objects::nonNull).collect(Collectors.toList());
+        final List<String> whiteList = checkIDs.get(true);
+        final List<String> blackList = checkIDs.get(false).stream()
+                .map(id -> id.trim().substring(1)).filter(StringUtils::isBlank).collect(Collectors.toList());
 
         if (!CollectionUtils.isEmpty(whiteList)) {
             whiteList.removeAll(blackList);
@@ -67,18 +68,6 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
             }).filter(Objects::nonNull).collect(Collectors.toList());
         } else {
             return service.getContentIntegrityChecksIdentifiers(true).stream().filter(id -> !blackList.contains(id)).collect(Collectors.toList());
-        }
-    }
-
-    private Long parseID(String str) {
-        if (str == null) {
-            return null;
-        }
-        try {
-            return Long.parseLong(str);
-        } catch (NumberFormatException nfe) {
-            System.out.println("Skipping invalid ID: " + str);
-            return null;
         }
     }
 }

@@ -29,7 +29,7 @@ import static org.jahia.api.Constants.PUBLISHED;
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_LASTPUBLISHED,
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE
 })
-public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck implements AbstractContentIntegrityCheck.SupportsIntegrityErrorFix {
+public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
     private static final String DIFFERENT_PATH_ROOT = "different-path-root";
@@ -76,6 +76,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                         final ContentIntegrityError error = createError(node, msg)
                                 .addExtraInfo("live-node-path", liveNode.getPath());
                         if (!StringUtils.equals(nodePath, "/") && StringUtils.equals(nodePath, scanRoot)) {
+                            inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
                             error.setErrorType(ErrorType.DIFFERENT_PATH_POTENTIAL_FP);
                             error.setExtraMsg("Warning: this node is the root of the scan, but not the root of the JCR. So the error might be a false positive, if the node is under a node which has been moved, but this move operation has not been published yet. To clarify this, you need to analyze the parent nodes, or redo the scan from a higher level");
                         } else {
@@ -90,6 +91,11 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
             logger.error("", e);
             return null;
         }
+        /*
+        When checking if there's a node with the same ID in live, we never check if it has jmix:origin:Ws=live
+        because PublicationSanityLiveCheck detects the nodes with jmix:origin:Ws=live and raises an error when there's
+        a node with the same ID in default.
+         */
     }
 
     @Override
@@ -97,27 +103,6 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
         if (inheritedErrors.containsKey(DIFFERENT_PATH_ROOT) && StringUtils.equals(node.getPath(), (String) inheritedErrors.get(DIFFERENT_PATH_ROOT)))
             inheritedErrors.remove(DIFFERENT_PATH_ROOT);
         return super.checkIntegrityAfterChildren(node);
-    }
-
-    private boolean hasPendingModifications(JCRNodeWrapper node) {
-        try {
-            if (!node.isNodeType(JAHIAMIX_LASTPUBLISHED)) return false;
-            if (!node.hasProperty(LASTPUBLISHED)) return true;
-            final Calendar lastPublished = node.getProperty(LASTPUBLISHED).getDate();
-            if (lastPublished == null) return true;
-            if (!node.hasProperty(JCR_LASTMODIFIED)) {
-                // If this occurs, then it should be detected by another integrityCheck. But here there's no way to deal with such node.
-                logger.error("The node has no last modification date set " + node.getPath());
-                return false;
-            }
-            final Calendar lastModified = node.getProperty(JCR_LASTMODIFIED).getDate();
-
-            return lastModified.after(lastPublished);
-        } catch (RepositoryException e) {
-            logger.error("", e);
-            // If we can't validate that there's some pending modifications here, then we assume that there are no one.
-            return false;
-        }
     }
 
     @Override

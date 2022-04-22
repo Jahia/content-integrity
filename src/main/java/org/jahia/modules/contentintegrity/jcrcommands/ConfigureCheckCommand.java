@@ -12,6 +12,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.BooleanCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckConfigParamCompleter;
+import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckIdCompleter;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,8 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
     Session session;
 
     @Option(name = "-id", description = "ID of the check to configure")
-    private long checkID;
+    @Completion(CheckIdCompleter.class)
+    private String checkID;
 
     @Option(name = "-e", aliases = "--enabled", description = "Specifies if the check has to be enabled/disabled")
     @Completion(BooleanCompleter.class)
