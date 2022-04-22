@@ -19,7 +19,7 @@ Jahia module that provides an extensible service to test the integrity of the co
 ## <a name="how-to-use"></a>How to use?
 
 ### Basic usage
-The content integrity service is available through the [Karaf console](https://academy.jahia.com/documentation/digital-experience-manager/7.2/technical/configuration-and-fine-tuning/configuring#OSGi_SSH_Console).
+The content integrity service is available through the [Karaf console](https://academy.jahia.com/documentation/system-administrator/jahia/8/installing-and-configuring-jahia/installing-configuring-and-troubleshooting-jahia/configuring-jahia-features#OSGi_SSH_Console).
 
 Use `jcr:cd {path}` to position yourself on the node from which you want to start the scan.
 
