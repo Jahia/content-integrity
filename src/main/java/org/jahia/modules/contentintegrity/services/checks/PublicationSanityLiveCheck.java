@@ -94,20 +94,39 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             try {
                 defaultNode = defaultSession.getNodeByIdentifier(node.getIdentifier());
             } catch (ItemNotFoundException infe) {
+                boolean isUGC = false;
+
                 if (node.isNodeType(Constants.JAHIANT_TRANSLATION)) {
                     /*
                     When a node has no i18n property in default, and an i18n property is written in live,
                     the translation node is created in live, but it has no j:originWS property
                     */
-                    return null;
+
+                    isUGC = true;
+                    final PropertyIterator properties = node.getProperties();
+                    while (properties.hasNext()) {
+                        /*
+                        Known issue: UGC i18n properties are not tracked in j:liveProperties ,
+                        neither on the translation node itself or on the parent node.
+                        As a consequence, if this error is raised on a jnt:translation node, this might be a false positive
+                        We should consider that the node is not UGC if we find a property which is not named jcr:* AND is not tracked in j:liveProperties
+                        TODO: handle this correctly if the tracking of such property gets fixed in the product
+                         */
+                        final Property property = properties.nextProperty();
+                        if (!StringUtils.startsWith(property.getName(), "jcr:")) {
+                            isUGC = false;
+                            break;
+                        }
+                    }
+                } else if (node.isNodeType(Constants.JAHIANT_PERMISSION) && StringUtils.startsWith(node.getPath(), "/modules")) {
+                    /*
+                    It seems that some permissions are autocreated when the module is installed,
+                    in the live workspace, but they do not have any j:originWS property
+                     */
+                    isUGC = true;
                 }
-                if (node.isNodeType(Constants.JAHIANT_PERMISSION) && StringUtils.startsWith(node.getPath(), "/modules")) {
-                /*
-                It seems that some permissions are autocreated when the module is installed,
-                in the live workspace, but they do not have any j:originWS property
-                 */
-                    return null;
-                }
+
+                if (isUGC) return null;
 
                 final String msg = "Found not-UGC node which exists only in live";
                 final ContentIntegrityError error = createError(node, msg)
@@ -163,6 +182,12 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                         ugcProperties = getUgcProperties(liveNode);
                     }
                     if (ugcProperties == null || !ugcProperties.contains(pName)) {
+                        /*
+                        Known issue: UGC i18n properties are not tracked in j:liveProperties ,
+                        neither on the translation node itself or on the parent node.
+                        As a consequence, if this error is raised on a jnt:translation node, this might be a false positive
+                        TODO: handle this correctly if the tracking of such property gets fixed in the product
+                         */
                         errors.addError(createError(liveNode, "Missing property in default on a published node")
                                 .setErrorType(ErrorType.MISSING_PROP_DEFAULT)
                                 .addExtraInfo("property name", pName));
