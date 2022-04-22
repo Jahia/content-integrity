@@ -60,7 +60,7 @@
     <properties>
         <jahia-depends>default</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
-        <jahia-module-signature>MC0CFQCIP9uf+kX1nyglHeoTO6Nf0AfPmQIUMN+rDO4J4pPYdB8Vj6FN/V+KFQM=</jahia-module-signature>
+        <jahia-module-signature>MCwCFGmSana6yMQgEcEKwI8Osh+RXp03AhQEzpiHzJg2QC/T+WhkB5BhUr3C5Q==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
