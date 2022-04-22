@@ -10,6 +10,7 @@ import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckIdCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.JCRNodeCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
@@ -38,6 +39,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     private List<String> excludedPaths;
 
     @Option(name = "-c", aliases = "--checks", multiValued = true, description = "Checks to execute, specified by their ID. Only the specified checks will be executed during the current scan, no matter the global configuration. The check IDs can also be prefixed with '" + SKIP_MARKER + "' to specify a check to be skipped. In such case, the scan will execute all the currently active checks but those specified to be skipped during the current scan")
+    @Completion(CheckIdCompleter.class)
     private List<String> checks;
 
     @Override
