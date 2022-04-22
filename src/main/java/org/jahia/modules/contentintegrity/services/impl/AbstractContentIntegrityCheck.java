@@ -109,7 +109,6 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public boolean areConditionsMatched(JCRNodeWrapper node) {
-        if (!enabled) return false;
         for (ExecutionCondition condition : conditions) {
             if (!condition.matches(node)) return false;
         }

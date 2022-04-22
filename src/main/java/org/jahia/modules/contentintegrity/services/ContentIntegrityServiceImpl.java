@@ -425,7 +425,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private List<ContentIntegrityCheck> getActiveChecks(List<String> checksToExecute) {
-        final Predicate<ContentIntegrityCheck> predicate = checksToExecute == null ?
+        final Predicate<ContentIntegrityCheck> predicate = CollectionUtils.isEmpty(checksToExecute) ?
                 ContentIntegrityCheck::isEnabled :
                 c -> checksToExecute.contains(c.getId());
         return integrityChecks.stream().filter(predicate).collect(Collectors.toList());
