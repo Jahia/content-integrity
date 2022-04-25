@@ -9,6 +9,7 @@ import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
@@ -127,19 +128,18 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public ContentIntegrityResults validateIntegrity(String path, String workspace) {
+    public ContentIntegrityResults validateIntegrity(String path, String workspace) throws ConcurrentExecutionException {
         return validateIntegrity(path, null, workspace, null);
     }
 
     @Override
-    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute) {
+    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute) throws ConcurrentExecutionException {
         return validateIntegrity(path, excludedPaths, workspace, checksToExecute, false);
     }
 
-    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, boolean fixErrors) {
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, boolean fixErrors) throws ConcurrentExecutionException {
         if (!semaphore.tryAcquire()) {
-            logger.warn("Impossible to run the integrity check, since another one is already running");
-            return null;
+            throw new ConcurrentExecutionException();
         }
 
         try {

@@ -14,6 +14,7 @@ import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckIdComplete
 import org.jahia.modules.contentintegrity.jcrcommands.completers.JCRNodeCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
+import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,13 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     public Object execute() throws Exception {
         final String currentPath = StringUtils.defaultString(getCurrentPath(session), "/");
         final ContentIntegrityService service = Utils.getContentIntegrityService();
-        final ContentIntegrityResults integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service));
+        final ContentIntegrityResults integrityResults;
+        try {
+            integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service));
+        } catch (ConcurrentExecutionException cee) {
+            System.out.println(cee.getMessage());
+            return null;
+        }
         printContentIntegrityErrors(integrityResults, limit, session);
         return null;
     }
