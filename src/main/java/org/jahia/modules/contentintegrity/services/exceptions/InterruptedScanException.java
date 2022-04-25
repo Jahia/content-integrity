@@ -6,8 +6,9 @@ import org.slf4j.LoggerFactory;
 public class InterruptedScanException extends Exception {
 
     private static final Logger logger = LoggerFactory.getLogger(InterruptedScanException.class);
+    private static final String MESSAGE = "Interrupting the scan";
 
     public InterruptedScanException() {
-        super("Interrupting the scan");
+        super(MESSAGE);
     }
 }
