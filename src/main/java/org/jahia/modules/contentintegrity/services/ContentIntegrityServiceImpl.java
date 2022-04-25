@@ -9,6 +9,7 @@ import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Semaphore;
 import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -62,6 +64,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
     private long nbNodesToScan = 0;
+    private final Semaphore semaphore = new Semaphore(1);
 
     @Activate
     public void start() throws JahiaInitializationException {
@@ -125,16 +128,20 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public ContentIntegrityResults validateIntegrity(String path, String workspace) {
+    public ContentIntegrityResults validateIntegrity(String path, String workspace) throws ConcurrentExecutionException {
         return validateIntegrity(path, null, workspace, null);
     }
 
     @Override
-    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute) {
+    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute) throws ConcurrentExecutionException {
         return validateIntegrity(path, excludedPaths, workspace, checksToExecute, false);
     }
 
-    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, boolean fixErrors) throws ConcurrentExecutionException {
+        if (!semaphore.tryAcquire()) {
+            throw new ConcurrentExecutionException();
+        }
+
         try {
             JCRSessionFactory.getInstance().closeAllSessions();
             final JCRSessionWrapper session;
@@ -184,6 +191,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         } finally {
             JCRSessionFactory.getInstance().closeAllSessions();
             System.clearProperty(INTERRUPT_PROP_NAME);
+            semaphore.release();
         }
         return null;
     }
