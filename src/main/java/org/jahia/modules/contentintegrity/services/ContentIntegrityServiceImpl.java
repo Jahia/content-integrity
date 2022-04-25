@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Semaphore;
 import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -62,6 +63,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
     private long nbNodesToScan = 0;
+    private final Semaphore semaphore = new Semaphore(1);
 
     @Activate
     public void start() throws JahiaInitializationException {
@@ -134,7 +136,12 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         return validateIntegrity(path, excludedPaths, workspace, checksToExecute, false);
     }
 
-    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, boolean fixErrors) {   // TODO maybe need to prevent concurrent executions
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, boolean fixErrors) {
+        if (!semaphore.tryAcquire()) {
+            logger.warn("Impossible to run the integrity check, since another one is already running");
+            return null;
+        }
+
         try {
             JCRSessionFactory.getInstance().closeAllSessions();
             final JCRSessionWrapper session;
@@ -184,6 +191,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         } finally {
             JCRSessionFactory.getInstance().closeAllSessions();
             System.clearProperty(INTERRUPT_PROP_NAME);
+            semaphore.release();
         }
         return null;
     }
