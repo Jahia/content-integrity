@@ -25,4 +25,8 @@ public interface ContentIntegrityService {
     List<String> printIntegrityChecksList(boolean simpleOutput);
 
     List<String> getContentIntegrityChecksIdentifiers(boolean activeOnly);
+
+    boolean isScanRunning();
+
+    void stopRunningScan();
 }

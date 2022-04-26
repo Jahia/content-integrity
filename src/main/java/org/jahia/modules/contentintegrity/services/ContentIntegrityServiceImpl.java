@@ -230,7 +230,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private void validateIntegrity(JCRNodeWrapper node, Set<String> excludedPaths, List<ContentIntegrityCheck> activeChecks, List<ContentIntegrityError> errors, boolean fixErrors) {
-        // TODO add a mechanism to prevent concurrent run
         if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
             return;
         }
@@ -482,6 +481,16 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private void logAndAppend(String line, List<String> lines) {
         logger.info(line);
         lines.add(line);
+    }
+
+    @Override
+    public boolean isScanRunning() {
+        return semaphore.availablePermits() == 0;
+    }
+
+    @Override
+    public void stopRunningScan() {
+        System.setProperty(INTERRUPT_PROP_NAME, "true");
     }
 
     /**
