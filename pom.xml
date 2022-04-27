@@ -64,6 +64,7 @@
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
+        <external-provider.version>4.0.0</external-provider.version>
     </properties>
 
     <scm>
@@ -123,7 +124,7 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>external-provider</artifactId>
-            <version>4.0.0</version>
+            <version>${external-provider.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
