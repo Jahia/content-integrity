@@ -36,7 +36,7 @@ public class GqlIntegrityScan {
         final String executionID = getExecutionID();
         final List<String> output = new ArrayList<>();
         executionLog.put(executionID, output);
-        final ExternalLogger console = output::add;
+        final GqlExternalLogger console = output::add;
 
         Executors.newSingleThreadExecutor().execute(() -> {
             final ContentIntegrityService service = Utils.getContentIntegrityService();
@@ -65,5 +65,12 @@ public class GqlIntegrityScan {
 
     private String getExecutionID() {
         return UUID.randomUUID().toString();
+    }
+
+    private abstract interface GqlExternalLogger extends ExternalLogger {
+        @Override
+        default boolean includeSummary() {
+            return true;
+        }
     }
 }

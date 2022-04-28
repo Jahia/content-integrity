@@ -179,8 +179,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
                 }
                 final long testDuration = System.currentTimeMillis() - start;
-                logger.info(String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration)));
-                printChecksDuration();
+                final String msg = String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration));
+                Utils.log(msg, logger, externalLogger);
+                printChecksDuration(externalLogger.includeSummary() ? externalLogger : null);
                 final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors);
                 storeErrorsInCache(results);
                 return results;
@@ -220,13 +221,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         ownTimeIntervalStart = 0L;
     }
 
-    private void printChecksDuration() {
+    private void printChecksDuration(ExternalLogger externalLogger) {
         if (logger.isDebugEnabled())
             logger.debug(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodesToScanCalculationDuration)));
-        logger.info(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)));
+        Utils.log(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)), logger, externalLogger);
         final List<ContentIntegrityCheck> sortedChecks = integrityChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
         for (ContentIntegrityCheck integrityCheck : sortedChecks) {
-            logger.info(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())));
+            Utils.log(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())), logger, externalLogger);
         }
     }
 
