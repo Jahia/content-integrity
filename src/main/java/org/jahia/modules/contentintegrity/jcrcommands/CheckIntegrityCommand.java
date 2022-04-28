@@ -49,7 +49,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         final ContentIntegrityService service = Utils.getContentIntegrityService();
         final ContentIntegrityResults integrityResults;
         try {
-            integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service));
+            integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service), System.out::println);
         } catch (ConcurrentExecutionException cee) {
             System.out.println(cee.getMessage());
             return null;

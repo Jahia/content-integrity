@@ -58,12 +58,13 @@
     <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
 
     <properties>
-        <jahia-depends>default</jahia-depends>
+        <jahia-depends>default,graphql-dxm-provider</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-module-signature>MCwCFGmSana6yMQgEcEKwI8Osh+RXp03AhQEzpiHzJg2QC/T+WhkB5BhUr3C5Q==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
+        <graphql-dxm-provider.version>2.3.0</graphql-dxm-provider.version>
         <external-provider.version>4.0.0</external-provider.version>
     </properties>
 
@@ -109,6 +110,17 @@
                     <instructions>
                         <Karaf-Commands>*</Karaf-Commands>
                         <_dsannotations>*</_dsannotations>
+                        <!--
+                        TODO remove when compiling against Jahia 8.1+
+                        Jahia 8.0 provides graphql-java-annotations:6.1
+                        Jahia 8.1 provides graphql-java-annotations:7.2.1
+                        As a consequence, we need to override the generated import-package to work with both versions
+                        -->
+                        <Import-Package>
+                            graphql.annotations.annotationTypes;version="[6.1,8)",
+                            ${jahia.plugin.projectPackageImport},
+                            *
+                        </Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
@@ -125,6 +137,18 @@
             <groupId>org.jahia.modules</groupId>
             <artifactId>external-provider</artifactId>
             <version>${external-provider.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>graphql-dxm-provider</artifactId>
+            <version>${graphql-dxm-provider.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.graphql-java</groupId>
+            <artifactId>graphql-java-annotations</artifactId>
+            <version>${graphql-java-annotations.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

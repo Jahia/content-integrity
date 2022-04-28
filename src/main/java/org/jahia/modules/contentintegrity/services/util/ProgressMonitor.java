@@ -1,5 +1,7 @@
 package org.jahia.modules.contentintegrity.services.util;
 
+import org.jahia.modules.contentintegrity.services.Utils;
+import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 import org.slf4j.Logger;
 
 import java.text.SimpleDateFormat;
@@ -10,6 +12,7 @@ public class ProgressMonitor {
     private static final long DISPLAY_INTERVAL_MS = 5000L;
 
     private Logger logger;
+    private ExternalLogger externalLogger;
     private String message;
     private long counter;
     private long targetCount;
@@ -24,10 +27,11 @@ public class ProgressMonitor {
         return instance;
     }
 
-    public void init(long targetCount, String message, Logger logger) {
+    public void init(long targetCount, String message, Logger logger, ExternalLogger externalLogger) {
         this.targetCount = targetCount;
         this.message = message;
         this.logger = logger;
+        this.externalLogger = externalLogger;
         counter = 0L;
         lastCounter = -1L;
         lastMoment = System.currentTimeMillis();
@@ -67,8 +71,7 @@ public class ProgressMonitor {
             }
 
             final String effectiveMessage = message + " (" + counter + "/" + targetCount + ", " + percent + rate + etaText + ")";
-            logger.info(effectiveMessage);
-            System.out.println(effectiveMessage);
+            Utils.log(effectiveMessage, logger, externalLogger);
             // Remember last point displayed
             lastMoment = now;
             lastCounter = counter;

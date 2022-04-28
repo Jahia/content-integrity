@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.api;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
+import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ public interface ContentIntegrityService {
 
     ContentIntegrityResults validateIntegrity(String path, String workspace) throws ConcurrentExecutionException;
 
-    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute) throws ConcurrentExecutionException;
+    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, ExternalLogger externalLogger) throws ConcurrentExecutionException;
 
     void fixError(ContentIntegrityError error);
 

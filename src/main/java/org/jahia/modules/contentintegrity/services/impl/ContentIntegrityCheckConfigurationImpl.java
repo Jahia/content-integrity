@@ -58,6 +58,13 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
     }
 
     @Override
+    public Object getParameterDefaultValue(String name) throws IllegalArgumentException {
+        if (!defaultParameters.containsKey(name))
+            throw new IllegalArgumentException(String.format("Illegal parameter: %s", name));
+        return defaultParameters.get(name).getValue();
+    }
+
+    @Override
     public String getDescription(String name) {
         if (!defaultParameters.containsKey(name)) return null;
         return defaultParameters.get(name).getDescription();

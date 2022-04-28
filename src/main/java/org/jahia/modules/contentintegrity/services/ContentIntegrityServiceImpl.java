@@ -11,6 +11,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
+import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
@@ -129,15 +130,15 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Override
     public ContentIntegrityResults validateIntegrity(String path, String workspace) throws ConcurrentExecutionException {
-        return validateIntegrity(path, null, workspace, null);
+        return validateIntegrity(path, null, workspace, null, null);
     }
 
     @Override
-    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute) throws ConcurrentExecutionException {
-        return validateIntegrity(path, excludedPaths, workspace, checksToExecute, false);
+    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, ExternalLogger externalLogger) throws ConcurrentExecutionException {
+        return validateIntegrity(path, excludedPaths, workspace, checksToExecute, externalLogger, false);
     }
 
-    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, boolean fixErrors) throws ConcurrentExecutionException {
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, ExternalLogger externalLogger, boolean fixErrors) throws ConcurrentExecutionException {
         if (!semaphore.tryAcquire()) {
             throw new ConcurrentExecutionException();
         }
@@ -153,7 +154,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             }
             try {
                 final JCRNodeWrapper node = session.getNode(path);
-                logger.info(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace));
+                Utils.log(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace), logger, externalLogger);
                 final List<ContentIntegrityError> errors = new ArrayList<>();
                 final long start = System.currentTimeMillis();
                 resetCounters();
@@ -168,7 +169,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     logger.warn("Interrupting the scan");
                     return null;
                 }
-                ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger);
+                ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger, externalLogger);
                 final List<ContentIntegrityCheck> activeChecks = getActiveChecks(checksToExecute);
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
                     integrityCheck.initializeIntegrityTest(node, trimmedExcludedPaths);
