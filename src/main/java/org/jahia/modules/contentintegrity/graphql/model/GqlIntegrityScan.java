@@ -8,6 +8,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
+import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,18 +31,21 @@ public class GqlIntegrityScan {
     @GraphQLField
     public String getScan(@GraphQLName("workspace") @GraphQLNonNull GqlIntegrityService.Workspace workspace,
                           @GraphQLName("startNode") @GraphQLDescription(PATH_DESC) String path,
-                          @GraphQLName("excludedPaths") List<String> excludedPaths) {
+                          @GraphQLName("excludedPaths") List<String> excludedPaths,
+                          @GraphQLName("checksToRun") List<String> checksWhiteList) {
         final String executionID = getExecutionID();
         final List<String> output = new ArrayList<>();
         executionLog.put(executionID, output);
+        final ExternalLogger console = output::add;
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            final List<String> workspaces = workspace.getWorkspaces();
             final ContentIntegrityService service = Utils.getContentIntegrityService();
+            final List<String> checksToExecute = Utils.getChecksToExecute(service, checksWhiteList, null, console);
+            final List<String> workspaces = workspace.getWorkspaces();
             try {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
-                    results.add(service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, ws, null, output::add)
+                    results.add(service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, ws, checksToExecute, console)
                             .setExecutionID(executionID));
                 }
             } catch (ConcurrentExecutionException cee) {

@@ -15,6 +15,7 @@ import org.jahia.modules.contentintegrity.jcrcommands.completers.JCRNodeComplete
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
+import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,8 @@ import java.util.stream.Collectors;
 @Service
 public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
 
-    protected static final char SKIP_MARKER = ':';
+    private static final char SKIP_MARKER = ':';
+    private static final ExternalLogger CONSOLE = System.out::println;
     @Reference
     Session session;
 
@@ -49,7 +51,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         final ContentIntegrityService service = Utils.getContentIntegrityService();
         final ContentIntegrityResults integrityResults;
         try {
-            integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service), System.out::println);
+            integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service), CONSOLE);
         } catch (ConcurrentExecutionException cee) {
             System.out.println(cee.getMessage());
             return null;
@@ -66,15 +68,6 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         final List<String> blackList = checkIDs.get(false).stream()
                 .map(id -> id.trim().substring(1)).filter(StringUtils::isBlank).collect(Collectors.toList());
 
-        if (!CollectionUtils.isEmpty(whiteList)) {
-            whiteList.removeAll(blackList);
-            return whiteList.stream().map(id -> {
-                if (service.getContentIntegrityCheck(id) != null) return id;
-                System.out.println("Skipping invalid ID: " + id);
-                return null;
-            }).filter(Objects::nonNull).collect(Collectors.toList());
-        } else {
-            return service.getContentIntegrityChecksIdentifiers(true).stream().filter(id -> !blackList.contains(id)).collect(Collectors.toList());
-        }
+        return Utils.getChecksToExecute(service, whiteList, blackList, CONSOLE);
     }
 }
