@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.graphql.model;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
@@ -19,9 +20,16 @@ public class GqlIntegrityCheck {
     private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityCheck.class);
 
     private final ContentIntegrityCheck integrityCheck;
+    private final ContentIntegrityCheckConfiguration configurations;
 
     public GqlIntegrityCheck(ContentIntegrityCheck integrityCheck) {
         this.integrityCheck = integrityCheck;
+        if (isConfigurable()) {
+            final ContentIntegrityCheck.IsConfigurable configurableCheck = (ContentIntegrityCheck.IsConfigurable) integrityCheck;
+            configurations = configurableCheck.getConfigurations();
+        } else {
+            configurations = null;
+        }
     }
 
     @GraphQLField
@@ -48,13 +56,42 @@ public class GqlIntegrityCheck {
     @GraphQLField
     public Collection<GqlIntegrityCheckConfiguration> getConfigurations() {
         if (!isConfigurable()) return CollectionUtils.emptyCollection();
-        final ContentIntegrityCheck.IsConfigurable configurableCheck = (ContentIntegrityCheck.IsConfigurable) integrityCheck;
-        final ContentIntegrityCheckConfiguration configurations = configurableCheck.getConfigurations();
         return configurations.getConfigurationNames().stream()
-                .map(n -> new GqlIntegrityCheckConfiguration(n,
-                        configurations.getDescription(n),
-                        configurations.getParameterDefaultValue(n),
-                        configurations.getParameter(n)))
+                .map(this::getConfiguration)
                 .collect(Collectors.toSet());
+    }
+
+    @GraphQLField
+    public GqlIntegrityCheckConfiguration getConfiguration(@GraphQLName("name") @GraphQLNonNull String name) {
+        return new GqlIntegrityCheckConfiguration(name,
+                configurations.getDescription(name),
+                configurations.getParameterDefaultValue(name),
+                configurations.getParameter(name)
+                );
+    }
+
+    @GraphQLField
+    @GraphQLName("configure")
+    public boolean setConfiguration(@GraphQLName("name") @GraphQLNonNull String name,
+                                 @GraphQLName("value") @GraphQLNonNull String value) {
+        try {
+            configurations.setParameter(name, value);
+            return true;
+        } catch (IllegalArgumentException iae) {
+            logger.error("", iae);
+            return false;
+        }
+    }
+
+    @GraphQLField
+    @GraphQLName("resetConfiguration")
+    public boolean resetConfiguration(@GraphQLName("name") @GraphQLNonNull String name) {
+        try {
+            configurations.setParameter(name, null);
+            return true;
+        } catch (IllegalArgumentException iae) {
+            logger.error("", iae);
+            return false;
+        }
     }
 }
