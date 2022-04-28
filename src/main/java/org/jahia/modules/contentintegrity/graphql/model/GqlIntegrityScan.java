@@ -32,7 +32,8 @@ public class GqlIntegrityScan {
     public String getScan(@GraphQLName("workspace") @GraphQLNonNull GqlIntegrityService.Workspace workspace,
                           @GraphQLName("startNode") @GraphQLDescription(PATH_DESC) String path,
                           @GraphQLName("excludedPaths") List<String> excludedPaths,
-                          @GraphQLName("checksToRun") List<String> checksWhiteList) {
+                          @GraphQLName("checksToRun") List<String> checksWhiteList,
+                          @GraphQLName("uploadResults") boolean uploadResults) {
         final String executionID = getExecutionID();
         final List<String> output = new ArrayList<>();
         executionLog.put(executionID, output);
@@ -47,6 +48,9 @@ public class GqlIntegrityScan {
                 for (String ws : workspaces) {
                     results.add(service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, ws, checksToExecute, console)
                             .setExecutionID(executionID));
+                }
+                if (uploadResults) {
+                    Utils.writeDumpInTheJCR(Utils.mergeResults(results), false, false);
                 }
             } catch (ConcurrentExecutionException cee) {
                 logger.error("", cee);

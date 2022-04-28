@@ -21,8 +21,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -142,5 +144,22 @@ public class Utils {
         }
 
         return true;
+    }
+
+    public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {
+        if (CollectionUtils.isEmpty(results)) return null;
+
+        final Long testDate = results.stream()
+                .map(ContentIntegrityResults::getTestDate)
+                .sorted().findFirst().orElse(0L);
+        final Long duration = results.stream().map(ContentIntegrityResults::getTestDuration).reduce(0L, Long::sum);
+        final Set<String> workspaces = results.stream().map(ContentIntegrityResults::getWorkspace).collect(Collectors.toSet());
+        final String workspace = workspaces.size() == 1 ? workspaces.stream().findAny().get() : "all-workspaces";
+        final List<ContentIntegrityError> errors = results.stream()
+                .map(ContentIntegrityResults::getErrors)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
+        return new ContentIntegrityResults(testDate, duration, workspace, errors);
     }
 }

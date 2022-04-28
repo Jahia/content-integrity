@@ -49,6 +49,10 @@ public class ContentIntegrityResults {
         return errors;
     }
 
+    public String getWorkspace() {
+        return workspace;
+    }
+
     public String getExecutionID() {
         return executionID;
     }
