@@ -1,7 +1,9 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
@@ -23,10 +25,11 @@ public class GqlIntegrityScan {
     private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityScan.class);
 
     private static final Map<String, List<String>> executionLog = new HashMap<>();
+    protected static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
 
     @GraphQLField
-    public String getScan(@GraphQLName("workspace") GqlIntegrityService.Workspace workspace,
-                          @GraphQLName("startNode") String path) {
+    public String getScan(@GraphQLName("workspace") @GraphQLNonNull GqlIntegrityService.Workspace workspace,
+                          @GraphQLName("startNode") @GraphQLDescription(PATH_DESC) String path) {
         final String executionID = getExecutionID();
         final List<String> output = new ArrayList<>();
         executionLog.put(executionID, output);
@@ -37,7 +40,8 @@ public class GqlIntegrityScan {
             try {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
-                    results.add(service.validateIntegrity(path, null, ws, null, output::add).setExecutionID(executionID));
+                    results.add(service.validateIntegrity(Optional.ofNullable(path).orElse("/"), null, ws, null, output::add)
+                            .setExecutionID(executionID));
                 }
             } catch (ConcurrentExecutionException cee) {
                 logger.error("", cee);
@@ -50,7 +54,7 @@ public class GqlIntegrityScan {
 
     @GraphQLField
     @GraphQLName("execution")
-    public List<String> getExecutionStatus(@GraphQLName("id") String executionID) {
+    public List<String> getExecutionStatus(@GraphQLName("id") @GraphQLNonNull String executionID) {
         return Optional.ofNullable(executionLog.get(executionID)).orElse(Collections.singletonList("Unknown execution ID"));
     }
 
