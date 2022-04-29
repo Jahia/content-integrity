@@ -60,7 +60,7 @@ function renderConfigurations(data) {
     jQuery.each(data, function () {
         block.append("<li>" + this.id + "</li>")
     });
-    block.append("</ul>")
+    block.append("</ul>");
 }
 
 function renderLogs(executionID) {

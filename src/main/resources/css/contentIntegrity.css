@@ -1,9 +1,4 @@
-/*
-.integrityTable {
-    margin-top:10px;
+#logs {
+    max-height: 300px;
+    overflow-y: auto;
 }
-
-.errorDisplay {
-    font-weight:bold;
-}
- */
