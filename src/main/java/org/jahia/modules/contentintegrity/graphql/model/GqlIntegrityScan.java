@@ -27,8 +27,26 @@ public class GqlIntegrityScan {
 
     private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityScan.class);
 
+    private static final Map<String, Status> executionStatus = new HashMap<>();
     private static final Map<String, List<String>> executionLog = new HashMap<>();
     protected static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
+
+    private enum Status {
+        RUNNING("running"),
+        FINISHED("finished"),
+        FAILED("failed"),
+        UNKNOWN("Unknown execution ID");
+
+        private final String description;
+
+        Status(String description) {
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
 
     @GraphQLField
     public String getScan(@GraphQLName("workspace") @GraphQLNonNull GqlIntegrityService.Workspace workspace,
@@ -37,6 +55,7 @@ public class GqlIntegrityScan {
                           @GraphQLName("checksToRun") List<String> checksWhiteList,
                           @GraphQLName("uploadResults") boolean uploadResults) {
         final String executionID = getExecutionID();
+        executionStatus.put(executionID, Status.RUNNING);
         final List<String> output = new ArrayList<>();
         executionLog.put(executionID, output);
         final GqlExternalLogger console = output::add;
@@ -61,9 +80,11 @@ public class GqlIntegrityScan {
                         Utils.writeDumpInTheJCR(mergedResults, false, false, console);
                     }
                 }
+                executionStatus.put(executionID, Status.FINISHED);
             } catch (ConcurrentExecutionException cee) {
                 logger.error("", cee);
                 output.add(cee.getMessage());
+                executionStatus.put(executionID, Status.FAILED);
             }
 
         });
@@ -71,9 +92,15 @@ public class GqlIntegrityScan {
     }
 
     @GraphQLField
-    @GraphQLName("execution")
-    public List<String> getExecutionStatus(@GraphQLName("id") @GraphQLNonNull String executionID) {
-        return Optional.ofNullable(executionLog.get(executionID)).orElse(Collections.singletonList("Unknown execution ID"));
+    @GraphQLName("logs")
+    public List<String> getExecutionLogs(@GraphQLName("id") @GraphQLNonNull String executionID) {
+        return Optional.ofNullable(executionLog.get(executionID)).orElse(Collections.singletonList(Status.UNKNOWN.getDescription()));
+    }
+
+    @GraphQLField
+    @GraphQLName("status")
+    public String getExecutionStatus(@GraphQLName("id") @GraphQLNonNull String executionID) {
+        return Optional.ofNullable(executionStatus.get(executionID)).orElse(Status.UNKNOWN).getDescription();
     }
 
     private String getExecutionID() {

@@ -28,7 +28,8 @@ function getLogsQuery(executionID) {
         query: "query ($id : String!) {" +
             "    integrity {\n" +
             "        integrityScan {\n" +
-            "            logs:execution (id: $id)\n" +
+            "            logs (id: $id)\n" +
+            "            status (id: $id)\n" +
             "        }" +
             "    }" +
             "}",
@@ -83,6 +84,7 @@ function renderLogs(executionID) {
                 jQuery.each(result.data.integrity.integrityScan.logs, function () {
                     block.append(this+"\n")
                 })
+                if (result.data.integrity.integrityScan.status !== "running") clearInterval(logsLoader)
             }
         })
     }, 5000)
