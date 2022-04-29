@@ -4,7 +4,7 @@ const gqlConfig = {
     query: "{" +
         "  integrity {" +
         "    integrityChecks {" +
-        "      id configurations {name, value}" +
+        "      id enabled configurations {name, value}" +
         "    }" +
         "  }" +
         "}"
@@ -56,12 +56,16 @@ function loadConfigurations() {
 }
 
 function renderConfigurations(data) {
-    const block = jQuery("#configurations");
-    block.html("<ul>");
-    jQuery.each(data, function () {
-        block.append("<li>" + this.id + "</li>")
-    });
-    block.append("</ul>");
+    const conf = []
+    jQuery.each(data, function (index) {
+        conf[index] = {
+            name: this.id,
+            id: 'check-' + this.id,
+            enabled: this.enabled
+        }
+    })
+    const Item = ({id, enabled, name}) => `<p><input id="${id}" type="checkbox" ${enabled ? checked="checked" : ""}/>${name}</p>`;
+    jQuery('#configurations').html(conf.map(Item).join(''));
 }
 
 function renderLogs(executionID) {
