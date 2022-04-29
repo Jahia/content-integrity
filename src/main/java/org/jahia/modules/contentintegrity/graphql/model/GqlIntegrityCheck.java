@@ -7,6 +7,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
+import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +75,8 @@ public class GqlIntegrityCheck {
     @GraphQLName("configure")
     public boolean setConfiguration(@GraphQLName("name") @GraphQLNonNull String name,
                                  @GraphQLName("value") @GraphQLNonNull String value) {
+        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+
         try {
             configurations.setParameter(name, value);
             return true;
@@ -86,6 +89,8 @@ public class GqlIntegrityCheck {
     @GraphQLField
     @GraphQLName("resetConfiguration")
     public boolean resetConfiguration(@GraphQLName("name") @GraphQLNonNull String name) {
+        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+
         try {
             configurations.setParameter(name, null);
             return true;
