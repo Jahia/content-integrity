@@ -19,7 +19,6 @@ import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Command(scope = "jcr", name = "integrity-check", description = "Runs an integrity scan")
