@@ -68,6 +68,10 @@ function renderConfigurations(data) {
     jQuery('#configurations').html(conf.map(Item).join(''));
 }
 
+function selectAllChecks(value) {
+    jQuery(".checkEnabled").prop("checked", value);
+}
+
 function renderLogs(executionID) {
     if (logsLoader !== null) clearInterval(logsLoader);
     logsLoader = setInterval(function () {

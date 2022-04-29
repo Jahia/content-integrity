@@ -28,6 +28,9 @@
     <div id="configurations">
 
     </div>
+    <div>
+        <a href="javascript:selectAllChecks(true)">select all</a> / <a href="javascript:selectAllChecks(false)">unselect all</a>
+    </div>
 </fieldset>
 
 <fieldset>
