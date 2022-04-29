@@ -10,16 +10,16 @@ const gqlConfig = {
         "}"
 }
 
-function getScanQuery(rootPath, workspace) {
+function getScanQuery(rootPath, workspace, checks) {
     return {
-        query: "query ($path: String!, $ws: WorkspaceToScan!) {" +
+        query: "query ($path: String!, $ws: WorkspaceToScan!, $checks: [String]) {" +
             "  integrity {" +
             "    integrityScan {" +
-            "      scan(startNode: $path, workspace: $ws, uploadResults: true)" +
+            "      scan(startNode: $path, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
             "    }" +
             "  }" +
             "}",
-        variables: {path: rootPath, ws: workspace}
+        variables: {path: rootPath, ws: workspace, checks: checks}
     }
 }
 
@@ -60,11 +60,11 @@ function renderConfigurations(data) {
     jQuery.each(data, function (index) {
         conf[index] = {
             name: this.id,
-            id: 'check-' + this.id,
+            id: this.id,
             enabled: this.enabled
         }
     })
-    const Item = ({id, enabled, name}) => `<p><input id="${id}" type="checkbox" ${enabled ? checked="checked" : ""}/>${name}</p>`;
+    const Item = ({id, enabled, name}) => `<p><input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked="checked" : ""}/>${name}</p>`;
     jQuery('#configurations').html(conf.map(Item).join(''));
 }
 
@@ -100,11 +100,15 @@ jQuery(document).ready(function () {
         const rootPath = jQuery("#rootNode").val();
         const workspace = jQuery("#workspace").val();
 
+        const checks = jQuery.map(jQuery(".checkEnabled:checked"), function (cb, i) {
+            return jQuery(cb).attr("id")
+        })
+
         jQuery.ajax({
             url: '/modules/graphql',
             type: 'POST',
             contentType: "application/json",
-            data: JSON.stringify(getScanQuery(rootPath, workspace)),
+            data: JSON.stringify(getScanQuery(rootPath, workspace, checks)),
             success: function (result) {
                 if (result.errors != null) {
                     console.log("Error while loading the data", result.errors);
