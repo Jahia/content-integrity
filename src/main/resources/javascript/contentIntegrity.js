@@ -1,3 +1,5 @@
+var logsLoader;
+
 const gqlConfig = {
     query: "{" +
         "  integrity {" +
@@ -62,7 +64,8 @@ function renderConfigurations(data) {
 }
 
 function renderLogs(executionID) {
-    const interval = setInterval(function () {
+    if (logsLoader !== null) clearInterval(logsLoader);
+    logsLoader = setInterval(function () {
         jQuery.ajax({
             url: '/modules/graphql',
             type: 'POST',

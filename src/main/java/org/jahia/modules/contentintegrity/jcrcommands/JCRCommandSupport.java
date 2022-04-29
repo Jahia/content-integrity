@@ -9,6 +9,7 @@ import org.apache.karaf.shell.support.table.Row;
 import org.apache.karaf.shell.support.table.ShellTable;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
+import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.settings.SettingsBean;
@@ -25,6 +26,7 @@ public class JCRCommandSupport {
 
     public static String WORKSPACE = "JcrCommand.WORKSPACE";
     public static String PATH = "JcrCommand.PATH";
+    protected static final ExternalLogger CONSOLE = System.out::println;
     private static final int DEFAULT_LIMIT = 20;
 
     protected String getCurrentPath(Session session) {

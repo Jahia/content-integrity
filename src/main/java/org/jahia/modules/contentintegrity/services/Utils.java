@@ -78,7 +78,7 @@ public class Utils {
         return lines;
     }
 
-    public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader) {
+    public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader, ExternalLogger externalLogger) {
         try {
             return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<Boolean>() {
                 @Override
@@ -104,7 +104,7 @@ public class Utils {
 
                     final JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
                     session.save();
-                    System.out.println("Written the report in " + reportNode.getPath());
+                    externalLogger.logLine("Written the report in " + reportNode.getPath());
 
                     return true;
                 }

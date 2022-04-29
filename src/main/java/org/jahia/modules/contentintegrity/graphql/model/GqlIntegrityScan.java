@@ -4,6 +4,8 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
@@ -50,7 +52,14 @@ public class GqlIntegrityScan {
                             .setExecutionID(executionID));
                 }
                 if (uploadResults) {
-                    Utils.writeDumpInTheJCR(Utils.mergeResults(results), false, false);
+                    final ContentIntegrityResults mergedResults = Utils.mergeResults(results);
+                    if (mergedResults == null || CollectionUtils.isEmpty(mergedResults.getErrors())) {
+                        console.logLine("No error found");
+                    } else {
+                        final int nbErrors = mergedResults.getErrors().size();
+                        console.logLine(String.format("%d error%s found", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s"));
+                        Utils.writeDumpInTheJCR(mergedResults, false, false, console);
+                    }
                 }
             } catch (ConcurrentExecutionException cee) {
                 logger.error("", cee);

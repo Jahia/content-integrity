@@ -69,7 +69,7 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
         session.put(LAST_PRINTED_TEST, testDate);
         if (dumpToCSV) {
             if (uploadDump) {
-                if (!Utils.writeDumpInTheJCR(results, excludeFixedErrors, noCsvHeader)) {
+                if (!Utils.writeDumpInTheJCR(results, excludeFixedErrors, noCsvHeader, CONSOLE)) {
                     System.out.println("Failed to write the report in the JCR");
                 }
             } else if (!Utils.writeDumpOnTheFilesystem(results, excludeFixedErrors, noCsvHeader)) {

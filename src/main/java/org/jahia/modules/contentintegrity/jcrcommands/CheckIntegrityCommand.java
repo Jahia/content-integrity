@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
 
     private static final char SKIP_MARKER = ':';
-    private static final ExternalLogger CONSOLE = System.out::println;
     @Reference
     Session session;
 
