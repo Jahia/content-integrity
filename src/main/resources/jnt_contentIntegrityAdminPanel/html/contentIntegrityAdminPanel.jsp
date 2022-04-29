@@ -22,8 +22,32 @@
 <template:addResources type="css" resources="contentIntegrity.css"/>
 
 <h2><fmt:message key="label.contentIntegrity.title"/></h2>
-<p><fmt:message key="label.contentIntegrity.description" /></p>
+<p><fmt:message key="label.contentIntegrity.description"/></p>
 
+<fieldset>
+    <div id="configurations">
+
+    </div>
+</fieldset>
+
+<fieldset>
+    <label for="rootNode">Root node: </label>
+    <input id="rootNode" type="text" value="/"/>
+    <br/>
+    <label for="workspace">Workspace: </label>
+    <select id="workspace">
+        <option value="EDIT" selected="selected">default</option>
+        <option value="LIVE">live</option>
+        <option value="BOTH">All workspaces</option>
+    </select>
+    <br/>
+    <input id="runScan" type="button" value="Run an integrity check"/>
+    <div>
+        <pre id="logs"></pre>
+    </div>
+</fieldset>
+
+<%--
 <input type="hidden" id="currentSite" value="${renderContext.site.siteKey}" />
 <input type="hidden" id="currentLanguage" value="${renderContext.mainResourceLocale.language}" />
 Workspace : <select id="currentWorkspace">
@@ -35,3 +59,4 @@ Workspace : <select id="currentWorkspace">
 <table class="table table-bordered table-striped table-hover integrityTable"  id="errorDisplay">
 
 </table>
+--%>

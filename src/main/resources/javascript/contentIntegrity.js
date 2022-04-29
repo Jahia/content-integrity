@@ -1,3 +1,115 @@
+const gqlConfig = {
+    query: "{" +
+        "  integrity {" +
+        "    integrityChecks {" +
+        "      id configurations {name, value}" +
+        "    }" +
+        "  }" +
+        "}"
+}
+
+function getScanQuery(rootPath, workspace) {
+    return {
+        query: "query ($path: String!, $ws: WorkspaceToScan!) {" +
+            "  integrity {" +
+            "    integrityScan {" +
+            "      scan(startNode: $path, workspace: $ws, uploadResults: true)" +
+            "    }" +
+            "  }" +
+            "}",
+        variables: {path: rootPath, ws: workspace}
+    }
+}
+
+function getLogsQuery(executionID) {
+    return {
+        query: "query ($id : String!) {" +
+            "    integrity {\n" +
+            "        integrityScan {\n" +
+            "            logs:execution (id: $id)\n" +
+            "        }" +
+            "    }" +
+            "}",
+        variables: {id: executionID}
+    }
+}
+
+function loadConfigurations() {
+    jQuery.ajax({
+        url: '/modules/graphql',
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify(gqlConfig),
+        success: function (result) {
+            if (result.errors != null) {
+                console.log("Error while loading the data", result.errors);
+            }
+            if (result.data == null) {
+                return;
+            }
+            renderConfigurations(result.data.integrity.integrityChecks)
+        }
+    })
+}
+
+function renderConfigurations(data) {
+    const block = jQuery("#configurations");
+    block.html("<ul>");
+    jQuery.each(data, function () {
+        block.append("<li>" + this.id + "</li>")
+    });
+    block.append("</ul>")
+}
+
+function renderLogs(executionID) {
+    const interval = setInterval(function () {
+        jQuery.ajax({
+            url: '/modules/graphql',
+            type: 'POST',
+            contentType: "application/json",
+            data: JSON.stringify(getLogsQuery(executionID)),
+            success: function (result) {
+                if (result.errors != null) {
+                    console.log("Error while loading the data", result.errors);
+                }
+                if (result.data == null) {
+                    return;
+                }
+                const block = jQuery("#logs")
+                block.html("")
+                jQuery.each(result.data.integrity.integrityScan.logs, function () {
+                    block.append(this+"\n")
+                })
+            }
+        })
+    }, 5000)
+}
+
+jQuery(document).ready(function () {
+    loadConfigurations();
+    jQuery("#runScan").click(function () {
+        const rootPath = jQuery("#rootNode").val();
+        const workspace = jQuery("#workspace").val();
+
+        jQuery.ajax({
+            url: '/modules/graphql',
+            type: 'POST',
+            contentType: "application/json",
+            data: JSON.stringify(getScanQuery(rootPath, workspace)),
+            success: function (result) {
+                if (result.errors != null) {
+                    console.log("Error while loading the data", result.errors);
+                }
+                if (result.data == null) {
+                    return;
+                }
+                renderLogs(result.data.integrity.integrityScan.scan);
+            }
+        })
+    })
+});
+
+/*
 function contentIntegrity (site, workspace, language) {
 
 	$.ajax({
@@ -63,3 +175,4 @@ $( document ).ready(function() {
 		contentIntegrity($("#currentSite").val(),$("#currentWorkspace").val(),$("#currentLanguage").val());
 	});
 });
+ */

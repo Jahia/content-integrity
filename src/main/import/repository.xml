@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <content xmlns:j="http://www.jahia.org/jahia/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0">
     <modules jcr:primaryType="jnt:modules">
-        <content-integrity j:dependencies="default"
+        <content-integrity j:dependencies="default graphql-dxm-provider"
                          j:modulePriority="0"
                          j:moduleType="module"
                          j:title="Content Integrity"
@@ -17,18 +17,16 @@
                     <site-settings-base j:view="siteSettings"
                                 jcr:mixinTypes="jmix:useUILocale"
                                 jcr:primaryType="jnt:template">
-                        <!--
-                        <jcr-integrity-checker j:defaultTemplate="false"
-                                      j:hiddenTemplate="false"
-                                      j:requiredPermissionNames="siteIntegrityPanelAccess"
-                                      j:titleKey="label.contentIntegrity.title"
-                                      jcr:mixinTypes="jmix:rbTitle"
-                                      jcr:primaryType="jnt:contentTemplate">
+                        <content-integrity j:applyOn="jnt:globalSettings"
+                                           j:defaultTemplate="false"
+                                           j:hiddenTemplate="false"
+                                           j:titleKey="label.settings.title"
+                                           jcr:mixinTypes="jmix:rbTitle"
+                                           jcr:primaryType="jnt:contentTemplate">
                             <pagecontent jcr:primaryType="jnt:contentList">
                                 <contentintegrityadminpanel jcr:primaryType="jnt:contentIntegrityAdminPanel"/>
                             </pagecontent>
-                        </jcr-integrity-checker>
-                        -->
+                        </content-integrity>
                     </site-settings-base>
                 </templates>
 
