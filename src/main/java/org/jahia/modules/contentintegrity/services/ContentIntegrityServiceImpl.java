@@ -166,7 +166,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 }
                 calculateNbNodesToScan(node, trimmedExcludedPaths);
                 if (nbNodesToScan < 1) {
-                    logger.warn("Interrupting the scan");
+                    Utils.log("Interrupting the scan", Utils.LOG_LEVEL.WARN, logger, externalLogger);
                     return null;
                 }
                 ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger, externalLogger);
@@ -175,6 +175,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     integrityCheck.initializeIntegrityTest(node, trimmedExcludedPaths);
                 }
                 validateIntegrity(node, trimmedExcludedPaths, activeChecks, errors, fixErrors);
+                if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
+                    Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
+                }
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
                     integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
                 }
@@ -188,7 +191,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             } catch (RepositoryException e) {
                 logger.error("", e);
             } catch (InterruptedScanException e) {
-                logger.warn("Scan interrupted before the end");
+                Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
             }
         } finally {
             JCRSessionFactory.getInstance().closeAllSessions();

@@ -20,12 +20,16 @@ import java.util.stream.Collectors;
 public class GqlIntegrityService {
 
     private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityService.class);
+    private final ContentIntegrityService service;
+
+    public GqlIntegrityService() {
+        service = Utils.getContentIntegrityService();
+    }
 
     @GraphQLField
     @GraphQLName("integrityChecks")
     @GraphQLDescription("Returns the integrity checks")
-    public static Collection<GqlIntegrityCheck> getIntegrityChecks() {
-        final ContentIntegrityService service = Utils.getContentIntegrityService();
+    public Collection<GqlIntegrityCheck> getIntegrityChecks() {
         return service.getContentIntegrityChecksIdentifiers(false).stream()
                 .map(service::getContentIntegrityCheck)
                 .sorted((o1, o2) -> {
@@ -41,7 +45,7 @@ public class GqlIntegrityService {
     @GraphQLField
     @GraphQLName("integrityCheckById")
     @GraphQLDescription("Returns the check specified by its ID")
-    public static GqlIntegrityCheck getIntegrityCheckById(@GraphQLName("id") @GraphQLDescription("ID of the check") String id) {
+    public GqlIntegrityCheck getIntegrityCheckById(@GraphQLName("id") @GraphQLDescription("ID of the check") String id) {
         final ContentIntegrityCheck integrityCheck = Utils.getContentIntegrityService().getContentIntegrityCheck(id);
         return Optional.ofNullable(integrityCheck)
                 .map(GqlIntegrityCheck::new)
@@ -77,5 +81,14 @@ public class GqlIntegrityService {
     @GraphQLName("integrityScan")
     public static GqlIntegrityScan getIntegrityScan(@GraphQLName("id") String executionID) {
         return new GqlIntegrityScan(executionID);
+    }
+
+    @GraphQLField
+    public boolean stopRunningScan() {
+        if (!service.isScanRunning())
+            return Boolean.FALSE;
+
+        service.stopRunningScan();
+        return Boolean.TRUE;
     }
 }

@@ -34,12 +34,37 @@ public class Utils {
     private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
     private static final String DEFAULT_CSV_HEADER = "Check ID,Fixed,Error type,Workspace,Node identifier,Node path,Node primary type,Node mixins,Locale,Error message,Extra information";
 
+    public enum LOG_LEVEL {
+        TRACE, INFO, WARN, ERROR, DEBUG
+    }
+
     public static ContentIntegrityService getContentIntegrityService() {
         return BundleUtils.getOsgiService(ContentIntegrityService.class, null);
     }
 
     public static void log(String message, Logger log, ExternalLogger externalLogger) {
-        if (log != null) log.info(message);
+        log(message, LOG_LEVEL.INFO, log, externalLogger);
+    }
+
+    public static void log(String message, LOG_LEVEL logLevel, Logger log, ExternalLogger externalLogger) {
+        if (log != null) {
+            switch (logLevel) {
+                case TRACE:
+                    log.trace(message);
+                    break;
+                case INFO:
+                    log.info(message);
+                    break;
+                case WARN:
+                    log.warn(message);
+                    break;
+                case ERROR:
+                    log.error(message);
+                    break;
+                case DEBUG:
+                    log.debug(message);
+            }
+        }
         if (externalLogger != null) externalLogger.logLine(message);
     }
 
