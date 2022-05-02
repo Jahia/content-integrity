@@ -9,4 +9,7 @@
     <actions jcr:primaryType="jnt:permission">
         <allowToValidateSiteIntegrity jcr:primaryType="jnt:permission"/>
     </actions>
+    <admin jcr:primaryType="jnt:permission">
+        <adminContentIntegrity jcr:primaryType="jnt:permission" />
+    </admin>
 </permissions>

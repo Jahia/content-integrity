@@ -5,8 +5,11 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.contentintegrity.graphql.model.GqlIntegrityService;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.services.content.JCRSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.jcr.RepositoryException;
 
 @GraphQLTypeExtension(DXGraphQLProvider.Query.class)
 public class QueryExtensions {
@@ -15,7 +18,13 @@ public class QueryExtensions {
 
     @GraphQLField
     @GraphQLName("integrity")
-    public static GqlIntegrityService getService() {
-        return new GqlIntegrityService();
+    public static GqlIntegrityService getService() throws IllegalAccessException {
+        try {
+            if (JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission("adminContentIntegrity"))
+                return new GqlIntegrityService();
+        } catch (RepositoryException e) {
+            logger.error("", e);
+        }
+        throw new IllegalAccessException("The current user is not allowed to access the API");
     }
 }

@@ -17,8 +17,10 @@
                                     jcr:mixinTypes="jmix:useUILocale"
                                     jcr:primaryType="jnt:template">
                     <content-integrity j:applyOn="jnt:globalSettings"
+                                       j:contextNodePath="/"
                                        j:defaultTemplate="false"
                                        j:hiddenTemplate="false"
+                                       j:requiredPermissionNames="adminContentIntegrity"
                                        j:titleKey="label.settings.title"
                                        jcr:mixinTypes="jmix:rbTitle"
                                        jcr:primaryType="jnt:contentTemplate">

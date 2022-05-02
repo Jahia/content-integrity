@@ -7,4 +7,7 @@
     <site-administrator jcr:primaryType="jnt:role"
                         j:permissionNames="allowToValidateSiteIntegrity" />
 
+    <server-administrator jcr:primaryType="jnt:role"
+                          j:permissionNames="adminContentIntegrity" />
+
 </roles>
