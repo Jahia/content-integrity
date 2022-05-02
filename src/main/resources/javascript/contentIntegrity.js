@@ -73,29 +73,32 @@ function selectAllChecks(value) {
 }
 
 function renderLogs(executionID) {
-    if (logsLoader !== null) clearInterval(logsLoader);
-    logsLoader = setInterval(function () {
-        jQuery.ajax({
-            url: '/modules/graphql',
-            type: 'POST',
-            contentType: "application/json",
-            data: JSON.stringify(getLogsQuery(executionID)),
-            success: function (result) {
-                if (result.errors != null) {
-                    console.log("Error while loading the data", result.errors);
-                }
-                if (result.data == null) {
-                    return;
-                }
-                const block = jQuery("#logs")
-                block.html("")
-                jQuery.each(result.data.integrity.integrityScan.logs, function () {
-                    block.append(this+"\n")
-                })
-                if (result.data.integrity.integrityScan.status !== "running") clearInterval(logsLoader)
+    jQuery.ajax({
+        url: '/modules/graphql',
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify(getLogsQuery(executionID)),
+        success: function (result) {
+            if (result.errors != null) {
+                console.log("Error while loading the data", result.errors);
             }
-        })
-    }, 5000)
+            if (result.data == null) {
+                return;
+            }
+            const block = jQuery("#logs")
+            block.html("")
+            jQuery.each(result.data.integrity.integrityScan.logs, function () {
+                block.append(this+"\n")
+            })
+            if (result.data.integrity.integrityScan.status !== "running") clearInterval(logsLoader)
+        }
+    })
+}
+
+function setupLogsLoader(executionID) {
+    if (logsLoader !== null) clearInterval(logsLoader);
+    renderLogs(executionID);
+    logsLoader = setInterval((id) => {renderLogs(id)}, 5000, executionID)
 }
 
 jQuery(document).ready(function () {
@@ -120,7 +123,7 @@ jQuery(document).ready(function () {
                 if (result.data == null) {
                     return;
                 }
-                renderLogs(result.data.integrity.integrityScan.scan);
+                setupLogsLoader(result.data.integrity.integrityScan.scan);
             }
         })
     })
