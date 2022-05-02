@@ -49,22 +49,31 @@ function getRunningTaskQuery() {
     }
 }
 
-function loadConfigurations() {
+function gqlCall(query, successCB, failureCB) {
     jQuery.ajax({
         url: '/modules/graphql',
         type: 'POST',
         contentType: "application/json",
-        data: JSON.stringify(gqlConfig),
+        data: JSON.stringify(query),
         success: function (result) {
             if (result.errors != null) {
                 console.log("Error while loading the data", result.errors);
-            }
-            if (result.data == null) {
+                if (failureCB !== undefined) failureCB();
                 return;
             }
-            renderConfigurations(result.data.integrity.checks)
+            if (result.data == null) {
+                if (failureCB !== undefined) failureCB();
+                return;
+            }
+            successCB(result.data);
         }
     })
+}
+
+const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
+
+function loadConfigurations() {
+    gqlCall(gqlConfig, (data) => renderConfigurations(data.integrity.checks))
 }
 
 function renderConfigurations(data) {
@@ -85,29 +94,14 @@ function selectAllChecks(value) {
 }
 
 function renderLogs(executionID) {
-    jQuery.ajax({
-        url: '/modules/graphql',
-        type: 'POST',
-        contentType: "application/json",
-        data: JSON.stringify(getLogsQuery(executionID)),
-        success: function (result) {
-            if (result.errors != null) {
-                console.log("Error while loading the data", result.errors);
-                clearInterval(logsLoader);
-                return;
-            }
-            if (result.data == null) {
-                clearInterval(logsLoader);
-                return;
-            }
-            const block = jQuery("#logs")
-            block.html("")
-            jQuery.each(result.data.integrity.scan.logs, function () {
-                block.append(this+"\n")
-            })
-            if (result.data.integrity.scan.status !== RUNNING) clearInterval(logsLoader)
-        }
-    })
+    gqlCall(getLogsQuery(executionID), (data) => {
+        const block = jQuery("#logs")
+        block.html("")
+        jQuery.each(data.integrity.scan.logs, function () {
+            block.append(this+"\n")
+        })
+        if (data.integrity.scan.status !== RUNNING) STOP_PULLING_LOGS()
+    }, _ => STOP_PULLING_LOGS);
 }
 
 function setupLogsLoader(executionID) {
@@ -117,23 +111,11 @@ function setupLogsLoader(executionID) {
 }
 
 function wireToRunningScan() {
-    jQuery.ajax({
-        url: '/modules/graphql',
-        type: 'POST',
-        contentType: "application/json",
-        data: JSON.stringify(getRunningTaskQuery()),
-        success: function (result) {
-            if (result.errors != null) {
-                console.log("Error while loading the data", result.errors);
-                return;
-            }
-            if (result.data == null || result.data.integrity.scan == null) {
-                return;
-            }
-            const scan = result.data.integrity.scan;
-            if (scan.status === RUNNING && scan.id != null) {
-                setupLogsLoader(scan.id)
-            }
+    gqlCall(getRunningTaskQuery(), (data) => {
+        const scan = data.integrity.scan;
+        if (scan == null) return;
+        if (scan.status === RUNNING && scan.id != null) {
+            setupLogsLoader(scan.id)
         }
     })
 }
@@ -148,21 +130,7 @@ jQuery(document).ready(function () {
             return jQuery(cb).attr("id")
         })
 
-        jQuery.ajax({
-            url: '/modules/graphql',
-            type: 'POST',
-            contentType: "application/json",
-            data: JSON.stringify(getScanQuery(rootPath, workspace, checks)),
-            success: function (result) {
-                if (result.errors != null) {
-                    console.log("Error while loading the data", result.errors);
-                }
-                if (result.data == null) {
-                    return;
-                }
-                setupLogsLoader(result.data.integrity.scanner.scan);
-            }
-        })
+        gqlCall(getScanQuery(rootPath, workspace, checks), (data) => setupLogsLoader(data.integrity.scanner.scan));
     });
     wireToRunningScan();
 });
