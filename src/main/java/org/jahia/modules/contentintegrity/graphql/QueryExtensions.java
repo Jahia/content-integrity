@@ -17,7 +17,7 @@ public class QueryExtensions {
     private static final Logger logger = LoggerFactory.getLogger(QueryExtensions.class);
 
     @GraphQLField
-    @GraphQLName("integrity")
+    @GraphQLName("contentIntegrity")
     public static GqlIntegrityService getService() throws IllegalAccessException {
         try {
             if (JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission("adminContentIntegrity"))

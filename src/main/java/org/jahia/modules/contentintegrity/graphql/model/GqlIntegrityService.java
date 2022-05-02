@@ -75,7 +75,7 @@ public class GqlIntegrityService {
 
     @GraphQLField
     @GraphQLName("integrityScan")
-    public static GqlIntegrityScan getIntegrityScan() {
-        return new GqlIntegrityScan();
+    public static GqlIntegrityScan getIntegrityScan(@GraphQLName("id") String executionID) {
+        return new GqlIntegrityScan(executionID);
     }
 }

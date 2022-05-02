@@ -1,9 +1,10 @@
+const RUNNING = "running";
 var logsLoader;
 
 const gqlConfig = {
     query: "{" +
-        "  integrity {" +
-        "    integrityChecks {" +
+        "  integrity:contentIntegrity {" +
+        "    checks:integrityChecks {" +
         "      id enabled configurations {name, value}" +
         "    }" +
         "  }" +
@@ -13,8 +14,8 @@ const gqlConfig = {
 function getScanQuery(rootPath, workspace, checks) {
     return {
         query: "query ($path: String!, $ws: WorkspaceToScan!, $checks: [String]) {" +
-            "  integrity {" +
-            "    integrityScan {" +
+            "  integrity:contentIntegrity {" +
+            "    scanner:integrityScan {" +
             "      scan(startNode: $path, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
             "    }" +
             "  }" +
@@ -26,14 +27,25 @@ function getScanQuery(rootPath, workspace, checks) {
 function getLogsQuery(executionID) {
     return {
         query: "query ($id : String!) {" +
-            "    integrity {\n" +
-            "        integrityScan {\n" +
-            "            logs (id: $id)\n" +
-            "            status (id: $id)\n" +
+            "    integrity:contentIntegrity {" +
+            "        scan:integrityScan (id: $id) {" +
+            "            id status logs" +
             "        }" +
             "    }" +
             "}",
         variables: {id: executionID}
+    }
+}
+
+function getRunningTaskQuery() {
+    return {
+        query: "{" +
+            "    integrity:contentIntegrity {" +
+            "        scan:integrityScan {" +
+            "            id status" +
+            "        }" +
+            "    }" +
+            "}"
     }
 }
 
@@ -50,7 +62,7 @@ function loadConfigurations() {
             if (result.data == null) {
                 return;
             }
-            renderConfigurations(result.data.integrity.integrityChecks)
+            renderConfigurations(result.data.integrity.checks)
         }
     })
 }
@@ -81,16 +93,19 @@ function renderLogs(executionID) {
         success: function (result) {
             if (result.errors != null) {
                 console.log("Error while loading the data", result.errors);
+                clearInterval(logsLoader);
+                return;
             }
             if (result.data == null) {
+                clearInterval(logsLoader);
                 return;
             }
             const block = jQuery("#logs")
             block.html("")
-            jQuery.each(result.data.integrity.integrityScan.logs, function () {
+            jQuery.each(result.data.integrity.scan.logs, function () {
                 block.append(this+"\n")
             })
-            if (result.data.integrity.integrityScan.status !== "running") clearInterval(logsLoader)
+            if (result.data.integrity.scan.status !== RUNNING) clearInterval(logsLoader)
         }
     })
 }
@@ -99,6 +114,28 @@ function setupLogsLoader(executionID) {
     if (logsLoader !== null) clearInterval(logsLoader);
     renderLogs(executionID);
     logsLoader = setInterval((id) => {renderLogs(id)}, 5000, executionID)
+}
+
+function wireToRunningScan() {
+    jQuery.ajax({
+        url: '/modules/graphql',
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify(getRunningTaskQuery()),
+        success: function (result) {
+            if (result.errors != null) {
+                console.log("Error while loading the data", result.errors);
+                return;
+            }
+            if (result.data == null || result.data.integrity.scan == null) {
+                return;
+            }
+            const scan = result.data.integrity.scan;
+            if (scan.status === RUNNING && scan.id != null) {
+                setupLogsLoader(scan.id)
+            }
+        }
+    })
 }
 
 jQuery(document).ready(function () {
@@ -123,10 +160,11 @@ jQuery(document).ready(function () {
                 if (result.data == null) {
                     return;
                 }
-                setupLogsLoader(result.data.integrity.integrityScan.scan);
+                setupLogsLoader(result.data.integrity.scanner.scan);
             }
         })
-    })
+    });
+    wireToRunningScan();
 });
 
 /*
