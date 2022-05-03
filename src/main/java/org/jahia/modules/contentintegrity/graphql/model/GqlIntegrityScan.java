@@ -4,6 +4,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
@@ -35,10 +36,14 @@ public class GqlIntegrityScan {
     private String id;
 
     public GqlIntegrityScan(String executionID) {
-        if (StringUtils.isBlank(executionID)) {
-            id = executionStatus.entrySet().stream().reduce((a, b) -> b).map(Map.Entry::getKey).orElse(null);
-        } else {
+        if (StringUtils.isNotBlank(executionID)) {
             id = executionID;
+        } else if (MapUtils.isEmpty(executionStatus)) {
+            id = null;
+        } else {
+            id = executionStatus.entrySet().stream().filter(e -> e.getValue() == Status.RUNNING).map(Map.Entry::getKey).reduce((a, b) -> b).orElse(null);
+            if (id == null)
+                id = executionStatus.keySet().stream().reduce((a, b) -> b).orElse(null);
         }
     }
 
