@@ -239,11 +239,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             return;
         }
         try {
-            Thread.sleep(100L);
-        } catch (InterruptedException e) {
-            logger.error("", e);  //TODO: review me, I'm generated
-        }
-        try {
             beginComputingOwnTime();
             final String path = node.getPath();
             if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(path)) {
