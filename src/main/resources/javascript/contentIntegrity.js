@@ -85,7 +85,7 @@ function renderConfigurations(data) {
             enabled: this.enabled
         }
     })
-    const Item = ({id, enabled, name}) => `<p><input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked="checked" : ""}/>${name}</p>`;
+    const Item = ({id, enabled, name}) => `<span class="config"><input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked="checked" : ""}/>${name}</span>`;
     jQuery('#configurations').html(conf.map(Item).join(''));
 }
 

@@ -24,7 +24,7 @@
 <h2><fmt:message key="label.settings.title"/></h2>
 <p><fmt:message key="label.contentIntegrity.description"/></p>
 
-<fieldset>
+<fieldset class="configWrapper">
     <div id="configurations">
 
     </div>
@@ -33,10 +33,9 @@
     </div>
 </fieldset>
 
-<fieldset>
+<div>
     <label for="rootNode">Root node: </label>
     <input id="rootNode" type="text" value="/"/>
-    <br/>
     <label for="workspace">Workspace: </label>
     <select id="workspace">
         <option value="EDIT" selected="selected">default</option>
@@ -48,7 +47,7 @@
     <div>
         <pre id="logs"></pre>
     </div>
-</fieldset>
+</div>
 
 <%--
 <input type="hidden" id="currentSite" value="${renderContext.site.siteKey}" />

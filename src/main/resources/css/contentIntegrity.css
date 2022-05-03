@@ -1,3 +1,16 @@
+.configWrapper {
+    border: black 1px solid;
+    padding: 5px;
+    margin-bottom: 20px;
+}
+#configurations .config {
+    width: 30%;
+    display: inline-block;
+    padding: 5px;
+}
+#configurations .config input {
+    margin-right: 10px;
+}
 #logs {
     max-height: 300px;
     overflow-y: auto;
