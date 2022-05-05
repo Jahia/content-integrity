@@ -5,6 +5,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.contentintegrity.graphql.model.GqlIntegrityService;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,7 @@ public class QueryExtensions {
     public static GqlIntegrityService getService() throws IllegalAccessException {
         try {
             if (JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission("adminContentIntegrity"))
-                return new GqlIntegrityService();
+                return BundleUtils.getOsgiService(GqlIntegrityService.class.getName());
         } catch (RepositoryException e) {
             logger.error("", e);
         }

@@ -7,6 +7,7 @@ import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.Utils;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,19 +18,24 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Component(service = GqlIntegrityService.class, immediate = true)
 public class GqlIntegrityService {
 
     private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityService.class);
-    private final ContentIntegrityService service;
 
-    public GqlIntegrityService() {
-        service = Utils.getContentIntegrityService();
+    /*
+    TODO: replace with a local field, annotated with @Reference, and delete this method
+    Requires to compile with Jahia 8.1.1.0+ , otherwise it doesn't compile because of a bug with the BND plugin version used along with previous versions
+     */
+    private ContentIntegrityService getService() {
+        return Utils.getContentIntegrityService();
     }
 
     @GraphQLField
     @GraphQLName("integrityChecks")
     @GraphQLDescription("Returns the integrity checks")
     public Collection<GqlIntegrityCheck> getIntegrityChecks() {
+        final ContentIntegrityService service = getService();
         return service.getContentIntegrityChecksIdentifiers(false).stream()
                 .map(service::getContentIntegrityCheck)
                 .sorted((o1, o2) -> {
@@ -79,12 +85,14 @@ public class GqlIntegrityService {
 
     @GraphQLField
     @GraphQLName("integrityScan")
-    public static GqlIntegrityScan getIntegrityScan(@GraphQLName("id") String executionID) {
+    public GqlIntegrityScan getIntegrityScan(@GraphQLName("id") String executionID) {
         return new GqlIntegrityScan(executionID);
     }
 
     @GraphQLField
     public boolean stopRunningScan() {
+        final ContentIntegrityService service = getService();
+
         if (!service.isScanRunning())
             return Boolean.FALSE;
 
