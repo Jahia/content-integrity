@@ -58,7 +58,7 @@ function gqlCall(query, successCB, failureCB) {
         data: JSON.stringify(query),
         success: function (result) {
             if (result.errors != null) {
-                console.log("Error while loading the data", result.errors);
+                console.log("Error with the query:", query, "response:", result.errors);
                 if (failureCB !== undefined) failureCB();
                 return;
             }
