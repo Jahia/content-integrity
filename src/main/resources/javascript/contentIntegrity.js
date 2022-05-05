@@ -50,6 +50,16 @@ function getRunningTaskQuery() {
     }
 }
 
+function getStopScanQuery() {
+    return {
+        query: "{" +
+            "    integrity:contentIntegrity {" +
+            "        stopRunningScan" +
+            "    }" +
+            "}"
+    }
+}
+
 function gqlCall(query, successCB, failureCB) {
     jQuery.ajax({
         url: '/modules/graphql',
@@ -99,7 +109,12 @@ function renderLogs(executionID) {
         jQuery.each(data.integrity.scan.logs, function () {
             block.append(this+"\n")
         })
-        if (data.integrity.scan.status !== RUNNING) STOP_PULLING_LOGS()
+        if (data.integrity.scan.status === RUNNING) {
+            showStopButton(true);
+        } else {
+            STOP_PULLING_LOGS();
+            showStopButton(false);
+        }
     }, _ => STOP_PULLING_LOGS);
 }
 
@@ -119,6 +134,17 @@ function wireToRunningScan() {
     })
 }
 
+function showStopButton(visible) {
+    if (visible) {
+        jQuery("#runScan").attr("disabled", "disabled");
+        jQuery("#stopScan").show();
+    }
+    else {
+        jQuery("#runScan").removeAttr("disabled");
+        jQuery("#stopScan").hide();
+    }
+}
+
 jQuery(document).ready(function () {
     loadConfigurations();
     jQuery("#runScan").click(function () {
@@ -130,6 +156,9 @@ jQuery(document).ready(function () {
         })
 
         gqlCall(getScanQuery(rootPath, workspace, checks), (data) => setupLogsLoader(data.integrity.scan.id));
+    });
+    jQuery("#stopScan").click(function () {
+        gqlCall(getStopScanQuery(), _ => showStopButton(false))
     });
     wireToRunningScan();
 });

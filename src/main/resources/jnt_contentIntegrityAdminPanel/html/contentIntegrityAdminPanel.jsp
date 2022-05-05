@@ -44,6 +44,7 @@
     </select>
     <br/>
     <input id="runScan" type="button" value="Run an integrity check"/>
+    <input id="stopScan" type="button" value="Stop"/>
     <div>
         <pre id="logs"></pre>
     </div>
