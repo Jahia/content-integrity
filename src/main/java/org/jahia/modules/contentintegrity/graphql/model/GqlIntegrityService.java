@@ -55,7 +55,7 @@ public class GqlIntegrityService {
         final ContentIntegrityCheck integrityCheck = Utils.getContentIntegrityService().getContentIntegrityCheck(id);
         return Optional.ofNullable(integrityCheck)
                 .map(GqlIntegrityCheck::new)
-                .get();
+                .orElse(null);
     }
 
     @GraphQLName("WorkspaceToScan")
