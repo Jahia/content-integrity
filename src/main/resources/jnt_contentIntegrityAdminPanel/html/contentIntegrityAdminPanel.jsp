@@ -18,16 +18,14 @@
 <%--@elvariable id="currentResource" type="org.jahia.services.render.Resource"--%>
 <%--@elvariable id="url" type="org.jahia.services.render.URLGenerator"--%>
 
-<template:addResources type="javascript" resources="jquery.js,contentIntegrity.js"/>
-<template:addResources type="css" resources="contentIntegrity.css"/>
+<template:addResources type="javascript" resources="jquery.js,jquery-ui.min.js,contentIntegrity.js"/>
+<template:addResources type="css" resources="contentIntegrity.css,jquery-ui.smoothness.css"/>
 
 <h2><fmt:message key="label.settings.title"/></h2>
 <p><fmt:message key="label.contentIntegrity.description"/></p>
 
 <fieldset class="configWrapper">
-    <div id="configurations">
-
-    </div>
+    <div id="configurations"></div>
     <div>
         <a href="javascript:selectAllChecks(true)">select all</a> / <a href="javascript:selectAllChecks(false)">unselect all</a>
     </div>
@@ -49,6 +47,7 @@
         <pre id="logs"></pre>
     </div>
 </div>
+<div id="configurationPanels" style="display: none"></div>
 
 <%--
 <input type="hidden" id="currentSite" value="${renderContext.site.siteKey}" />

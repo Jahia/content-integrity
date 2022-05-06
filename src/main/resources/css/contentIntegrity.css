@@ -11,6 +11,9 @@
 #configurations .config input {
     margin-right: 10px;
 }
+#configurations .configureLink {
+    padding-left: 5px;
+}
 #logs {
     max-height: 300px;
     overflow-y: auto;
