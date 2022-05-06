@@ -48,17 +48,3 @@
     </div>
 </div>
 <div id="configurationPanels" style="display: none"></div>
-
-<%--
-<input type="hidden" id="currentSite" value="${renderContext.site.siteKey}" />
-<input type="hidden" id="currentLanguage" value="${renderContext.mainResourceLocale.language}" />
-Workspace : <select id="currentWorkspace">
-    <option>default</option>
-    <option>live</option>
-</select>
-<input type="submit" id="verifyButton" value="Check JCR integrity" />
-
-<table class="table table-bordered table-striped table-hover integrityTable"  id="errorDisplay">
-
-</table>
---%>
