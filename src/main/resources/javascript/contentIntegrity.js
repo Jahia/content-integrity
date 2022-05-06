@@ -61,6 +61,21 @@ function getStopScanQuery() {
     }
 }
 
+function getSaveConfsQuery(checkID, confs) {
+    const updates = confs.map(({name, value}) => (escapeConfigName(name) + `:configure (name:"${name}", value: "${value}")`)).join(" ");
+    return {
+        query: "{integrity:contentIntegrity {" +
+            "integrityCheckById(id : " + '"' + checkID + '"' + ") {" +
+            updates +
+            "}" +
+            "}}"
+    }
+}
+
+function escapeConfigName(name) {
+    return "configure_" + name.replaceAll("-", "_")
+}
+
 function gqlCall(query, successCB, failureCB) {
     jQuery.ajax({
         url: '/modules/graphql',
@@ -69,7 +84,7 @@ function gqlCall(query, successCB, failureCB) {
         data: JSON.stringify(query),
         success: function (result) {
             if (result.errors != null) {
-                console.log("Error with the query:", query, "response:", result.errors);
+                console.error("Error with the query:", query, "response:", result.errors);
                 if (failureCB !== undefined) failureCB();
                 return;
             }
@@ -77,7 +92,7 @@ function gqlCall(query, successCB, failureCB) {
                 if (failureCB !== undefined) failureCB();
                 return;
             }
-            successCB(result.data);
+            if (successCB !== undefined) successCB(result.data);
         }
     })
 }
@@ -95,7 +110,7 @@ const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
-    let out = `<div class="configurationPanel" id="configure-${id}">${name}<div>`;
+    let out = `<div class="configurationPanel" id="configure-${id}" integrityCheckID="${id}">${name}<div>`;
     out += configurations.map(ConfigItem).join('');
     out += `</div></div>`;
     return out;
@@ -109,7 +124,7 @@ const ConfigItem = ({name, type, value}) => {
         case "boolean":
             return BooleanConfigItem(params);
         default:
-            console.log("Unsupported type '", type, "' for the configuration '", name, "'")
+            console.error("Unsupported type '", type, "' for the configuration '", name, "'")
     }
 }
 
@@ -117,7 +132,7 @@ const IntegerConfigItem = ({name, value}) => `${name}: <input type="text" name="
 
 const BooleanConfigItem = ({name, value}) => {
     let out = `${name}: <input type="checkbox" name="${name}"`
-    if (value) out += ` checked="checked"`
+    if (value === "true") out += ` checked="checked"`
     out += `/>`
     return out
 }
@@ -142,11 +157,21 @@ function renderConfigurations(data) {
         width: 800,
         modal: true,
         buttons: {
-            "Delete all items": function() {
-                $( this ).dialog( "close" );
+            "Save": function () {
+                const confs = jQuery(this).find("input").map(function() {
+                    return ({
+                        name: this.name,
+                        value: this.type === "checkbox" ? (this.checked ? "true" : "false") : this.value
+                    });
+                });
+                saveConfigurations(jQuery(this).attr("integrityCheckID"), jQuery.makeArray(confs))
+                jQuery(this).dialog("close");
             },
-            Cancel: function() {
-                $( this ).dialog( "close" );
+            "Reset to default values": function () {
+                jQuery(this).dialog("close");
+            },
+            Cancel: function () {
+                jQuery(this).dialog("close");
             }
         },
         title: "Configure"
@@ -155,6 +180,10 @@ function renderConfigurations(data) {
         const id = "#" + jQuery(this).attr("dialogID");
         jQuery(id).dialog("open");
     });
+}
+
+function saveConfigurations(checkID, confs) {
+    gqlCall(getSaveConfsQuery(checkID, confs))
 }
 
 function selectAllChecks(value) {
