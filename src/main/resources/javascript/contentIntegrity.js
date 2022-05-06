@@ -65,10 +65,26 @@ function getSaveConfsQuery(checkID, confs) {
     const updates = confs.map(({name, value}) => (escapeConfigName(name) + `:configure (name:"${name}", value: "${value}")`)).join(" ");
     return {
         query: "{integrity:contentIntegrity {" +
-            "integrityCheckById(id : " + '"' + checkID + '"' + ") {" +
+            "check:integrityCheckById(id : " + '"' + checkID + '"' + ") {" +
             updates +
             "}" +
             "}}"
+    }
+}
+
+function getResetConfsQuery(checkID) {
+    return {
+        query: "query ($id : String!) {" +
+            "  integrity: contentIntegrity {" +
+            "    check:integrityCheckById(id: $id) {" +
+            "      reset:resetAllConfigurations" +
+            "      configurations {" +
+            "        name value type" +
+            "      }" +
+            "    }" +
+            "  }" +
+            "}",
+        variables: {id: checkID}
     }
 }
 
@@ -110,8 +126,8 @@ const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
-    let out = `<div class="configurationPanel" id="configure-${id}" integrityCheckID="${id}">${name}<div>`;
-    out += configurations.map(ConfigItem).join('');
+    let out = `<div class="configurationPanel" id="configure-${id}" integrityCheckID="${id}">${name}<div class="configurationPanelInputs">`;
+    out += generateConfigurationInputs(configurations)
     out += `</div></div>`;
     return out;
 }
@@ -135,6 +151,10 @@ const BooleanConfigItem = ({name, value}) => {
     if (value === "true") out += ` checked="checked"`
     out += `/>`
     return out
+}
+
+function generateConfigurationInputs(configurations) {
+    return configurations.map(ConfigItem).join('')
 }
 
 function renderConfigurations(data) {
@@ -168,7 +188,9 @@ function renderConfigurations(data) {
                 jQuery(this).dialog("close");
             },
             "Reset to default values": function () {
-                jQuery(this).dialog("close");
+                gqlCall(getResetConfsQuery(jQuery(this).attr("integrityCheckID")), (data) => {
+                    jQuery(this).children(".configurationPanelInputs").html(generateConfigurationInputs(data.integrity.check.configurations))
+                })
             },
             Cancel: function () {
                 jQuery(this).dialog("close");

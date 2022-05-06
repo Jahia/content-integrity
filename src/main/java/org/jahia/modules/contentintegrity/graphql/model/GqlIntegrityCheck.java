@@ -99,4 +99,12 @@ public class GqlIntegrityCheck {
             return false;
         }
     }
+
+    @GraphQLField
+    public boolean resetAllConfigurations() {
+        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+
+        configurations.getConfigurationNames().forEach(name -> configurations.setParameter(name, null));
+        return true;
+    }
 }
