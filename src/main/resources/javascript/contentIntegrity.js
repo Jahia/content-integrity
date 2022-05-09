@@ -6,8 +6,7 @@ const gqlConfig = {
     query: "{" +
         "  integrity:contentIntegrity {" +
         "    checks:integrityChecks {" +
-        "      id enabled configurable configurations " +
-        "        { defaultValue description name type value }" +
+        "      id enabled configurable" +
         "    }" +
         "  }" +
         "}"
@@ -72,12 +71,21 @@ function getSaveConfsQuery(checkID, confs) {
     }
 }
 
-function getResetConfsQuery(checkID) {
+function getLoadCheckConfsQuery(checkID) {
+    return getCheckConfsQuery(checkID, false)
+}
+
+function getResetCheckConfsQuery(checkID) {
+    return getCheckConfsQuery(checkID, true)
+}
+
+function getCheckConfsQuery(checkID, reset) {
+    const resetQuery = reset ? " reset:resetAllConfigurations" : ""
     return {
         query: "query ($id : String!) {" +
             "  integrity: contentIntegrity {" +
             "    check:integrityCheckById(id: $id) {" +
-            "      reset:resetAllConfigurations" +
+            resetQuery +
             "      configurations {" +
             "        name value type" +
             "      }" +
@@ -120,14 +128,15 @@ function loadConfigurations() {
 const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
     let out = `<span class="config">`;
     out += `<input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked = "checked" : ""}/>${name}`;
-    if (configurable) out += `<a class="configureLink" title="configure" dialogID="configure-${id}">Configure</a>`;
+    if (configurable) out += `<a class="configureLink" title="configure" checkID="${id}" dialogID="configure-${id}">Configure</a>`;
     out += `</span>`;
     return out;
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
     let out = `<div class="configurationPanel" id="configure-${id}" integrityCheckID="${id}">${name}<div class="configurationPanelInputs">`;
-    out += generateConfigurationInputs(configurations)
+    if (configurations !== null && configurations !== undefined)
+        out += generateConfigurationInputs(configurations)
     out += `</div></div>`;
     return out;
 }
@@ -164,8 +173,7 @@ function renderConfigurations(data) {
             name: this.id,
             id: this.id,
             enabled: this.enabled,
-            configurable: this.configurable,
-            configurations: this.configurations
+            configurable: this.configurable
         }
     })
     jQuery('#configurations').html(conf.map(IntegrityCheckItem).join(''));
@@ -188,7 +196,7 @@ function renderConfigurations(data) {
                 jQuery(this).dialog("close");
             },
             "Reset to default values": function () {
-                gqlCall(getResetConfsQuery(jQuery(this).attr("integrityCheckID")), (data) => {
+                gqlCall(getResetCheckConfsQuery(jQuery(this).attr("integrityCheckID")), (data) => {
                     jQuery(this).children(".configurationPanelInputs").html(generateConfigurationInputs(data.integrity.check.configurations))
                 })
             },
@@ -199,8 +207,13 @@ function renderConfigurations(data) {
         title: "Configure"
     });
     jQuery('.configureLink').on("click", function () {
-        const id = "#" + jQuery(this).attr("dialogID");
-        jQuery(id).dialog("open");
+        const id = jQuery(this).attr("checkID");
+        const dialogID = "#" + jQuery(this).attr("dialogID");
+        const panel = jQuery(dialogID)
+        gqlCall(getLoadCheckConfsQuery(id), (data) => {
+            panel.children(".configurationPanelInputs").html(generateConfigurationInputs(data.integrity.check.configurations))
+        })
+        panel.dialog("open");
     });
 }
 
