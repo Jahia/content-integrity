@@ -47,22 +47,46 @@ public class Utils {
     }
 
     public static void log(String message, LOG_LEVEL logLevel, Logger log, ExternalLogger externalLogger) {
+        log(message, logLevel, log, externalLogger, null);
+    }
+
+    public static void log(String message, LOG_LEVEL logLevel, Logger log, ExternalLogger externalLogger, Throwable t) {
         if (log != null) {
             switch (logLevel) {
                 case TRACE:
-                    log.trace(message);
+                    if (t == null) {
+                        log.trace(message);
+                    } else {
+                        log.trace(message, t);
+                    }
                     break;
                 case INFO:
-                    log.info(message);
+                    if (t == null) {
+                        log.info(message);
+                    } else {
+                        log.info(message, t);
+                    }
                     break;
                 case WARN:
-                    log.warn(message);
+                    if (t == null) {
+                        log.warn(message);
+                    } else {
+                        log.warn(message, t);
+                    }
                     break;
                 case ERROR:
-                    log.error(message);
+                    if (t == null) {
+                        log.error(message);
+                    } else {
+                        log.error(message, t);
+                    }
                     break;
                 case DEBUG:
-                    log.debug(message);
+                    if (t == null) {
+                        log.debug(message);
+                    } else {
+                        log.debug(message, t);
+                    }
             }
         }
         if (externalLogger != null) externalLogger.logLine(message);
