@@ -265,7 +265,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 }
                 validateIntegrity(child, excludedPaths, activeChecks, errors, externalLogger, fixErrors);
             }
-        } catch (RepositoryException e) {
+        } catch (Throwable e) {
             String ws = "unknown";
             try {
                 ws = node.getSession().getWorkspace().getName();
