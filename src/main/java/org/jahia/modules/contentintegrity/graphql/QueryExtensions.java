@@ -22,7 +22,7 @@ public class QueryExtensions {
     public static GqlIntegrityService getService() throws IllegalAccessException {
         try {
             if (JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission("adminContentIntegrity"))
-                return BundleUtils.getOsgiService(GqlIntegrityService.class.getName());
+                return BundleUtils.getOsgiService(GqlIntegrityService.class, null);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
