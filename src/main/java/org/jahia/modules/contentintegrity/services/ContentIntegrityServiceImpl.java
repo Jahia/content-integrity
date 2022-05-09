@@ -265,14 +265,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 }
                 validateIntegrity(child, excludedPaths, activeChecks, errors, externalLogger, fixErrors);
             }
-        } catch (RepositoryException e) {
+        } catch (Throwable e) {
             String ws = "unknown";
             try {
                 ws = node.getSession().getWorkspace().getName();
             } catch (RepositoryException e1) {
                 logger.error("", e1);
             }
-            logger.error(String.format("An error occured while iterating over the children of the node %s in the workspace %s",
+            logger.error(String.format("An error occurred while iterating over the children of the node %s in the workspace %s",
                     node, ws), e);
         }
         checkNode(node, activeChecks, errors, fixErrors, false, externalLogger);
@@ -336,7 +336,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         try {
             children = node.getNodes();
         } catch (Throwable t) {
-            logger.error(String.format("Impossible to load the child nodes of %s , skipping them in the calculation of the number of nodes to scan", node.getPath()), t);
+            Utils.log(String.format("Impossible to load the child nodes of %s , skipping them in the calculation of the number of nodes to scan", node.getPath()),
+                    Utils.LOG_LEVEL.ERROR, logger, externalLogger, t);
             return count;
         }
         for (JCRNodeWrapper child : children) {

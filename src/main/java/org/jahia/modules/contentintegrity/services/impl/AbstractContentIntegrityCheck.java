@@ -42,7 +42,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private float priority = 100f;
     private boolean enabled = true;
     private String description;
-    private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
+    private final List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
     private String id = null;
     private long ownTime = 0L;
     private int fatalErrorCount = 0;
@@ -418,7 +418,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     public static class NotCondition implements ExecutionCondition {
 
-        private ExecutionCondition condition;
+        private final ExecutionCondition condition;
 
         public NotCondition(ExecutionCondition condition) {
             this.condition = condition;
@@ -437,7 +437,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     public static class AnyOfCondition implements ExecutionCondition {
 
-        private List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
+        private final List<ExecutionCondition> conditions = new LinkedList<>();
 
         public void add(ExecutionCondition condition) {
             conditions.add(condition);
@@ -465,7 +465,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     public static class NodeTypeCondition implements ExecutionCondition {
 
-        private String nodeType;
+        private final String nodeType;
 
         public NodeTypeCondition(String nodeType) {
             this.nodeType = nodeType;
@@ -476,7 +476,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             try {
                 return node.isNodeType(nodeType);
             } catch (RepositoryException e) {
-                logger.error("An error occured while ", e);
+                logger.error("An error occurred while testing the type of the node", e);
             }
             return false;
         }
@@ -517,7 +517,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     public static class WorkspaceCondition implements ExecutionCondition {
 
-        private String workspace;
+        private final String workspace;
 
         public WorkspaceCondition(String workspace) {
             this.workspace = workspace;
@@ -549,7 +549,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     public static class SubtreeCondition implements ExecutionCondition {
 
-        private String treePath;
+        private final String treePath;
 
         public SubtreeCondition(String treePath) {
             if (treePath.endsWith("/")) this.treePath = treePath.substring(0, treePath.length() - 1);
@@ -598,7 +598,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected static class HasPropertyCondition implements ExecutionCondition {
 
-        private String propertyName;
+        private final String propertyName;
 
         public HasPropertyCondition(String propertyName) {
             this.propertyName = propertyName;
