@@ -13,7 +13,7 @@
             <templates j:rootTemplatePath="/base" jcr:primaryType="jnt:templatesFolder">
                 <files jcr:primaryType="jnt:folder"/>
                 <contents jcr:primaryType="jnt:contentFolder"/>
-                <site-settings-base j:view="siteSettings"
+                <server-settings-base j:view="serverSettings"
                                     jcr:mixinTypes="jmix:useUILocale"
                                     jcr:primaryType="jnt:template">
                     <content-integrity j:applyOn="jnt:globalSettings"
@@ -28,7 +28,7 @@
                             <contentintegrityadminpanel jcr:primaryType="jnt:contentIntegrityAdminPanel"/>
                         </pagecontent>
                     </content-integrity>
-                </site-settings-base>
+                </server-settings-base>
             </templates>
         </content-integrity>
     </modules>
