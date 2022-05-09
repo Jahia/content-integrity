@@ -272,7 +272,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             } catch (RepositoryException e1) {
                 logger.error("", e1);
             }
-            logger.error(String.format("An error occured while iterating over the children of the node %s in the workspace %s",
+            logger.error(String.format("An error occurred while iterating over the children of the node %s in the workspace %s",
                     node, ws), e);
         }
         checkNode(node, activeChecks, errors, fixErrors, false, externalLogger);
