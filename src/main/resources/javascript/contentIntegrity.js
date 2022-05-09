@@ -1,65 +1,274 @@
-function contentIntegrity (site, workspace, language) {
+const RUNNING = "running";
+let logsLoader;
+const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
 
-	$.ajax({
-		url: "/cms/render/"+workspace+"/"+language+"/sites/"+site+"/home.verifyIntegrityOfSiteContent.do",
-		context: document.body,
-		dataType: "json"
-	}).done(function(data) {
-		parseIntegrityActionFeedback(data);
-	});
+const gqlConfig = {
+    query: "{" +
+        "  integrity:contentIntegrity {" +
+        "    checks:integrityChecks {" +
+        "      id enabled configurable configurations " +
+        "        { defaultValue description name type value }" +
+        "    }" +
+        "  }" +
+        "}"
 }
 
-function displayErrors(json) {
-
-	$("#errorDisplay").html("");
-
-	$("#errorDisplay").append($('<tr>')
-			.append($('<td colspan=3 class="errorDisplay">')
-				.append(json.numberOfErrors + " error(s) detected")
-		)
-	);
-
-	$("#errorDisplay").append($('<tr>')
-			.append($('<td class="errorDisplay">')
-				.append("Path")
-		)
-			.append($('<td class="errorDisplay">')
-				.append("Property name")
-		)
-			.append($('<td class="errorDisplay">')
-				.append("Type of error")
-		)
-	);
-
-	if (json.numberOfErrors > 0) {
-		for (var i=0; i<json.errors.length; i++) {
-			var error = json.errors[i];
-
-			$("#errorDisplay").append($('<tr>')
-					.append($('<td>')
-						.append(error.path)
-				)
-					.append($('<td>')
-						.append(error.propertyName)
-				)
-					.append($('<td>')
-						.append(error.constraintMessage)
-				)
-			);
-		}
-	}
+function getScanQuery(rootPath, workspace, checks) {
+    return {
+        query: "query ($path: String!, $ws: WorkspaceToScan!, $checks: [String]) {" +
+            "  integrity:contentIntegrity {" +
+            "    scan:integrityScan {" +
+            "      id:scan(startNode: $path, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
+            "    }" +
+            "  }" +
+            "}",
+        variables: {path: rootPath, ws: workspace, checks: checks}
+    }
 }
 
-function parseIntegrityActionFeedback(json) {
-	if(json.siteContentIsValid == "false") {
-		displayErrors(json);
-	} else {
-		alert("No integrity error detected.");
-	}
+function getLogsQuery(executionID) {
+    return {
+        query: "query ($id : String!) {" +
+            "    integrity:contentIntegrity {" +
+            "        scan:integrityScan (id: $id) {" +
+            "            id status logs" +
+            "        }" +
+            "    }" +
+            "}",
+        variables: {id: executionID}
+    }
 }
 
-$( document ).ready(function() {
-	$( "#verifyButton" ).click(function() {
-		contentIntegrity($("#currentSite").val(),$("#currentWorkspace").val(),$("#currentLanguage").val());
-	});
+function getRunningTaskQuery() {
+    return {
+        query: "{" +
+            "    integrity:contentIntegrity {" +
+            "        scan:integrityScan {" +
+            "            id status" +
+            "        }" +
+            "    }" +
+            "}"
+    }
+}
+
+function getStopScanQuery() {
+    return {
+        query: "{" +
+            "    integrity:contentIntegrity {" +
+            "        stopRunningScan" +
+            "    }" +
+            "}"
+    }
+}
+
+function getSaveConfsQuery(checkID, confs) {
+    const updates = confs.map(({name, value}) => (escapeConfigName(name) + `:configure (name:"${name}", value: "${value}")`)).join(" ");
+    return {
+        query: "{integrity:contentIntegrity {" +
+            "check:integrityCheckById(id : " + '"' + checkID + '"' + ") {" +
+            updates +
+            "}" +
+            "}}"
+    }
+}
+
+function getResetConfsQuery(checkID) {
+    return {
+        query: "query ($id : String!) {" +
+            "  integrity: contentIntegrity {" +
+            "    check:integrityCheckById(id: $id) {" +
+            "      reset:resetAllConfigurations" +
+            "      configurations {" +
+            "        name value type" +
+            "      }" +
+            "    }" +
+            "  }" +
+            "}",
+        variables: {id: checkID}
+    }
+}
+
+function escapeConfigName(name) {
+    return "configure_" + name.replaceAll("-", "_")
+}
+
+function gqlCall(query, successCB, failureCB) {
+    jQuery.ajax({
+        url: '/modules/graphql',
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify(query),
+        success: function (result) {
+            if (result.errors != null) {
+                console.error("Error with the query:", query, "response:", result.errors);
+                if (failureCB !== undefined) failureCB();
+                return;
+            }
+            if (result.data == null) {
+                if (failureCB !== undefined) failureCB();
+                return;
+            }
+            if (successCB !== undefined) successCB(result.data);
+        }
+    })
+}
+
+function loadConfigurations() {
+    gqlCall(gqlConfig, (data) => renderConfigurations(data.integrity.checks))
+}
+
+const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
+    let out = `<span class="config">`;
+    out += `<input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked = "checked" : ""}/>${name}`;
+    if (configurable) out += `<a class="configureLink" title="configure" dialogID="configure-${id}">Configure</a>`;
+    out += `</span>`;
+    return out;
+}
+
+const ConfigPanelItem = ({id, name, configurations}) => {
+    let out = `<div class="configurationPanel" id="configure-${id}" integrityCheckID="${id}">${name}<div class="configurationPanelInputs">`;
+    out += generateConfigurationInputs(configurations)
+    out += `</div></div>`;
+    return out;
+}
+
+const ConfigItem = ({name, type, value}) => {
+    const params = { name: name, value: value }
+    switch (type) {
+        case "integer":
+            return IntegerConfigItem(params);
+        case "boolean":
+            return BooleanConfigItem(params);
+        default:
+            console.error("Unsupported type '", type, "' for the configuration '", name, "'")
+    }
+}
+
+const IntegerConfigItem = ({name, value}) => `${name}: <input type="text" name="${name}" value="${value}" />`
+
+const BooleanConfigItem = ({name, value}) => {
+    let out = `${name}: <input type="checkbox" name="${name}"`
+    if (value === "true") out += ` checked="checked"`
+    out += `/>`
+    return out
+}
+
+function generateConfigurationInputs(configurations) {
+    return configurations.map(ConfigItem).join('')
+}
+
+function renderConfigurations(data) {
+    const conf = []
+    jQuery.each(data, function (index) {
+        conf[index] = {
+            name: this.id,
+            id: this.id,
+            enabled: this.enabled,
+            configurable: this.configurable,
+            configurations: this.configurations
+        }
+    })
+    jQuery('#configurations').html(conf.map(IntegrityCheckItem).join(''));
+    jQuery("#configurationPanels").html(conf.filter(value => {return value.configurable}).map(ConfigPanelItem).join(''));
+    jQuery('.configurationPanel').dialog({
+        autoOpen: false,
+        resizable: false,
+        height: "auto",
+        width: 800,
+        modal: true,
+        buttons: {
+            "Save": function () {
+                const confs = jQuery(this).find("input").map(function() {
+                    return ({
+                        name: this.name,
+                        value: this.type === "checkbox" ? (this.checked ? "true" : "false") : this.value
+                    });
+                });
+                saveConfigurations(jQuery(this).attr("integrityCheckID"), jQuery.makeArray(confs))
+                jQuery(this).dialog("close");
+            },
+            "Reset to default values": function () {
+                gqlCall(getResetConfsQuery(jQuery(this).attr("integrityCheckID")), (data) => {
+                    jQuery(this).children(".configurationPanelInputs").html(generateConfigurationInputs(data.integrity.check.configurations))
+                })
+            },
+            Cancel: function () {
+                jQuery(this).dialog("close");
+            }
+        },
+        title: "Configure"
+    });
+    jQuery('.configureLink').on("click", function () {
+        const id = "#" + jQuery(this).attr("dialogID");
+        jQuery(id).dialog("open");
+    });
+}
+
+function saveConfigurations(checkID, confs) {
+    gqlCall(getSaveConfsQuery(checkID, confs))
+}
+
+function selectAllChecks(value) {
+    jQuery(".checkEnabled").prop("checked", value);
+}
+
+function renderLogs(executionID) {
+    gqlCall(getLogsQuery(executionID), (data) => {
+        const block = jQuery("#logs")
+        block.html("")
+        jQuery.each(data.integrity.scan.logs, function () {
+            block.append(this+"\n")
+        })
+        if (data.integrity.scan.status === RUNNING) {
+            showStopButton(true);
+        } else {
+            STOP_PULLING_LOGS();
+            showStopButton(false);
+        }
+    }, _ => STOP_PULLING_LOGS);
+}
+
+function setupLogsLoader(executionID) {
+    if (logsLoader !== null) clearInterval(logsLoader);
+    renderLogs(executionID);
+    logsLoader = setInterval((id) => {renderLogs(id)}, 5000, executionID)
+}
+
+function wireToRunningScan() {
+    gqlCall(getRunningTaskQuery(), (data) => {
+        const scan = data.integrity.scan;
+        if (scan == null) return;
+        if (scan.status === RUNNING && scan.id != null) {
+            setupLogsLoader(scan.id)
+        }
+    })
+}
+
+function showStopButton(visible) {
+    if (visible) {
+        jQuery("#runScan").attr("disabled", "disabled");
+        jQuery("#stopScan").show();
+    }
+    else {
+        jQuery("#runScan").removeAttr("disabled");
+        jQuery("#stopScan").hide();
+    }
+}
+
+jQuery(document).ready(function () {
+    loadConfigurations();
+    jQuery("#runScan").click(function () {
+        const rootPath = jQuery("#rootNode").val();
+        const workspace = jQuery("#workspace").val();
+
+        const checks = jQuery.map(jQuery(".checkEnabled:checked"), function (cb, i) {
+            return jQuery(cb).attr("id")
+        })
+
+        gqlCall(getScanQuery(rootPath, workspace, checks), (data) => setupLogsLoader(data.integrity.scan.id));
+    });
+    jQuery("#stopScan").click(function () {
+        gqlCall(getStopScanQuery(), _ => showStopButton(false))
+    });
+    wireToRunningScan();
 });

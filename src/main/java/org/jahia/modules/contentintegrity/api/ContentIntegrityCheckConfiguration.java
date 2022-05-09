@@ -12,5 +12,7 @@ public interface ContentIntegrityCheckConfiguration {
 
     Object getParameter(String name) throws IllegalArgumentException;
 
+    Object getParameterDefaultValue(String name) throws IllegalArgumentException;
+
     String getDescription(String name);
 }

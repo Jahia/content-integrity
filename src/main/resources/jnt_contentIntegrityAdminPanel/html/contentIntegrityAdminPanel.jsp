@@ -18,20 +18,33 @@
 <%--@elvariable id="currentResource" type="org.jahia.services.render.Resource"--%>
 <%--@elvariable id="url" type="org.jahia.services.render.URLGenerator"--%>
 
-<template:addResources type="javascript" resources="jquery.js,contentIntegrity.js"/>
-<template:addResources type="css" resources="contentIntegrity.css"/>
+<template:addResources type="javascript" resources="jquery.js,jquery-ui.min.js,contentIntegrity.js"/>
+<template:addResources type="css" resources="contentIntegrity.css,jquery-ui.smoothness.css"/>
 
-<h2><fmt:message key="label.contentIntegrity.title"/></h2>
-<p><fmt:message key="label.contentIntegrity.description" /></p>
+<h2><fmt:message key="label.settings.title"/></h2>
+<p><fmt:message key="label.contentIntegrity.description"/></p>
 
-<input type="hidden" id="currentSite" value="${renderContext.site.siteKey}" />
-<input type="hidden" id="currentLanguage" value="${renderContext.mainResourceLocale.language}" />
-Workspace : <select id="currentWorkspace">
-    <option>default</option>
-    <option>live</option>
-</select>
-<input type="submit" id="verifyButton" value="Check JCR integrity" />
+<fieldset class="configWrapper">
+    <div id="configurations"></div>
+    <div>
+        <a href="javascript:selectAllChecks(true)">select all</a> / <a href="javascript:selectAllChecks(false)">unselect all</a>
+    </div>
+</fieldset>
 
-<table class="table table-bordered table-striped table-hover integrityTable"  id="errorDisplay">
-
-</table>
+<div>
+    <label for="rootNode">Root node: </label>
+    <input id="rootNode" type="text" value="/"/>
+    <label for="workspace">Workspace: </label>
+    <select id="workspace">
+        <option value="EDIT" selected="selected">default</option>
+        <option value="LIVE">live</option>
+        <option value="BOTH">All workspaces</option>
+    </select>
+    <br/>
+    <input id="runScan" type="button" value="Run an integrity check"/>
+    <input id="stopScan" type="button" value="Stop"/>
+    <div>
+        <pre id="logs"></pre>
+    </div>
+</div>
+<div id="configurationPanels" style="display: none"></div>

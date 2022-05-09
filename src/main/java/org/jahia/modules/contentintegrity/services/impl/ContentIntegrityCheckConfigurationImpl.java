@@ -41,10 +41,9 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
         try {
             parsedValue = parser.apply(value);
         } catch (Exception e) {
-            logger.error(String.format("Invalid value for the parameter %s : %s", name, value), e);
             // Here, we keep the last valid custom value, if there's one
             // As an alternative, we could have executed customParameters.remove(name) to reset back to the default value
-            return;
+            throw new IllegalArgumentException(String.format("Invalid value for the parameter %s : %s", name, value), e);
         }
         customParameters.put(name, parsedValue);
     }
@@ -54,6 +53,13 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
         if (!defaultParameters.containsKey(name))
             throw new IllegalArgumentException(String.format("Illegal parameter: %s", name));
         if (customParameters.containsKey(name)) return customParameters.get(name);
+        return defaultParameters.get(name).getValue();
+    }
+
+    @Override
+    public Object getParameterDefaultValue(String name) throws IllegalArgumentException {
+        if (!defaultParameters.containsKey(name))
+            throw new IllegalArgumentException(String.format("Illegal parameter: %s", name));
         return defaultParameters.get(name).getValue();
     }
 

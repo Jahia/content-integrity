@@ -17,6 +17,7 @@ public class ContentIntegrityResults {
     private final String formattedTestDuration;
     private final String workspace;
     private final List<ContentIntegrityError> errors;
+    private String executionID;
 
 
     public ContentIntegrityResults(Long testDate, Long testDuration, String workspace, List<ContentIntegrityError> errors) {
@@ -46,5 +47,18 @@ public class ContentIntegrityResults {
 
     public List<ContentIntegrityError> getErrors() {
         return errors;
+    }
+
+    public String getWorkspace() {
+        return workspace;
+    }
+
+    public String getExecutionID() {
+        return executionID;
+    }
+
+    public ContentIntegrityResults setExecutionID(String executionID) {
+        this.executionID = executionID;
+        return this;
     }
 }

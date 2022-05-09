@@ -14,14 +14,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
-import static org.jahia.api.Constants.JCR_LASTMODIFIED;
-import static org.jahia.api.Constants.LASTPUBLISHED;
 import static org.jahia.api.Constants.LIVE_WORKSPACE;
 import static org.jahia.api.Constants.PUBLISHED;
 

@@ -49,7 +49,7 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>7.3.0.0</version>
+        <version>7.3.1.0</version>
     </parent>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
@@ -58,10 +58,13 @@
     <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
 
     <properties>
-        <jahia-depends>default</jahia-depends>
+        <jahia-depends>default,graphql-dxm-provider</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
+        <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
+        <graphql-dxm-provider.version>1.8.0</graphql-dxm-provider.version>
+        <external-provider.version>3.1.5</external-provider.version>
     </properties>
 
     <scm>
@@ -121,7 +124,19 @@
         <dependency>
             <groupId>org.jahia.modules</groupId>
             <artifactId>external-provider</artifactId>
-            <version>3.1.5</version>
+            <version>${external-provider.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>graphql-dxm-provider</artifactId>
+            <version>${graphql-dxm-provider.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.graphql-java</groupId>
+            <artifactId>graphql-java-annotations</artifactId>
+            <version>${graphql-java-annotations.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
