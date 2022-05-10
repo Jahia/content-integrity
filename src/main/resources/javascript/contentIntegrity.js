@@ -198,6 +198,7 @@ function renderConfigurations(data) {
             "Reset to default values": function () {
                 gqlCall(getResetCheckConfsQuery(jQuery(this).attr("integrityCheckID")), (data) => {
                     jQuery(this).children(".configurationPanelInputs").html(generateConfigurationInputs(data.integrity.check.configurations))
+                    jQuery(this).dialog("close");
                 })
             },
             Cancel: function () {
