@@ -58,7 +58,11 @@
     <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
 
     <properties>
-        <jahia-depends>default,graphql-dxm-provider</jahia-depends>
+        <!-- TODO: clean when we drop the support of Jahia 7
+        dependency to serverSettings because we override the declaration of system-health in the admin navigation,
+        required to load the label from the resources bundle of this module
+        -->
+        <jahia-depends>default,graphql-dxm-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <export-package>org.jahia.modules.contentintegrity.api,

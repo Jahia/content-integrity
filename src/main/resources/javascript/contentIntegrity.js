@@ -134,10 +134,13 @@ const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
-    let out = `<div class="configurationPanel" id="configure-${id}" integrityCheckID="${id}">${name}<div class="configurationPanelInputs">`;
-    if (configurations !== null && configurations !== undefined)
+    let out = `<div id="configurationPanel" integrityCheckID="${id}">${name}`;
+    if (configurations !== null && configurations !== undefined) {
+        out += `<div class="configurationPanelInputs">`
         out += generateConfigurationInputs(configurations)
-    out += `</div></div>`;
+        out += `</div>`;
+    }
+    out += `</div>`;
     return out;
 }
 
@@ -177,8 +180,7 @@ function renderConfigurations(data) {
         }
     })
     jQuery('#configurations').html(conf.map(IntegrityCheckItem).join(''));
-    jQuery("#configurationPanels").html(conf.filter(value => {return value.configurable}).map(ConfigPanelItem).join(''));
-    jQuery('.configurationPanel').dialog({
+    jQuery('#configurationPanelWrapper').dialog({
         autoOpen: false,
         resizable: false,
         height: "auto",
@@ -186,18 +188,19 @@ function renderConfigurations(data) {
         modal: true,
         buttons: {
             "Save": function () {
-                const confs = jQuery(this).find("input").map(function() {
+                const panel = jQuery("#configurationPanel");
+                const confs = panel.find("input").map(function() {
                     return ({
                         name: this.name,
                         value: this.type === "checkbox" ? (this.checked ? "true" : "false") : this.value
                     });
                 });
-                saveConfigurations(jQuery(this).attr("integrityCheckID"), jQuery.makeArray(confs))
+                saveConfigurations(panel.attr("integrityCheckID"), jQuery.makeArray(confs))
                 jQuery(this).dialog("close");
             },
             "Reset to default values": function () {
-                gqlCall(getResetCheckConfsQuery(jQuery(this).attr("integrityCheckID")), (data) => {
-                    jQuery(this).children(".configurationPanelInputs").html(generateConfigurationInputs(data.integrity.check.configurations))
+                const panel = jQuery("#configurationPanel");
+                gqlCall(getResetCheckConfsQuery(panel.attr("integrityCheckID")), (data) => {
                     jQuery(this).dialog("close");
                 })
             },
@@ -208,13 +211,12 @@ function renderConfigurations(data) {
         title: "Configure"
     });
     jQuery('.configureLink').on("click", function () {
-        const id = jQuery(this).attr("checkID");
-        const dialogID = "#" + jQuery(this).attr("dialogID");
-        const panel = jQuery(dialogID)
+        const id = jQuery(this).attr("checkID")
+        const popup = jQuery("#configurationPanelWrapper")
         gqlCall(getLoadCheckConfsQuery(id), (data) => {
-            panel.children(".configurationPanelInputs").html(generateConfigurationInputs(data.integrity.check.configurations))
+            popup.html(ConfigPanelItem({id: id, name: id, configurations: data.integrity.check.configurations}))
+            popup.dialog("open")
         })
-        panel.dialog("open");
     });
 }
 

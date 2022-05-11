@@ -14,20 +14,26 @@
                 <files jcr:primaryType="jnt:folder"/>
                 <contents jcr:primaryType="jnt:contentFolder"/>
                 <server-settings-base j:view="serverSettings"
-                                    jcr:mixinTypes="jmix:useUILocale"
-                                    jcr:primaryType="jnt:template">
-                    <content-integrity j:applyOn="jnt:globalSettings"
-                                       j:contextNodePath="/"
-                                       j:defaultTemplate="false"
-                                       j:hiddenTemplate="false"
-                                       j:requiredPermissionNames="adminContentIntegrity"
-                                       j:titleKey="label.settings.title"
-                                       jcr:mixinTypes="jmix:rbTitle"
-                                       jcr:primaryType="jnt:contentTemplate">
-                        <pagecontent jcr:primaryType="jnt:contentList">
-                            <contentintegrityadminpanel jcr:primaryType="jnt:contentIntegrityAdminPanel"/>
-                        </pagecontent>
-                    </content-integrity>
+                                      jcr:mixinTypes="jmix:useUILocale"
+                                      jcr:primaryType="jnt:template">
+                    <system-health j:hiddenTemplate="false"
+                                   j:icon="/modules/serverSettings/templates/files/serveradmin/system_x0020_health/system_health.png"
+                                   j:titleKey="serverSettings.systemHealth"
+                                   jcr:mixinTypes="jmix:rbTitle"
+                                   jcr:primaryType="jnt:template">
+                        <content-integrity j:applyOn="jnt:globalSettings"
+                                           j:contextNodePath="/"
+                                           j:defaultTemplate="false"
+                                           j:hiddenTemplate="false"
+                                           j:requiredPermissionNames="adminContentIntegrity"
+                                           j:titleKey="label.settings.title"
+                                           jcr:mixinTypes="jmix:rbTitle"
+                                           jcr:primaryType="jnt:contentTemplate">
+                            <pagecontent jcr:primaryType="jnt:contentList">
+                                <contentintegrityadminpanel jcr:primaryType="jnt:contentIntegrityAdminPanel"/>
+                            </pagecontent>
+                        </content-integrity>
+                    </system-health>
                 </server-settings-base>
             </templates>
         </content-integrity>

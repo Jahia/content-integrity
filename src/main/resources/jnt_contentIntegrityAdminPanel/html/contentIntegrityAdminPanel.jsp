@@ -47,4 +47,4 @@
         <pre id="logs"></pre>
     </div>
 </div>
-<div id="configurationPanels" style="display: none"></div>
+<div id="configurationPanelWrapper" style="display: none"></div>
