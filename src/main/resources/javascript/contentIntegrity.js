@@ -87,7 +87,7 @@ function getCheckConfsQuery(checkID, reset) {
             "    check:integrityCheckById(id: $id) {" +
             resetQuery +
             "      configurations {" +
-            "        name value type" +
+            "        name value type description" +
             "      }" +
             "    }" +
             "  }" +
@@ -134,9 +134,9 @@ const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
-    let out = `<div id="configurationPanel" integrityCheckID="${id}">${name}`;
+    let out = `<div id="configurationPanel" integrityCheckID="${id}"><span class="panelTitle">${name}</div>`;
     if (configurations !== null && configurations !== undefined) {
-        out += `<div class="configurationPanelInputs">`
+        out += `<div class="configurationPanelInput">`
         out += generateConfigurationInputs(configurations)
         out += `</div>`;
     }
@@ -144,22 +144,28 @@ const ConfigPanelItem = ({id, name, configurations}) => {
     return out;
 }
 
-const ConfigItem = ({name, type, value}) => {
-    const params = { name: name, value: value }
+const ConfigItem = ({name, type, value, description}) => {
+    const params = { name: name, value: value, description: description }
+    let out = `<span class="inputLabel">${name}:</span>`
     switch (type) {
         case "integer":
-            return IntegerConfigItem(params);
+            out += IntegerConfigItem(params)
+            break
         case "boolean":
-            return BooleanConfigItem(params);
+            out += BooleanConfigItem(params)
+            break
         default:
             console.error("Unsupported type '", type, "' for the configuration '", name, "'")
+            return ''
     }
+    out += `<span class="configDesc">${description}</span>`
+    return out
 }
 
-const IntegerConfigItem = ({name, value}) => `${name}: <input type="text" name="${name}" value="${value}" />`
+const IntegerConfigItem = ({name, value}) => `<input type="text" name="${name}" value="${value}" />`
 
 const BooleanConfigItem = ({name, value}) => {
-    let out = `${name}: <input type="checkbox" name="${name}"`
+    let out = `<input type="checkbox" name="${name}"`
     if (value === "true") out += ` checked="checked"`
     out += `/>`
     return out
