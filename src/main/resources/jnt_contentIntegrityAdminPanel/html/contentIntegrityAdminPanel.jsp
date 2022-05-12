@@ -26,7 +26,7 @@
     </script>
 </template:addResources>
 
-<h2><fmt:message key="label.settings.title"/></h2>
+<h1><fmt:message key="label.settings.title"/></h1>
 <p><fmt:message key="label.contentIntegrity.description"/></p>
 
 <fieldset class="configWrapper">
