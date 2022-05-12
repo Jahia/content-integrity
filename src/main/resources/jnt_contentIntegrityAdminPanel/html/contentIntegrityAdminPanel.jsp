@@ -20,6 +20,11 @@
 
 <template:addResources type="javascript" resources="jquery.js,jquery-ui.min.js,contentIntegrity.js"/>
 <template:addResources type="css" resources="contentIntegrity.css,jquery-ui.smoothness.css"/>
+<template:addResources>
+    <script type="text/javascript">
+        const moduleContentIntegrityURL = '${url.context}${url.currentModule}'
+    </script>
+</template:addResources>
 
 <h2><fmt:message key="label.settings.title"/></h2>
 <p><fmt:message key="label.contentIntegrity.description"/></p>

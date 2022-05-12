@@ -128,9 +128,13 @@ function loadConfigurations() {
 const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
     let out = `<span class="config">`;
     out += `<input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked = "checked" : ""}/>${name}`;
-    if (configurable) out += `<a class="configureLink" title="configure" checkID="${id}" dialogID="configure-${id}">Configure</a>`;
+    if (configurable) out += ConfigureButtonItem(id, moduleContentIntegrityURL)
     out += `</span>`;
     return out;
+}
+
+const ConfigureButtonItem = (id, baseURL) => {
+    return `<img class="configureLink" src="${baseURL}/img/configure.png" title="configure" alt="Configure" checkID="${id}" dialogID="configure-${id}" />`
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
