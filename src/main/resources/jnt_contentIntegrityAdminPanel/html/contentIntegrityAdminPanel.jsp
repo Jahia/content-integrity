@@ -23,6 +23,8 @@
 <template:addResources>
     <script type="text/javascript">
         const moduleContentIntegrityURL = '${url.context}${url.currentModule}'
+        const urlContext = '${url.context}'
+        const urlFiles  = '${url.files}'
     </script>
 </template:addResources>
 
@@ -51,5 +53,6 @@
     <div>
         <pre id="logs"></pre>
     </div>
+    <div id="reportFile" style="display: none"></div>
 </div>
 <div id="configurationPanelWrapper" style="display: none"></div>

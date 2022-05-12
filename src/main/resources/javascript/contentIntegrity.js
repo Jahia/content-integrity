@@ -30,7 +30,7 @@ function getLogsQuery(executionID) {
         query: "query ($id : String!) {" +
             "    integrity:contentIntegrity {" +
             "        scan:integrityScan (id: $id) {" +
-            "            id status logs" +
+            "            id status logs report" +
             "        }" +
             "    }" +
             "}",
@@ -141,7 +141,7 @@ const ConfigPanelItem = ({id, name, configurations}) => {
     let out = `<div id="configurationPanel" integrityCheckID="${id}"><span class="panelTitle">${name}</div>`;
     if (configurations !== null && configurations !== undefined) {
         out += `<div class="configurationPanelInput">`
-        out += generateConfigurationInputs(configurations)
+        out += configurations.map(ConfigItem).join('')
         out += `</div>`;
     }
     out += `</div>`;
@@ -175,9 +175,7 @@ const BooleanConfigItem = ({name, value}) => {
     return out
 }
 
-function generateConfigurationInputs(configurations) {
-    return configurations.map(ConfigItem).join('')
-}
+const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a href="${urlContext}${urlFiles}${path}" target="_blank">${filename}</a>`
 
 function renderConfigurations(data) {
     const conf = []
@@ -239,6 +237,8 @@ function selectAllChecks(value) {
 }
 
 function renderLogs(executionID) {
+    const reportFileDiv = jQuery("#reportFile")
+    reportFileDiv.hide()
     gqlCall(getLogsQuery(executionID), (data) => {
         const block = jQuery("#logs")
         block.html("")
@@ -250,6 +250,11 @@ function renderLogs(executionID) {
         } else {
             STOP_PULLING_LOGS();
             showStopButton(false);
+            const report = data.integrity.scan.report
+            if (report != null && report.length > 0) {
+                const filename = report.slice(report.lastIndexOf('/') + 1)
+                reportFileDiv.html(ReportFileItem(filename, report, urlContext, urlFiles)).show()
+            }
         }
     }, _ => STOP_PULLING_LOGS);
 }

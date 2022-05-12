@@ -133,18 +133,18 @@ public class Utils {
         return lines;
     }
 
-    public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader, ExternalLogger externalLogger) {
+    public static String writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader, ExternalLogger externalLogger) {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<Boolean>() {
+            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<String>() {
                 @Override
-                public Boolean doInJCR(JCRSessionWrapper session) throws RepositoryException {
+                public String doInJCR(JCRSessionWrapper session) throws RepositoryException {
                     final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
                     final JCRNodeWrapper outputDir = filesFolder.hasNode(JCR_REPORTS_FOLDER_NAME) ?
                             filesFolder.getNode(JCR_REPORTS_FOLDER_NAME) :
                             filesFolder.addNode(JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER);
                     if (!outputDir.isNodeType(Constants.JAHIANT_FOLDER)) {
                         logger.error(String.format("Impossible to write the folder %s of type %s", outputDir.getPath(), outputDir.getPrimaryNodeTypeName()));
-                        return false;
+                        return null;
                     }
                     final String filename = generateReportFilename(results, excludeFixedErrors);
 
@@ -153,26 +153,28 @@ public class Utils {
                         IOUtils.writeLines(toFileContent(results, noCsvHeader), null, out, StandardCharsets.UTF_8);
                     } catch (IOException e) {
                         logger.error("", e);
-                        return false;
+                        return null;
                     }
                     final byte[] bytes = out.toByteArray();
 
                     final JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
                     session.save();
-                    externalLogger.logLine("Written the report in " + reportNode.getPath());
+                    final String reportPath = reportNode.getPath();
+                    externalLogger.logLine("Written the report in " + reportPath);
 
-                    return true;
+                    return reportPath;
                 }
             });
         } catch (RepositoryException e) {
             logger.error("", e);
-            return false;
+            return null;
         }
     }
 
-    public static boolean writeDumpOnTheFilesystem(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader) {
+    public static String writeDumpOnTheFilesystem(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader) {
         final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
         final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
+        final String reportPath;
 
         if (folderCreated && outputDir.canWrite()) {
             final File csvFile = new File(outputDir, Utils.generateReportFilename(results, excludeFixedErrors));
@@ -182,7 +184,7 @@ public class Utils {
                     csvFile.createNewFile();
                 } catch (IOException e) {
                     logger.error("Impossible to create the file", e);
-                    return false;
+                    return null;
                 }
             }
             final List<String> lines = Utils.toFileContent(results, noCsvHeader);
@@ -190,15 +192,16 @@ public class Utils {
                 FileUtils.writeLines(csvFile, "UTF-8", lines);
             } catch (IOException e) {
                 logger.error("Impossible to write the file content", e);
-                return false;
+                return null;
             }
-            System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", csvFile.getPath()));
+            reportPath = csvFile.getPath();
+            System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", reportPath));
         } else {
             logger.error("Impossible to write the folder " + outputDir.getPath());
-            return false;
+            return null;
         }
 
-        return true;
+        return reportPath;
     }
 
     public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {
