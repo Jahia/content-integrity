@@ -30,7 +30,7 @@ function getLogsQuery(executionID) {
         query: "query ($id : String!) {" +
             "    integrity:contentIntegrity {" +
             "        scan:integrityScan (id: $id) {" +
-            "            id status logs" +
+            "            id status logs report" +
             "        }" +
             "    }" +
             "}",
@@ -87,7 +87,7 @@ function getCheckConfsQuery(checkID, reset) {
             "    check:integrityCheckById(id: $id) {" +
             resetQuery +
             "      configurations {" +
-            "        name value type" +
+            "        name value type description" +
             "      }" +
             "    }" +
             "  }" +
@@ -128,46 +128,54 @@ function loadConfigurations() {
 const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
     let out = `<span class="config">`;
     out += `<input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked = "checked" : ""}/>${name}`;
-    if (configurable) out += `<a class="configureLink" title="configure" checkID="${id}" dialogID="configure-${id}">Configure</a>`;
+    if (configurable) out += ConfigureButtonItem(id, moduleContentIntegrityURL)
     out += `</span>`;
     return out;
 }
 
+const ConfigureButtonItem = (id, baseURL) => {
+    return `<img class="configureLink" src="${baseURL}/img/configure.png" title="configure" alt="Configure" checkID="${id}" dialogID="configure-${id}" />`
+}
+
 const ConfigPanelItem = ({id, name, configurations}) => {
-    let out = `<div id="configurationPanel" integrityCheckID="${id}">${name}`;
+    let out = `<div id="configurationPanel" integrityCheckID="${id}"><span class="panelTitle">${name}</div>`;
     if (configurations !== null && configurations !== undefined) {
-        out += `<div class="configurationPanelInputs">`
-        out += generateConfigurationInputs(configurations)
+        out += `<div class="configurationPanelInput">`
+        out += configurations.map(ConfigItem).join('')
         out += `</div>`;
     }
     out += `</div>`;
     return out;
 }
 
-const ConfigItem = ({name, type, value}) => {
-    const params = { name: name, value: value }
+const ConfigItem = ({name, type, value, description}) => {
+    const params = { name: name, value: value, description: description }
+    let out = `<span class="inputLabel">${name}:</span>`
     switch (type) {
         case "integer":
-            return IntegerConfigItem(params);
+            out += IntegerConfigItem(params)
+            break
         case "boolean":
-            return BooleanConfigItem(params);
+            out += BooleanConfigItem(params)
+            break
         default:
             console.error("Unsupported type '", type, "' for the configuration '", name, "'")
+            return ''
     }
+    out += `<span class="configDesc">${description}</span>`
+    return out
 }
 
-const IntegerConfigItem = ({name, value}) => `${name}: <input type="text" name="${name}" value="${value}" />`
+const IntegerConfigItem = ({name, value}) => `<input type="text" name="${name}" value="${value}" />`
 
 const BooleanConfigItem = ({name, value}) => {
-    let out = `${name}: <input type="checkbox" name="${name}"`
+    let out = `<input type="checkbox" name="${name}"`
     if (value === "true") out += ` checked="checked"`
     out += `/>`
     return out
 }
 
-function generateConfigurationInputs(configurations) {
-    return configurations.map(ConfigItem).join('')
-}
+const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a href="${urlContext}${urlFiles}${path}" target="_blank">${filename}</a>`
 
 function renderConfigurations(data) {
     const conf = []
@@ -229,6 +237,8 @@ function selectAllChecks(value) {
 }
 
 function renderLogs(executionID) {
+    const reportFileDiv = jQuery("#reportFile")
+    reportFileDiv.hide()
     gqlCall(getLogsQuery(executionID), (data) => {
         const block = jQuery("#logs")
         block.html("")
@@ -240,6 +250,11 @@ function renderLogs(executionID) {
         } else {
             STOP_PULLING_LOGS();
             showStopButton(false);
+            const report = data.integrity.scan.report
+            if (report != null && report.length > 0) {
+                const filename = report.slice(report.lastIndexOf('/') + 1)
+                reportFileDiv.html(ReportFileItem(filename, report, urlContext, urlFiles)).show()
+            }
         }
     }, _ => STOP_PULLING_LOGS);
 }

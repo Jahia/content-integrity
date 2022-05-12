@@ -20,8 +20,15 @@
 
 <template:addResources type="javascript" resources="jquery.js,jquery-ui.min.js,contentIntegrity.js"/>
 <template:addResources type="css" resources="contentIntegrity.css,jquery-ui.smoothness.css"/>
+<template:addResources>
+    <script type="text/javascript">
+        const moduleContentIntegrityURL = '${url.context}${url.currentModule}'
+        const urlContext = '${url.context}'
+        const urlFiles  = '${url.files}'
+    </script>
+</template:addResources>
 
-<h2><fmt:message key="label.settings.title"/></h2>
+<h1><fmt:message key="label.settings.title"/></h1>
 <p><fmt:message key="label.contentIntegrity.description"/></p>
 
 <fieldset class="configWrapper">
@@ -46,5 +53,6 @@
     <div>
         <pre id="logs"></pre>
     </div>
+    <div id="reportFile" style="display: none"></div>
 </div>
 <div id="configurationPanelWrapper" style="display: none"></div>

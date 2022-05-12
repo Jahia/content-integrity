@@ -31,6 +31,7 @@ public class GqlIntegrityScan {
 
     private static final Map<String, Status> executionStatus = new LinkedHashMap<>();
     private static final Map<String, List<String>> executionLog = new HashMap<>();
+    private static final Map<String, String> executionReports = new HashMap<>();
     private static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
 
     private String id;
@@ -84,8 +85,9 @@ public class GqlIntegrityScan {
             try {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
-                    results.add(service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, ws, checksToExecute, console)
-                            .setExecutionID(id));
+                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, ws, checksToExecute, console);
+                    if (contentIntegrityResults != null)
+                        results.add(contentIntegrityResults.setExecutionID(id));
                 }
                 if (uploadResults) {
                     final ContentIntegrityResults mergedResults = Utils.mergeResults(results);
@@ -94,7 +96,7 @@ public class GqlIntegrityScan {
                     } else {
                         final int nbErrors = mergedResults.getErrors().size();
                         console.logLine(String.format("%d error%s found", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s"));
-                        Utils.writeDumpInTheJCR(mergedResults, false, false, console);
+                        executionReports.put(id, Utils.writeDumpInTheJCR(mergedResults, false, false, console));
                     }
                 }
                 executionStatus.put(id, Status.FINISHED);
@@ -124,6 +126,12 @@ public class GqlIntegrityScan {
     @GraphQLName("id")
     public String getID() {
         return id;
+    }
+
+    @GraphQLField
+    @GraphQLName("report")
+    public String getReportPath() {
+        return executionReports.get(id);
     }
 
     private String generateExecutionID() {
