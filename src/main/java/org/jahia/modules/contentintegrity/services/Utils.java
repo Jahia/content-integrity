@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
@@ -89,7 +90,12 @@ public class Utils {
                     }
             }
         }
-        if (externalLogger != null) externalLogger.logLine(message);
+        if (externalLogger != null) {
+            if (StringUtils.isNotBlank(message))
+                externalLogger.logLine(message);
+            else if (t != null)
+                externalLogger.logLine(String.format("%s: %s", t.getClass().getName(), t.getMessage()));
+        }
     }
 
     public static List<String> getChecksToExecute(ContentIntegrityService service, List<String> whiteList, List<String> blackList, ExternalLogger externalLogger) {

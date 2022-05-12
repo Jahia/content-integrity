@@ -189,7 +189,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 storeErrorsInCache(results);
                 return results;
             } catch (RepositoryException e) {
-                logger.error("", e);
+                Utils.log("", Utils.LOG_LEVEL.ERROR, logger, externalLogger, e);
             } catch (InterruptedScanException e) {
                 Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
             }
