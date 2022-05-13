@@ -138,7 +138,7 @@ const ConfigureButtonItem = (id, baseURL) => {
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
-    let out = `<div id="configurationPanel" integrityCheckID="${id}"><span class="panelTitle">${name}</div>`;
+    let out = `<div id="configurationPanel" integrityCheckID="${id}"><span class="panelTitle">${name}</span>`;
     if (configurations !== null && configurations !== undefined) {
         out += `<div class="configurationPanelInput">`
         out += configurations.map(ConfigItem).join('')
