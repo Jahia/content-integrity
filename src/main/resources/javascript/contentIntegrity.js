@@ -245,6 +245,7 @@ function renderLogs(executionID) {
         jQuery.each(data.integrity.scan.logs, function () {
             block.append(this+"\n")
         })
+        block.scrollTop(block[0].scrollHeight)
         if (data.integrity.scan.status === RUNNING) {
             showStopButton(true);
         } else {
