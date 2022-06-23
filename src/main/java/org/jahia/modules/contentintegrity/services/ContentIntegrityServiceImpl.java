@@ -242,7 +242,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             beginComputingOwnTime();
             final String path = node.getPath();
             if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(path)) {
-                logger.info(String.format("Skipping node %s", path));
+                Utils.log(String.format("Skipping node %s", path), logger, externalLogger);
                 return;
             }
         } finally {
