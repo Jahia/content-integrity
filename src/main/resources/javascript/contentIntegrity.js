@@ -1,6 +1,9 @@
 const RUNNING = "running";
 let logsLoader;
 const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
+const model = {
+    excludedPaths: []
+}
 
 const gqlConfig = {
     query: "{" +
@@ -14,14 +17,14 @@ const gqlConfig = {
 
 function getScanQuery(rootPath, workspace, checks) {
     return {
-        query: "query ($path: String!, $ws: WorkspaceToScan!, $checks: [String]) {" +
+        query: "query ($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String]) {" +
             "  integrity:contentIntegrity {" +
             "    scan:integrityScan {" +
-            "      id:scan(startNode: $path, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
+            "      id:scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
             "    }" +
             "  }" +
             "}",
-        variables: {path: rootPath, ws: workspace, checks: checks}
+        variables: {path: rootPath, excludedPaths: model.excludedPaths, ws: workspace, checks: checks}
     }
 }
 
@@ -245,6 +248,7 @@ function renderLogs(executionID) {
         jQuery.each(data.integrity.scan.logs, function () {
             block.append(this+"\n")
         })
+        block.scrollTop(block[0].scrollHeight)
         if (data.integrity.scan.status === RUNNING) {
             showStopButton(true);
         } else {
@@ -286,8 +290,46 @@ function showStopButton(visible) {
     }
 }
 
+const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
+
+function addExcludedPath() {
+    const input = jQuery("#pathToExclude");
+    input.focus()
+    const path = input.val().trim()
+    if (path.length === 0) return
+    if (!model.excludedPaths.includes(path)) {
+        model.excludedPaths.push(path)
+        renderExcludedPaths()
+    }
+}
+
+function removeExcludedPath(path) {
+    console.log("remove " + path)
+    if (!model.excludedPaths.includes(path)) return
+    model.excludedPaths = model.excludedPaths.filter(p => p !== path)
+    renderExcludedPaths()
+}
+
+function renderExcludedPaths() {
+    const input = jQuery("#pathToExclude");
+    input.val("")
+    const wrapper = jQuery("#excludedPaths")
+    wrapper.html("")
+    model.excludedPaths.forEach(path => wrapper.append(ExcludedPathItem({path: path})))
+    jQuery(".excludedPath").click(function (){removeExcludedPath(jQuery(this).attr("path"))})
+}
+
 jQuery(document).ready(function () {
     loadConfigurations();
+    jQuery("#pathToExclude").keypress(function (event){
+        // 13: <enter>
+        if (event.which === 13) {
+            jQuery("#addExcludedPath").click()
+        }
+    })
+    jQuery("#addExcludedPath").click(function () {
+        addExcludedPath()
+    })
     jQuery("#runScan").click(function () {
         const rootPath = jQuery("#rootNode").val();
         const workspace = jQuery("#workspace").val();
