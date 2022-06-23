@@ -38,3 +38,13 @@
 #stopScan {
     display: none;
 }
+#excludedPaths {
+    padding-bottom: 5px;
+}
+.excludedPath {
+    border-radius: 5px;
+    background-color: dodgerblue;
+    color: white;
+    padding: 5px;
+    margin-right: 5px;
+}

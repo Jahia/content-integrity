@@ -41,6 +41,10 @@
 <div>
     <label for="rootNode">Root node: </label>
     <input id="rootNode" type="text" value="/"/>
+    <label for="pathToExclude">Excluded paths:</label>
+    <input id="pathToExclude" type="text" value=""/>
+    <button id="addExcludedPath">Add</button>
+    <div id="excludedPaths"></div>
     <label for="workspace">Workspace: </label>
     <select id="workspace">
         <option value="EDIT" selected="selected">default</option>

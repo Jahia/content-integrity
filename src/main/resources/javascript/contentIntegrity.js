@@ -1,6 +1,9 @@
 const RUNNING = "running";
 let logsLoader;
 const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
+const model = {
+    excludedPaths: []
+}
 
 const gqlConfig = {
     query: "{" +
@@ -14,14 +17,14 @@ const gqlConfig = {
 
 function getScanQuery(rootPath, workspace, checks) {
     return {
-        query: "query ($path: String!, $ws: WorkspaceToScan!, $checks: [String]) {" +
+        query: "query ($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String]) {" +
             "  integrity:contentIntegrity {" +
             "    scan:integrityScan {" +
-            "      id:scan(startNode: $path, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
+            "      id:scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
             "    }" +
             "  }" +
             "}",
-        variables: {path: rootPath, ws: workspace, checks: checks}
+        variables: {path: rootPath, excludedPaths: model.excludedPaths, ws: workspace, checks: checks}
     }
 }
 
@@ -287,8 +290,24 @@ function showStopButton(visible) {
     }
 }
 
+const ExcludedPathItem = ({path}) => `<span class="excludedPath">${path}</span>`
+
+function addExcludedPath() {
+    const input = jQuery("#pathToExclude");
+    const path = input.val().trim()
+    if (path.length === 0) return
+    if (!model.excludedPaths.includes(path)) {
+        model.excludedPaths.push(path)
+        input.val("")
+        jQuery("#excludedPaths").append(ExcludedPathItem({path: path}))
+    }
+}
+
 jQuery(document).ready(function () {
     loadConfigurations();
+    jQuery("#addExcludedPath").click(function () {
+        addExcludedPath()
+    })
     jQuery("#runScan").click(function () {
         const rootPath = jQuery("#rootNode").val();
         const workspace = jQuery("#workspace").val();
