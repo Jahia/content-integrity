@@ -38,20 +38,31 @@
     </div>
 </fieldset>
 
+<table id="scanParameters">
+    <tr>
+        <td><label for="rootNode">Root node: </label></td>
+        <td><input id="rootNode" type="text" value="/"/></td>
+    </tr>
+    <tr>
+        <td><label for="pathToExclude">Excluded paths:</label></td>
+        <td>
+            <input id="pathToExclude" type="text" value=""/>
+            <button id="addExcludedPath">Add</button>
+            <div id="excludedPaths"></div>
+        </td>
+    </tr>
+    <tr>
+        <td><label for="workspace">Workspace: </label></td>
+        <td>
+            <select id="workspace">
+                <option value="EDIT" selected="selected">default</option>
+                <option value="LIVE">live</option>
+                <option value="BOTH">All workspaces</option>
+            </select>
+        </td>
+    </tr>
+</table>
 <div>
-    <label for="rootNode">Root node: </label>
-    <input id="rootNode" type="text" value="/"/>
-    <label for="pathToExclude">Excluded paths:</label>
-    <input id="pathToExclude" type="text" value=""/>
-    <button id="addExcludedPath">Add</button>
-    <div id="excludedPaths"></div>
-    <label for="workspace">Workspace: </label>
-    <select id="workspace">
-        <option value="EDIT" selected="selected">default</option>
-        <option value="LIVE">live</option>
-        <option value="BOTH">All workspaces</option>
-    </select>
-    <br/>
     <input id="runScan" type="button" value="Run an integrity check"/>
     <input id="stopScan" type="button" value="Stop"/>
     <div>

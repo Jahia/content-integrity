@@ -38,8 +38,21 @@
 #stopScan {
     display: none;
 }
-#excludedPaths {
+#scanParameters input {
+    padding: 0;
+    margin: 0;
+}
+#scanParameters td {
+    vertical-align: text-top;
+    padding-right: 10px;
     padding-bottom: 5px;
+}
+#excludedPaths {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+#excludedPaths:empty {
+    padding: 0;
 }
 .excludedPath {
     border-radius: 5px;
