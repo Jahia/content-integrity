@@ -294,6 +294,7 @@ const ExcludedPathItem = ({path}) => `<span class="excludedPath">${path}</span>`
 
 function addExcludedPath() {
     const input = jQuery("#pathToExclude");
+    input.focus()
     const path = input.val().trim()
     if (path.length === 0) return
     if (!model.excludedPaths.includes(path)) {
@@ -305,6 +306,12 @@ function addExcludedPath() {
 
 jQuery(document).ready(function () {
     loadConfigurations();
+    jQuery("#pathToExclude").keypress(function (event){
+        // 13: <enter>
+        if (event.which === 13) {
+            jQuery("#addExcludedPath").click()
+        }
+    })
     jQuery("#addExcludedPath").click(function () {
         addExcludedPath()
     })
