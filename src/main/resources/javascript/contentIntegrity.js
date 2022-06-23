@@ -290,7 +290,7 @@ function showStopButton(visible) {
     }
 }
 
-const ExcludedPathItem = ({path}) => `<span class="excludedPath">${path}</span>`
+const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
 
 function addExcludedPath() {
     const input = jQuery("#pathToExclude");
@@ -299,9 +299,24 @@ function addExcludedPath() {
     if (path.length === 0) return
     if (!model.excludedPaths.includes(path)) {
         model.excludedPaths.push(path)
-        input.val("")
-        jQuery("#excludedPaths").append(ExcludedPathItem({path: path}))
+        renderExcludedPaths()
     }
+}
+
+function removeExcludedPath(path) {
+    console.log("remove " + path)
+    if (!model.excludedPaths.includes(path)) return
+    model.excludedPaths = model.excludedPaths.filter(p => p !== path)
+    renderExcludedPaths()
+}
+
+function renderExcludedPaths() {
+    const input = jQuery("#pathToExclude");
+    input.val("")
+    const wrapper = jQuery("#excludedPaths")
+    wrapper.html("")
+    model.excludedPaths.forEach(path => wrapper.append(ExcludedPathItem({path: path})))
+    jQuery(".excludedPath").click(function (){removeExcludedPath(jQuery(this).attr("path"))})
 }
 
 jQuery(document).ready(function () {
