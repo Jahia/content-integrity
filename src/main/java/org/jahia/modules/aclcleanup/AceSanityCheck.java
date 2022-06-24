@@ -224,7 +224,10 @@ public class AceSanityCheck {
                                     } else {
                                         expectedPath.append(externalAcePathPattern);
                                     }
-                                    expectedPath.append("/j:acl/").append(node.getName());
+                                    if (expectedPath.charAt(expectedPath.length() - 1) != '/') {
+                                        expectedPath.append('/');
+                                    }
+                                    expectedPath.append("j:acl/").append(node.getName());
                                     if (!StringUtils.equals(expectedPath.toString(), node.getPath())) {
                                         valueIsValid = false;
                                         final Map<String, Object> infos = new HashMap<>(4);

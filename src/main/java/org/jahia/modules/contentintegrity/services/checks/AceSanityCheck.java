@@ -203,7 +203,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 } else {
                                     expectedPath.append(externalAcePathPattern);
                                 }
-                                expectedPath.append("/j:acl/").append(externalAceNode.getName());
+                                if (expectedPath.charAt(expectedPath.length() - 1) != '/') {
+                                    expectedPath.append('/');
+                                }
+                                expectedPath.append("j:acl/").append(externalAceNode.getName());
                                 if (!StringUtils.equals(expectedPath.toString(), externalAceNode.getPath())) {
                                     errors.addError(createError(externalAceNode, "The external ACE has not the expected path")
                                             .setErrorType(ErrorType.INVALID_EXTERNAL_ACE_PATH)
