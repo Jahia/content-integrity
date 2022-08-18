@@ -105,7 +105,7 @@ function escapeConfigName(name) {
 
 function gqlCall(query, successCB, failureCB) {
     jQuery.ajax({
-        url: '/modules/graphql',
+        url: urlContext + '/modules/graphql',
         type: 'POST',
         contentType: "application/json",
         data: JSON.stringify(query),
