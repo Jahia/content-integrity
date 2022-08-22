@@ -15,6 +15,7 @@
   * [TemplatesIndexationCheck](#templatesindexationcheck)
   * [UndeclaredNodeTypesCheck](#undeclarednodetypescheck)
   * [UndeployedModulesReferencesCheck](#undeployedmodulesreferencescheck)
+  * [UserAccountSanityCheck](#useraccountsanitycheck)
   * [VersionHistoryCheck](#versionhistorycheck)
   * [WipSanityCheck](#wipsanitycheck)
 * [How to extend it](how-to-extend.md#summary)
@@ -304,6 +305,25 @@ If the module was undeployed for good reasons, then you need to clean the site n
 
     root@dx()> jcr:cd /sites/digitall
     root@dx()> jcr:prop-set -multiple -op remove j:installedModules myOldModule 
+
+## UserAccountSanityCheck
+
+Detect the cased when the user is not granted the role `owner` on his own account
+
+### Dealing with errors
+                             
+User accounts are auto published. If the error is detected on the same user node in both workspaces, then fixing it in the `default` workspace will actually fix the issue in both.
+
+You can run a groovy script to grant the missing role:
+
+```
+def userName = "john";
+def site = "digitall";
+def userNode = JahiaUserManagerService.getInstance().lookupUser(userName, site);
+Set roles = ["owner"];
+userNode.grantRoles("u:" + userName, roles);
+session.save(); 
+```
 
 ## VersionHistoryCheck
 
