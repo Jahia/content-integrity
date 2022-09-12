@@ -452,7 +452,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     private boolean isTranslationTypeParent(String type) {
-        if (jntTranslationNtParents.containsKey(type))
+        if (!jntTranslationNtParents.containsKey(type))
             jntTranslationNtParents.put(type, jntTranslationNt.isNodeType(type));
         return jntTranslationNtParents.get(type);
     }
