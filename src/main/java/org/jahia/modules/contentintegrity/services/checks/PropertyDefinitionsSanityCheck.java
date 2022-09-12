@@ -31,9 +31,11 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import javax.jcr.nodetype.ConstraintViolationException;
+import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.PropertyDefinition;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -42,8 +44,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.jahia.api.Constants.JAHIANT_TRANSLATION;
+
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=" + Constants.JAHIANT_TRANSLATION
+        ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=" + JAHIANT_TRANSLATION
 })
 public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
 
@@ -54,9 +58,23 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
     private final ContentIntegrityCheckConfiguration configurations;
 
+    private ExtendedNodeType jntTranslationNt;
+    private Map<String, Boolean> jntTranslationNtParents = new HashMap<>();
+
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
         getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER, "If true, only the translation sub-nodes related to an active language are checked when the node is in a site");
+    }
+
+    @Override
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        try {
+            jntTranslationNt = NodeTypeRegistry.getInstance().getNodeType(JAHIANT_TRANSLATION);
+        } catch (NoSuchNodeTypeException e) {
+            logger.error(String.format("Impossible to load the definition of %s", JAHIANT_TRANSLATION), e);
+            setScanDurationDisabled(true);
+        }
+        jntTranslationNtParents.clear();
     }
 
     @Override
@@ -257,7 +275,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 if (namedPropertyDefinitions.containsKey(pName)) {
                     if (isI18n && propertyDefinition != null) {
                         isUndeclared = !namedPropertyDefinitions.get(pName).isInternationalized() &&
-                                !NodeTypeRegistry.getInstance().getNodeType(Constants.JAHIANT_TRANSLATION).isNodeType(propertyDefinition.getDeclaringNodeType().getName());
+                                !isTranslationTypeParent(propertyDefinition.getDeclaringNodeType().getName());
                     } else {
                         isUndeclared = namedPropertyDefinitions.get(pName).isInternationalized() != isI18n;
                     }
@@ -406,7 +424,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
         final String propertyDefinitionName = propertyDefinition.getName();
         if (StringUtils.equals(propertyDefinitionName, "*")) {
-            if (isI18n && StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), Constants.JAHIANT_TRANSLATION)) {
+            if (isI18n && StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), JAHIANT_TRANSLATION)) {
                 final ExtendedPropertyDefinition epd = namedPropertyDefinitions.get(property.getName());
                 if (epd != null && epd.isInternationalized()) return epd;
             }
@@ -431,6 +449,12 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         } else {
             return node;
         }
+    }
+
+    private boolean isTranslationTypeParent(String type) {
+        if (jntTranslationNtParents.containsKey(type))
+            jntTranslationNtParents.put(type, jntTranslationNt.isNodeType(type));
+        return jntTranslationNtParents.get(type);
     }
 
     private void trackMissingMandatoryValue(String propertyName, ExtendedPropertyDefinition propertyDefinition,
