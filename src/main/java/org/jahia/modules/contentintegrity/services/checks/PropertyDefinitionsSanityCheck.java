@@ -16,6 +16,7 @@ import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
+import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.utils.LanguageCodeConverters;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -216,7 +217,6 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
             boolean isUndeclared;
             PropertyDefinition propertyDefinition = null;
-            ExtendedPropertyDefinition epd = null;
             if (node.isNodeType("jnt:externalProviderExtension")) {
                 final JCRPropertyWrapper p;
                 try {
@@ -242,28 +242,32 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             } else {
                 try {
                     propertyDefinition = property.getDefinition();
-                    /*
-                    in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtual node), the extension node inherits from
-                    jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
-                    if this case happens again with other types, a more generic solution would be
-                        if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
-                     */
-                    if (StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
-                        continue;
-                    if (!isI18n) isUndeclared = false;
-                    else if (!StringUtils.equals(propertyDefinition.getName(), "*")) isUndeclared = false;
-                    else {
-                        isUndeclared = (!namedPropertyDefinitions.containsKey(pName) || !namedPropertyDefinitions.get(pName).isInternationalized())
-                                && !unstructuredPropertyDefinitions.containsKey(getExtendedPropertyType(property, true));
-                    }
                 } catch (RepositoryException e) {
                     // if the property is declared, but its value doesn't match the declared type, then property.getDefinition()
                     // raises an exception
-                    final ExtendedPropertyDefinition epdTmp = namedPropertyDefinitions.get(pName);
-                    if (namedPropertyDefinitions.containsKey(pName) && !epdTmp.isInternationalized()) {
-                        epd = epdTmp;
+                }
+                /*
+                in case of an external node extension (e.g. the node written in Jackrabbit to complete the virtual node), the extension node inherits from
+                jmix:externalProviderExtension , but not the Jahia node. As a consequence, it is not possible to load the ExtendedPropertyDefinition.
+                if this case happens again with other types, a more generic solution would be
+                    if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
+                 */
+                if (propertyDefinition != null && StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
+                    continue;
+                if (namedPropertyDefinitions.containsKey(pName)) {
+                    if (isI18n && propertyDefinition != null) {
+                        isUndeclared = !namedPropertyDefinitions.get(pName).isInternationalized() &&
+                                !NodeTypeRegistry.getInstance().getNodeType(Constants.JAHIANT_TRANSLATION).isNodeType(propertyDefinition.getDeclaringNodeType().getName());
+                    } else {
+                        isUndeclared = namedPropertyDefinitions.get(pName).isInternationalized() != isI18n;
                     }
-                    isUndeclared = isI18n || epd == null;
+                } else if (propertyDefinition != null && StringUtils.equals(propertyDefinition.getName(), "*")) {
+                    isUndeclared = !unstructuredPropertyDefinitions.containsKey(getExtendedPropertyType(property, isI18n));
+                } else if (propertyDefinition != null) {
+                    isUndeclared = false;
+                    logger.error(String.format("The property %s is declared at Jackrabbit level, but not at Jahia level", property.getPath()));
+                } else {
+                    isUndeclared = true;
                 }
             }
 
@@ -272,9 +276,8 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 continue;
             }
 
-            // from here, the property is declared, propertyDefinition can be null, but in that case epd is not null
-            if (epd == null)
-                epd = getExtendedPropertyDefinition(propertyDefinition, property, isI18n, namedPropertyDefinitions, unstructuredPropertyDefinitions);
+            // from here, the property is declared
+            final ExtendedPropertyDefinition epd = getExtendedPropertyDefinition(propertyDefinition, property, isI18n, namedPropertyDefinitions, unstructuredPropertyDefinitions);
             if (epd == null) {
                 logger.error(String.format("Impossible to load the property definition for the property %s on the node %s", pName, jahiaNode.getPath()));
                 continue;
@@ -399,6 +402,8 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                                                                      Property property, boolean isI18n,
                                                                      Map<String, ExtendedPropertyDefinition> namedPropertyDefinitions,
                                                                      Map<Integer, ExtendedPropertyDefinition> unstructuredPropertyDefinitions) throws RepositoryException {
+        if (propertyDefinition == null) return namedPropertyDefinitions.get(property.getName());
+
         final String propertyDefinitionName = propertyDefinition.getName();
         if (StringUtils.equals(propertyDefinitionName, "*")) {
             if (isI18n && StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), Constants.JAHIANT_TRANSLATION)) {
