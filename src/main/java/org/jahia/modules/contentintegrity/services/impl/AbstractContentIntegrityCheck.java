@@ -41,6 +41,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     private float priority = 100f;
     private boolean enabled = true;
+    private boolean scanDurationDisabled = false;
     private String description;
     private final List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
     private String id = null;
@@ -132,12 +133,16 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return enabled && !scanDurationDisabled;
     }
 
     @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    protected void setScanDurationDisabled(boolean scanDurationDisabled) {
+        this.scanDurationDisabled = scanDurationDisabled;
     }
 
     public String getDescription() {
@@ -213,13 +218,14 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         fatalErrorCount += 1;
         if (fatalErrorCount >= FATAL_ERRORS_THRESHOLD) {
             logger.warn(String.format("Automatically disabling the check as it is raising too many unhandled errors: %s", getName()));
-            this.setEnabled(false);
+            setScanDurationDisabled(true);
         }
     }
 
     @Override
     public final void initializeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
         fatalErrorCount = 0;
+        setScanDurationDisabled(false);
         initializeIntegrityTestInternal(node, excludedPaths);
     }
 
@@ -231,9 +237,9 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     @Override
     public final void finalizeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
         finalizeIntegrityTestInternal(node, excludedPaths);
-        if (!enabled && fatalErrorCount > 0) {
+        if (!scanDurationDisabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
-            this.setEnabled(true);
+            setScanDurationDisabled(false);
         }
     }
 

@@ -3,6 +3,7 @@
 * Embedded tests
   * [AceSanityCheck](#acesanitycheck)
   * [BinaryPropertiesSanityCheck](#binarypropertiessanitycheck)
+  * [ChildNodeDefinitionsSanityCheck](#childnodedefinitionssanitycheck)
   * [FlatStorageCheck](#flatstoragecheck)
   * [HomePageDeclarationCheck](#homepagedeclarationcheck)
   * [JCRLanguagePropertyCheck](#jcrlanguagepropertycheck)
@@ -54,6 +55,16 @@ It can also be faced when restoring a backup, if the backup was taken while Jahi
 
 Since each binary property value is saved as a unique file in the `datastore` folder, the issue can be easily fixed by restoring the missing file, with the correct name and path. You can recover the missing files from a backup of the `datastore` folder and copy them onto the production filesystem. A binary file can be referenced by several properties, so the number of missing files can be lower than the number of errors.  
 If the number of errors is important, you can also merge the `datastore` folder from your backup into the one of your production environment. Doing so, you might restore some useless binaries as well (e.g. referenced by no property). If you proceed that way, you can then run the `Datastore garbage collector` in the tools, to detect and purge those orphan binaries. 
+
+## ChildNodeDefinitionsSanityCheck
+
+Detect the nodes which are not allowed by the definition of their parent node.
+
+### Dealing with errors
+
+Usually, such issue appears after a modification of some definitions. If the name of the child node has been renamed, then the related nodes should be renamed accordingly in the JCR.
+
+If the child node is of a type that is not allowed anymore by its parent, then such node should be deleted or moved to a new parent.
 
 ## FlatStorageCheck
 
