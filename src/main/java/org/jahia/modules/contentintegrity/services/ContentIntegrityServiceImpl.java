@@ -182,7 +182,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
                 }
                 final long testDuration = System.currentTimeMillis() - start;
-                final String msg = String.format("Integrity checked under %s in the workspace %s in %s", path, workspace, DateUtils.formatDurationWords(testDuration));
+                final String msg = String.format("Integrity checked under %s in the workspace %s in %s, %d nodes scanned", path, workspace, DateUtils.formatDurationWords(testDuration), ProgressMonitor.getInstance().getCounter());
                 Utils.log(msg, logger, externalLogger);
                 printChecksDuration(externalLogger.includeSummary() ? externalLogger : null);
                 final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors);
