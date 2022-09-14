@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.value.InternalValue;
 import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
@@ -280,7 +281,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                         isUndeclared = namedPropertyDefinitions.get(pName).isInternationalized() != isI18n;
                     }
                 } else if (propertyDefinition != null && StringUtils.equals(propertyDefinition.getName(), "*")) {
-                    isUndeclared = !unstructuredPropertyDefinitions.containsKey(getExtendedPropertyType(property, isI18n));
+                    isUndeclared = unstructuredPropertyDefinitions.keySet().stream().noneMatch(k -> areExtendedPropertyTypesCompliant(getExtendedPropertyType(property, isI18n), k));
                 } else if (propertyDefinition != null) {
                     isUndeclared = false;
                     logger.error(String.format("The property %s is declared at Jackrabbit level, but not at Jahia level", property.getPath()));
@@ -412,8 +413,18 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         return definitionBaseType != PropertyType.UNDEFINED && propertyBaseType != definitionBaseType;
     }
 
+    private boolean i18nStatusDiffer(int propertyXType, int definitionXType) {
+        return Math.floor(propertyXType / 100d) != Math.floor(definitionXType / 100d);
+    }
+
     private boolean multiValuedStatusDiffer(int propertyXType, int definitionXType) {
         return Math.floor(propertyXType / 1000d) != Math.floor(definitionXType / 1000d);
+    }
+
+    private boolean areExtendedPropertyTypesCompliant(int propertyXType, int definitionXType) {
+        if (i18nStatusDiffer(propertyXType, definitionXType) || multiValuedStatusDiffer(propertyXType, definitionXType))
+            return false;
+        return !baseTypeDiffer(propertyXType, definitionXType);
     }
 
     private ExtendedPropertyDefinition getExtendedPropertyDefinition(PropertyDefinition propertyDefinition,
@@ -428,7 +439,13 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 final ExtendedPropertyDefinition epd = namedPropertyDefinitions.get(property.getName());
                 if (epd != null && epd.isInternationalized()) return epd;
             }
-            return unstructuredPropertyDefinitions.get(getExtendedPropertyType(property, isI18n));
+            final List<Integer> compliantDefinitions = unstructuredPropertyDefinitions.keySet().stream()
+                    .filter(k -> areExtendedPropertyTypesCompliant(getExtendedPropertyType(property, isI18n), k))
+                    .collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(compliantDefinitions)) return null;
+            if (compliantDefinitions.size() == 1) return unstructuredPropertyDefinitions.get(compliantDefinitions.get(0));
+            logger.error("Several unstructured definitions are available for the property " + property.getPath());
+            return null;
         } else {
             return namedPropertyDefinitions.get(propertyDefinitionName);
         }
