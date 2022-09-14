@@ -2,18 +2,19 @@ package org.jahia.modules.contentintegrity.services;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.reporting.CsvReport;
+import org.jahia.modules.contentintegrity.services.reporting.Report;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRTemplate;
-import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,16 +23,15 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -42,12 +42,12 @@ public class Utils {
     private static final String CSV_SEPARATOR = ";";
     private static final String CSV_VALUE_WRAPPER = "\"";
     private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
-    private static final List<String> DEFAULT_CSV_HEADER_ITEMS = Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Site", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information", "Specific extra information");
     private static final String ALL_WORKSPACES = "all-workspaces";
     private static final String NODE_UNDER_SITE_PATH_PREFIX = "/sites/";
     private static final String NODE_UNDER_MODULES_PATH_PREFIX = "/modules/";
     private static final char NODE_PATH_SEPARATOR_CHAR = '/';
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
+    private static final List<Class<? extends Report>> reportTypes = Collections.singletonList(CsvReport.class);
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -69,13 +69,13 @@ public class Utils {
      * Log a message on the main logger as well as on external loggers.
      * The message and the exception are both logged on the main logger (if defined).
      * Only the message is logged on the external loggers, unless this message is blank. In such case, the message extracted from the exception is logged on the external loggers instead.
-     *
+     * <p>
      * If the specified log level is not enabled on the main logger, then nothing is logged, neither on the main logger nor on the external loggers.
      *
-     * @param message the message
-     * @param logLevel the log level
-     * @param log the main logger
-     * @param t the exception
+     * @param message         the message
+     * @param logLevel        the log level
+     * @param log             the main logger
+     * @param t               the exception
      * @param externalLoggers the external loggers
      */
     public static void log(String message, LOG_LEVEL logLevel, Logger log, Throwable t, ExternalLogger... externalLoggers) {
@@ -155,29 +155,6 @@ public class Utils {
         }
     }
 
-    private static String generateReportFilename(ContentIntegrityResults results, boolean excludeFixedErrors) {
-        return String.format("%s-%s.csv", results.getID(), excludeFixedErrors ? "remainingErrors" : "full");
-    }
-
-    private static List<String> toFileContent(ContentIntegrityResults results, boolean noCsvHeader) {
-        final List<String> lines = results.getErrors().stream()
-                .map(ContentIntegrityError::toCSV)
-                .collect(Collectors.toList());
-        if (!noCsvHeader) {
-            String header = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", null);
-            if (StringUtils.isBlank(header)) {
-                final StringBuilder sb = new StringBuilder();
-                for (String item : DEFAULT_CSV_HEADER_ITEMS) {
-                    appendToCSVLine(sb, item);
-                }
-                header = sb.toString();
-            }
-            lines.add(0, header);
-        }
-
-        return lines;
-    }
-
     public static void appendToCSVLine(StringBuilder line, Object value) {
         if (line.length() > 0) line.append(CSV_SEPARATOR);
         line.append(CSV_VALUE_WRAPPER);
@@ -187,49 +164,63 @@ public class Utils {
         line.append(CSV_VALUE_WRAPPER);
     }
 
-    public static String writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader, ExternalLogger externalLogger) {
+    public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean withCsvHeader, ExternalLogger externalLogger) {
+        final AtomicInteger reportsCount = new AtomicInteger();
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<String>() {
+            JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<Void>() {
                 @Override
-                public String doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                    final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
-                    final JCRNodeWrapper outputDir = filesFolder.hasNode(JCR_REPORTS_FOLDER_NAME) ?
-                            filesFolder.getNode(JCR_REPORTS_FOLDER_NAME) :
-                            filesFolder.addNode(JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER);
-                    if (!outputDir.isNodeType(Constants.JAHIANT_FOLDER)) {
-                        logger.error(String.format("Impossible to write the folder %s of type %s", outputDir.getPath(), outputDir.getPrimaryNodeTypeName()));
-                        return null;
-                    }
-                    final String filename = generateReportFilename(results, excludeFixedErrors);
-
-                    final ByteArrayOutputStream out = new ByteArrayOutputStream();
+                public Void doInJCR(JCRSessionWrapper session) throws RepositoryException {
+                    final String resultsSignature = results.getSignature(excludeFixedErrors);
+                    final JCRNodeWrapper outputDir;
                     try {
-                        IOUtils.writeLines(toFileContent(results, noCsvHeader), null, out, StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        logger.error("", e);
+                        final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
+                        outputDir = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER)
+                                .addNode(resultsSignature, Constants.JAHIANT_FOLDER);
+                        outputDir.addMixin("jmix:nolive");
+                    } catch (RepositoryException re) {
+                        logger.error("Impossible to retrieve the reports folder", re);
                         return null;
                     }
-                    final byte[] bytes = out.toByteArray();
 
-                    final JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
-                    reportNode.addMixin("jmix:nolive");
-                    writeReportMetadata(reportNode, results);
-                    session.save();
-                    final String reportPath = reportNode.getPath();
-                    externalLogger.logLine("Written the report in " + reportPath);
+                    reportTypes.forEach(rt -> {
+                        final Report reportGenerator;
+                        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+                        try {
+                            reportGenerator = rt.newInstance();
+                            reportGenerator.write(out, results, withCsvHeader, excludeFixedErrors);
+                        } catch (InstantiationException | IllegalAccessException e) {
+                            logger.error("Impossible to load the report generator", e);
+                            return;
+                        } catch (IOException e) {
+                            logger.error("Impossible to generate the report content", e);
+                            return;
+                        }
+                        final byte[] bytes = out.toByteArray();
 
-                    final Map<String, String> errorsMetadata = new HashMap<>();
-                    errorsMetadata.put("report-filename", filename);
-                    errorsMetadata.put("report-path", reportPath);
-                    results.addMetadata(errorsMetadata);
+                        final JCRNodeWrapper reportNode;
+                        try {
+                            reportNode = outputDir.uploadFile(reportGenerator.getFileName(resultsSignature), new ByteArrayInputStream(bytes), reportGenerator.getFileContentType());
+                            reportNode.addMixin("jmix:nolive");
+                            writeReportMetadata(reportNode, results);
+                            session.save();
+                        } catch (RepositoryException e) {
+                            logger.error("Impossible to upload the report", e);
+                            return;
+                        }
+                        final String reportPath = reportNode.getPath();
+                        results.addJcrReport(reportNode.getName(), reportPath, reportGenerator.getFileExtension());
+                        reportsCount.incrementAndGet();
+                        externalLogger.logLine("Written the report in " + reportPath);
+                    });
 
-                    return reportPath;
+                    return null;
                 }
             });
         } catch (RepositoryException e) {
             logger.error("", e);
-            return null;
         }
+
+        return reportsCount.get() == reportTypes.size();
     }
 
     private static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
@@ -266,37 +257,54 @@ public class Utils {
         reportNode.setProperty("integrity:countByErrorType", countByErrorType);
     }
 
-    public static String writeDumpOnTheFilesystem(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader) {
+    public static boolean writeDumpOnTheFilesystem(ContentIntegrityResults results, boolean excludeFixedErrors, boolean withCsvHeader) {
         final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
         final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
-        final String reportPath;
 
         if (folderCreated && outputDir.canWrite()) {
-            final File csvFile = new File(outputDir, Utils.generateReportFilename(results, excludeFixedErrors));
-            final boolean exists = csvFile.exists();
-            if (!exists) {
+            final AtomicInteger reportsCount = new AtomicInteger();
+            reportTypes.forEach(rt -> {
+                final Report reportGenerator;
+                final ByteArrayOutputStream out = new ByteArrayOutputStream();
                 try {
-                    csvFile.createNewFile();
+                    reportGenerator = rt.newInstance();
+                    reportGenerator.write(out, results, withCsvHeader, excludeFixedErrors);
+                } catch (InstantiationException | IllegalAccessException e) {
+                    logger.error("Impossible to load the report generator", e);
+                    return;
                 } catch (IOException e) {
-                    logger.error("Impossible to create the file", e);
-                    return null;
+                    logger.error("Impossible to generate the report content", e);
+                    return;
                 }
-            }
-            final List<String> lines = Utils.toFileContent(results, noCsvHeader);
-            try {
-                FileUtils.writeLines(csvFile, "UTF-8", lines);
-            } catch (IOException e) {
-                logger.error("Impossible to write the file content", e);
-                return null;
-            }
-            reportPath = csvFile.getPath();
-            System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", reportPath));
+                final byte[] bytes = out.toByteArray();
+                final File file = new File(outputDir, reportGenerator.getFileName(results.getSignature(excludeFixedErrors)));
+                final boolean exists = file.exists();
+                if (!exists) {
+                    try {
+                        file.createNewFile();
+                    } catch (IOException e) {
+                        logger.error("Impossible to create the file", e);
+                        return;
+                    }
+                }
+                try {
+                    FileUtils.writeByteArrayToFile(file, bytes);
+                } catch (IOException e) {
+                    logger.error("Impossible to write the file content", e);
+                    return;
+                }
+                final String reportPath = file.getPath();
+                results.addFilesystemReport(file.getName(), reportPath, reportGenerator.getFileExtension());
+                reportsCount.incrementAndGet();
+                System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", reportPath));
+            });
+
+            return reportsCount.get() == reportTypes.size();
         } else {
             logger.error("Impossible to write the folder " + outputDir.getPath());
-            return null;
         }
 
-        return reportPath;
+        return false;
     }
 
     public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {

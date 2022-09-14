@@ -45,7 +45,8 @@ function getLogsQuery(executionID) {
         query: "query ($id : String!) {" +
             "    integrity:contentIntegrity {" +
             "        scan:integrityScan (id: $id) {" +
-            "            id status logs report" +
+            "            id status logs" +
+            "            reports {name location uri extension}" +
             "        }" +
             "    }" +
             "}",
@@ -139,7 +140,8 @@ function getScanResults(filters) {
         query: "query ($id : String!, $offset : Int!, $size : Int!, $filters : [String]!) {" +
             "    integrity:contentIntegrity {" +
             "        results:scanResultsDetails(id: $id, filters: $filters) {" +
-            "            reportFilePath reportFileName errorCount totalErrorCount" +
+            "            errorCount totalErrorCount" +
+            "            reports {name location uri extension}" +
             "            errors(offset: $offset, pageSize: $size) {" +
             fields.join(" ") +
             "            }" +
@@ -269,7 +271,19 @@ const BooleanConfigItem = ({name, value}) => {
     return out
 }
 
-const ReportFileItem = (filename, path) => `Report: <a href="${constants.url.files}${path}" target="_blank">${filename}</a>`
+const ReportFileItem = (filename, path) => `<a href="${constants.url.files}${path}" target="_blank" class="report">${filename}</a>`
+
+const ReportFileListItem = (files) => {
+    const validFiles = files.map(({name, location, uri}) => {
+        if (location !== "JCR") return null
+        return {filename: name, path: uri}
+    }).filter(f => f !== null)
+    if (validFiles.length === 0) return ""
+
+    let out = validFiles.length > 1 ? "Reports:" : "Report:"
+    files.forEach(({filename, path}) => out += ReportFileItem(filename, path))
+    return out
+}
 
 const ScanResultsSelectorItem = (ids) => {
     const current = model.errorsDisplay.resultsID
@@ -507,10 +521,10 @@ function renderLogs(executionID) {
         } else {
             STOP_PULLING_LOGS();
             showStopButton(false);
-            const report = data.integrity.scan.report
-            if (report != null && report.length > 0) {
-                const filename = report.slice(report.lastIndexOf('/') + 1)
-                reportFileDiv.html(ReportFileItem(filename, report)).show()
+            const reports = data.integrity.scan.reports
+            if (reports != null) {
+                const out = ReportFileListItem(reports)
+                if (out.length > 0) reportFileDiv.html().show()
             }
         }
     }, _ => STOP_PULLING_LOGS);
@@ -656,9 +670,9 @@ function displayScanResults(offset, pageSize) {
             displayErrorDetails(jQuery(this).attr("error-id"))
         })
 
-        const reportFilePath = results.reportFilePath
-        if (reportFilePath !== null) {
-            out.append(ReportFileItem(results.reportFileName, results.reportFilePath))
+        const reports = results.reports
+        if (reports != null) {
+            out.append(ReportFileListItem(reports))
         }
     })
 }

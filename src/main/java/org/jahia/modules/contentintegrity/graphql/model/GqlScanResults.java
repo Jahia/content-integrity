@@ -10,6 +10,7 @@ import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +27,7 @@ public class GqlScanResults {
 
     private final List<ContentIntegrityError> errors;
     private final int errorCount, totalErrorCount;
-    private final String reportFilePath, reportFileName;
+    private final List<GqlScanReportFile> reports;
 
     public GqlScanResults(String id, Collection<String> filters) {
         final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
@@ -34,8 +35,7 @@ public class GqlScanResults {
             errors = null;
             errorCount = 0;
             totalErrorCount = 0;
-            reportFileName = null;
-            reportFilePath = null;
+            reports = new ArrayList<>();
 
             return;
         }
@@ -52,8 +52,9 @@ public class GqlScanResults {
         }
         errorCount = errors.size();
         totalErrorCount = all.getErrors().size();
-        reportFileName = all.getMetadata("report-path");
-        reportFilePath = all.getMetadata("report-filename");
+        reports = all.getReports().stream()
+                .map(GqlScanReportFile::new)
+                .collect(Collectors.toList());
     }
 
     public boolean isValid() {
@@ -61,13 +62,8 @@ public class GqlScanResults {
     }
 
     @GraphQLField
-    public String getReportFilePath() {
-        return reportFilePath;
-    }
-
-    @GraphQLField
-    public String getReportFileName() {
-        return reportFileName;
+    public List<GqlScanReportFile> getReports() {
+        return reports;
     }
 
     @GraphQLField

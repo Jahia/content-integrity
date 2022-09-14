@@ -6,10 +6,9 @@ import org.jahia.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ContentIntegrityResults {
 
@@ -23,7 +22,7 @@ public class ContentIntegrityResults {
     private final List<ContentIntegrityError> errors;
     private String executionID;
     private final List<String> executionLog;
-    private Map<String,String> metadata;
+    private final List<ContentIntegrityReport> reports;
 
     public ContentIntegrityResults(Long testDate, Long testDuration, String workspace, List<ContentIntegrityError> errors, List<String> executionLog) {
         this.testDate = testDate;
@@ -33,7 +32,7 @@ public class ContentIntegrityResults {
         this.workspace = workspace;
         this.errors = errors;
         this.executionLog = executionLog;
-        metadata = new HashMap<>();
+        reports = new ArrayList<>();
     }
 
     public Long getTestDate() {
@@ -73,17 +72,25 @@ public class ContentIntegrityResults {
         return this;
     }
 
-    public String getMetadata(String name) {
-        return metadata.get(name);
+    public String getSignature(boolean excludeFixedErrors) {
+        return String.format("%s-%s", getID(), excludeFixedErrors ? "remainingErrors" : "full");
     }
 
-    public void addMetadata(String name, String value) {
-        metadata.put(name, value);
+    public void addJcrReport(String name, String path, String extension) {
+        addReport(name, path, extension, ContentIntegrityReport.LOCATION.JCR);
+    }
+
+    public void addFilesystemReport(String name, String path, String extension) {
+        addReport(name, path, extension, ContentIntegrityReport.LOCATION.FILESYSTEM);
+    }
+
+    private void addReport(String name, String path, String extension, ContentIntegrityReport.LOCATION location) {
+        final ContentIntegrityReport report = new ContentIntegrityReport(name, location, path, extension);
+        reports.add(report);
         Utils.getContentIntegrityService().storeErrorsInCache(this);
     }
 
-    public void addMetadata(Map<String,String> entries) {
-        metadata.putAll(entries);
-        Utils.getContentIntegrityService().storeErrorsInCache(this);
+    public List<ContentIntegrityReport> getReports() {
+        return Collections.unmodifiableList(reports);
     }
 }
