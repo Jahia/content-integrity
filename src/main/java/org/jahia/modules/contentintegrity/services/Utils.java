@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -166,13 +167,7 @@ public class Utils {
                     final byte[] bytes = out.toByteArray();
 
                     final JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
-                    reportNode.addMixin("integrity:scanReport");
-                    reportNode.setProperty("integrity:errorsCount", results.getErrors().size());
-                    reportNode.setProperty("integrity:duration", results.getFormattedTestDuration());
-                    final GregorianCalendar testDate = new GregorianCalendar();
-                    testDate.setTimeInMillis(results.getTestDate());
-                    reportNode.setProperty("integrity:executionDate", testDate);
-                    reportNode.setProperty("integrity:executionLog", StringUtils.join(results.getExecutionLog(), "\n"));
+                    writeReportMetadata(reportNode, results);
                     session.save();
                     final String reportPath = reportNode.getPath();
                     externalLogger.logLine("Written the report in " + reportPath);
@@ -184,6 +179,36 @@ public class Utils {
             logger.error("", e);
             return null;
         }
+    }
+
+    private static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
+        reportNode.addMixin("integrity:scanReport");
+        reportNode.setProperty("integrity:errorsCount", results.getErrors().size());
+        reportNode.setProperty("integrity:scannedWorkspace", results.getWorkspace());
+        reportNode.setProperty("integrity:duration", results.getFormattedTestDuration());
+        final GregorianCalendar testDate = new GregorianCalendar();
+        testDate.setTimeInMillis(results.getTestDate());
+        reportNode.setProperty("integrity:executionDate", testDate);
+        reportNode.setProperty("integrity:executionLog", StringUtils.join(results.getExecutionLog(), "\n"));
+        final Map<String, List<ContentIntegrityError>> errorsByType = results.getErrors().stream()
+                .collect(Collectors.groupingBy(ContentIntegrityError::getIntegrityCheckID));
+        final String countByErrorType = errorsByType.entrySet().stream()
+                .map(e -> {
+                    final List<String> lines = new ArrayList<>();
+                    lines.add(String.format("%s : %d errors", e.getKey(), e.getValue().size()));
+                    e.getValue().stream()
+                            .collect(Collectors.groupingBy(ContentIntegrityError::getWorkspace))
+                            .forEach((key, value) -> {
+                                lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 4), key, value.size()));
+                                value.stream()
+                                        .collect(Collectors.groupingBy(ContentIntegrityError::getConstraintMessage))
+                                        .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 8), msg, errors.size())));
+                            });
+                    return lines;
+                })
+                .flatMap(Collection::stream)
+                .collect(Collectors.joining("\n"));
+        reportNode.setProperty("integrity:countByErrorType", countByErrorType);
     }
 
     public static String writeDumpOnTheFilesystem(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader) {

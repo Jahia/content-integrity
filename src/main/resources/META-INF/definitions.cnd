@@ -4,8 +4,10 @@
 
 [integrity:scanReport] mixin
 - integrity:errorsCount (long) protected
-- integrity:executionLog (string, textarea) protected
-- integrity:duration (string) protected
+- integrity:scannedWorkspace (string) protected
 - integrity:executionDate (date) protected
+- integrity:duration (string) protected
+- integrity:executionLog (string, textarea) protected
+- integrity:countByErrorType (string, textarea) protected
 
 [jnt:contentIntegrityAdminPanel] > jnt:content, jmix:structuredContent, jmix:studioOnly
