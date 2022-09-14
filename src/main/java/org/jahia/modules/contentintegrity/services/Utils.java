@@ -22,8 +22,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -165,6 +166,13 @@ public class Utils {
                     final byte[] bytes = out.toByteArray();
 
                     final JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
+                    reportNode.addMixin("integrity:scanReport");
+                    reportNode.setProperty("integrity:errorsCount", results.getErrors().size());
+                    reportNode.setProperty("integrity:duration", results.getFormattedTestDuration());
+                    final GregorianCalendar testDate = new GregorianCalendar();
+                    testDate.setTimeInMillis(results.getTestDate());
+                    reportNode.setProperty("integrity:executionDate", testDate);
+                    reportNode.setProperty("integrity:executionLog", StringUtils.join(results.getExecutionLog(), "\n"));
                     session.save();
                     final String reportPath = reportNode.getPath();
                     externalLogger.logLine("Written the report in " + reportPath);
@@ -224,7 +232,11 @@ public class Utils {
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
+        final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).reduce(new ArrayList<>(), (strings, strings2) -> {
+            strings.addAll(strings2);
+            return strings;
+        });
 
-        return new ContentIntegrityResults(testDate, duration, workspace, errors);
+        return new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
     }
 }

@@ -182,10 +182,15 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
                 }
                 final long testDuration = System.currentTimeMillis() - start;
-                final String msg = String.format("Integrity checked under %s in the workspace %s in %s, %d nodes scanned", path, workspace, DateUtils.formatDurationWords(testDuration), ProgressMonitor.getInstance().getCounter());
-                Utils.log(msg, logger, externalLogger);
-                printChecksDuration(externalLogger.includeSummary() ? externalLogger : null);
-                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors);
+                final List<String> summary = new ArrayList<>();
+                final ExternalLogger summaryLogger = summary::add;
+                final String msg = String.format("Integrity checked under %s in the workspace %s in %s, %d nodes scanned, %d errors found", path, workspace, DateUtils.formatDurationWords(testDuration), ProgressMonitor.getInstance().getCounter(), errors.size());
+                Utils.log(msg, logger, externalLogger, summaryLogger);
+                final List<ExternalLogger> externalLoggers = new ArrayList<>();
+                externalLoggers.add(summaryLogger);
+                if (externalLogger.includeSummary()) externalLoggers.add(externalLogger);
+                printChecksDuration(externalLoggers.toArray(new ExternalLogger[0]));
+                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors, summary);
                 storeErrorsInCache(results);
                 return results;
             } catch (RepositoryException e) {
@@ -224,13 +229,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         ownTimeIntervalStart = 0L;
     }
 
-    private void printChecksDuration(ExternalLogger externalLogger) {
+    private void printChecksDuration(ExternalLogger... externalLoggers) {
         if (logger.isDebugEnabled())
             logger.debug(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodesToScanCalculationDuration)));
-        Utils.log(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)), logger, externalLogger);
+        Utils.log(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)), logger, externalLoggers);
         final List<ContentIntegrityCheck> sortedChecks = integrityChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
         for (ContentIntegrityCheck integrityCheck : sortedChecks) {
-            Utils.log(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())), logger, externalLogger);
+            Utils.log(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())), logger, externalLoggers);
         }
     }
 
