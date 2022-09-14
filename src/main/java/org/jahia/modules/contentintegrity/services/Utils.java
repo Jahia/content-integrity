@@ -93,11 +93,15 @@ public class Utils {
         }
         if (externalLoggers.length > 0) {
             if (StringUtils.isNotBlank(message)) {
-                Arrays.stream(externalLoggers)
-                        .forEach(l -> l.logLine(message));
-            } else if (t != null)
-                Arrays.stream(externalLoggers)
-                        .forEach(l -> l.logLine(String.format("%s: %s", t.getClass().getName(), t.getMessage())));
+                for (ExternalLogger l : externalLoggers) {
+                    l.logLine(message);
+                }
+            } else if (t != null) {
+                final String msg = String.format("%s: %s", t.getClass().getName(), t.getMessage());
+                for (ExternalLogger l : externalLoggers) {
+                    l.logLine(msg);
+                }
+            }
         }
     }
 
