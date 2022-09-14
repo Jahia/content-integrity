@@ -189,7 +189,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 storeErrorsInCache(results);
                 return results;
             } catch (RepositoryException e) {
-                Utils.log("", Utils.LOG_LEVEL.ERROR, logger, externalLogger, e);
+                Utils.log("", Utils.LOG_LEVEL.ERROR, logger, e, externalLogger);
             } catch (InterruptedScanException e) {
                 Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
             }
@@ -337,7 +337,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             children = node.getNodes();
         } catch (Throwable t) {
             Utils.log(String.format("Impossible to load the child nodes of %s , skipping them in the calculation of the number of nodes to scan", node.getPath()),
-                    Utils.LOG_LEVEL.ERROR, logger, externalLogger, t);
+                    Utils.LOG_LEVEL.ERROR, logger, t, externalLogger);
             return count;
         }
         for (JCRNodeWrapper child : children) {
@@ -353,7 +353,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         try {
             path = node.getPath();
         } finally {
-            Utils.log("Impossible to check the integrity of " + path, Utils.LOG_LEVEL.ERROR, logger, externalLogger, t);
+            Utils.log("Impossible to check the integrity of " + path, Utils.LOG_LEVEL.ERROR, logger, t, externalLogger);
             integrityCheck.trackFatalError();
         }
     }

@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -43,15 +44,15 @@ public class Utils {
         return BundleUtils.getOsgiService(ContentIntegrityService.class, null);
     }
 
-    public static void log(String message, Logger log, ExternalLogger externalLogger) {
-        log(message, LOG_LEVEL.INFO, log, externalLogger);
+    public static void log(String message, Logger log, ExternalLogger... externalLoggers) {
+        log(message, LOG_LEVEL.INFO, log, externalLoggers);
     }
 
-    public static void log(String message, LOG_LEVEL logLevel, Logger log, ExternalLogger externalLogger) {
-        log(message, logLevel, log, externalLogger, null);
+    public static void log(String message, LOG_LEVEL logLevel, Logger log, ExternalLogger... externalLoggers) {
+        log(message, logLevel, log, null, externalLoggers);
     }
 
-    public static void log(String message, LOG_LEVEL logLevel, Logger log, ExternalLogger externalLogger, Throwable t) {
+    public static void log(String message, LOG_LEVEL logLevel, Logger log, Throwable t, ExternalLogger... externalLoggers) {
         if (log != null) {
             switch (logLevel) {
                 case TRACE:
@@ -90,11 +91,13 @@ public class Utils {
                     }
             }
         }
-        if (externalLogger != null) {
-            if (StringUtils.isNotBlank(message))
-                externalLogger.logLine(message);
-            else if (t != null)
-                externalLogger.logLine(String.format("%s: %s", t.getClass().getName(), t.getMessage()));
+        if (externalLoggers.length > 0) {
+            if (StringUtils.isNotBlank(message)) {
+                Arrays.stream(externalLoggers)
+                        .forEach(l -> l.logLine(message));
+            } else if (t != null)
+                Arrays.stream(externalLoggers)
+                        .forEach(l -> l.logLine(String.format("%s: %s", t.getClass().getName(), t.getMessage())));
         }
     }
 
