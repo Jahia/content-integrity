@@ -18,15 +18,17 @@ public class ContentIntegrityResults {
     private final String workspace;
     private final List<ContentIntegrityError> errors;
     private String executionID;
+    private List<String> executionLog;
 
 
-    public ContentIntegrityResults(Long testDate, Long testDuration, String workspace, List<ContentIntegrityError> errors) {
+    public ContentIntegrityResults(Long testDate, Long testDuration, String workspace, List<ContentIntegrityError> errors, List<String> executionLog) {
         this.testDate = testDate;
         formattedTestDate = FastDateFormat.getInstance("yyyy_MM_dd-HH_mm_ss_SSS").format(testDate);
         this.testDuration = testDuration;
         this.formattedTestDuration = DateUtils.formatDurationWords(testDuration);
         this.workspace = workspace;
         this.errors = errors;
+        this.executionLog = executionLog;
     }
 
     public Long getTestDate() {
@@ -55,6 +57,10 @@ public class ContentIntegrityResults {
 
     public String getExecutionID() {
         return executionID;
+    }
+
+    public List<String> getExecutionLog() {
+        return executionLog;
     }
 
     public ContentIntegrityResults setExecutionID(String executionID) {

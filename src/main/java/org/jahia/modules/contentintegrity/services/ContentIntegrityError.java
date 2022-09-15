@@ -14,6 +14,8 @@ import javax.jcr.nodetype.NodeType;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.jahia.modules.contentintegrity.services.Utils.appendToCSVLine;
+
 public class ContentIntegrityError {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityError.class);
@@ -76,31 +78,21 @@ public class ContentIntegrityError {
     }
 
     public String toCSV() {
-        return toCSV(",", ";");
-    }
-
-    public String toCSV(String separator, String escapedSeparator) {
         final StringBuilder sb = new StringBuilder();
 
-        appendToCSVLine(sb, String.valueOf(integrityCheckID), separator, escapedSeparator);
-        appendToCSVLine(sb, String.valueOf(fixed), separator, escapedSeparator);
-        appendToCSVLine(sb, integrityCheckName, separator, escapedSeparator);
-        appendToCSVLine(sb, workspace, separator, escapedSeparator);
-        appendToCSVLine(sb, uuid, separator, escapedSeparator);
-        appendToCSVLine(sb, path, separator, escapedSeparator);
-        appendToCSVLine(sb, primaryType, separator, escapedSeparator);
-        appendToCSVLine(sb, mixins, separator, escapedSeparator);
-        appendToCSVLine(sb, locale, separator, escapedSeparator);
-        appendToCSVLine(sb, constraintMessage, separator, escapedSeparator);
-        appendToCSVLine(sb, String.valueOf(extraInfos), separator, escapedSeparator);
+        appendToCSVLine(sb, String.valueOf(integrityCheckID));
+        appendToCSVLine(sb, String.valueOf(fixed));
+        appendToCSVLine(sb, integrityCheckName);
+        appendToCSVLine(sb, workspace);
+        appendToCSVLine(sb, uuid);
+        appendToCSVLine(sb, path);
+        appendToCSVLine(sb, primaryType);
+        appendToCSVLine(sb, mixins);
+        appendToCSVLine(sb, locale);
+        appendToCSVLine(sb, constraintMessage);
+        appendToCSVLine(sb, String.valueOf(extraInfos));
 
         return sb.toString();
-    }
-
-    private void appendToCSVLine(StringBuilder sb, Object value, String separator, String escapedSeparator) {
-        if (sb.length() > 0) sb.append(separator);
-        if (value == null) return;
-        sb.append(StringUtils.replace(String.valueOf(value), separator, escapedSeparator));
     }
 
     public boolean isFixed() {

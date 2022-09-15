@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -91,7 +92,7 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
         }
 
         public Function<String, Object> getStringValueParser() {
-            return stringValueParser == null ? NO_TRANSFORMATION : stringValueParser;
+            return Optional.ofNullable(stringValueParser).orElse(NO_TRANSFORMATION);
         }
     }
 
