@@ -41,6 +41,7 @@ public class Utils {
     private static final String CSV_VALUE_WRAPPER = "\"";
     private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
     private static final List<String> DEFAULT_CSV_HEADER_ITEMS = Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information");
+    public static final String ALL_WORKSPACES = "all-workspaces";
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -204,7 +205,9 @@ public class Utils {
     private static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
         reportNode.addMixin("integrity:scanReport");
         reportNode.setProperty("integrity:errorsCount", results.getErrors().size());
-        reportNode.setProperty("integrity:scannedWorkspace", results.getWorkspace());
+        final String workspace = results.getWorkspace();
+        final boolean multipleWorkspacesScanned = StringUtils.equals(workspace, ALL_WORKSPACES);
+        reportNode.setProperty("integrity:scannedWorkspace", workspace);
         reportNode.setProperty("integrity:duration", results.getFormattedTestDuration());
         final GregorianCalendar testDate = new GregorianCalendar();
         testDate.setTimeInMillis(results.getTestDate());
@@ -217,12 +220,14 @@ public class Utils {
                     final List<String> lines = new ArrayList<>();
                     lines.add(String.format("%s : %d errors", e.getKey(), e.getValue().size()));
                     e.getValue().stream()
-                            .collect(Collectors.groupingBy(ContentIntegrityError::getWorkspace))
+                            .collect(Collectors.groupingBy(ContentIntegrityError::getConstraintMessage))
                             .forEach((key, value) -> {
                                 lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 4), key, value.size()));
-                                value.stream()
-                                        .collect(Collectors.groupingBy(ContentIntegrityError::getConstraintMessage))
-                                        .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 8), msg, errors.size())));
+                                if (multipleWorkspacesScanned) {
+                                    value.stream()
+                                            .collect(Collectors.groupingBy(ContentIntegrityError::getWorkspace))
+                                            .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 8), msg, errors.size())));
+                                }
                             });
                     return lines;
                 })
@@ -272,7 +277,7 @@ public class Utils {
                 .sorted().findFirst().orElse(0L);
         final Long duration = results.stream().map(ContentIntegrityResults::getTestDuration).reduce(0L, Long::sum);
         final Set<String> workspaces = results.stream().map(ContentIntegrityResults::getWorkspace).collect(Collectors.toSet());
-        final String workspace = workspaces.size() == 1 ? workspaces.stream().findAny().get() : "all-workspaces";
+        final String workspace = workspaces.size() == 1 ? workspaces.stream().findAny().get() : ALL_WORKSPACES;
         final List<ContentIntegrityError> errors = results.stream()
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
