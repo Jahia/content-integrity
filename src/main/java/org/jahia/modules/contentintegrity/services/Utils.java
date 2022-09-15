@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -36,7 +37,10 @@ public class Utils {
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
     private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
-    private static final String DEFAULT_CSV_HEADER = "Check ID,Fixed,Error type,Workspace,Node identifier,Node path,Node primary type,Node mixins,Locale,Error message,Extra information";
+    private static final String CSV_SEPARATOR = ";";
+    private static final String CSV_VALUE_WRAPPER = "\"";
+    private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
+    private static final List<String> DEFAULT_CSV_HEADER_ITEMS = Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information");
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -135,11 +139,27 @@ public class Utils {
                 .map(ContentIntegrityError::toCSV)
                 .collect(Collectors.toList());
         if (!noCsvHeader) {
-            final String header = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", DEFAULT_CSV_HEADER);
+            String header = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", null);
+            if (StringUtils.isBlank(header)) {
+                final StringBuilder sb = new StringBuilder();
+                for (String item : DEFAULT_CSV_HEADER_ITEMS) {
+                    appendToCSVLine(sb, item);
+                }
+                header = sb.toString();
+            }
             lines.add(0, header);
         }
 
         return lines;
+    }
+
+    public static void appendToCSVLine(StringBuilder line, Object value) {
+        if (line.length() > 0) line.append(CSV_SEPARATOR);
+        line.append(CSV_VALUE_WRAPPER);
+        if (value != null) {
+            line.append(StringUtils.replace(String.valueOf(value), CSV_VALUE_WRAPPER, ESCAPED_CSV_VALUE_WRAPPER));
+        }
+        line.append(CSV_VALUE_WRAPPER);
     }
 
     public static String writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader, ExternalLogger externalLogger) {
