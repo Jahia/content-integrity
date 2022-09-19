@@ -37,6 +37,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
 
     @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        availableModules.clear();
         final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
         jahiaTemplateManagerService.getAvailableTemplatePackages().stream()
                 .map(JahiaTemplatesPackage::getId)
