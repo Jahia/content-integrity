@@ -32,12 +32,23 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
 
     private static final Logger logger = LoggerFactory.getLogger(UndeployedModulesReferencesCheck.class);
 
+    private final Collection<String> availableModules = new ArrayList<>();
+
+    @Override
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
+        final List<JahiaTemplatesPackage> availableTemplatePackages = jahiaTemplateManagerService.getAvailableTemplatePackages();
+        availableModules.addAll(CollectionUtils.collect(availableTemplatePackages, JahiaTemplatesPackage::getId));
+    }
+
+    @Override
+    protected void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        availableModules.clear();
+    }
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         final JCRSiteNode site = (JCRSiteNode) node;
-        final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
-        final List<JahiaTemplatesPackage> availableTemplatePackages = jahiaTemplateManagerService.getAvailableTemplatePackages();
-        final Collection<String> availableModules = CollectionUtils.collect(availableTemplatePackages, JahiaTemplatesPackage::getId);
         List<String> undeployedModules = null;
         for (String module : ((JCRSiteNode) node).getInstalledModules()) {
             if (!availableModules.contains(module)) {
