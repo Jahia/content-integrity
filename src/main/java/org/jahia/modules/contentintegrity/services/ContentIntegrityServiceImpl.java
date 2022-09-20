@@ -230,8 +230,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     private void printChecksDuration(ExternalLogger... externalLoggers) {
-        if (logger.isDebugEnabled())
-            logger.debug(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodesToScanCalculationDuration)));
+        Utils.log(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodesToScanCalculationDuration)), logger, externalLoggers);
         Utils.log(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)), logger, externalLoggers);
         final List<ContentIntegrityCheck> sortedChecks = integrityChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
         for (ContentIntegrityCheck integrityCheck : sortedChecks) {
