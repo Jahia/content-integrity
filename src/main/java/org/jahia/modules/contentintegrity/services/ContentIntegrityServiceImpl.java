@@ -254,8 +254,15 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
         checkNode(node, activeChecks, errors, fixErrors, true, externalLogger);
         try {
-            final JCRNodeIteratorWrapper it = node.getNodes();
-            boolean hasNext = it.hasNext();
+            boolean hasNext;
+            final JCRNodeIteratorWrapper it;
+            try {
+                beginComputingOwnTime();
+                it = node.getNodes();
+                hasNext = it.hasNext();
+            } finally {
+                endComputingOwnTime();
+            }
             while (hasNext) {
                 JCRNodeWrapper child;
                 try {
@@ -280,13 +287,18 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     node, ws), e);
         }
         checkNode(node, activeChecks, errors, fixErrors, false, externalLogger);
-        ProgressMonitor.getInstance().progress();
-        if (ProgressMonitor.getInstance().getCounter() % SESSION_REFRESH_INTERVAL == 0) {
-            try {
-                node.getSession().refresh(false);
-            } catch (RepositoryException e) {
-                logger.error("", e);
+        try {
+            beginComputingOwnTime();
+            ProgressMonitor.getInstance().progress();
+            if (ProgressMonitor.getInstance().getCounter() % SESSION_REFRESH_INTERVAL == 0) {
+                try {
+                    node.getSession().refresh(false);
+                } catch (RepositoryException e) {
+                    logger.error("", e);
+                }
             }
+        } finally {
+            endComputingOwnTime();
         }
     }
 
