@@ -189,7 +189,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final List<ExternalLogger> externalLoggers = new ArrayList<>();
                 externalLoggers.add(summaryLogger);
                 if (externalLogger.includeSummary()) externalLoggers.add(externalLogger);
-                printChecksDuration(externalLoggers.toArray(new ExternalLogger[0]));
+                printChecksDuration(testDuration, externalLoggers.toArray(new ExternalLogger[0]));
                 final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors, summary);
                 storeErrorsInCache(results);
                 return results;
@@ -229,13 +229,21 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         ownTimeIntervalStart = 0L;
     }
 
-    private void printChecksDuration(ExternalLogger... externalLoggers) {
-        Utils.log(String.format("   Calculation of the size of the tree: %s", DateUtils.formatDurationWords(nbNodesToScanCalculationDuration)), logger, externalLoggers);
-        Utils.log(String.format("   Scan of the tree: %s", DateUtils.formatDurationWords(ownTime)), logger, externalLoggers);
+    private void printChecksDuration(long totalDuration, ExternalLogger... externalLoggers) {
+        final long totalChecksDuration = integrityChecks.stream().map(ContentIntegrityCheck::getOwnTime).reduce(0L, Long::sum);
+        Utils.log(String.format("   Calculation of the size of the tree: %s", getDurationOutput(nbNodesToScanCalculationDuration, totalDuration)), logger, externalLoggers);
+        Utils.log(String.format("   Scan of the tree: %s", getDurationOutput(ownTime, totalDuration)), logger, externalLoggers);
         final List<ContentIntegrityCheck> sortedChecks = integrityChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
+        final long durationRest = totalDuration - nbNodesToScanCalculationDuration - ownTime - totalChecksDuration;
+        Utils.log(String.format("   Other: %s", getDurationOutput(durationRest, totalDuration)), logger, externalLoggers);
+        Utils.log(String.format("   Integrity checks: %s", getDurationOutput(totalChecksDuration, totalDuration)), logger, externalLoggers);
         for (ContentIntegrityCheck integrityCheck : sortedChecks) {
-            Utils.log(String.format("   %s: %s", integrityCheck.getName(), DateUtils.formatDurationWords(integrityCheck.getOwnTime())), logger, externalLoggers);
+            Utils.log(String.format("      %s: %s", integrityCheck.getName(), getDurationOutput(integrityCheck.getOwnTime(), totalChecksDuration)), logger, externalLoggers);
         }
+    }
+
+    private String getDurationOutput(long duration, long totalDuration) {
+        return String.format("%s [%.0f%%]", DateUtils.formatDurationWords(duration), 100F * duration / totalDuration);
     }
 
     private void validateIntegrity(JCRNodeWrapper node, Set<String> excludedPaths, List<ContentIntegrityCheck> activeChecks, List<ContentIntegrityError> errors, ExternalLogger externalLogger, boolean fixErrors) {
