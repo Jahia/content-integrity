@@ -4,6 +4,16 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.poi.ss.SpreadsheetVersion;
+import org.apache.poi.ss.usermodel.DataConsolidateFunction;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.AreaReference;
+import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.ss.util.WorkbookUtil;
+import org.apache.poi.xssf.usermodel.XSSFPivotTable;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
@@ -20,6 +30,9 @@ import javax.jcr.RepositoryException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -163,7 +176,7 @@ public class Utils {
         line.append(CSV_VALUE_WRAPPER);
     }
 
-    public static String writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader, ExternalLogger externalLogger) {
+    public static String writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader, ExternalLogger externalLogger, boolean uploadDump) {
         try {
             return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<String>() {
                 @Override
@@ -187,12 +200,25 @@ public class Utils {
                     }
                     final byte[] bytes = out.toByteArray();
 
-                    final JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
+                    JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
                     writeReportMetadata(reportNode, results);
                     session.save();
-                    final String reportPath = reportNode.getPath();
+                    String reportPath = reportNode.getPath();
                     externalLogger.logLine("Written the report in " + reportPath);
 
+                    File report = generateReport(results, excludeFixedErrors, noCsvHeader);
+                    if (report != null && uploadDump) {
+                        try {
+                            reportNode = outputDir.uploadFile(report.getName(), new FileInputStream(report), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                            session.save();
+                            reportPath = reportNode.getPath();
+                            externalLogger.logLine("Written the report in " + reportPath);
+                            FileUtils.deleteQuietly(report);
+                            return reportPath;
+                        } catch (FileNotFoundException e) {
+                            logger.error("", e);
+                        }
+                    }
                     return reportPath;
                 }
             });
@@ -288,5 +314,84 @@ public class Utils {
         });
 
         return new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
+    }
+
+    private static File generateReport(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader) {
+        Workbook wb = new XSSFWorkbook();
+        XSSFSheet sheet = (XSSFSheet) wb.createSheet(WorkbookUtil.createSafeSheetName("Data"));
+
+        String firstColName = null;
+        int rowNum = 0;
+        Row row;
+        // Add header
+        if (!noCsvHeader) {
+            row = sheet.createRow((short) rowNum++);
+            String[] colNames = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", String.join(CSV_SEPARATOR, DEFAULT_CSV_HEADER_ITEMS)).split(CSV_SEPARATOR);
+            int nbColumns = colNames.length;
+            if (nbColumns > 0) {
+                firstColName = colNames[0];
+            }
+            for (int i = 0; i < nbColumns; i++) {
+                row.createCell(i).setCellValue(colNames[i]);
+            }
+        }
+
+        List<String> content = results.getErrors().stream()
+                .map(ContentIntegrityError::toCSV)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(content)) {
+            int nbFields;
+            for (String data : content) {
+                String[] fields = data.split(",");
+                nbFields = fields.length;
+                row = sheet.createRow((short) rowNum++);
+                for (int i = 0; i < nbFields; i++) {
+                    row.createCell(i).setCellValue(fields[i]);
+                }
+            }
+        }
+
+        int firstRow = sheet.getFirstRowNum();
+        int lastCol = sheet.getRow(0).getLastCellNum();
+
+        for (int i = firstRow; i < lastCol; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        XSSFPivotTable pivotTable = ((XSSFSheet) wb.createSheet(WorkbookUtil.createSafeSheetName("Analysis"))).createPivotTable(
+                new AreaReference(new CellReference(firstRow, sheet.getRow(0).getFirstCellNum()), new CellReference(sheet.getLastRowNum(), lastCol - 1), SpreadsheetVersion.EXCEL2007),
+                new CellReference(1, 1), sheet);
+        // Check ID
+        pivotTable.addRowLabel(0);
+        // Workspace
+        pivotTable.addRowLabel(3);
+        // Error message
+        pivotTable.addRowLabel(9);
+        // Node primary type
+        pivotTable.addRowLabel(6);
+        // Extra information
+        pivotTable.addRowLabel(10);
+        // Node path
+        pivotTable.addRowLabel(5);
+        // Count data
+        if (StringUtils.isNotEmpty(firstColName)) {
+            pivotTable.addColumnLabel(DataConsolidateFunction.COUNT, 2, "Count of " + firstColName);
+        } else {
+            pivotTable.addColumnLabel(DataConsolidateFunction.COUNT, 2, "Count");
+        }
+
+        try {
+            final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
+            if ((outputDir.exists() || outputDir.mkdirs()) && outputDir.canWrite()) {
+                File report = new File(outputDir, String.format("%s-%s.xlsx", results.getID(), excludeFixedErrors ? "remainingErrors" : "full"));
+                FileOutputStream fileOut = new FileOutputStream(report);
+                wb.write(fileOut);
+                IOUtils.closeQuietly(fileOut);
+                return report;
+            }
+        } catch (IOException e) {
+            logger.error("", e);
+        }
+        return null;
     }
 }
