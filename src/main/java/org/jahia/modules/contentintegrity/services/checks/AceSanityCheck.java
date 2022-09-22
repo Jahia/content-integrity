@@ -252,13 +252,15 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         errors.addAll(checkPrincipalOnAce(aceNode));
 
         final boolean isGrantAce;
+        final String aceType;
         if (!aceNode.hasProperty(J_ACE_TYPE)) {
             isGrantAce = false;
+            aceType = StringUtils.EMPTY;
             errors.addError(createError(aceNode, "ACE without property ".concat(J_ACE_TYPE))
                     .setErrorType(ErrorType.NO_ACE_TYPE_PROP));
-        }
-        else {
-            isGrantAce = StringUtils.equals(aceNode.getPropertyAsString(J_ACE_TYPE), "GRANT");
+        } else {
+            aceType = aceNode.getPropertyAsString(J_ACE_TYPE);
+            isGrantAce = StringUtils.equals(aceType, "GRANT");
         }
 
         if (!aceNode.hasProperty(J_ROLES)) {
@@ -290,6 +292,19 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                     .addExtraInfo("external-permissions", extPerm)
                                     .addExtraInfo("external-ace-scope", role.getExternalPermissions().get(extPerm)));
                     }
+                }
+            }
+        }
+
+        if (!isGrantAce) {
+            final PropertyIterator references = aceNode.getWeakReferences();
+            while (references.hasNext()) {
+                final Node extAce = references.nextProperty().getParent();
+                if (extAce.isNodeType(JNT_EXTERNAL_ACE)) {
+                    errors.addError(createError(aceNode, "ACE of type different from GRANT with a missing external ACE")
+                            .setErrorType(ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
+                            .addExtraInfo("ace-type", aceType)
+                            .addExtraInfo("external-ace", extAce.getPath()));
                 }
             }
         }
@@ -369,8 +384,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private enum ErrorType {
         NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
         NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, INVALID_EXTERNAL_ACE_PATH, SOURCE_ACE_NOT_TYPE_GRANT,
-        INVALID_EXTERNAL_PERMISSIONS, MISSING_EXTERNAL_ACE,
-        NO_ROLES_PROP, INVALID_ROLES_PROP, ACE_NON_GRANT_WITH_EXTERNAL_ACE,
+        INVALID_EXTERNAL_PERMISSIONS, MISSING_EXTERNAL_ACE, ACE_NON_GRANT_WITH_EXTERNAL_ACE,
+        NO_ROLES_PROP, INVALID_ROLES_PROP,
         ROLES_DIFFER_ON_SOURCE_ACE, ROLE_DOESNT_EXIST
     }
 

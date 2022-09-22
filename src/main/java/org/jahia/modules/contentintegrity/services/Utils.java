@@ -27,13 +27,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,7 +50,11 @@ public class Utils {
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
     private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
-    private static final String DEFAULT_CSV_HEADER = "Check ID,Fixed,Error type,Workspace,Node identifier,Node path,Node primary type,Node mixins,Locale,Error message,Extra information";
+    private static final String CSV_SEPARATOR = ";";
+    private static final String CSV_VALUE_WRAPPER = "\"";
+    private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
+    private static final List<String> DEFAULT_CSV_HEADER_ITEMS = Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information");
+    public static final String ALL_WORKSPACES = "all-workspaces";
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -115,11 +126,10 @@ public class Utils {
     }
 
     public static List<String> getChecksToExecute(ContentIntegrityService service, List<String> whiteList, List<String> blackList, ExternalLogger externalLogger) {
-        if (CollectionUtils.isEmpty(whiteList) && CollectionUtils.isEmpty(blackList)) {
-            return null;
-        }
+        if (CollectionUtils.isEmpty(whiteList) && CollectionUtils.isEmpty(blackList)) return null;
 
         if (CollectionUtils.isNotEmpty(whiteList)) {
+
             return CollectionUtils.isEmpty(blackList) ? whiteList : CollectionUtils.removeAll(whiteList, blackList)
                     .stream()
                     .map(id -> {
@@ -129,8 +139,41 @@ public class Utils {
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
+        } else {
+            return service.getContentIntegrityChecksIdentifiers(true).stream().filter(id -> !blackList.contains(id)).collect(Collectors.toList());
         }
-        return service.getContentIntegrityChecksIdentifiers(true).stream().filter(id -> !blackList.contains(id)).collect(Collectors.toList());
+    }
+
+    private static String generateReportFilename(ContentIntegrityResults results, boolean excludeFixedErrors) {
+        return String.format("%s-%s.csv", results.getID(), excludeFixedErrors ? "remainingErrors" : "full");
+    }
+
+    private static List<String> toFileContent(ContentIntegrityResults results, boolean noCsvHeader) {
+        final List<String> lines = results.getErrors().stream()
+                .map(ContentIntegrityError::toCSV)
+                .collect(Collectors.toList());
+        if (!noCsvHeader) {
+            String header = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", null);
+            if (StringUtils.isBlank(header)) {
+                final StringBuilder sb = new StringBuilder();
+                for (String item : DEFAULT_CSV_HEADER_ITEMS) {
+                    appendToCSVLine(sb, item);
+                }
+                header = sb.toString();
+            }
+            lines.add(0, header);
+        }
+
+        return lines;
+    }
+
+    public static void appendToCSVLine(StringBuilder line, Object value) {
+        if (line.length() > 0) line.append(CSV_SEPARATOR);
+        line.append(CSV_VALUE_WRAPPER);
+        if (value != null) {
+            line.append(StringUtils.replace(String.valueOf(value), CSV_VALUE_WRAPPER, ESCAPED_CSV_VALUE_WRAPPER));
+        }
+        line.append(CSV_VALUE_WRAPPER);
     }
 
     public static String writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader, ExternalLogger externalLogger, boolean uploadDump) {
@@ -146,13 +189,29 @@ public class Utils {
                         logger.error(String.format("Impossible to write the folder %s of type %s", outputDir.getPath(), outputDir.getPrimaryNodeTypeName()));
                         return null;
                     }
+                    final String filename = generateReportFilename(results, excludeFixedErrors);
+
+                    final ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    try {
+                        IOUtils.writeLines(toFileContent(results, noCsvHeader), null, out, StandardCharsets.UTF_8);
+                    } catch (IOException e) {
+                        logger.error("", e);
+                        return null;
+                    }
+                    final byte[] bytes = out.toByteArray();
+
+                    JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
+                    writeReportMetadata(reportNode, results);
+                    session.save();
+                    String reportPath = reportNode.getPath();
+                    externalLogger.logLine("Written the report in " + reportPath);
 
                     File report = generateReport(results, excludeFixedErrors, noCsvHeader);
                     if (report != null && uploadDump) {
                         try {
-                            final JCRNodeWrapper reportNode = outputDir.uploadFile(report.getName(), new FileInputStream(report), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                            reportNode = outputDir.uploadFile(report.getName(), new FileInputStream(report), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
                             session.save();
-                            final String reportPath = reportNode.getPath();
+                            reportPath = reportNode.getPath();
                             externalLogger.logLine("Written the report in " + reportPath);
                             FileUtils.deleteQuietly(report);
                             return reportPath;
@@ -160,13 +219,80 @@ public class Utils {
                             logger.error("", e);
                         }
                     }
-                    return null;
+                    return reportPath;
                 }
             });
         } catch (RepositoryException e) {
             logger.error("", e);
             return null;
         }
+    }
+
+    private static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
+        reportNode.addMixin("integrity:scanReport");
+        reportNode.setProperty("integrity:errorsCount", results.getErrors().size());
+        final String workspace = results.getWorkspace();
+        final boolean multipleWorkspacesScanned = StringUtils.equals(workspace, ALL_WORKSPACES);
+        reportNode.setProperty("integrity:scannedWorkspace", workspace);
+        reportNode.setProperty("integrity:duration", results.getFormattedTestDuration());
+        final GregorianCalendar testDate = new GregorianCalendar();
+        testDate.setTimeInMillis(results.getTestDate());
+        reportNode.setProperty("integrity:executionDate", testDate);
+        reportNode.setProperty("integrity:executionLog", StringUtils.join(results.getExecutionLog(), "\n"));
+        final Map<String, List<ContentIntegrityError>> errorsByType = results.getErrors().stream()
+                .collect(Collectors.groupingBy(ContentIntegrityError::getIntegrityCheckID));
+        final String countByErrorType = errorsByType.entrySet().stream()
+                .map(e -> {
+                    final List<String> lines = new ArrayList<>();
+                    lines.add(String.format("%s : %d errors", e.getKey(), e.getValue().size()));
+                    e.getValue().stream()
+                            .collect(Collectors.groupingBy(ContentIntegrityError::getConstraintMessage))
+                            .forEach((key, value) -> {
+                                lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 4), key, value.size()));
+                                if (multipleWorkspacesScanned) {
+                                    value.stream()
+                                            .collect(Collectors.groupingBy(ContentIntegrityError::getWorkspace))
+                                            .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 8), msg, errors.size())));
+                                }
+                            });
+                    return lines;
+                })
+                .flatMap(Collection::stream)
+                .collect(Collectors.joining("\n"));
+        reportNode.setProperty("integrity:countByErrorType", countByErrorType);
+    }
+
+    public static String writeDumpOnTheFilesystem(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader) {
+        final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
+        final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
+        final String reportPath;
+
+        if (folderCreated && outputDir.canWrite()) {
+            final File csvFile = new File(outputDir, Utils.generateReportFilename(results, excludeFixedErrors));
+            final boolean exists = csvFile.exists();
+            if (!exists) {
+                try {
+                    csvFile.createNewFile();
+                } catch (IOException e) {
+                    logger.error("Impossible to create the file", e);
+                    return null;
+                }
+            }
+            final List<String> lines = Utils.toFileContent(results, noCsvHeader);
+            try {
+                FileUtils.writeLines(csvFile, "UTF-8", lines);
+            } catch (IOException e) {
+                logger.error("Impossible to write the file content", e);
+                return null;
+            }
+            reportPath = csvFile.getPath();
+            System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", reportPath));
+        } else {
+            logger.error("Impossible to write the folder " + outputDir.getPath());
+            return null;
+        }
+
+        return reportPath;
     }
 
     public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {
@@ -177,13 +303,17 @@ public class Utils {
                 .sorted().findFirst().orElse(0L);
         final Long duration = results.stream().map(ContentIntegrityResults::getTestDuration).reduce(0L, Long::sum);
         final Set<String> workspaces = results.stream().map(ContentIntegrityResults::getWorkspace).collect(Collectors.toSet());
-        final String workspace = workspaces.size() == 1 ? workspaces.stream().findAny().get() : "all-workspaces";
+        final String workspace = workspaces.size() == 1 ? workspaces.stream().findAny().get() : ALL_WORKSPACES;
         final List<ContentIntegrityError> errors = results.stream()
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
+        final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).reduce(new ArrayList<>(), (strings, strings2) -> {
+            strings.addAll(strings2);
+            return strings;
+        });
 
-        return new ContentIntegrityResults(testDate, duration, workspace, errors);
+        return new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
     }
 
     private static File generateReport(ContentIntegrityResults results, boolean excludeFixedErrors, boolean noCsvHeader) {
@@ -196,7 +326,7 @@ public class Utils {
         // Add header
         if (!noCsvHeader) {
             row = sheet.createRow((short) rowNum++);
-            String[] colNames = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", DEFAULT_CSV_HEADER).split(",");
+            String[] colNames = SettingsBean.getInstance().getString("modules.contentIntegrity.csv.header", String.join(CSV_SEPARATOR, DEFAULT_CSV_HEADER_ITEMS)).split(CSV_SEPARATOR);
             int nbColumns = colNames.length;
             if (nbColumns > 0) {
                 firstColName = colNames[0];

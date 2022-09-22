@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE,
@@ -32,31 +33,34 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
 
     private static final Logger logger = LoggerFactory.getLogger(UndeployedModulesReferencesCheck.class);
 
+    private final Collection<String> availableModules = new ArrayList<>();
+
+    @Override
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        availableModules.clear();
+        final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
+        jahiaTemplateManagerService.getAvailableTemplatePackages().stream()
+                .map(JahiaTemplatesPackage::getId)
+                .collect(Collectors.toCollection(() -> availableModules));
+    }
+
+    @Override
+    protected void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        availableModules.clear();
+    }
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
+        final ContentIntegrityErrorList errors = createEmptyErrorsList();
         final JCRSiteNode site = (JCRSiteNode) node;
-        final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
-        final List<JahiaTemplatesPackage> availableTemplatePackages = jahiaTemplateManagerService.getAvailableTemplatePackages();
-        final Collection<String> availableModules = CollectionUtils.collect(availableTemplatePackages, JahiaTemplatesPackage::getId);
-        List<String> undeployedModules = null;
-        for (String module : ((JCRSiteNode) node).getInstalledModules()) {
-            if (!availableModules.contains(module)) {
-                if (undeployedModules == null) undeployedModules = new ArrayList<>();
-                undeployedModules.add(module);
-            }
-        }
+        site.getInstalledModules().stream()
+                .filter(m -> !availableModules.contains(m))
+                .forEach(undeployedModule ->
+                        errors.addError(createError(node, "Undeployed module still activated on a site")
+                                .addExtraInfo("module", undeployedModule)
+                                .addExtraInfo("site-name", site.getDisplayableName())));
 
-        if (CollectionUtils.isNotEmpty(undeployedModules)) {
-            final ContentIntegrityErrorList errors = createEmptyErrorsList();
-            for (String undeployedModule : undeployedModules) {
-                errors.addError(createError(node, "Undeployed module still activated on the a site")
-                        .addExtraInfo("module", undeployedModule)
-                        .addExtraInfo("site-name", site.getDisplayableName()));
-            }
-            return errors;
-        }
-
-        return null;
+        return errors;
     }
 
     @Override

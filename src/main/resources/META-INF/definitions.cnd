@@ -1,4 +1,13 @@
 <jnt = 'http://www.jahia.org/jahia/nt/1.0'>
 <jmix = 'http://www.jahia.org/jahia/mix/1.0'>
+<integrity = 'http://www.jahia.org/jahia/contentintegrity/nt/1.0'>
+
+[integrity:scanReport] mixin
+- integrity:errorsCount (long) protected
+- integrity:scannedWorkspace (string) protected
+- integrity:executionDate (date) protected
+- integrity:duration (string) protected
+- integrity:countByErrorType (string, textarea) protected
+- integrity:executionLog (string, textarea) protected
 
 [jnt:contentIntegrityAdminPanel] > jnt:content, jmix:structuredContent, jmix:studioOnly
