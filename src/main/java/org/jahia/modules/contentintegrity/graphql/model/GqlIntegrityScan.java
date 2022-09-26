@@ -85,7 +85,7 @@ public class GqlIntegrityScan {
             try {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
-                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, ws, checksToExecute, console);
+                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, false, ws, checksToExecute, console);
                     if (contentIntegrityResults != null)
                         results.add(contentIntegrityResults.setExecutionID(id));
                 }
