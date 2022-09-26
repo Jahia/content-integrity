@@ -15,16 +15,16 @@ const gqlConfig = {
         "}"
 }
 
-function getScanQuery(rootPath, workspace, checks) {
+function getScanQuery(rootPath, workspace, skipMP, checks) {
     return {
-        query: "query ($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String]) {" +
+        query: "query ($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String], $skipMP: Boolean) {" +
             "  integrity:contentIntegrity {" +
             "    scan:integrityScan {" +
-            "      id:scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
+            "      id:scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, uploadResults: true, skipMountPoints: $skipMP)" +
             "    }" +
             "  }" +
             "}",
-        variables: {path: rootPath, excludedPaths: model.excludedPaths, ws: workspace, checks: checks}
+        variables: {path: rootPath, excludedPaths: model.excludedPaths, ws: workspace, checks: checks, skipMP: skipMP}
     }
 }
 
@@ -333,12 +333,13 @@ jQuery(document).ready(function () {
     jQuery("#runScan").click(function () {
         const rootPath = jQuery("#rootNode").val();
         const workspace = jQuery("#workspace").val();
+        const skipMP = !jQuery("#includeVirtualNodes").is(":checked")
 
         const checks = jQuery.map(jQuery(".checkEnabled:checked"), function (cb, i) {
             return jQuery(cb).attr("id")
         })
 
-        gqlCall(getScanQuery(rootPath, workspace, checks), (data) => setupLogsLoader(data.integrity.scan.id));
+        gqlCall(getScanQuery(rootPath, workspace, skipMP, checks), (data) => setupLogsLoader(data.integrity.scan.id));
     });
     jQuery("#stopScan").click(function () {
         gqlCall(getStopScanQuery(), _ => showStopButton(false))
