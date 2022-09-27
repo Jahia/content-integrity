@@ -20,6 +20,8 @@ public class GqlIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityCheck.class);
 
+    private static final String DOCUMENTATION_URL = "https://github.com/Jahia/content-integrity/blob/master/docs/embedded-tests.md#";
+
     private final ContentIntegrityCheck integrityCheck;
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -52,6 +54,11 @@ public class GqlIntegrityCheck {
     @GraphQLField
     public boolean isConfigurable() {
         return integrityCheck instanceof ContentIntegrityCheck.IsConfigurable;
+    }
+
+    @GraphQLField
+    public String getDocumentation() {
+        return DOCUMENTATION_URL.concat(integrityCheck.getName().toLowerCase());
     }
 
     @GraphQLField

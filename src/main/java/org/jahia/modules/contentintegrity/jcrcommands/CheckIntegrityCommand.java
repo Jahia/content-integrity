@@ -15,7 +15,6 @@ import org.jahia.modules.contentintegrity.jcrcommands.completers.JCRNodeComplete
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
-import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 
 import java.util.List;
 import java.util.Map;
@@ -43,13 +42,16 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     @Completion(CheckIdCompleter.class)
     private List<String> checks;
 
+    @Option(name = "--skipMP", description = "If specified, the virtual nodes are excluded from the scan")
+    private boolean skipMP;
+
     @Override
     public Object execute() throws Exception {
         final String currentPath = StringUtils.defaultString(getCurrentPath(session), "/");
         final ContentIntegrityService service = Utils.getContentIntegrityService();
         final ContentIntegrityResults integrityResults;
         try {
-            integrityResults = service.validateIntegrity(currentPath, excludedPaths, getCurrentWorkspace(session), getChecksToExecute(service), CONSOLE);
+            integrityResults = service.validateIntegrity(currentPath, excludedPaths, skipMP, getCurrentWorkspace(session), getChecksToExecute(service), CONSOLE);
         } catch (ConcurrentExecutionException cee) {
             System.out.println(cee.getMessage());
             return null;

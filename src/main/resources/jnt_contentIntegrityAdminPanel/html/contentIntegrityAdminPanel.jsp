@@ -61,6 +61,10 @@
             </select>
         </td>
     </tr>
+    <tr>
+        <td><label for="includeVirtualNodes">Include the virtual nodes</label></td>
+        <td><input id="includeVirtualNodes" type="checkbox" checked="checked"></td>
+    </tr>
 </table>
 <div>
     <input id="runScan" type="button" value="Run an integrity check"/>

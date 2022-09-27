@@ -11,7 +11,7 @@ public interface ContentIntegrityService {
 
     ContentIntegrityResults validateIntegrity(String path, String workspace) throws ConcurrentExecutionException;
 
-    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, String workspace, List<String> checksToExecute, ExternalLogger externalLogger) throws ConcurrentExecutionException;
+    ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger externalLogger) throws ConcurrentExecutionException;
 
     void fixError(ContentIntegrityError error);
 

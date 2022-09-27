@@ -9,22 +9,22 @@ const gqlConfig = {
     query: "{" +
         "  integrity:contentIntegrity {" +
         "    checks:integrityChecks {" +
-        "      id enabled configurable" +
+        "      id enabled configurable documentation" +
         "    }" +
         "  }" +
         "}"
 }
 
-function getScanQuery(rootPath, workspace, checks) {
+function getScanQuery(rootPath, workspace, skipMP, checks) {
     return {
-        query: "query ($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String]) {" +
+        query: "query ($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String], $skipMP: Boolean) {" +
             "  integrity:contentIntegrity {" +
             "    scan:integrityScan {" +
-            "      id:scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, uploadResults: true)" +
+            "      id:scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, uploadResults: true, skipMountPoints: $skipMP)" +
             "    }" +
             "  }" +
             "}",
-        variables: {path: rootPath, excludedPaths: model.excludedPaths, ws: workspace, checks: checks}
+        variables: {path: rootPath, excludedPaths: model.excludedPaths, ws: workspace, checks: checks, skipMP: skipMP}
     }
 }
 
@@ -128,12 +128,17 @@ function loadConfigurations() {
     gqlCall(gqlConfig, (data) => renderConfigurations(data.integrity.checks))
 }
 
-const IntegrityCheckItem = ({id, enabled, name, configurable}) => {
+const IntegrityCheckItem = ({id, enabled, name, configurable, documentation}) => {
     let out = `<span class="config">`;
     out += `<input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked = "checked" : ""}/>${name}`;
+    out += HelpButtonItem(name, documentation, moduleContentIntegrityURL)
     if (configurable) out += ConfigureButtonItem(id, moduleContentIntegrityURL)
     out += `</span>`;
     return out;
+}
+
+const HelpButtonItem = (name, url, baseURL) => {
+    return `<a href="${url}" target="_blank"><img class="configureLink" src="${baseURL}/img/help.png" title="${name}: documentation" alt="Documentation" /></a>`
 }
 
 const ConfigureButtonItem = (id, baseURL) => {
@@ -187,7 +192,8 @@ function renderConfigurations(data) {
             name: this.id,
             id: this.id,
             enabled: this.enabled,
-            configurable: this.configurable
+            configurable: this.configurable,
+            documentation: this.documentation
         }
     })
     jQuery('#configurations').html(conf.map(IntegrityCheckItem).join(''));
@@ -333,12 +339,13 @@ jQuery(document).ready(function () {
     jQuery("#runScan").click(function () {
         const rootPath = jQuery("#rootNode").val();
         const workspace = jQuery("#workspace").val();
+        const skipMP = !jQuery("#includeVirtualNodes").is(":checked")
 
         const checks = jQuery.map(jQuery(".checkEnabled:checked"), function (cb, i) {
             return jQuery(cb).attr("id")
         })
 
-        gqlCall(getScanQuery(rootPath, workspace, checks), (data) => setupLogsLoader(data.integrity.scan.id));
+        gqlCall(getScanQuery(rootPath, workspace, skipMP, checks), (data) => setupLogsLoader(data.integrity.scan.id));
     });
     jQuery("#stopScan").click(function () {
         gqlCall(getStopScanQuery(), _ => showStopButton(false))
