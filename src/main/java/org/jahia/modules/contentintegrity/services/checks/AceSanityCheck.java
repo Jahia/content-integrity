@@ -68,7 +68,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 for (JCRNodeWrapper extPerm : roleNode.getNodes()) {
                     if (!extPerm.isNodeType(JNT_EXTERNAL_PERMISSIONS)) continue;
                     if (!extPerm.hasProperty(J_PATH)) {
-                        logger.error(String.format("Skipping the extenal permission %s since it is invalid (no %s property)", extPerm.getPath(), J_PATH));
+                        logger.error(String.format("Skipping the external permission %s since it is invalid (no %s property)", extPerm.getPath(), J_PATH));
                         continue;
                     }
                     role.addExternalPermission(extPerm.getName(), extPerm.getPropertyAsString(J_PATH));

@@ -17,6 +17,11 @@ public class LightContentIntegrityService {
 
     private static final Logger logger = LoggerFactory.getLogger(LightContentIntegrityService.class);
 
+    private static final long SESSION_REFRESH_INTERVAL = 1000L;
+
+    private long nodeCount;
+    private boolean isInterrupting;
+
     public List<String> checkIntegrity(String rootNode, String workspace, Map<String, Boolean> config) throws RepositoryException {
         return checkIntegrity(rootNode, null, workspace, config);
     }
@@ -37,8 +42,11 @@ public class LightContentIntegrityService {
             aceSanityCheck.setCheckUselessExternalAce(config.getOrDefault("check-useless-external-ace", false));
             aceSanityCheck.setCheckPrincipalOnAce(config.getOrDefault("check-principal", false));
             aceSanityCheck.initializeIntegrityTestInternal();
+            nodeCount = 0L;
+            isInterrupting = false;
             checkIntegrity(node, aceSanityCheck, output);
             aceSanityCheck.finalizeIntegrityTestInternal();
+            System.clearProperty("interruptScript");
             return null;
         });
         return output;
@@ -64,7 +72,9 @@ public class LightContentIntegrityService {
     }
 
     private void checkIntegrity(JCRNodeWrapper node, AceSanityCheck aceSanityCheck, List<String> output) throws RepositoryException {
+        if (isInterrupting) return;
         if (System.getProperty("interruptScript") != null) {
+            isInterrupting = true;
             final String msg = "Script interrupted";
             output.add(msg);
             logger.info(msg);
@@ -81,6 +91,15 @@ public class LightContentIntegrityService {
 
         if (!node.getSession().nodeExists(node.getPath())) return;
         addAll(output, aceSanityCheck.checkIntegrityAfterChildren(node));
+
+        nodeCount++;
+        if (nodeCount % SESSION_REFRESH_INTERVAL == 0) {
+            try {
+                node.getSession().refresh(false);
+            } catch (RepositoryException e) {
+                logger.error("", e);
+            }
+        }
     }
 
     private void addAll(List<String> output, List<String> newLines) {

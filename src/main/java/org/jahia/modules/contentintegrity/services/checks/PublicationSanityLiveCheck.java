@@ -23,6 +23,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -44,10 +45,11 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private static final String JMIX_LIVE_PROPERTIES = "jmix:liveProperties";
     private static final String J_LIVE_PROPERTIES = "j:liveProperties";
     private static final String JMIX_ORIGIN_WS = "jmix:originWS";
+    private static final List<String> DEFAULT_ONLY_MIXINS = Collections.singletonList("jmix:deletedChildren");
     /*
     Lock related properties are ignored because they are set only in the default WS, and do not alter the publication status
      */
-    private static final List<String> IGNORED_DEFAULT_ONLY_PROPS = Arrays.asList("jcr:lockOwner", "j:lockTypes", "j:locktoken", "jcr:lockIsDeep");
+    private static final List<String> IGNORED_DEFAULT_ONLY_PROPS = Arrays.asList("jcr:lockOwner", "j:lockTypes", "j:locktoken", "jcr:lockIsDeep", "j:deletedChildren");
     /*
     J_LIVE_PROPERTIES is set on the node only in the live WS to keep track of the UGC properties
     NODENAME is sometimes missing in the default WS. Since it reflects the node name, let's ignore it
@@ -214,8 +216,8 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
 
     private void compareMixins(JCRNodeWrapper defaultNode, JCRNodeWrapper liveNode, ContentIntegrityErrorList errors) {
         try {
-            final Set<String> defaultMixins = getNodeMixins(defaultNode);
-            final Set<String> liveMixins = getNodeMixins(liveNode);
+            final Set<String> defaultMixins = getNodeMixins(defaultNode, DEFAULT_ONLY_MIXINS);
+            final Set<String> liveMixins = getNodeMixins(liveNode, null);
             final Collection<String> liveOnlyMixins = CollectionUtils.subtract(liveMixins, defaultMixins);
 
             if (CollectionUtils.isEmpty(liveOnlyMixins)) {
@@ -260,8 +262,11 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         }
     }
 
-    private Set<String> getNodeMixins(JCRNodeWrapper node) throws RepositoryException {
-        return Arrays.stream(node.getMixinNodeTypes()).map(ExtendedNodeType::getName).collect(Collectors.toSet());
+    private Set<String> getNodeMixins(JCRNodeWrapper node, List<String> ignoredMixins) throws RepositoryException {
+        return Arrays.stream(node.getMixinNodeTypes())
+                .map(ExtendedNodeType::getName)
+                .filter(m -> CollectionUtils.isEmpty(ignoredMixins) || !ignoredMixins.contains(m))
+                .collect(Collectors.toSet());
     }
 
     @Override
