@@ -20,6 +20,7 @@ public class LightContentIntegrityService {
     private static final long SESSION_REFRESH_INTERVAL = 1000L;
 
     private long nodeCount;
+    private boolean isInterrupting;
 
     public List<String> checkIntegrity(String rootNode, String workspace, Map<String, Boolean> config) throws RepositoryException {
         return checkIntegrity(rootNode, null, workspace, config);
@@ -42,8 +43,10 @@ public class LightContentIntegrityService {
             aceSanityCheck.setCheckPrincipalOnAce(config.getOrDefault("check-principal", false));
             aceSanityCheck.initializeIntegrityTestInternal();
             nodeCount = 0L;
+            isInterrupting = false;
             checkIntegrity(node, aceSanityCheck, output);
             aceSanityCheck.finalizeIntegrityTestInternal();
+            System.clearProperty("interruptScript");
             return null;
         });
         return output;
@@ -69,7 +72,9 @@ public class LightContentIntegrityService {
     }
 
     private void checkIntegrity(JCRNodeWrapper node, AceSanityCheck aceSanityCheck, List<String> output) throws RepositoryException {
+        if (isInterrupting) return;
         if (System.getProperty("interruptScript") != null) {
+            isInterrupting = true;
             final String msg = "Script interrupted";
             output.add(msg);
             logger.info(msg);
