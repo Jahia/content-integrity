@@ -62,7 +62,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
      */
     private static final List<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED, Constants.JCR_LASTMODIFIEDBY,
             Constants.JCR_BASEVERSION, Constants.JCR_PREDECESSORS,
-            Constants.JCR_MIXINTYPES);
+            Constants.JCR_MIXINTYPES, Constants.FULLPATH, Constants.NODENAME);
 
     private final ContentIntegrityCheckConfiguration configurations;
 

@@ -9,6 +9,7 @@
   * [JCRLanguagePropertyCheck](#jcrlanguagepropertycheck)
   * [LockSanityCheck](#locksanitycheck)
   * [MarkForDeletionCheck](#markfordeletioncheck)
+  * [NodeNameInfoSanityCheck](#nodenameinfosanitycheck)
   * [PropertyDefinitionsSanityCheck](#propertydefinitionssanitycheck)
   * [PublicationSanityDefaultCheck](#publicationsanitydefaultcheck)
   * [PublicationSanityLiveCheck](#publicationsanitylivecheck)
@@ -174,6 +175,10 @@ A node flagged as deleted, but without deletion root, is inconsistent. From the 
 If a few pieces of content are impacted, you can delete again the root node of the deletion from the UI. This will add back the missing mixins, allowing then to publish or undelete the tree, still from the UI.
 
 If an important number of nodes are impacted, you will need to write a script to clean the mixins on the inconsistent nodes.
+
+## NodeNameInfoSanityCheck
+
+_work in progress_
 
 ## PropertyDefinitionsSanityCheck
 

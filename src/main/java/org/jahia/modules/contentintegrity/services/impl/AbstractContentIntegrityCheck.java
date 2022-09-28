@@ -60,9 +60,15 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
         Object prop = context.getProperties().get(PRIORITY);
         if (prop instanceof Float) priority = (float) prop;
+        else if (prop instanceof String) {
+            try {
+                priority = Float.parseFloat((String) prop);
+            } catch (NumberFormatException ignored) {}
+        }
 
         prop = context.getProperties().get(ENABLED);
         if (prop instanceof Boolean) enabled = (Boolean) prop;
+        else if (prop instanceof String) enabled = Boolean.parseBoolean((String) prop);
 
         prop = context.getProperties().get(ValidityCondition.APPLY_ON_VERSION_GT);
         if (prop instanceof String) {
