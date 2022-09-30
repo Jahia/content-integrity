@@ -6,7 +6,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
-import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
+import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;

@@ -3,7 +3,6 @@ package org.jahia.modules.contentintegrity.api;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
-import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 
 import java.util.List;
 

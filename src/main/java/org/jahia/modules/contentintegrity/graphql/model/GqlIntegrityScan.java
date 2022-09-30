@@ -13,7 +13,7 @@ import org.jahia.modules.contentintegrity.graphql.util.GqlUtils;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
-import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
+import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
