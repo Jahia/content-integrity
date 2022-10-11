@@ -57,8 +57,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
                 .filter(m -> !availableModules.contains(m))
                 .forEach(undeployedModule ->
                         errors.addError(createError(node, "Undeployed module still activated on a site")
-                                .addExtraInfo("module", undeployedModule)
-                                .addExtraInfo("site-name", site.getDisplayableName())));
+                                .addExtraInfo("module", undeployedModule)));
 
         return errors;
     }
