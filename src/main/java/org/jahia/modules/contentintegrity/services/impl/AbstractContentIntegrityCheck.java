@@ -6,8 +6,9 @@ import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.jahia.commons.Version;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorListImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -212,11 +213,11 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     protected final ContentIntegrityErrorList createEmptyErrorsList() {
-        return ContentIntegrityErrorList.createEmptyList();
+        return ContentIntegrityErrorListImpl.createEmptyList();
     }
 
     protected final ContentIntegrityErrorList createSingleError(ContentIntegrityError error) {
-        return ContentIntegrityErrorList.createSingleError(error);
+        return ContentIntegrityErrorListImpl.createSingleError(error);
     }
 
     @Override
