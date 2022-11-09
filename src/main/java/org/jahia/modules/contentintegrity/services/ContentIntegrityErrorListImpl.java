@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.services;
 
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

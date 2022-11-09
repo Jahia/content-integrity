@@ -1,7 +1,5 @@
 package org.jahia.modules.contentintegrity.api;
 
-import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
-
 import java.util.List;
 
 public interface ContentIntegrityErrorList {

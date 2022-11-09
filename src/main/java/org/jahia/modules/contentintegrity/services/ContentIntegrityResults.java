@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.services;
 
 import org.apache.commons.lang.time.FastDateFormat;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
