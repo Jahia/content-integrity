@@ -301,7 +301,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             while (references.hasNext()) {
                 final Node extAce = references.nextProperty().getParent();
                 if (extAce.isNodeType(JNT_EXTERNAL_ACE)) {
-                    errors.addError(createError(aceNode, "ACE of type different from GRANT with a missing external ACE")
+                    errors.addError(createError(aceNode, "ACE of type different from GRANT with an external ACE")
                             .setErrorType(ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
                             .addExtraInfo("ace-type", aceType)
                             .addExtraInfo("external-ace", extAce.getPath()));
