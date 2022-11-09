@@ -1,7 +1,7 @@
 package org.jahia.modules.contentintegrity.services.util;
 
+import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 import org.slf4j.Logger;
 
 import java.text.SimpleDateFormat;

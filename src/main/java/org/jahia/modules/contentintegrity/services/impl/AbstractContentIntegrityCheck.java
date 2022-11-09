@@ -6,8 +6,10 @@ import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.jahia.commons.Version;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorImpl;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorListImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -139,7 +141,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public boolean isEnabled() {
-        return enabled && !scanDurationDisabled;
+        return enabled;
+    }
+
+    @Override
+    public boolean canRun() {
+        return !scanDurationDisabled;
     }
 
     @Override
@@ -200,23 +207,23 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     protected final ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message) {
-        return ContentIntegrityError.createError(node, locale, message, this);
+        return ContentIntegrityErrorImpl.createError(node, locale, message, this);
     }
 
     protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, String message) {
-        return ContentIntegrityError.createError(node, locale == null ? null : LanguageCodeConverters.localeToLanguageTag(locale), message, this);
+        return ContentIntegrityErrorImpl.createError(node, locale == null ? null : LanguageCodeConverters.localeToLanguageTag(locale), message, this);
     }
 
     protected final ContentIntegrityError createError(JCRNodeWrapper node, String message) {
-        return ContentIntegrityError.createError(node, null, message, this);
+        return ContentIntegrityErrorImpl.createError(node, null, message, this);
     }
 
     protected final ContentIntegrityErrorList createEmptyErrorsList() {
-        return ContentIntegrityErrorList.createEmptyList();
+        return ContentIntegrityErrorListImpl.createEmptyList();
     }
 
     protected final ContentIntegrityErrorList createSingleError(ContentIntegrityError error) {
-        return ContentIntegrityErrorList.createSingleError(error);
+        return ContentIntegrityErrorListImpl.createSingleError(error);
     }
 
     @Override

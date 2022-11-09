@@ -4,8 +4,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.registries.ServicesRegistry;
@@ -57,8 +57,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
                 .filter(m -> !availableModules.contains(m))
                 .forEach(undeployedModule ->
                         errors.addError(createError(node, "Undeployed module still activated on a site")
-                                .addExtraInfo("module", undeployedModule)
-                                .addExtraInfo("site-name", site.getDisplayableName())));
+                                .addExtraInfo("module", undeployedModule)));
 
         return errors;
     }

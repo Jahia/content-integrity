@@ -1,7 +1,5 @@
 package org.jahia.modules.contentintegrity.api;
 
-import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
 import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
@@ -19,6 +17,8 @@ public interface ContentIntegrityCheck {
     String getName();
 
     boolean isEnabled();
+
+    boolean canRun();
 
     void setEnabled(boolean enabled);
 

@@ -13,3 +13,6 @@ target
 
 # Jahia DX Studio
 repository.xml.generated
+
+# Custom
+TODO.md

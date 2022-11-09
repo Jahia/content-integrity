@@ -8,10 +8,12 @@ import org.jahia.bin.Jahia;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
-import org.jahia.modules.contentintegrity.services.impl.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
@@ -313,7 +315,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private void checkNode(JCRNodeWrapper node, List<ContentIntegrityCheck> activeChecks, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren, ExternalLogger externalLogger) {
         for (ContentIntegrityCheck integrityCheck : activeChecks) {
             final long start = System.currentTimeMillis();
-            if (integrityCheck.isEnabled() && integrityCheck.areConditionsMatched(node)) {
+            if (integrityCheck.canRun() && integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s %s its children", integrityCheck.getClass().getName(), node, beforeChildren ? "before" : "after"));
                 try {

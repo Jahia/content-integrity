@@ -4,8 +4,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityError;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
@@ -301,7 +301,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             while (references.hasNext()) {
                 final Node extAce = references.nextProperty().getParent();
                 if (extAce.isNodeType(JNT_EXTERNAL_ACE)) {
-                    errors.addError(createError(aceNode, "ACE of type different from GRANT with a missing external ACE")
+                    errors.addError(createError(aceNode, "ACE of type different from GRANT with an external ACE")
                             .setErrorType(ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
                             .addExtraInfo("ace-type", aceType)
                             .addExtraInfo("external-ace", extAce.getPath()));
