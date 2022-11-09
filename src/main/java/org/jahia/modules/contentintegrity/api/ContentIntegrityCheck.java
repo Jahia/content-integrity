@@ -18,6 +18,8 @@ public interface ContentIntegrityCheck {
 
     boolean isEnabled();
 
+    boolean canRun();
+
     void setEnabled(boolean enabled);
 
     String getId();

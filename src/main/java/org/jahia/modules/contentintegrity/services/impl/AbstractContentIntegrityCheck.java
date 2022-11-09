@@ -141,7 +141,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     @Override
     public boolean isEnabled() {
-        return enabled && !scanDurationDisabled;
+        return enabled;
+    }
+
+    @Override
+    public boolean canRun() {
+        return !scanDurationDisabled;
     }
 
     @Override

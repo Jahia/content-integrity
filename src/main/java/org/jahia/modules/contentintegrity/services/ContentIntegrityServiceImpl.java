@@ -315,7 +315,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private void checkNode(JCRNodeWrapper node, List<ContentIntegrityCheck> activeChecks, List<ContentIntegrityError> errors, boolean fixErrors, boolean beforeChildren, ExternalLogger externalLogger) {
         for (ContentIntegrityCheck integrityCheck : activeChecks) {
             final long start = System.currentTimeMillis();
-            if (integrityCheck.isEnabled() && integrityCheck.areConditionsMatched(node)) {
+            if (integrityCheck.canRun() && integrityCheck.areConditionsMatched(node)) {
                 if (logger.isDebugEnabled())
                     logger.debug(String.format("Running %s on %s %s its children", integrityCheck.getClass().getName(), node, beforeChildren ? "before" : "after"));
                 try {
