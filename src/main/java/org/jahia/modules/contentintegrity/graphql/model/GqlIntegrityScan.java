@@ -73,7 +73,7 @@ public class GqlIntegrityScan {
                           @GraphQLName("startNode") @GraphQLDescription(PATH_DESC) String path,
                           @GraphQLName("excludedPaths") List<String> excludedPaths,
                           @GraphQLName("skipMountPoints") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean skipMountPoints,
-                          @GraphQLName("checksToRun") List<String> checksWhiteList,
+                          @GraphQLName("checksToRun") List<String> checksToRun,
                           @GraphQLName("uploadResults") boolean uploadResults) {
         id = generateExecutionID();
         executionStatus.put(id, Status.RUNNING);
@@ -81,9 +81,15 @@ public class GqlIntegrityScan {
         executionLog.put(id, output);
         final GqlExternalLogger console = output::add;
 
+        if (CollectionUtils.isEmpty(checksToRun)) {
+            output.add("No check selected");
+            executionStatus.put(id, Status.FINISHED);
+            return id;
+        }
+
         Executors.newSingleThreadExecutor().execute(() -> {
             final ContentIntegrityService service = Utils.getContentIntegrityService();
-            final List<String> checksToExecute = Utils.getChecksToExecute(service, checksWhiteList, null, console);
+            final List<String> checksToExecute = Utils.getChecksToExecute(service, checksToRun, null, console);
             final List<String> workspaces = workspace.getWorkspaces();
             try {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
