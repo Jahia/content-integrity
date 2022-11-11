@@ -138,6 +138,7 @@ const IntegrityCheckItem = ({id, enabled, name, configurable, documentation}) =>
 }
 
 const HelpButtonItem = (name, url, baseURL) => {
+    if (url === null) return ""
     return `<a href="${url}" target="_blank"><img class="configureLink" src="${baseURL}/img/help.png" title="${name}: documentation" alt="Documentation" /></a>`
 }
 
