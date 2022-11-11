@@ -65,7 +65,7 @@
         <jahia-depends>default,graphql-dxm-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
-        <jahia-module-signature>MCwCFEHbpD7mnBZpw+/3EJXJBEelitqjAhQLGhaKqzOdV+Ibo2ef/oUwnTyf8Q==</jahia-module-signature>
+        <jahia-module-signature>MCwCFDHk86+iDvG40lSb3z9wMyE8IW4sAhQg2iIUvDE3ZZJKziz3byK7/JttdA==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl</export-package>
