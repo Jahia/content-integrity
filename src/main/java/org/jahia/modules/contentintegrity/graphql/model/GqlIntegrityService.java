@@ -88,15 +88,4 @@ public class GqlIntegrityService {
     public GqlIntegrityScan getIntegrityScan(@GraphQLName("id") String executionID) {
         return new GqlIntegrityScan(executionID);
     }
-
-    @GraphQLField
-    public boolean stopRunningScan() {
-        final ContentIntegrityService service = getService();
-
-        if (!service.isScanRunning())
-            return Boolean.FALSE;
-
-        service.stopRunningScan();
-        return Boolean.TRUE;
-    }
 }

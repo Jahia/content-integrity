@@ -53,13 +53,16 @@ function getRunningTaskQuery() {
     }
 }
 
-function getStopScanQuery() {
+function getStopScanQuery(executionID) {
     return {
-        query: "{" +
+        query: "query ($id : String!) {" +
             "    integrity:contentIntegrity {" +
-            "        stopRunningScan" +
+            "        scan:integrityScan(id: $id) {" +
+            "            stopRunningScan" +
+            "        }" +
             "    }" +
-            "}"
+            "}",
+        variables: {id: executionID}
     }
 }
 
@@ -261,7 +264,7 @@ function renderLogs(executionID) {
         const scrollTarget = isScrolledToEnd ? logsElement.scrollHeight : currentScroll
         logs.scrollTop(scrollTarget)
         if (data.integrity.scan.status === RUNNING) {
-            showStopButton(true);
+            showStopButton(true, executionID);
         } else {
             STOP_PULLING_LOGS();
             showStopButton(false);
@@ -290,10 +293,12 @@ function wireToRunningScan() {
     })
 }
 
-function showStopButton(visible) {
+function showStopButton(visible, executionID) {
     if (visible) {
         jQuery("#runScan").attr("disabled", "disabled");
-        jQuery("#stopScan").show();
+        jQuery("#stopScan").click(function () {
+            gqlCall(getStopScanQuery(executionID), _ => showStopButton(false))
+        }).show();
     }
     else {
         jQuery("#runScan").removeAttr("disabled");
@@ -351,9 +356,6 @@ jQuery(document).ready(function () {
         })
 
         gqlCall(getScanQuery(rootPath, workspace, skipMP, checks), (data) => setupLogsLoader(data.integrity.scan.id));
-    });
-    jQuery("#stopScan").click(function () {
-        gqlCall(getStopScanQuery(), _ => showStopButton(false))
     });
     wireToRunningScan();
 });
