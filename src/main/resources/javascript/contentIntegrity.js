@@ -250,12 +250,16 @@ function renderLogs(executionID) {
     const reportFileDiv = jQuery("#reportFile")
     reportFileDiv.hide()
     gqlCall(getLogsQuery(executionID), (data) => {
-        const block = jQuery("#logs")
-        block.html("")
+        const logs = jQuery("#logs")
+        const logsElement = logs[0]
+        const currentScroll = logsElement.scrollTop
+        const isScrolledToEnd = currentScroll + logsElement.clientHeight === logsElement.scrollHeight
+        logs.html("")
         jQuery.each(data.integrity.scan.logs, function () {
-            block.append(this+"\n")
+            logs.append(this+"\n")
         })
-        block.scrollTop(block[0].scrollHeight)
+        const scrollTarget = isScrolledToEnd ? logsElement.scrollHeight : currentScroll
+        logs.scrollTop(scrollTarget)
         if (data.integrity.scan.status === RUNNING) {
             showStopButton(true);
         } else {
