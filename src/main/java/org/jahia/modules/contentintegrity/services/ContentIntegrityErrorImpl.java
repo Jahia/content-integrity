@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.services;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
@@ -12,8 +13,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NodeType;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 import static org.jahia.modules.contentintegrity.services.Utils.appendToCSVLine;
 
@@ -30,11 +36,13 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private final String constraintMessage;
     private final String integrityCheckName;
     private final String integrityCheckID;
-    private Map<String,Object> extraInfos;
+    private List<String> extraInfosKeys;
+    private Map<String, Object> extraInfos;
+    private Map<String, Object> specificExtraInfos;
     private boolean fixed = false;
 
     private ContentIntegrityErrorImpl(String path, String uuid, String primaryType, String mixins, String workspace,
-                                  String locale, String constraintMessage, String integrityCheckName, String integrityCheckID) {
+                                      String locale, String constraintMessage, String integrityCheckName, String integrityCheckID) {
         this.path = path;
         this.uuid = uuid;
         this.primaryType = primaryType;
@@ -93,7 +101,8 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
         appendToCSVLine(sb, mixins);
         appendToCSVLine(sb, locale);
         appendToCSVLine(sb, constraintMessage);
-        appendToCSVLine(sb, String.valueOf(extraInfos));
+        appendToCSVLine(sb, Objects.toString(extraInfos, StringUtils.EMPTY));
+        appendToCSVLine(sb, Objects.toString(specificExtraInfos, StringUtils.EMPTY));
 
         return sb.toString();
     }
@@ -154,20 +163,43 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     }
 
     @Override
-    public Map<String, Object> getExtraInfos() {
-        if (MapUtils.isEmpty(extraInfos)) return MapUtils.EMPTY_MAP;
-        return new LinkedHashMap<>(extraInfos);
+    public Map<String, Object> getAllExtraInfos() {
+        if (CollectionUtils.isEmpty(extraInfosKeys)) return MapUtils.EMPTY_MAP;
+
+        final LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+        for (String key : extraInfosKeys) {
+            map.put(key, getExtraInfo(key));
+        }
+
+        return map;
     }
 
     @Override
     public Object getExtraInfo(String key) {
-        return extraInfos.get(key);
+        if (extraInfosKeys == null || !extraInfosKeys.contains(key)) return null;
+
+        return extraInfos != null && extraInfos.containsKey(key) ? extraInfos.get(key) : specificExtraInfos.get(key);
     }
 
     @Override
     public ContentIntegrityError addExtraInfo(String key, Object value) {
-        if (extraInfos == null) extraInfos = new LinkedHashMap<>();
-        extraInfos.put(key, value);
+        return addExtraInfo(key, value, false);
+    }
+
+    @Override
+    public ContentIntegrityError addExtraInfo(String key, Object value, boolean isErrorSpecific) {
+        if (extraInfosKeys == null) extraInfosKeys = new ArrayList<>();
+        else if (extraInfosKeys.contains(key))
+            throw new IllegalArgumentException(String.format("Key already defined: %s", key));
+
+        extraInfosKeys.add(key);
+        if (isErrorSpecific) {
+            if (specificExtraInfos == null) specificExtraInfos = new HashMap<>();
+            specificExtraInfos.put(key, value);
+        } else {
+            if (extraInfos == null) extraInfos = new HashMap<>();
+            extraInfos.put(key, value);
+        }
         return this;
     }
 
