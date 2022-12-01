@@ -14,12 +14,11 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NodeType;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.TreeMap;
 
 import static org.jahia.modules.contentintegrity.services.Utils.appendToCSVLine;
 
@@ -194,10 +193,10 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
         extraInfosKeys.add(key);
         if (isErrorSpecific) {
-            if (specificExtraInfos == null) specificExtraInfos = new HashMap<>();
+            if (specificExtraInfos == null) specificExtraInfos = new TreeMap<>();
             specificExtraInfos.put(key, value);
         } else {
-            if (extraInfos == null) extraInfos = new HashMap<>();
+            if (extraInfos == null) extraInfos = new TreeMap<>();
             extraInfos.put(key, value);
         }
         return this;
