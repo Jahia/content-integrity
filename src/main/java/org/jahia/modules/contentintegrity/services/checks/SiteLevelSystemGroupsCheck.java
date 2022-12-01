@@ -66,7 +66,7 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
                 final ContentIntegrityError error = createError(site, String.format("The '%s' group doesn't exist in the site", SITE_PRIVILEGED_GROUPNAME))
                         .setErrorType(ErrorType.GROUP_DOES_NOT_EXIST)
                         .addExtraInfo("group-name", SITE_PRIVILEGED_GROUPNAME)
-                        .addExtraInfo("site-name", site.getDisplayableName())
+                        .addExtraInfo("site-name", site.getDisplayableName(), true)
                         .setExtraMsg(String.format("The '%s' group is created at site creation time, at site level, and should never be deleted", SITE_PRIVILEGED_GROUPNAME));
                 errors.addError(error);
             }
@@ -75,9 +75,9 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
                 final ContentIntegrityError error = createError(site, String.format("The '%s' group of a site is not member of the '%s' group",
                         SITE_PRIVILEGED_GROUPNAME, PRIVILEGED_GROUPNAME))
                         .setErrorType(ErrorType.MISSING_MEMBERSHIP)
-                        .addExtraInfo("missing-member", SITE_PRIVILEGED_GROUPNAME)
+                        .addExtraInfo("missing-member", SITE_PRIVILEGED_GROUPNAME, true)
                         .addExtraInfo("group-missing-a-member", PRIVILEGED_GROUPNAME)
-                        .addExtraInfo("site-name", site.getDisplayableName())
+                        .addExtraInfo("site-name", site.getDisplayableName(), true)
                         .setExtraMsg(String.format("The '%s' group of each site must be member of the server level group '%s", SITE_PRIVILEGED_GROUPNAME, PRIVILEGED_GROUPNAME));
                 errors.addError(error);
             }
