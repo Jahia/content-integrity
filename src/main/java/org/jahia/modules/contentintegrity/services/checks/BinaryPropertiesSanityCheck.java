@@ -67,7 +67,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                             getTranslationNodeLocale(node) : null;
                     errors.addError(createError(node, locale, "Invalid binary property")
                             .addExtraInfo("property-name", property.getName())
-                            .addExtraInfo("property-path", property.getPath()));
+                            .addExtraInfo("property-path", property.getPath(), true));
                 }
             }
         } catch (RepositoryException e) {

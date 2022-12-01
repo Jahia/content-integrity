@@ -58,7 +58,10 @@ public class GqlIntegrityCheck {
 
     @GraphQLField
     public String getDocumentation() {
-        return DOCUMENTATION_URL.concat(integrityCheck.getName().toLowerCase());
+        return
+                integrityCheck.getClass().getClassLoader().equals(getClass().getClassLoader())
+                        ? DOCUMENTATION_URL.concat(integrityCheck.getName().toLowerCase())
+                        : null;
     }
 
     @GraphQLField

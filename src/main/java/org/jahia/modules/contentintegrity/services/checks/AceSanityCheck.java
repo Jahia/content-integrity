@@ -154,8 +154,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals("GRANT", srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
                     errors.addError(createError(externalAceNode, "The source ACE is not of type GRANT")
                             .setErrorType(ErrorType.SOURCE_ACE_NOT_TYPE_GRANT)
-                            .addExtraInfo("src-ace-uuid", srcAceIdentifier)
-                            .addExtraInfo("src-ace-path", srcAce.getPath())
+                            .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
+                            .addExtraInfo("src-ace-path", srcAce.getPath(), true)
                             .addExtraInfo("src-ace-type", srcAceType)
                             .setExtraMsg("External ACE are defined only for the ACE of type GRANT"));
                 }
@@ -165,8 +165,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                         errors.addError(createError(externalAceNode,
                                 String.format("Missing %s property on the source ACE", J_ROLES))
                                 .setErrorType(ErrorType.ROLES_DIFFER_ON_SOURCE_ACE)
-                                .addExtraInfo("src-ace-uuid", srcAceIdentifier)
-                                .addExtraInfo("src-ace-path", srcAce.getPath())
+                                .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
+                                .addExtraInfo("src-ace-path", srcAce.getPath(), true)
                                 .setExtraMsg(String.format("Impossible to check if the roles defined on the external ACE and the source ACE are consistant, since the property %s is missing on the source ACE", J_ROLES)));
                     } else {
                         final List<String> externalAceRoles = getRoleNames(externalAceNode);
@@ -210,12 +210,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 if (!StringUtils.equals(expectedPath.toString(), externalAceNode.getPath())) {
                                     errors.addError(createError(externalAceNode, "The external ACE has not the expected path")
                                             .setErrorType(ErrorType.INVALID_EXTERNAL_ACE_PATH)
-                                            .addExtraInfo("ace-uuid", srcAceIdentifier)
-                                            .addExtraInfo("ace-path", srcAce.getPath())
+                                            .addExtraInfo("ace-uuid", srcAceIdentifier, true)
+                                            .addExtraInfo("ace-path", srcAce.getPath(), true)
                                             .addExtraInfo("role", role)
                                             .addExtraInfo("external-permissions-name", externalPermissionsName)
                                             .addExtraInfo("external-permissions-path", externalAcePathPattern)
-                                            .addExtraInfo("external-ace-expected-path", expectedPath));
+                                            .addExtraInfo("external-ace-expected-path", expectedPath, true));
                                 }
                             }
 
@@ -223,8 +223,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 errors.addError(createError(externalAceNode, "External ACE defined for a role which is not defined on the source ACE")
                                         .setErrorType(ErrorType.ROLES_DIFFER_ON_SOURCE_ACE)
                                         .addExtraInfo("role", role)
-                                        .addExtraInfo("ace-uuid", srcAceIdentifier)
-                                        .addExtraInfo("ace-path", srcAce.getPath())
+                                        .addExtraInfo("ace-uuid", srcAceIdentifier, true)
+                                        .addExtraInfo("ace-path", srcAce.getPath(), true)
                                         .addExtraInfo("ace-roles", srcAceRoles));
                             }
                         }

@@ -53,13 +53,16 @@ function getRunningTaskQuery() {
     }
 }
 
-function getStopScanQuery() {
+function getStopScanQuery(executionID) {
     return {
-        query: "{" +
+        query: "query ($id : String!) {" +
             "    integrity:contentIntegrity {" +
-            "        stopRunningScan" +
+            "        scan:integrityScan(id: $id) {" +
+            "            stopRunningScan" +
+            "        }" +
             "    }" +
-            "}"
+            "}",
+        variables: {id: executionID}
     }
 }
 
@@ -138,6 +141,7 @@ const IntegrityCheckItem = ({id, enabled, name, configurable, documentation}) =>
 }
 
 const HelpButtonItem = (name, url, baseURL) => {
+    if (url === null) return ""
     return `<a href="${url}" target="_blank"><img class="configureLink" src="${baseURL}/img/help.png" title="${name}: documentation" alt="Documentation" /></a>`
 }
 
@@ -249,14 +253,18 @@ function renderLogs(executionID) {
     const reportFileDiv = jQuery("#reportFile")
     reportFileDiv.hide()
     gqlCall(getLogsQuery(executionID), (data) => {
-        const block = jQuery("#logs")
-        block.html("")
+        const logs = jQuery("#logs")
+        const logsElement = logs[0]
+        const currentScroll = logsElement.scrollTop
+        const isScrolledToEnd = currentScroll + logsElement.clientHeight === logsElement.scrollHeight
+        logs.html("")
         jQuery.each(data.integrity.scan.logs, function () {
-            block.append(this+"\n")
+            logs.append(this+"\n")
         })
-        block.scrollTop(block[0].scrollHeight)
+        const scrollTarget = isScrolledToEnd ? logsElement.scrollHeight : currentScroll
+        logs.scrollTop(scrollTarget)
         if (data.integrity.scan.status === RUNNING) {
-            showStopButton(true);
+            showStopButton(true, executionID);
         } else {
             STOP_PULLING_LOGS();
             showStopButton(false);
@@ -285,10 +293,12 @@ function wireToRunningScan() {
     })
 }
 
-function showStopButton(visible) {
+function showStopButton(visible, executionID) {
     if (visible) {
         jQuery("#runScan").attr("disabled", "disabled");
-        jQuery("#stopScan").show();
+        jQuery("#stopScan").click(function () {
+            gqlCall(getStopScanQuery(executionID), _ => showStopButton(false))
+        }).show();
     }
     else {
         jQuery("#runScan").removeAttr("disabled");
@@ -346,9 +356,6 @@ jQuery(document).ready(function () {
         })
 
         gqlCall(getScanQuery(rootPath, workspace, skipMP, checks), (data) => setupLogsLoader(data.integrity.scan.id));
-    });
-    jQuery("#stopScan").click(function () {
-        gqlCall(getStopScanQuery(), _ => showStopButton(false))
     });
     wireToRunningScan();
 });

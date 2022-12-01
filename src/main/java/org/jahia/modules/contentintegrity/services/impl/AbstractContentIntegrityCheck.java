@@ -41,6 +41,8 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
 
+    private static final long APPROXIMATE_COUNT_FACTOR = 10L;
+
     private float priority = 100f;
     private boolean enabled = true;
     private boolean scanDurationDisabled = false;
@@ -418,6 +420,20 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             // { a, a, b } will be seen as equal to { a, b, b }
             return valuesMap1.get(type).stream().noneMatch(v1 -> valueEquals(v1, v2));
         });
+    }
+
+    protected String getApproximateCount(long count, long threshold) {
+        final long rangeBottom, rangeTop;
+        if (count < threshold * APPROXIMATE_COUNT_FACTOR) {
+            rangeBottom = Math.floorDiv(count, threshold) * threshold;
+            rangeTop = rangeBottom + threshold;
+        } else {
+            long i = APPROXIMATE_COUNT_FACTOR;
+            while (count > i * APPROXIMATE_COUNT_FACTOR) i *= APPROXIMATE_COUNT_FACTOR;
+            rangeBottom = threshold * i;
+            rangeTop = threshold * i * APPROXIMATE_COUNT_FACTOR;
+        }
+        return String.format("%d - %d", rangeBottom, rangeTop);
     }
 
     /*

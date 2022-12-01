@@ -70,7 +70,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     if (!hasPendingModifications(node)) {
                         final String msg = "Found a published node, with no pending modifications, but the path in live is different";
                         final ContentIntegrityError error = createError(node, msg)
-                                .addExtraInfo("live-node-path", liveNode.getPath());
+                                .addExtraInfo("live-node-path", liveNode.getPath(), true);
                         if (!StringUtils.equals(nodePath, "/") && StringUtils.equals(nodePath, scanRoot)) {
                             inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
                             error.setErrorType(ErrorType.DIFFERENT_PATH_POTENTIAL_FP);

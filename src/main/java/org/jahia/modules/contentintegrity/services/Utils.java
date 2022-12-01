@@ -41,7 +41,7 @@ public class Utils {
     private static final String CSV_SEPARATOR = ";";
     private static final String CSV_VALUE_WRAPPER = "\"";
     private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
-    private static final List<String> DEFAULT_CSV_HEADER_ITEMS = Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information");
+    private static final List<String> DEFAULT_CSV_HEADER_ITEMS = Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information", "Specific extra information");
     public static final String ALL_WORKSPACES = "all-workspaces";
 
     public enum LOG_LEVEL {

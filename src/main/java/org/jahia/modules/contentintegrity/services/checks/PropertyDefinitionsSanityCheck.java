@@ -520,9 +520,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             error.addExtraInfo("declaring-type", propertyDefinition.getDeclaringNodeType().getName());
         }
         if (value != null) {
-            error.addExtraInfo("invalid-value", value);
+            error.addExtraInfo("invalid-value", value, true);
             if (propertyDefinition != null && propertyDefinition.isMultiple())
-                error.addExtraInfo("value-index", valueIdx);
+                error.addExtraInfo("value-index", valueIdx, true);
         }
         if (valueType >= 0) {
             error.addExtraInfo("value-type", PropertyType.nameFromValue(valueType));

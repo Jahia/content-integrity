@@ -38,6 +38,14 @@ public class GqlIntegrityScan {
 
     private String id;
 
+    /*
+    TODO: replace with a local field, annotated with @Reference, and delete this method
+    Requires to compile with Jahia 8.1.1.0+ , otherwise it doesn't compile because of a bug with the BND plugin version used along with previous versions
+     */
+    private ContentIntegrityService getService() {
+        return Utils.getContentIntegrityService();
+    }
+
     public GqlIntegrityScan(String executionID) {
         if (StringUtils.isNotBlank(executionID)) {
             id = executionID;
@@ -53,6 +61,7 @@ public class GqlIntegrityScan {
     private enum Status {
         RUNNING("running"),
         FINISHED("finished"),
+        INTERRUPTED("interrupted"),
         FAILED("failed"),
         UNKNOWN("Unknown execution ID"),
         NONE("No scan currently running");
@@ -73,7 +82,7 @@ public class GqlIntegrityScan {
                           @GraphQLName("startNode") @GraphQLDescription(PATH_DESC) String path,
                           @GraphQLName("excludedPaths") List<String> excludedPaths,
                           @GraphQLName("skipMountPoints") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean skipMountPoints,
-                          @GraphQLName("checksToRun") List<String> checksWhiteList,
+                          @GraphQLName("checksToRun") List<String> checksToRun,
                           @GraphQLName("uploadResults") boolean uploadResults) {
         id = generateExecutionID();
         executionStatus.put(id, Status.RUNNING);
@@ -81,13 +90,20 @@ public class GqlIntegrityScan {
         executionLog.put(id, output);
         final GqlExternalLogger console = output::add;
 
+        if (CollectionUtils.isEmpty(checksToRun)) {
+            output.add("No check selected");
+            executionStatus.put(id, Status.FINISHED);
+            return id;
+        }
+
         Executors.newSingleThreadExecutor().execute(() -> {
-            final ContentIntegrityService service = Utils.getContentIntegrityService();
-            final List<String> checksToExecute = Utils.getChecksToExecute(service, checksWhiteList, null, console);
+            final ContentIntegrityService service = getService();
+            final List<String> checksToExecute = Utils.getChecksToExecute(service, checksToRun, null, console);
             final List<String> workspaces = workspace.getWorkspaces();
             try {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
+                    if (executionStatus.get(id) != Status.RUNNING) break;
                     final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, skipMountPoints, ws, checksToExecute, console);
                     if (contentIntegrityResults != null)
                         results.add(contentIntegrityResults.setExecutionID(id));
@@ -135,6 +151,19 @@ public class GqlIntegrityScan {
     @GraphQLName("report")
     public String getReportPath() {
         return executionReports.get(id);
+    }
+
+    @GraphQLField
+    public boolean stopRunningScan() {
+        executionStatus.put(id, Status.INTERRUPTED);
+
+        final ContentIntegrityService service = getService();
+
+        if (!service.isScanRunning())
+            return Boolean.FALSE;
+
+        service.stopRunningScan();
+        return Boolean.TRUE;
     }
 
     private String generateExecutionID() {

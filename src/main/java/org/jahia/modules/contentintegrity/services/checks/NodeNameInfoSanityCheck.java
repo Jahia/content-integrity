@@ -52,8 +52,8 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck {
             errors.addError(createError(node, "Unexpected property value")
                     .setErrorType(invalidPropertyValueErrorType)
                     .addExtraInfo("property-name", propertyName)
-                    .addExtraInfo("property-value", value)
-                    .addExtraInfo("expected-property-value", expectedValue));
+                    .addExtraInfo("property-value", value, true)
+                    .addExtraInfo("expected-property-value", expectedValue, true));
         }
     }
 }

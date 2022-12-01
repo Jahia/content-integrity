@@ -23,7 +23,7 @@ public interface ContentIntegrityError {
 
     String getIntegrityCheckID();
 
-    Map<String, Object> getExtraInfos();
+    Map<String, Object> getAllExtraInfos();
 
     boolean isFixed();
 
@@ -35,7 +35,18 @@ public interface ContentIntegrityError {
 
     Object getExtraInfo(String key);
 
+    /**
+     * Specifies an extra information which is useful to analyze and understand the error.
+     *
+     * Shortcut to addExtraInfo(key, value, false)
+     *
+     * @param key
+     * @param value
+     * @return
+     */
     ContentIntegrityError addExtraInfo(String key, Object value);
+
+    ContentIntegrityError addExtraInfo(String key, Object value, boolean isErrorSpecific);
 
     ContentIntegrityError setErrorType(Object type);
 
