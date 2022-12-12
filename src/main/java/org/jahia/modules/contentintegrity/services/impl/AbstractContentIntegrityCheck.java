@@ -359,7 +359,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             return lastModified.after(lastPublished);
         } catch (RepositoryException e) {
             logger.error("", e);
-            // If we can't validate that there's some pending modifications here, then we assume that there are no one.
+            // If we can't validate that there are some pending modifications here, then we assume that there are no one.
             return false;
         }
     }
