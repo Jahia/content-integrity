@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
@@ -219,6 +220,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             final Set<String> defaultMixins = getNodeMixins(defaultNode, DEFAULT_ONLY_MIXINS);
             final Set<String> liveMixins = getNodeMixins(liveNode, null);
             final Collection<String> liveOnlyMixins = CollectionUtils.subtract(liveMixins, defaultMixins);
+            final Collection<String> defaultOnlyMixins = CollectionUtils.subtract(defaultMixins, liveMixins);
 
             if (CollectionUtils.isEmpty(liveOnlyMixins)) {
                 if (defaultMixins.size() == liveMixins.size()) {
@@ -227,7 +229,8 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 } else {
                     // In this case, there are some additional mixins in default
                     errors.addError(createError(liveNode, "Different mixins on a published node")
-                            .setErrorType(ErrorType.DIFFERENT_MIXINS));
+                            .setErrorType(ErrorType.DIFFERENT_MIXINS)
+                            .addExtraInfo("default-only-mixins", defaultOnlyMixins));
                 }
                 return;
             }
@@ -241,12 +244,17 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                         .collect(Collectors.toSet());
             }
             final Set<String> finalUgcMixins = ugcMixins;
-            if (liveOnlyMixins.stream().anyMatch(s -> {
-                if (StringUtils.equals(s, JMIX_LIVE_PROPERTIES)) return false;
-                return finalUgcMixins == null || !finalUgcMixins.contains(s);
-            })) {
+            final Set<String> filteredLiveOnlyMixins = liveOnlyMixins.stream()
+                    .filter(s -> {
+                        if (StringUtils.equals(s, JMIX_LIVE_PROPERTIES)) return false;
+                        return finalUgcMixins == null || !finalUgcMixins.contains(s);
+                    })
+                    .collect(Collectors.toCollection(TreeSet::new));
+            if (CollectionUtils.isNotEmpty(filteredLiveOnlyMixins) || CollectionUtils.isNotEmpty(defaultOnlyMixins)) {
                 errors.addError(createError(liveNode, "Different mixins on a published node")
-                        .setErrorType(ErrorType.DIFFERENT_MIXINS));
+                        .setErrorType(ErrorType.DIFFERENT_MIXINS)
+                        .addExtraInfo("default-only-mixins", defaultOnlyMixins)
+                        .addExtraInfo("live-only-mixins", filteredLiveOnlyMixins));
             }
         } catch (RepositoryException e) {
             logger.error("", e);
@@ -266,7 +274,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         return Arrays.stream(node.getMixinNodeTypes())
                 .map(ExtendedNodeType::getName)
                 .filter(m -> CollectionUtils.isEmpty(ignoredMixins) || !ignoredMixins.contains(m))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @Override
