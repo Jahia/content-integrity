@@ -92,7 +92,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
         appendToCSVLine(sb, String.valueOf(integrityCheckID));
         appendToCSVLine(sb, String.valueOf(fixed));
-        appendToCSVLine(sb, integrityCheckName);
+        appendToCSVLine(sb, getErrorType());
         appendToCSVLine(sb, workspace);
         appendToCSVLine(sb, uuid);
         appendToCSVLine(sb, path);
