@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.external.ExternalNodeImpl;
@@ -537,7 +538,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     private void doOnTranslationNodes(JCRNodeWrapper node, TranslationNodeProcessor translationNodeProcessor) throws RepositoryException {
-        if (checkSiteLangsOnly() && StringUtils.startsWith(node.getPath(), "/sites/")) {
+        if (checkSiteLangsOnly() && Utils.getSiteKey(node.getPath()) != null) {
             final JCRSiteNode site = node.getResolveSite();
             final List<Locale> locales = node.getSession().getWorkspace().getName().equals(Constants.EDIT_WORKSPACE) ?
                     site.getLanguagesAsLocales() : site.getActiveLiveLanguagesAsLocales();
