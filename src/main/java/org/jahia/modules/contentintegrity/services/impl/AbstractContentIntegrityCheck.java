@@ -585,16 +585,22 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     public static class SubtreeCondition implements ExecutionCondition {
 
         private final String treePath;
+        private final String treePathPlusSlash;
 
         public SubtreeCondition(String treePath) {
-            if (treePath.endsWith("/")) this.treePath = treePath.substring(0, treePath.length() - 1);
-            else this.treePath = treePath;
+            if (treePath.endsWith("/")) {
+                this.treePath = treePath.length() == 1 ? treePath : treePath.substring(0, treePath.length() - 1);
+                treePathPlusSlash = treePath;
+            } else {
+                this.treePath = treePath;
+                treePathPlusSlash = treePath.concat("/");
+            }
         }
 
         @Override
         public boolean matches(JCRNodeWrapper node) {
             final String path = node.getPath();
-            return path.equals(treePath) || path.startsWith(treePath + "/"); // TODO review path.equals(treePath) , shouldn't this be another condition? (toString() to adapt if changed)
+            return path.equals(treePath) || path.startsWith(treePathPlusSlash); // TODO review path.equals(treePath) , shouldn't this be another condition? (toString() to adapt if changed)
         }
 
         @Override
