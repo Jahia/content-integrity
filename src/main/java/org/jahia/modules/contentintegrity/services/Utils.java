@@ -210,6 +210,7 @@ public class Utils {
                     final byte[] bytes = out.toByteArray();
 
                     final JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
+                    reportNode.addMixin("jmix:nolive");
                     writeReportMetadata(reportNode, results);
                     session.save();
                     final String reportPath = reportNode.getPath();
