@@ -252,6 +252,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     @Override
     public final void finalizeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
         finalizeIntegrityTestInternal(node, excludedPaths);
+        // TODO the next lines are useless. scanDurationDisabled can be set to true for other reasons. And it is set to false in initializeIntegrityTest() in any case.
         if (!scanDurationDisabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
             setScanDurationDisabled(false);
