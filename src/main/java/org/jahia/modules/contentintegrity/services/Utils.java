@@ -63,10 +63,24 @@ public class Utils {
         log(message, logLevel, log, null, externalLoggers);
     }
 
+    /**
+     * Log a message on the main logger as well as on external loggers.
+     * The message and the exception are both logged on the main logger (if defined).
+     * Only the message is logged on the external loggers, unless this message is blank. In such case, the message extracted from the exception is logged on the external loggers instead.
+     *
+     * If the specified log level is not enabled on the main logger, then nothing is logged, neither on the main logger nor on the external loggers.
+     *
+     * @param message the message
+     * @param logLevel the log level
+     * @param log the main logger
+     * @param t the exception
+     * @param externalLoggers the external loggers
+     */
     public static void log(String message, LOG_LEVEL logLevel, Logger log, Throwable t, ExternalLogger... externalLoggers) {
         if (log != null) {
             switch (logLevel) {
                 case TRACE:
+                    if (!log.isTraceEnabled()) return;
                     if (t == null) {
                         log.trace(message);
                     } else {
@@ -74,6 +88,7 @@ public class Utils {
                     }
                     break;
                 case INFO:
+                    if (!log.isInfoEnabled()) return;
                     if (t == null) {
                         log.info(message);
                     } else {
@@ -81,6 +96,7 @@ public class Utils {
                     }
                     break;
                 case WARN:
+                    if (!log.isWarnEnabled()) return;
                     if (t == null) {
                         log.warn(message);
                     } else {
@@ -88,6 +104,7 @@ public class Utils {
                     }
                     break;
                 case ERROR:
+                    if (!log.isErrorEnabled()) return;
                     if (t == null) {
                         log.error(message);
                     } else {
@@ -95,6 +112,7 @@ public class Utils {
                     }
                     break;
                 case DEBUG:
+                    if (!log.isDebugEnabled()) return;
                     if (t == null) {
                         log.debug(message);
                     } else {
