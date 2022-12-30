@@ -347,7 +347,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         final long start = System.currentTimeMillis();
         try {
             nbNodesToScan = calculateNbNodesToScan(node, excludedPaths, skipMountPoints, 0L, externalLogger);
-            logger.info(String.format("%s nodes to scan", nbNodesToScan));
+            Utils.log(String.format("%s nodes to scan", nbNodesToScan), logger, externalLogger);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
