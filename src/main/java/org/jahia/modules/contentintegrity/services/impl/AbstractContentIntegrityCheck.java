@@ -47,7 +47,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private boolean enabled = true;
     private boolean scanDurationDisabled = false;
     private String description;
-    private final List<ExecutionCondition> conditions = new LinkedList<ExecutionCondition>();
+    private final List<ExecutionCondition> conditions = new LinkedList<>();
     private String id = null;
     private long ownTime = 0L;
     private int fatalErrorCount = 0;
@@ -134,6 +134,11 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         for (ExecutionCondition condition : conditions) {
             addCondition(condition);
         }
+    }
+
+    @Override
+    public boolean areConditionsReachable(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        return conditions.stream().allMatch(c -> c.isReachableCondition(scanRootNode, excludedPaths) >= 0);
     }
 
     @Override
@@ -238,20 +243,20 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public final void initializeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
+    public final void initializeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         fatalErrorCount = 0;
         setScanDurationDisabled(false);
-        initializeIntegrityTestInternal(node, excludedPaths);
+        initializeIntegrityTestInternal(scanRootNode, excludedPaths);
     }
 
     /**
      * This method is run once on each check before starting a scan
      */
-    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {}
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {}
 
     @Override
-    public final void finalizeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        finalizeIntegrityTestInternal(node, excludedPaths);
+    public final void finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        finalizeIntegrityTestInternal(scanRootNode, excludedPaths);
         // TODO the next lines are useless. scanDurationDisabled can be set to true for other reasons. And it is set to false in initializeIntegrityTest() in any case.
         if (!scanDurationDisabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
@@ -262,7 +267,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     /**
      * This method is run once on each check after finishing a scan
      */
-    protected void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {}
+    protected void finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {}
 
     @Override
     public boolean isValid() {

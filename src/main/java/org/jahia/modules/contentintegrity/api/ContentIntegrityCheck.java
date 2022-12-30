@@ -30,6 +30,8 @@ public interface ContentIntegrityCheck {
 
     boolean areConditionsMatched(JCRNodeWrapper node);
 
+    boolean areConditionsReachable(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths);
+
     String toFullString();
 
     void resetOwnTime();
@@ -40,9 +42,9 @@ public interface ContentIntegrityCheck {
 
     void trackFatalError();
 
-    void initializeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths);
+    void initializeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths);
 
-    void finalizeIntegrityTest(JCRNodeWrapper node, Collection<String> excludedPaths);
+    void finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths);
 
     boolean isValid();
 
@@ -67,6 +69,15 @@ public interface ContentIntegrityCheck {
     */
     public interface ExecutionCondition {
         boolean matches(JCRNodeWrapper node);
+
+        /**
+         * Validates if the condition can be matched on at least 1 node during the scan.
+         * A positive value means that it can, a negative value means that it can't, zero means that this can't be determined.
+         * @param scanRootNode
+         * @param excludedPaths
+         * @return
+         */
+        default int isReachableCondition(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) { return 0; }
 
         String APPLY = "apply";
         String SKIP = "skip";
