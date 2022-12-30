@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static org.jahia.api.Constants.EDIT_WORKSPACE;
@@ -47,22 +48,28 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private static final String JMIX_ORIGIN_WS = "jmix:originWS";
     private static final List<String> DEFAULT_ONLY_MIXINS = Collections.singletonList("jmix:deletedChildren");
     /*
-    Lock related properties are ignored because they are set only in the default WS, and do not alter the publication status
+    Properties which can be defined on either workspace, and be missing on the other one.
+
+    Lock related properties are ignored because they are set on a single WS (usually the default WS), and do not alter the publication status
      */
-    private static final List<String> IGNORED_DEFAULT_ONLY_PROPS = Arrays.asList("jcr:lockOwner", "j:lockTypes", "j:locktoken", "jcr:lockIsDeep", "j:deletedChildren");
+    private static final Collection<String> IGNORED_WS_ONLY_PROPS = Arrays.asList("jcr:lockOwner", "j:lockTypes", "j:locktoken", "jcr:lockIsDeep", Constants.FULLPATH, Constants.NODENAME);
+    /*
+     */
+    private static final Collection<String> IGNORED_DEFAULT_ONLY_PROPS = CollectionUtils.union(Arrays.asList("j:deletedChildren"), IGNORED_WS_ONLY_PROPS);
     /*
     J_LIVE_PROPERTIES is set on the node only in the live WS to keep track of the UGC properties
     NODENAME is sometimes missing in the default WS. Since it reflects the node name, let's ignore it
      */
-    private static final List<String> IGNORED_LIVE_ONLY_PROPS = Arrays.asList(J_LIVE_PROPERTIES, Constants.NODENAME);
+    private static final Collection<String> IGNORED_LIVE_ONLY_PROPS = CollectionUtils.union(Arrays.asList(J_LIVE_PROPERTIES), IGNORED_WS_ONLY_PROPS);
     /*
     JCR_LASTMODIFIED / JCR_LASTMODIFIEDBY are not compared, because the node can be updated in live when writing UCG properties
     Versioning related properties are not compared because each workspace works with its own graph
     JCR_MIXINTYPES might differ if some mixins are added in live. Mixins are compared separately, without using this property
      */
-    private static final List<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED, Constants.JCR_LASTMODIFIEDBY,
+    private static final Collection<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED, Constants.JCR_LASTMODIFIEDBY,
             Constants.JCR_BASEVERSION, Constants.JCR_PREDECESSORS,
-            Constants.JCR_MIXINTYPES, Constants.FULLPATH, Constants.NODENAME);
+            Constants.JCR_MIXINTYPES, Constants.FULLPATH, Constants.NODENAME,
+            "j:lockTypes");
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -219,6 +226,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             final Set<String> defaultMixins = getNodeMixins(defaultNode, DEFAULT_ONLY_MIXINS);
             final Set<String> liveMixins = getNodeMixins(liveNode, null);
             final Collection<String> liveOnlyMixins = CollectionUtils.subtract(liveMixins, defaultMixins);
+            final Collection<String> defaultOnlyMixins = CollectionUtils.subtract(defaultMixins, liveMixins);
 
             if (CollectionUtils.isEmpty(liveOnlyMixins)) {
                 if (defaultMixins.size() == liveMixins.size()) {
@@ -227,7 +235,8 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 } else {
                     // In this case, there are some additional mixins in default
                     errors.addError(createError(liveNode, "Different mixins on a published node")
-                            .setErrorType(ErrorType.DIFFERENT_MIXINS));
+                            .setErrorType(ErrorType.DIFFERENT_MIXINS)
+                            .addExtraInfo("default-only-mixins", defaultOnlyMixins));
                 }
                 return;
             }
@@ -241,12 +250,17 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                         .collect(Collectors.toSet());
             }
             final Set<String> finalUgcMixins = ugcMixins;
-            if (liveOnlyMixins.stream().anyMatch(s -> {
-                if (StringUtils.equals(s, JMIX_LIVE_PROPERTIES)) return false;
-                return finalUgcMixins == null || !finalUgcMixins.contains(s);
-            })) {
+            final Set<String> filteredLiveOnlyMixins = liveOnlyMixins.stream()
+                    .filter(s -> {
+                        if (StringUtils.equals(s, JMIX_LIVE_PROPERTIES)) return false;
+                        return finalUgcMixins == null || !finalUgcMixins.contains(s);
+                    })
+                    .collect(Collectors.toCollection(TreeSet::new));
+            if (CollectionUtils.isNotEmpty(filteredLiveOnlyMixins) || CollectionUtils.isNotEmpty(defaultOnlyMixins)) {
                 errors.addError(createError(liveNode, "Different mixins on a published node")
-                        .setErrorType(ErrorType.DIFFERENT_MIXINS));
+                        .setErrorType(ErrorType.DIFFERENT_MIXINS)
+                        .addExtraInfo("default-only-mixins", defaultOnlyMixins)
+                        .addExtraInfo("live-only-mixins", filteredLiveOnlyMixins));
             }
         } catch (RepositoryException e) {
             logger.error("", e);
@@ -266,7 +280,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         return Arrays.stream(node.getMixinNodeTypes())
                 .map(ExtendedNodeType::getName)
                 .filter(m -> CollectionUtils.isEmpty(ignoredMixins) || !ignoredMixins.contains(m))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @Override

@@ -156,7 +156,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             }
             try {
                 final JCRNodeWrapper node = session.getNode(path);
-                Utils.log(String.format("Starting to check the integrity under %s in the workspace %s", path, workspace), logger, externalLogger);
+                final String excludedPathsDesc = CollectionUtils.isNotEmpty(excludedPaths) ?
+                        excludedPaths.stream().collect(Collectors.joining(" , ", " (excluded paths: ", " )")) : StringUtils.EMPTY;
+                Utils.log(String.format("Starting to check the integrity under %s in the workspace %s%s", path, workspace, excludedPathsDesc), logger, externalLogger);
                 final List<ContentIntegrityError> errors = new ArrayList<>();
                 final long start = System.currentTimeMillis();
                 resetCounters();
@@ -172,9 +174,18 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     return null;
                 }
                 ProgressMonitor.getInstance().init(nbNodesToScan, "Scan progress", logger, externalLogger);
-                final List<ContentIntegrityCheck> activeChecks = getActiveChecks(checksToExecute);
-                for (ContentIntegrityCheck integrityCheck : activeChecks) {
-                    integrityCheck.initializeIntegrityTest(node, trimmedExcludedPaths);
+                final List<ContentIntegrityCheck> activeChecks = new ArrayList<>();
+                for (ContentIntegrityCheck integrityCheck : getActiveChecks(checksToExecute)) {
+                    if (integrityCheck.areConditionsReachable(node, trimmedExcludedPaths)) {
+                        integrityCheck.initializeIntegrityTest(node, trimmedExcludedPaths);
+                        activeChecks.add(integrityCheck);
+                    } else {
+                        Utils.log(String.format("Skipping %s as its conditions can't be reached during this scan", integrityCheck.getName()), Utils.LOG_LEVEL.DEBUG, logger, externalLogger);
+                    }
+                }
+                if (CollectionUtils.isEmpty(activeChecks)) {
+                    Utils.log("No integrity check to run", Utils.LOG_LEVEL.WARN, logger, externalLogger);
+                    return null;
                 }
                 validateIntegrity(node, trimmedExcludedPaths, skipMountPoints, activeChecks, errors, externalLogger, fixErrors);
                 if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
@@ -191,7 +202,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final List<ExternalLogger> externalLoggers = new ArrayList<>();
                 externalLoggers.add(summaryLogger);
                 if (externalLogger.includeSummary()) externalLoggers.add(externalLogger);
-                printChecksDuration(testDuration, externalLoggers.toArray(new ExternalLogger[0]));
+                printChecksDuration(testDuration, activeChecks, externalLoggers.toArray(new ExternalLogger[0]));
                 final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors, summary);
                 storeErrorsInCache(results);
                 return results;
@@ -231,11 +242,11 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         ownTimeIntervalStart = 0L;
     }
 
-    private void printChecksDuration(long totalDuration, ExternalLogger... externalLoggers) {
-        final long totalChecksDuration = integrityChecks.stream().map(ContentIntegrityCheck::getOwnTime).reduce(0L, Long::sum);
+    private void printChecksDuration(long totalDuration, List<ContentIntegrityCheck> activeChecks, ExternalLogger... externalLoggers) {
+        final long totalChecksDuration = activeChecks.stream().map(ContentIntegrityCheck::getOwnTime).reduce(0L, Long::sum);
         Utils.log(String.format("   Calculation of the size of the tree: %s", getDurationOutput(nbNodesToScanCalculationDuration, totalDuration)), logger, externalLoggers);
         Utils.log(String.format("   Scan of the tree: %s", getDurationOutput(ownTime, totalDuration)), logger, externalLoggers);
-        final List<ContentIntegrityCheck> sortedChecks = integrityChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
+        final List<ContentIntegrityCheck> sortedChecks = activeChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
         final long durationRest = totalDuration - nbNodesToScanCalculationDuration - ownTime - totalChecksDuration;
         Utils.log(String.format("   Other: %s", getDurationOutput(durationRest, totalDuration)), logger, externalLoggers);
         Utils.log(String.format("   Integrity checks: %s", getDurationOutput(totalChecksDuration, totalDuration)), logger, externalLoggers);
@@ -255,7 +266,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         try {
             beginComputingOwnTime();
             final String path = node.getPath();
-            if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(path)) {
+            if (isExcluded(path, excludedPaths)) {
                 Utils.log(String.format("Skipping node %s", path), logger, externalLogger);
                 return;
             }
@@ -336,7 +347,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         final long start = System.currentTimeMillis();
         try {
             nbNodesToScan = calculateNbNodesToScan(node, excludedPaths, skipMountPoints, 0L, externalLogger);
-            logger.info(String.format("%s nodes to scan", nbNodesToScan));
+            Utils.log(String.format("%s nodes to scan", nbNodesToScan), logger, externalLogger);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
@@ -347,7 +358,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
             throw new InterruptedScanException();
         }
-        if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(node.getPath())) {
+        if (isExcluded(node.getPath(), excludedPaths)) {
             return currentCount;
         }
 
@@ -382,12 +393,16 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         final String path = node.getPath();
         if ("/jcr:system".equals(path)) {
             logger.debug("Skipping {}", path);
-            return true; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
+            return true; // If the test is started from /jcr:system or somewhere under, then it will not be skipped (this method is not executed on the root node of the scan, it is used to filter the children when traversing the subtree)
         }
         if (skipMountPoints && isExternalNode(node)) {
             logger.info("Skipping {}", path);
             return true;
         } else return false;
+    }
+
+    private boolean isExcluded(String scanNodePath, Set<String> excludedPaths) {
+        return excludedPaths.stream().anyMatch(excludedPath -> StringUtils.startsWith(scanNodePath, excludedPath));
     }
 
     private void logFatalError(JCRNodeWrapper node, Throwable t, ContentIntegrityCheck integrityCheck, ExternalLogger externalLogger) {

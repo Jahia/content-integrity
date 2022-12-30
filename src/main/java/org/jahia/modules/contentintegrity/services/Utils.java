@@ -41,8 +41,11 @@ public class Utils {
     private static final String CSV_SEPARATOR = ";";
     private static final String CSV_VALUE_WRAPPER = "\"";
     private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
-    private static final List<String> DEFAULT_CSV_HEADER_ITEMS = Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information", "Specific extra information");
-    public static final String ALL_WORKSPACES = "all-workspaces";
+    private static final List<String> DEFAULT_CSV_HEADER_ITEMS = Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Site", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information", "Specific extra information");
+    private static final String ALL_WORKSPACES = "all-workspaces";
+    private static final String NODE_UNDER_SITE_PATH_PREFIX = "/sites/";
+    private static final String NODE_UNDER_MODULES_PATH_PREFIX = "/modules/";
+    private static final char NODE_PATH_SEPARATOR_CHAR = '/';
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -60,10 +63,24 @@ public class Utils {
         log(message, logLevel, log, null, externalLoggers);
     }
 
+    /**
+     * Log a message on the main logger as well as on external loggers.
+     * The message and the exception are both logged on the main logger (if defined).
+     * Only the message is logged on the external loggers, unless this message is blank. In such case, the message extracted from the exception is logged on the external loggers instead.
+     *
+     * If the specified log level is not enabled on the main logger, then nothing is logged, neither on the main logger nor on the external loggers.
+     *
+     * @param message the message
+     * @param logLevel the log level
+     * @param log the main logger
+     * @param t the exception
+     * @param externalLoggers the external loggers
+     */
     public static void log(String message, LOG_LEVEL logLevel, Logger log, Throwable t, ExternalLogger... externalLoggers) {
         if (log != null) {
             switch (logLevel) {
                 case TRACE:
+                    if (!log.isTraceEnabled()) return;
                     if (t == null) {
                         log.trace(message);
                     } else {
@@ -71,6 +88,7 @@ public class Utils {
                     }
                     break;
                 case INFO:
+                    if (!log.isInfoEnabled()) return;
                     if (t == null) {
                         log.info(message);
                     } else {
@@ -78,6 +96,7 @@ public class Utils {
                     }
                     break;
                 case WARN:
+                    if (!log.isWarnEnabled()) return;
                     if (t == null) {
                         log.warn(message);
                     } else {
@@ -85,6 +104,7 @@ public class Utils {
                     }
                     break;
                 case ERROR:
+                    if (!log.isErrorEnabled()) return;
                     if (t == null) {
                         log.error(message);
                     } else {
@@ -92,6 +112,7 @@ public class Utils {
                     }
                     break;
                 case DEBUG:
+                    if (!log.isDebugEnabled()) return;
                     if (t == null) {
                         log.debug(message);
                     } else {
@@ -189,6 +210,7 @@ public class Utils {
                     final byte[] bytes = out.toByteArray();
 
                     final JCRNodeWrapper reportNode = outputDir.uploadFile(filename, new ByteArrayInputStream(bytes), "text/csv");
+                    reportNode.addMixin("jmix:nolive");
                     writeReportMetadata(reportNode, results);
                     session.save();
                     final String reportPath = reportNode.getPath();
@@ -289,5 +311,17 @@ public class Utils {
         });
 
         return new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
+    }
+
+    public static String getSiteKey(String path) {
+        return getSiteKey(path, false);
+    }
+
+    public static String getSiteKey(String path, boolean considerModulesAsSites) {
+        if (considerModulesAsSites && StringUtils.length(path) > NODE_UNDER_MODULES_PATH_PREFIX.length() && StringUtils.startsWith(path, NODE_UNDER_MODULES_PATH_PREFIX))
+            return StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1];
+
+        return StringUtils.length(path) > NODE_UNDER_SITE_PATH_PREFIX.length() && StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
+                StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1] : null;
     }
 }

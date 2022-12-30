@@ -7,6 +7,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -19,10 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
-import javax.jcr.NodeIterator;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
-import javax.jcr.query.Query;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -56,27 +55,34 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     @Override
     public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        final JCRSessionWrapper defaultSession;
+        final JCRSessionWrapper defaultSession = getSystemSession(EDIT_WORKSPACE, false);
         try {
-            defaultSession = getSystemSession(EDIT_WORKSPACE, false);
-            final String statement = "SELECT * FROM [jnt:role] WHERE ISDESCENDANTNODE('/roles')";
-            final Query query = defaultSession.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2);
-
-            for (final NodeIterator it = query.execute().getNodes(); it.hasNext(); ) {
-                final JCRNodeWrapper roleNode = (JCRNodeWrapper) it.next();
-                final Role role = new Role(roleNode.getName(), roleNode.getIdentifier());
-                for (JCRNodeWrapper extPerm : roleNode.getNodes()) {
-                    if (!extPerm.isNodeType(JNT_EXTERNAL_PERMISSIONS)) continue;
-                    if (!extPerm.hasProperty(J_PATH)) {
-                        logger.error(String.format("Skipping the external permission %s since it is invalid (no %s property)", extPerm.getPath(), J_PATH));
-                        continue;
-                    }
-                    role.addExternalPermission(extPerm.getName(), extPerm.getPropertyAsString(J_PATH));
-                }
-                roles.put(role.getName(), role);
-            }
+            processRole(defaultSession.getNode("/roles"), null, true);
         } catch (RepositoryException e) {
-            logger.error("Error whole loading the available roles", e);
+            logger.error("Error while loading the available roles", e);
+            setScanDurationDisabled(true);
+        }
+    }
+
+    private void processRole(JCRNodeWrapper roleNode, String parentRole, boolean isRootFolder) throws RepositoryException {
+        String roleName = null;
+        if (!isRootFolder) {
+            final Role role = new Role(roleNode.getName(), roleNode.getIdentifier());
+            if (parentRole != null) {
+                roles.get(parentRole).getExternalPermissions().forEach(role::addExternalPermission);
+            }
+            for (JCRNodeWrapper extPerm : JCRContentUtils.getNodes(roleNode, JNT_EXTERNAL_PERMISSIONS)) {
+                if (!extPerm.hasProperty(J_PATH)) {
+                    logger.error(String.format("Skipping the external permission %s since it is invalid (no %s property)", extPerm.getPath(), J_PATH));
+                    continue;
+                }
+                role.addExternalPermission(extPerm.getName(), extPerm.getPropertyAsString(J_PATH));
+            }
+            roleName = role.getName();
+            roles.put(roleName, role);
+        }
+        for (JCRNodeWrapper jcrNodeWrapper : JCRContentUtils.getChildrenOfType(roleNode, Constants.JAHIANT_ROLE)) {
+            processRole(jcrNodeWrapper, roleName, false);
         }
     }
 

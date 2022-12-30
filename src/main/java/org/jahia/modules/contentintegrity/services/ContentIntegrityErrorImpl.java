@@ -21,12 +21,14 @@ import java.util.Objects;
 import java.util.TreeMap;
 
 import static org.jahia.modules.contentintegrity.services.Utils.appendToCSVLine;
+import static org.jahia.modules.contentintegrity.services.Utils.getSiteKey;
 
 public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityErrorImpl.class);
 
     private final String path;
+    private final String site;
     private final String uuid;
     private final String primaryType;
     private final String mixins;
@@ -43,6 +45,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private ContentIntegrityErrorImpl(String path, String uuid, String primaryType, String mixins, String workspace,
                                       String locale, String constraintMessage, String integrityCheckName, String integrityCheckID) {
         this.path = path;
+        site = getSiteKey(path);
         this.uuid = uuid;
         this.primaryType = primaryType;
         this.mixins = mixins;
@@ -92,10 +95,11 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
         appendToCSVLine(sb, String.valueOf(integrityCheckID));
         appendToCSVLine(sb, String.valueOf(fixed));
-        appendToCSVLine(sb, integrityCheckName);
+        appendToCSVLine(sb, getErrorType());
         appendToCSVLine(sb, workspace);
         appendToCSVLine(sb, uuid);
         appendToCSVLine(sb, path);
+        appendToCSVLine(sb, site);
         appendToCSVLine(sb, primaryType);
         appendToCSVLine(sb, mixins);
         appendToCSVLine(sb, locale);
