@@ -183,6 +183,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                         Utils.log(String.format("Skipping %s as its conditions can't be reached during this scan", integrityCheck.getName()), Utils.LOG_LEVEL.DEBUG, logger, externalLogger);
                     }
                 }
+                if (CollectionUtils.isEmpty(activeChecks)) {
+                    Utils.log("No integrity check to run", Utils.LOG_LEVEL.WARN, logger, externalLogger);
+                    return null;
+                }
                 validateIntegrity(node, trimmedExcludedPaths, skipMountPoints, activeChecks, errors, externalLogger, fixErrors);
                 if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
                     Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
