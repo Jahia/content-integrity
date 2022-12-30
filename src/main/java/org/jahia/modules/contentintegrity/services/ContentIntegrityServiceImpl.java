@@ -266,7 +266,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         try {
             beginComputingOwnTime();
             final String path = node.getPath();
-            if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(path)) {
+            if (isExcluded(path, excludedPaths)) {
                 Utils.log(String.format("Skipping node %s", path), logger, externalLogger);
                 return;
             }
@@ -358,7 +358,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
             throw new InterruptedScanException();
         }
-        if (CollectionUtils.isNotEmpty(excludedPaths) && excludedPaths.contains(node.getPath())) {
+        if (isExcluded(node.getPath(), excludedPaths)) {
             return currentCount;
         }
 
@@ -393,12 +393,16 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         final String path = node.getPath();
         if ("/jcr:system".equals(path)) {
             logger.debug("Skipping {}", path);
-            return true; // If the test is started from /jcr:system or somewhere under, then it will not be skipped
+            return true; // If the test is started from /jcr:system or somewhere under, then it will not be skipped (this method is not executed on the root node of the scan, it is used to filter the children when traversing the subtree)
         }
         if (skipMountPoints && isExternalNode(node)) {
             logger.info("Skipping {}", path);
             return true;
         } else return false;
+    }
+
+    private boolean isExcluded(String scanNodePath, Set<String> excludedPaths) {
+        return excludedPaths.stream().anyMatch(excludedPath -> StringUtils.startsWith(scanNodePath, excludedPath));
     }
 
     private void logFatalError(JCRNodeWrapper node, Throwable t, ContentIntegrityCheck integrityCheck, ExternalLogger externalLogger) {
