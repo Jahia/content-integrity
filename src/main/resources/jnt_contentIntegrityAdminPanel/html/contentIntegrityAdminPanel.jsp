@@ -31,6 +31,12 @@
 <h1><fmt:message key="label.settings.title"/></h1>
 <p><fmt:message key="label.contentIntegrity.description"/></p>
 
+<div class="tabs">
+    <span class="tabLink" tabrole="scan">Scan</span>
+    <span class="tabLink" tabrole="results">Results</span>
+</div>
+
+<div id="scan-panel" class="mainPanel">
 <fieldset class="configWrapper">
     <div id="configurations"></div>
     <div>
@@ -75,3 +81,6 @@
     <div id="reportFile" style="display: none"></div>
 </div>
 <div id="configurationPanelWrapper" style="display: none"></div>
+</div>
+<div id="results-panel" class="mainPanel">
+</div>

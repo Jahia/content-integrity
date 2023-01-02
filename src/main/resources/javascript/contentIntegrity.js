@@ -335,7 +335,21 @@ function renderExcludedPaths() {
     jQuery(".excludedPath").click(function (){removeExcludedPath(jQuery(this).attr("path"))})
 }
 
+function displayPanel(id) {
+    jQuery(".mainPanel").hide()
+    jQuery("#" + id + "-panel").show()
+    jQuery(".tabs .tabLink").removeClass("selected")
+    jQuery(".tabs .tabLink[tabrole=" + id + "]").addClass("selected")
+}
+
+function addPanelListener() {
+    jQuery(".tabs .tabLink").click(function () {
+        displayPanel(jQuery(this).attr("tabrole"))
+    })
+}
+
 jQuery(document).ready(function () {
+    displayPanel("scan")
     loadConfigurations();
     jQuery("#pathToExclude").keypress(function (event){
         // 13: <enter>
@@ -358,4 +372,5 @@ jQuery(document).ready(function () {
         gqlCall(getScanQuery(rootPath, workspace, skipMP, checks), (data) => setupLogsLoader(data.integrity.scan.id));
     });
     wireToRunningScan();
+    addPanelListener()
 });
