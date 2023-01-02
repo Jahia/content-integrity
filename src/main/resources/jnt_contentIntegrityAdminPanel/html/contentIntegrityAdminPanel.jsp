@@ -83,4 +83,6 @@
 <div id="configurationPanelWrapper" style="display: none"></div>
 </div>
 <div id="results-panel" class="mainPanel">
+    <div id="resultsSelector"></div>
+    <div id="resultsDetails"></div>
 </div>

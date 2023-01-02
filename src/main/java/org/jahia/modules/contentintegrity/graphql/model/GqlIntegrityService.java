@@ -88,4 +88,9 @@ public class GqlIntegrityService {
     public GqlIntegrityScan getIntegrityScan(@GraphQLName("id") String executionID) {
         return new GqlIntegrityScan(executionID);
     }
+
+    @GraphQLField
+    public Collection<String> getScanResults() {
+        return Utils.getContentIntegrityService().getTestIDs();
+    }
 }

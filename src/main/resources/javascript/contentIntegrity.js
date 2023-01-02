@@ -102,6 +102,16 @@ function getCheckConfsQuery(checkID, reset) {
     }
 }
 
+function getScanResultsList() {
+    return {
+        query: "{" +
+            "    integrity:contentIntegrity {" +
+            "        scanResults" +
+            "    }" +
+            "}"
+    }
+}
+
 function escapeConfigName(name) {
     return "configure_" + name.replaceAll("-", "_")
 }
@@ -188,6 +198,14 @@ const BooleanConfigItem = ({name, value}) => {
 }
 
 const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a href="${urlContext}${urlFiles}${path}" target="_blank">${filename}</a>`
+
+const ScanResultsSelector = (selectID, ids) => {
+    const current = model.displayedResults
+    let out = `<select id="${selectID}">`
+    ids.forEach((id, idx) => out += `<option value="${id}"${current === undefined && idx === 0 || current === id ? " selected='selected'" : ""}>${id}</option>`)
+    out += `</select>`
+    return out
+}
 
 function renderConfigurations(data) {
     const conf = []
@@ -338,6 +356,7 @@ function renderExcludedPaths() {
 function displayPanel(id) {
     jQuery(".mainPanel").hide()
     jQuery("#" + id + "-panel").show()
+    refreshOnActivation(id)
     jQuery(".tabs .tabLink").removeClass("selected")
     jQuery(".tabs .tabLink[tabrole=" + id + "]").addClass("selected")
 }
@@ -346,6 +365,29 @@ function addPanelListener() {
     jQuery(".tabs .tabLink").click(function () {
         displayPanel(jQuery(this).attr("tabrole"))
     })
+}
+
+function refreshOnActivation(panelID) {
+    switch (panelID) {
+        case "results":
+            loadScanResultsList()
+            break
+        default:
+    }
+}
+
+function loadScanResultsList() {
+    const selectID = "resultList"
+    gqlCall(getScanResultsList(), (data) => {
+        jQuery("#resultsSelector").html(ScanResultsSelector(selectID, data.integrity.scanResults))
+        jQuery("#" + selectID).change(_ => displayScanResults(selectID))
+        if (model.displayedResults === undefined) displayScanResults(selectID)
+    })
+}
+
+function displayScanResults(selectID) {
+    model.displayedResults = jQuery("#" + selectID).val()
+    jQuery("#resultsDetails").html("Current: " + model.displayedResults)
 }
 
 jQuery(document).ready(function () {
