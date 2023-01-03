@@ -215,7 +215,7 @@ const BooleanConfigItem = ({name, value}) => {
 
 const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a href="${urlContext}${urlFiles}${path}" target="_blank">${filename}</a>`
 
-const ScanResultsSelector = (selectID, ids) => {
+const ScanResultsSelectorItem = (selectID, ids) => {
     const current = model.displayedResults
     let out = `<select id="${selectID}">`
     ids.forEach((id, idx) => out += `<option value="${id}"${current === undefined && idx === 0 || current === id ? " selected='selected'" : ""}>${id}</option>`)
@@ -404,7 +404,7 @@ function refreshOnActivation(panelID) {
 function loadScanResultsList() {
     const selectID = "resultList"
     gqlCall(getScanResultsList(), (data) => {
-        jQuery("#resultsSelector").html(ScanResultsSelector(selectID, data.integrity.scanResults))
+        jQuery("#resultsSelector").html(ScanResultsSelectorItem(selectID, data.integrity.scanResults))
         jQuery("#" + selectID).change(_ => displayScanResults(selectID))
         if (model.displayedResults === undefined) displayScanResults(selectID)
     })
