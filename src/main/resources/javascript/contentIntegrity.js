@@ -3,7 +3,7 @@ let logsLoader;
 const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
 const model = {
     excludedPaths: [],
-    errorsDisplay : {
+    errorsDisplay: {
         resultsID: undefined,
         errorsCount: 0,
         offset: 0,
@@ -11,8 +11,8 @@ const model = {
     }
 }
 const constants = {
-    resultsPanel : {
-        selectID : "resultList",
+    resultsPanel: {
+        selectID: "resultList",
         allowedPageSizes: [5, 10, 20, 50, 100]
     }
 }
