@@ -5,6 +5,8 @@ import org.json.JSONObject;
 import java.util.Map;
 
 public interface ContentIntegrityError {
+    String getErrorID();
+
     String getPath();
 
     String getUuid();

@@ -86,3 +86,4 @@
     <div id="resultsSelector"></div>
     <div id="resultsDetails"></div>
 </div>
+<div id="errorDetailsPanelWrapper" style="display: none"></div>

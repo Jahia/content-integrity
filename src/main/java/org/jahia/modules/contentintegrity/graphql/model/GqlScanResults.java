@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.graphql.model;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
@@ -51,5 +52,13 @@ public class GqlScanResults {
     @GraphQLField
     public int getErrorCount() {
         return testResults.getErrors().size();
+    }
+
+    @GraphQLField
+    public GqlScanResultsError getErrorById(@GraphQLName("id") String id) {
+        return testResults.getErrors().stream()
+                .filter(e -> StringUtils.equals(e.getErrorID(), id))
+                .map(GqlScanResultsError::new)
+                .findFirst().orElse(null);
     }
 }

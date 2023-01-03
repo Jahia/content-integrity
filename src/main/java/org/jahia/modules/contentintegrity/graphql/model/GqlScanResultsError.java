@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
 import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.slf4j.Logger;
@@ -26,6 +27,12 @@ public class GqlScanResultsError {
     @GraphQLField
     public boolean isFixed() {
         return error.isFixed();
+    }
+
+    @GraphQLField
+    @GraphQLName("id")
+    public String getErrorID() {
+        return error.getErrorID();
     }
 
     @GraphQLField

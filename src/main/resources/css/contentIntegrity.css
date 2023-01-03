@@ -90,3 +90,6 @@
     border-bottom: 1px solid;
     cursor: default;
 }
+#errorDetailsPanelWrapper td {
+    padding: 5px 20px 5px 5px;
+}

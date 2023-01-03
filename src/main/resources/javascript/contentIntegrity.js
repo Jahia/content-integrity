@@ -132,12 +132,29 @@ function getScanResults() {
             "        results:scanResultsDetails(id: $id) {" +
             "            reportFilePath reportFileName errorCount" +
             "            errors(offset: $offset, pageSize: $size) {" +
-            "                nodePath message" +
+            "                id nodePath message" +
             "            }" +
             "        }" +
             "    }" +
             "}",
         variables: {id: model.errorsDisplay.resultsID, offset: model.errorsDisplay.offset, size: model.errorsDisplay.pageSize}
+    }
+}
+
+function getErrorDetails(id) {
+    return {
+        query: "query ($id: String!, $resultsID: String!) {" +
+            "    integrity:contentIntegrity {" +
+            "        results:scanResultsDetails(id: $resultsID) {" +
+            "            error:errorById(id: $id) {" +
+            "                checkName workspace locale" +
+            "                nodePath nodeId nodePrimaryType nodeMixins" +
+            "                message errorType" +
+            "            }" +
+            "        }" +
+            "    }" +
+            "}",
+        variables: {id: id, resultsID: model.errorsDisplay.resultsID}
     }
 }
 
@@ -236,11 +253,11 @@ const ScanResultsSelectorItem = (ids) => {
     return out
 }
 
-const ErrorItem = (error) => `<tr><td>${error.nodePath}</td><td>${error.message}</td></tr>`
+const ErrorItem = (error) => `<tr><td>${error.nodePath}</td><td>${error.message}</td><td><img src="${constants.baseURL}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" /></td></tr>`
 
 const ErrorsListItem = (errors) => {
     let out = `<table>`
-    out += `<tr><th>Path</th><th>Message</th></tr>`
+    out += `<tr><th>Path</th><th>Message</th><th>Details</th></tr>`
     out += errors.map(ErrorItem).join('')
     out += `</table>`
     out += ErrorsPagerItem()
@@ -285,6 +302,22 @@ const ErrorPagerSizeConfigItem = _ => {
         .map((size) => `<option value="${size}" ${size === model.errorsDisplay.pageSize ? 'selected="selected"' : ''}>${size} errors per page</option>`)
         .join('')
     out += `</select>`
+    return out
+}
+
+const RowItem = (cells) => "<tr><td>" + cells.join("</td><td>") + "</td></tr>"
+
+const ErrorDetailsItem = (error) => {
+    let out = "<table>"
+    out += RowItem(["Check name", error.checkName])
+    out += RowItem(["Workspace", error.workspace])
+    out += RowItem(["Locale", error.locale])
+    out += RowItem(["Path", error.nodePath])
+    out += RowItem(["UUID", error.nodeId])
+    out += RowItem(["Node type", error.nodePrimaryType])
+    out += RowItem(["Mixin types", error.nodeMixins])
+    out += RowItem(["Message", error.message])
+    out += "</table>"
     return out
 }
 
@@ -473,18 +506,52 @@ function displayScanResults(offset, pageSize) {
     }
     model.errorsDisplay.offset = Math.floor(model.errorsDisplay.offset / model.errorsDisplay.pageSize) * model.errorsDisplay.pageSize
     gqlCall(getScanResults(), (data) => {
-        let out = ""
+        const out = jQuery("#resultsDetails")
+        out.html("")
         const results = data.integrity.results
-        if (results !== null) {
-            model.errorsDisplay.errorsCount = results.errorCount
-            out += ErrorsListItem(results.errors)
+        if (results === null) {
+            return
+        }
 
-            const reportFilePath = results.reportFilePath
-            if (reportFilePath !== null) {
-                out += ReportFileItem(results.reportFileName, results.reportFilePath, urlContext, urlFiles)
+        model.errorsDisplay.errorsCount = results.errorCount
+        out.append(ErrorsListItem(results.errors))
+        jQuery(".errorDetails").on("click", function () {
+            displayErrorDetails(jQuery(this).attr("error-id"))
+        })
+
+        const reportFilePath = results.reportFilePath
+        if (reportFilePath !== null) {
+            out.append(ReportFileItem(results.reportFileName, results.reportFilePath, urlContext, urlFiles))
+        }
+    })
+}
+
+function displayErrorDetails(id) {
+    gqlCall(getErrorDetails(id), (data) => {
+        console.log(data, JSON.stringify(data));
+        const error = data.integrity.results.error
+        if (error === null) {
+            alert("Unknown error")
+            return
+        }
+        const popup = jQuery("#errorDetailsPanelWrapper")
+        popup.html(ErrorDetailsItem(error)).dialog("open")
+    })
+}
+
+function initResultsScreen() {
+    jQuery("#errorDetailsPanelWrapper").dialog({
+        autoOpen: false,
+        resizable: false,
+        height: "auto",
+        width: 800,
+        modal: true,
+        title: "Error details",
+        buttons: {
+            Cancel: function () {
+                jQuery(this).dialog("close")
             }
         }
-        jQuery("#resultsDetails").html(out)
     })
 }
 
@@ -513,5 +580,6 @@ jQuery(document).ready(function () {
         gqlCall(getScanQuery(rootPath, workspace, skipMP, checks), (data) => setupLogsLoader(data.integrity.scan.id));
     });
     wireToRunningScan();
+    initResultsScreen()
     addPanelListener()
 });
