@@ -14,7 +14,8 @@ const constants = {
     resultsPanel: {
         selectID: "resultList",
         allowedPageSizes: [5, 10, 20, 50, 100]
-    }
+    },
+    baseURL: undefined
 }
 
 const gqlConfig = {
@@ -172,19 +173,19 @@ function loadConfigurations() {
 const IntegrityCheckItem = ({id, enabled, name, configurable, documentation}) => {
     let out = `<span class="config">`;
     out += `<input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked = "checked" : ""}/>${name}`;
-    out += HelpButtonItem(name, documentation, moduleContentIntegrityURL)
-    if (configurable) out += ConfigureButtonItem(id, moduleContentIntegrityURL)
+    out += HelpButtonItem(name, documentation)
+    if (configurable) out += ConfigureButtonItem(id)
     out += `</span>`;
     return out;
 }
 
-const HelpButtonItem = (name, url, baseURL) => {
+const HelpButtonItem = (name, url) => {
     if (url === null) return ""
-    return `<a href="${url}" target="_blank"><img class="configureLink" src="${baseURL}/img/help.png" title="${name}: documentation" alt="Documentation" /></a>`
+    return `<a href="${url}" target="_blank"><img class="configureLink" src="${constants.baseURL}/img/help.png" title="${name}: documentation" alt="documentation" /></a>`
 }
 
-const ConfigureButtonItem = (id, baseURL) => {
-    return `<img class="configureLink" src="${baseURL}/img/configure.png" title="configure" alt="Configure" checkID="${id}" dialogID="configure-${id}" />`
+const ConfigureButtonItem = (id) => {
+    return `<img class="configureLink" src="${constants.baseURL}/img/configure.png" title="Configure" alt="configure" checkID="${id}" dialogID="configure-${id}" />`
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
@@ -488,6 +489,7 @@ function displayScanResults(offset, pageSize) {
 }
 
 jQuery(document).ready(function () {
+    constants.baseURL = moduleContentIntegrityURL
     displayPanel("scan")
     loadConfigurations();
     jQuery("#pathToExclude").keypress(function (event){
