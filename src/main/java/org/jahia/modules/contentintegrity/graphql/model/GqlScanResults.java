@@ -1,6 +1,8 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
 import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import org.apache.commons.collections4.CollectionUtils;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
@@ -12,6 +14,8 @@ import java.util.stream.Collectors;
 public class GqlScanResults {
 
     private static final Logger logger = LoggerFactory.getLogger(GqlScanResults.class);
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final ContentIntegrityResults testResults;
 
@@ -34,9 +38,18 @@ public class GqlScanResults {
     }
 
     @GraphQLField
-    public Collection<GqlScanResultsError> getErrors() {
+    public Collection<GqlScanResultsError> getErrors(@GraphQLName("offset") int offset, @GraphQLName("pageSize") int pageSize) {
+        if (offset < 0 || offset >= getErrorCount() || pageSize < 1) return CollectionUtils.emptyCollection();
+
         return testResults.getErrors().stream()
+                .skip(offset)
+                .limit(Math.min(pageSize, MAX_PAGE_SIZE))
                 .map(GqlScanResultsError::new)
                 .collect(Collectors.toList());
+    }
+
+    @GraphQLField
+    public int getErrorCount() {
+        return testResults.getErrors().size();
     }
 }

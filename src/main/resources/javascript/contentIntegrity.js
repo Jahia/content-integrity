@@ -2,7 +2,18 @@ const RUNNING = "running";
 let logsLoader;
 const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
 const model = {
-    excludedPaths: []
+    excludedPaths: [],
+    errorsDisplay : {
+        resultsID: undefined,
+        errorsCount: 0,
+        offset: 0,
+        pageSize: 20
+    }
+}
+const constants = {
+    resultsPanel : {
+        selectID : "resultList"
+    }
 }
 
 const gqlConfig = {
@@ -112,19 +123,19 @@ function getScanResultsList() {
     }
 }
 
-function getScanResults(resultsID) {
+function getScanResults() {
     return {
-        query: "query ($id : String!) {" +
+        query: "query ($id : String!, $offset : Int!, $size : Int!) {" +
             "    integrity:contentIntegrity {" +
             "        results:scanResultsDetails(id: $id) {" +
-            "            reportFilePath reportFileName" +
-            "            errors {" +
+            "            reportFilePath reportFileName errorCount" +
+            "            errors(offset: $offset, pageSize: $size) {" +
             "                nodePath message" +
             "            }" +
             "        }" +
             "    }" +
             "}",
-        variables: {id: resultsID}
+        variables: {id: model.errorsDisplay.resultsID, offset: model.errorsDisplay.offset, size: model.errorsDisplay.pageSize}
     }
 }
 
@@ -215,9 +226,9 @@ const BooleanConfigItem = ({name, value}) => {
 
 const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a href="${urlContext}${urlFiles}${path}" target="_blank">${filename}</a>`
 
-const ScanResultsSelectorItem = (selectID, ids) => {
-    const current = model.displayedResults
-    let out = `<select id="${selectID}">`
+const ScanResultsSelectorItem = (ids) => {
+    const current = model.errorsDisplay.resultsID
+    let out = `<select id="${constants.resultsPanel.selectID}">`
     ids.forEach((id, idx) => out += `<option value="${id}"${current === undefined && idx === 0 || current === id ? " selected='selected'" : ""}>${id}</option>`)
     out += `</select>`
     return out
@@ -230,7 +241,39 @@ const ErrorsListItem = (errors) => {
     out += `<tr><th>Path</th><th>Message</th></tr>`
     out += errors.map(ErrorItem).join('')
     out += `</table>`
+    out += ErrorsPagerItem()
     return out
+}
+
+const ErrorsPagerItem = _ => {
+    if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ""
+
+    const offset = model.errorsDisplay.offset
+    const pageSize = model.errorsDisplay.pageSize
+    const errorsCount = model.errorsDisplay.errorsCount
+    const nbEdgePages = 2
+    const nbSiblingPages = 1
+
+    const pageIdx = offset / pageSize + 1
+    const lastPage = Math.ceil(errorsCount / pageSize)
+
+    const displayedIdx = []
+    for (let i=1; i<=lastPage; i++) {
+        if (i <= nbEdgePages || i > lastPage - nbEdgePages || (i >= pageIdx - nbSiblingPages && i <= pageIdx + nbSiblingPages))
+            displayedIdx.push(i)
+    }
+
+    let out = `<div class="resultsPager">`
+    out += displayedIdx.map((idx) => ErrorPagerLinkItem(idx, (idx-1)*pageSize, pageIdx)).join('')
+    out += `</div>`
+    return out
+}
+
+const ErrorPagerLinkItem = (idx, offset, currentPageIdx) => {
+    if (idx === currentPageIdx)
+        return `<a href="#" onclick="return false" class="current">${idx}</a>`;
+    else
+        return `<a href="#" onclick="displayScanResults(${offset});return false">${idx}</a>`;
 }
 
 function renderConfigurations(data) {
@@ -402,21 +445,25 @@ function refreshOnActivation(panelID) {
 }
 
 function loadScanResultsList() {
-    const selectID = "resultList"
     gqlCall(getScanResultsList(), (data) => {
-        jQuery("#resultsSelector").html(ScanResultsSelectorItem(selectID, data.integrity.scanResults))
-        jQuery("#" + selectID).change(_ => displayScanResults(selectID))
-        if (model.displayedResults === undefined) displayScanResults(selectID)
+        jQuery("#resultsSelector").html(ScanResultsSelectorItem(data.integrity.scanResults))
+        jQuery("#" + constants.resultsPanel.selectID).change(_ => displayScanResults())
+        if (model.errorsDisplay.resultsID === undefined) displayScanResults()
     })
 }
 
-function displayScanResults(selectID) {
-    model.displayedResults = jQuery("#" + selectID).val()
-    if (model.displayedResults === null) return
-    gqlCall(getScanResults(model.displayedResults), (data) => {
+function displayScanResults(offset, pageSize) {
+    model.errorsDisplay.resultsID = jQuery("#" + constants.resultsPanel.selectID).val()
+    if (model.errorsDisplay.resultsID === null) return
+    model.errorsDisplay.offset = offset === undefined ? 0 : offset
+    if (pageSize !== undefined) {
+        model.errorsDisplay.pageSize = pageSize
+    }
+    gqlCall(getScanResults(), (data) => {
         let out = ""
         const results = data.integrity.results
         if (results !== null) {
+            model.errorsDisplay.errorsCount = results.errorCount
             out += ErrorsListItem(results.errors)
 
             const reportFilePath = results.reportFilePath

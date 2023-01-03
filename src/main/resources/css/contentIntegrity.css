@@ -83,3 +83,10 @@
     border: 1px solid;
     padding: 5px;
 }
+#resultsDetails .resultsPager a {
+    padding: 5px;
+}
+#resultsDetails .resultsPager a.current {
+    border-bottom: 1px solid;
+    cursor: default;
+}
