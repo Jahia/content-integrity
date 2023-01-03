@@ -12,7 +12,8 @@ const model = {
 }
 const constants = {
     resultsPanel : {
-        selectID : "resultList"
+        selectID : "resultList",
+        allowedPageSizes: [5, 10, 20, 50, 100]
     }
 }
 
@@ -246,7 +247,7 @@ const ErrorsListItem = (errors) => {
 }
 
 const ErrorsPagerItem = _ => {
-    if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ""
+    if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ErrorPagerSizeConfigItem()
 
     const offset = model.errorsDisplay.offset
     const pageSize = model.errorsDisplay.pageSize
@@ -265,6 +266,7 @@ const ErrorsPagerItem = _ => {
 
     let out = `<div class="resultsPager">`
     out += displayedIdx.map((idx) => ErrorPagerLinkItem(idx, (idx-1)*pageSize, pageIdx)).join('')
+    out += ErrorPagerSizeConfigItem()
     out += `</div>`
     return out
 }
@@ -274,6 +276,15 @@ const ErrorPagerLinkItem = (idx, offset, currentPageIdx) => {
         return `<a href="#" onclick="return false" class="current">${idx}</a>`;
     else
         return `<a href="#" onclick="displayScanResults(${offset});return false">${idx}</a>`;
+}
+
+const ErrorPagerSizeConfigItem = _ => {
+    let out = `<select onchange="displayScanResults(${model.errorsDisplay.offset}, this.value)">`
+    out += constants.resultsPanel.allowedPageSizes
+        .map((size) => `<option value="${size}" ${size === model.errorsDisplay.pageSize ? 'selected="selected"' : ''}>${size} errors per page</option>`)
+        .join('')
+    out += `</select>`
+    return out
 }
 
 function renderConfigurations(data) {
@@ -455,9 +466,9 @@ function loadScanResultsList() {
 function displayScanResults(offset, pageSize) {
     model.errorsDisplay.resultsID = jQuery("#" + constants.resultsPanel.selectID).val()
     if (model.errorsDisplay.resultsID === null) return
-    model.errorsDisplay.offset = offset === undefined ? 0 : offset
-    if (pageSize !== undefined) {
-        model.errorsDisplay.pageSize = pageSize
+    model.errorsDisplay.offset = offset === undefined || isNaN(offset) ? 0 : parseInt(offset)
+    if (pageSize !== undefined && !isNaN(pageSize)) {
+        model.errorsDisplay.pageSize = parseInt(pageSize)
     }
     gqlCall(getScanResults(), (data) => {
         let out = ""
