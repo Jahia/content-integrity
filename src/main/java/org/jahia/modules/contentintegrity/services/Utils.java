@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -214,8 +215,12 @@ public class Utils {
                     writeReportMetadata(reportNode, results);
                     session.save();
                     final String reportPath = reportNode.getPath();
-                    results.addMetadata("report-path", reportPath);
                     externalLogger.logLine("Written the report in " + reportPath);
+
+                    final Map<String, String> errorsMetadata = new HashMap<>();
+                    errorsMetadata.put("report-filename", filename);
+                    errorsMetadata.put("report-path", reportPath);
+                    results.addMetadata(errorsMetadata);
 
                     return reportPath;
                 }

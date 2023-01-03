@@ -80,4 +80,9 @@ public class ContentIntegrityResults {
         metadata.put(name, value);
         Utils.getContentIntegrityService().storeErrorsInCache(this);
     }
+
+    public void addMetadata(Map<String,String> entries) {
+        metadata.putAll(entries);
+        Utils.getContentIntegrityService().storeErrorsInCache(this);
+    }
 }

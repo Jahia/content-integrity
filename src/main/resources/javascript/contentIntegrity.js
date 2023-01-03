@@ -112,6 +112,19 @@ function getScanResultsList() {
     }
 }
 
+function getScanResults(resultsID) {
+    return {
+        query: "query ($id : String!) {" +
+            "    integrity:contentIntegrity {" +
+            "        results:scanResultsDetails(id: $id) {" +
+            "            reportFilePath reportFileName" +
+            "        }" +
+            "    }" +
+            "}",
+        variables: {id: resultsID}
+    }
+}
+
 function escapeConfigName(name) {
     return "configure_" + name.replaceAll("-", "_")
 }
@@ -387,7 +400,16 @@ function loadScanResultsList() {
 
 function displayScanResults(selectID) {
     model.displayedResults = jQuery("#" + selectID).val()
-    jQuery("#resultsDetails").html("Current: " + model.displayedResults)
+    if (model.displayedResults === null) return
+    gqlCall(getScanResults(model.displayedResults), (data) => {
+        let out = ""
+        const errors = data.integrity.results
+        const reportFilePath = errors.reportFilePath
+        if (reportFilePath !== null) {
+            out += ReportFileItem(errors.reportFileName, errors.reportFilePath, urlContext, urlFiles)
+        }
+        jQuery("#resultsDetails").html(out)
+    })
 }
 
 jQuery(document).ready(function () {

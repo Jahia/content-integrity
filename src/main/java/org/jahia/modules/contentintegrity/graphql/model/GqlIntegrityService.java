@@ -93,4 +93,10 @@ public class GqlIntegrityService {
     public Collection<String> getScanResults() {
         return Utils.getContentIntegrityService().getTestIDs();
     }
+
+    @GraphQLField
+    public GqlScanResults getScanResultsDetails(@GraphQLName("id") String id) {
+        final GqlScanResults results = new GqlScanResults(id);
+        return results.isValid() ? results : null;
+    }
 }
