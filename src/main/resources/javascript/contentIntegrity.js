@@ -118,6 +118,9 @@ function getScanResults(resultsID) {
             "    integrity:contentIntegrity {" +
             "        results:scanResultsDetails(id: $id) {" +
             "            reportFilePath reportFileName" +
+            "            errors {" +
+            "                nodePath message" +
+            "            }" +
             "        }" +
             "    }" +
             "}",
@@ -217,6 +220,16 @@ const ScanResultsSelector = (selectID, ids) => {
     let out = `<select id="${selectID}">`
     ids.forEach((id, idx) => out += `<option value="${id}"${current === undefined && idx === 0 || current === id ? " selected='selected'" : ""}>${id}</option>`)
     out += `</select>`
+    return out
+}
+
+const ErrorItem = (error) => `<tr><td>${error.nodePath}</td><td>${error.message}</td></tr>`
+
+const ErrorsListItem = (errors) => {
+    let out = `<table>`
+    out += `<tr><th>Path</th><th>Message</th></tr>`
+    out += errors.map(ErrorItem).join('')
+    out += `</table>`
     return out
 }
 
@@ -402,11 +415,13 @@ function displayScanResults(selectID) {
     if (model.displayedResults === null) return
     gqlCall(getScanResults(model.displayedResults), (data) => {
         let out = ""
-        const errors = data.integrity.results
-        if (errors !== null) {
-            const reportFilePath = errors.reportFilePath
+        const results = data.integrity.results
+        if (results !== null) {
+            out += ErrorsListItem(results.errors)
+
+            const reportFilePath = results.reportFilePath
             if (reportFilePath !== null) {
-                out += ReportFileItem(errors.reportFileName, errors.reportFilePath, urlContext, urlFiles)
+                out += ReportFileItem(results.reportFileName, results.reportFilePath, urlContext, urlFiles)
             }
         }
         jQuery("#resultsDetails").html(out)

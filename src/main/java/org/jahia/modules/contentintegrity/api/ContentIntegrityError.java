@@ -17,6 +17,8 @@ public interface ContentIntegrityError {
 
     String getWorkspace();
 
+    String getSite();
+
     String getConstraintMessage();
 
     String getIntegrityCheckName();

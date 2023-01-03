@@ -6,6 +6,9 @@ import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
+
 public class GqlScanResults {
 
     private static final Logger logger = LoggerFactory.getLogger(GqlScanResults.class);
@@ -28,5 +31,12 @@ public class GqlScanResults {
     @GraphQLField
     public String getReportFileName() {
         return testResults.getMetadata("report-filename");
+    }
+
+    @GraphQLField
+    public Collection<GqlScanResultsError> getErrors() {
+        return testResults.getErrors().stream()
+                .map(GqlScanResultsError::new)
+                .collect(Collectors.toList());
     }
 }

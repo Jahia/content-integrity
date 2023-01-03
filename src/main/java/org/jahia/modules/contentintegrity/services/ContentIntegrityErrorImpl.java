@@ -156,6 +156,11 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     }
 
     @Override
+    public String getSite() {
+        return site;
+    }
+
+    @Override
     public String getIntegrityCheckName() {
         return integrityCheckName;
     }
