@@ -253,7 +253,7 @@ const ScanResultsSelectorItem = (ids) => {
     return out
 }
 
-const ErrorItem = (error) => `<tr><td>${error.nodePath}</td><td>${error.message}</td><td><img src="${constants.baseURL}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" /></td></tr>`
+const ErrorItem = (error) => TableRowItem([error.nodePath, error.message, `<img src="${constants.baseURL}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`])
 
 const ErrorsListItem = (errors) => {
     let out = `<table>`
@@ -305,21 +305,21 @@ const ErrorPagerSizeConfigItem = _ => {
     return out
 }
 
-const RowItem = (cells) => "<tr><td>" + cells.join("</td><td>") + "</td></tr>"
-
 const ErrorDetailsItem = (error) => {
     let out = "<table>"
-    out += RowItem(["Check name", error.checkName])
-    out += RowItem(["Workspace", error.workspace])
-    out += RowItem(["Locale", error.locale])
-    out += RowItem(["Path", error.nodePath])
-    out += RowItem(["UUID", error.nodeId])
-    out += RowItem(["Node type", error.nodePrimaryType])
-    out += RowItem(["Mixin types", error.nodeMixins])
-    out += RowItem(["Message", error.message])
+    out += TableRowItem(["Check name", error.checkName])
+    out += TableRowItem(["Workspace", error.workspace])
+    out += TableRowItem(["Locale", error.locale])
+    out += TableRowItem(["Path", error.nodePath])
+    out += TableRowItem(["UUID", error.nodeId])
+    out += TableRowItem(["Node type", error.nodePrimaryType])
+    out += TableRowItem(["Mixin types", error.nodeMixins])
+    out += TableRowItem(["Message", error.message])
     out += "</table>"
     return out
 }
+
+const TableRowItem = (cells) => "<tr><td>" + cells.join("</td><td>") + "</td></tr>"
 
 function renderConfigurations(data) {
     const conf = []
