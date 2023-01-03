@@ -40,7 +40,7 @@
 <fieldset class="configWrapper">
     <div id="configurations"></div>
     <div>
-        <a href="javascript:selectAllChecks(true)">select all</a> / <a href="javascript:selectAllChecks(false)">unselect all</a>
+        <a href="#" onclick="selectAllChecks(true)">select all</a> / <a href="#" onclick="selectAllChecks(false)">unselect all</a>
     </div>
 </fieldset>
 

@@ -378,7 +378,8 @@ function saveConfigurations(checkID, confs) {
 }
 
 function selectAllChecks(value) {
-    jQuery(".checkEnabled").prop("checked", value);
+    jQuery(".checkEnabled").prop("checked", value)
+    return false
 }
 
 function renderLogs(executionID) {
