@@ -1,3 +1,6 @@
+.tabs {
+    margin-bottom: 10px;
+}
 .tabs .tabLink {
     display: inline-block;
     padding: 10px 15px;
@@ -70,4 +73,13 @@
     color: white;
     padding: 5px;
     margin-right: 5px;
+}
+
+#resultsDetails table {
+    margin-bottom: 20px;
+}
+#resultsDetails th,
+#resultsDetails td {
+    border: 1px solid;
+    padding: 5px;
 }
