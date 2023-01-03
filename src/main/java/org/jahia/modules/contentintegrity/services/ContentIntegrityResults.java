@@ -6,7 +6,9 @@ import org.jahia.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ContentIntegrityResults {
 
@@ -19,8 +21,8 @@ public class ContentIntegrityResults {
     private final String workspace;
     private final List<ContentIntegrityError> errors;
     private String executionID;
-    private List<String> executionLog;
-
+    private final List<String> executionLog;
+    private Map<String,String> metadata;
 
     public ContentIntegrityResults(Long testDate, Long testDuration, String workspace, List<ContentIntegrityError> errors, List<String> executionLog) {
         this.testDate = testDate;
@@ -30,6 +32,7 @@ public class ContentIntegrityResults {
         this.workspace = workspace;
         this.errors = errors;
         this.executionLog = executionLog;
+        metadata = new HashMap<>();
     }
 
     public Long getTestDate() {
@@ -67,5 +70,14 @@ public class ContentIntegrityResults {
     public ContentIntegrityResults setExecutionID(String executionID) {
         this.executionID = executionID;
         return this;
+    }
+
+    public String getMetadata(String name) {
+        return metadata.get(name);
+    }
+
+    public void addMetadata(String name, String value) {
+        metadata.put(name, value);
+        Utils.getContentIntegrityService().storeErrorsInCache(this);
     }
 }

@@ -214,6 +214,7 @@ public class Utils {
                     writeReportMetadata(reportNode, results);
                     session.save();
                     final String reportPath = reportNode.getPath();
+                    results.addMetadata("report-path", reportPath);
                     externalLogger.logLine("Written the report in " + reportPath);
 
                     return reportPath;

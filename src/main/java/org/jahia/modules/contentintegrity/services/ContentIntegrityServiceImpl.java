@@ -501,7 +501,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         return integrityChecks.stream().filter(predicate).collect(Collectors.toList());
     }
 
-    private void storeErrorsInCache(ContentIntegrityResults results) {
+    @Override
+    public void storeErrorsInCache(ContentIntegrityResults results) {
         final Element element = new Element(results.getID(), results);
         errorsCache.put(element);
     }
