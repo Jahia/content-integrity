@@ -470,6 +470,7 @@ function displayScanResults(offset, pageSize) {
     if (pageSize !== undefined && !isNaN(pageSize)) {
         model.errorsDisplay.pageSize = parseInt(pageSize)
     }
+    model.errorsDisplay.offset = Math.floor(model.errorsDisplay.offset / model.errorsDisplay.pageSize) * model.errorsDisplay.pageSize
     gqlCall(getScanResults(), (data) => {
         let out = ""
         const results = data.integrity.results
