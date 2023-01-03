@@ -404,9 +404,11 @@ function displayScanResults(selectID) {
     gqlCall(getScanResults(model.displayedResults), (data) => {
         let out = ""
         const errors = data.integrity.results
-        const reportFilePath = errors.reportFilePath
-        if (reportFilePath !== null) {
-            out += ReportFileItem(errors.reportFileName, errors.reportFilePath, urlContext, urlFiles)
+        if (errors !== null) {
+            const reportFilePath = errors.reportFilePath
+            if (reportFilePath !== null) {
+                out += ReportFileItem(errors.reportFileName, errors.reportFilePath, urlContext, urlFiles)
+            }
         }
         jQuery("#resultsDetails").html(out)
     })
