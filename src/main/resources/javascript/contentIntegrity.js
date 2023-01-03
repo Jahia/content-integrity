@@ -351,7 +351,6 @@ function addExcludedPath() {
 }
 
 function removeExcludedPath(path) {
-    console.log("remove " + path)
     if (!model.excludedPaths.includes(path)) return
     model.excludedPaths = model.excludedPaths.filter(p => p !== path)
     renderExcludedPaths()
