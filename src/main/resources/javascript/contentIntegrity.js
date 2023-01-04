@@ -150,6 +150,7 @@ function getErrorDetails(id) {
             "                checkName workspace locale" +
             "                nodePath nodeId nodePrimaryType nodeMixins" +
             "                message errorType" +
+            "                extraInfos { label value } " +
             "            }" +
             "        }" +
             "    }" +
@@ -315,6 +316,8 @@ const ErrorDetailsItem = (error) => {
     out += TableRowItem(["Node type", error.nodePrimaryType])
     out += TableRowItem(["Mixin types", error.nodeMixins])
     out += TableRowItem(["Message", error.message])
+    out += TableRowItem(["Error type", error.errorType])
+    error.extraInfos.forEach((info) => out += TableRowItem([info.label, info.value]))
     out += "</table>"
     return out
 }

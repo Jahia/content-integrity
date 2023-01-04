@@ -7,7 +7,9 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class GqlScanResultsError {
 
@@ -78,5 +80,12 @@ public class GqlScanResultsError {
     @GraphQLField
     public String getMessage() {
         return error.getConstraintMessage();
+    }
+
+    @GraphQLField
+    public List<GqlScanResultsErrorExtraInfo> getExtraInfos() {
+        return error.getAllExtraInfos().entrySet().stream()
+                .map(e -> new GqlScanResultsErrorExtraInfo(e.getKey(), e.getKey(), e.getValue()))
+                .collect(Collectors.toList());
     }
 }
