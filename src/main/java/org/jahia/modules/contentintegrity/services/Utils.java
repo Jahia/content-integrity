@@ -301,6 +301,7 @@ public class Utils {
     public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {
         if (CollectionUtils.isEmpty(results)) return null;
 
+        final ContentIntegrityService contentIntegrityService = Utils.getContentIntegrityService();
         final Long testDate = results.stream()
                 .map(ContentIntegrityResults::getTestDate)
                 .sorted().findFirst().orElse(0L);
@@ -308,6 +309,7 @@ public class Utils {
         final Set<String> workspaces = results.stream().map(ContentIntegrityResults::getWorkspace).collect(Collectors.toSet());
         final String workspace = workspaces.size() == 1 ? workspaces.stream().findAny().get() : ALL_WORKSPACES;
         final List<ContentIntegrityError> errors = results.stream()
+                .peek(contentIntegrityService::removeErrorsFromCache)
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
@@ -316,7 +318,9 @@ public class Utils {
             return strings;
         });
 
-        return new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
+        final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
+        contentIntegrityService.storeErrorsInCache(mergedResults);
+        return mergedResults;
     }
 
     public static String getSiteKey(String path) {

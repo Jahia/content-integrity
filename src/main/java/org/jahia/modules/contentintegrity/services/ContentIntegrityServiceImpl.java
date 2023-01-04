@@ -508,6 +508,11 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
+    public void removeErrorsFromCache(ContentIntegrityResults results) {
+        errorsCache.remove(results.getID());
+    }
+
+    @Override
     public ContentIntegrityResults getLatestTestResults() {
         return getTestResults(null);
     }
