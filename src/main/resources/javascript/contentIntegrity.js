@@ -252,7 +252,7 @@ const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a hre
 const ScanResultsSelectorItem = (ids) => {
     const current = model.errorsDisplay.resultsID
     let out = `<select id="${constants.resultsPanel.resultsSelector.select}">`
-    ids.forEach((id, idx) => out += `<option value="${id}"${current === undefined && idx === 0 || current === id ? " selected='selected'" : ""}>${id}</option>`)
+    ids.forEach((id) => out += `<option value="${id}"${current === id ? " selected='selected'" : ""}>${id}</option>`)
     out += `</select>`
     return out
 }
@@ -490,31 +490,40 @@ function addPanelListener() {
 function refreshOnActivation(panelID) {
     switch (panelID) {
         case "results":
-            loadScanResultsList()
+            activateResultsPanel()
             break
         default:
     }
 }
 
-function loadScanResultsList() {
+function activateResultsPanel() {
     gqlCall(getScanResultsList(), (data) => {
-        jQuery("#" + constants.resultsPanel.resultsSelector.wrapper).html(ScanResultsSelectorItem(data.integrity.scanResults))
-        jQuery("#" + constants.resultsPanel.resultsSelector.select).change(_ => displayScanResults())
-        if (model.errorsDisplay.resultsID === undefined) displayScanResults()
+        let needRefresh = false
+        const ids = data.integrity.scanResults
+        if (!ids.includes(model.errorsDisplay.resultsID)) {
+            model.errorsDisplay.resultsID = ids.find(_ => true)
+            needRefresh = true
+        }
+        jQuery("#" + constants.resultsPanel.resultsSelector.wrapper).html(ScanResultsSelectorItem(ids))
+        jQuery("#" + constants.resultsPanel.resultsSelector.select).change(function () {
+            model.errorsDisplay.resultsID = jQuery(this).val()
+            displayScanResults()
+        })
+        if (needRefresh) displayScanResults()
     })
 }
 
 function displayScanResults(offset, pageSize) {
-    model.errorsDisplay.resultsID = jQuery("#" + constants.resultsPanel.resultsSelector.select).val()
-    if (model.errorsDisplay.resultsID === null) return
+    const out = jQuery("#resultsDetails")
+    out.html("")
+    if (model.errorsDisplay.resultsID === undefined) return
+
     model.errorsDisplay.offset = offset === undefined || isNaN(offset) ? 0 : parseInt(offset)
     if (pageSize !== undefined && !isNaN(pageSize)) {
         model.errorsDisplay.pageSize = parseInt(pageSize)
     }
     model.errorsDisplay.offset = Math.floor(model.errorsDisplay.offset / model.errorsDisplay.pageSize) * model.errorsDisplay.pageSize
     gqlCall(getScanResults(), (data) => {
-        const out = jQuery("#resultsDetails")
-        out.html("")
         const results = data.integrity.results
         if (results === null) {
             return
