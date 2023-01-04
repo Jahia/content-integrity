@@ -304,7 +304,7 @@ const ErrorDetailsItem = (error) => {
     out += TableRowItem("Check name", error.checkName)
     out += TableRowItem("Workspace", error.workspace)
     out += TableRowItem("Locale", error.locale)
-    out += TableRowItem("Path", error.nodePath)
+    out += TableRowItem("Path", JcrBrowserLinkItem(error.nodePath, error.nodeId, error.workspace))
     out += TableRowItem("UUID", error.nodeId)
     out += TableRowItem("Node type", error.nodePrimaryType)
     out += TableRowItem("Mixin types", error.nodeMixins)
@@ -318,6 +318,8 @@ const ErrorDetailsItem = (error) => {
 const TableRowItem = (...cells) => "<tr><td>" + cells.join("</td><td>") + "</td></tr>"
 
 const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
+
+const JcrBrowserLinkItem = (name, uuid, workspace) => `<a href="${constants.url.context}/modules/tools/jcrBrowser.jsp?workspace=${workspace}&uuid=${uuid}" target="_blank">${name}</a>`
 
 function renderConfigurations(data) {
     const conf = []
