@@ -82,6 +82,7 @@ public class PrintErrorCommand extends JCRCommandSupport implements Action {
             table.addRow().addContent("Node type", error.getPrimaryType());
             table.addRow().addContent("Mixin types", error.getMixins());
             table.addRow().addContent("Message", error.getConstraintMessage());
+            table.addRow().addContent("Error type", error.getErrorType());
 
             final Object extraInfos = error.getAllExtraInfos();
             if (extraInfos instanceof String)

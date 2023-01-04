@@ -27,6 +27,7 @@ import static org.jahia.modules.contentintegrity.services.Utils.getSiteKey;
 public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityErrorImpl.class);
+    public static final String EXTRA_MESSAGE_KEY = "extra-message";
 
     private final String id;
     private final String path;
@@ -39,6 +40,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private final String constraintMessage;
     private final String integrityCheckName;
     private final String integrityCheckID;
+    private Object errorType = null;
     private List<String> extraInfosKeys;
     private Map<String, Object> extraInfos;
     private Map<String, Object> specificExtraInfos;
@@ -221,17 +223,20 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     @Override
     public ContentIntegrityError setErrorType(Object type) {
-        return addExtraInfo("error-type", type);
+        if (errorType != null) throw new UnsupportedOperationException("Changing the error type afterwards is not permitted");
+        if (type == null) throw new IllegalArgumentException("Setting an error type to null is not permitted");
+        errorType = type;
+        return this;
     }
 
     @Override
     public Object getErrorType() {
-        return getExtraInfo("error-type");
+        return errorType;
     }
 
     @Override
     public ContentIntegrityError setExtraMsg(String msg) {
-        return addExtraInfo("extra-message", msg);
+        return addExtraInfo(EXTRA_MESSAGE_KEY, msg);
     }
 
     private String getFullNodetype() {
