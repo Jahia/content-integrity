@@ -28,7 +28,12 @@
                     wrapper: "resultsSelector",
                     select: "resultList",
                 },
-                allowedPageSizes: [5, 10, 20, 50, 100]
+                pager: {
+                    allowedPageSizes: [5, 10, 20, 50, 100],
+                    nbEdgePages: 2,
+                    nbSiblingPages: 1,
+                    skippedLinksSeparator: "..."
+                }
             },
             url: {
                 context: "${url.context}",

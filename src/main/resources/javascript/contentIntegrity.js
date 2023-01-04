@@ -264,16 +264,17 @@ const ErrorsPagerItem = _ => {
     const offset = model.errorsDisplay.offset
     const pageSize = model.errorsDisplay.pageSize
     const errorsCount = model.errorsDisplay.errorsCount
-    const nbEdgePages = 2
-    const nbSiblingPages = 1
+    const nbEdgePages = constants.resultsPanel.pager.nbEdgePages
+    const nbSiblingPages = constants.resultsPanel.pager.nbSiblingPages
 
     const pageIdx = offset / pageSize + 1
     const lastPage = Math.ceil(errorsCount / pageSize)
 
     const displayedIdx = []
+    const isDisplayedIndex = (i) => i <= nbEdgePages || i > lastPage - nbEdgePages || i >= pageIdx - nbSiblingPages && i <= pageIdx + nbSiblingPages
     for (let i=1; i<=lastPage; i++) {
-        if (i <= nbEdgePages || i > lastPage - nbEdgePages || (i >= pageIdx - nbSiblingPages && i <= pageIdx + nbSiblingPages))
-            displayedIdx.push(i)
+        if (isDisplayedIndex(i)) displayedIdx.push(i)
+        else if (displayedIdx.includes(i - 1)) displayedIdx.push(null)
     }
 
     let out = `<div class="resultsPager">`
@@ -284,6 +285,8 @@ const ErrorsPagerItem = _ => {
 }
 
 const ErrorPagerLinkItem = (idx, offset, currentPageIdx) => {
+    if (idx === null)
+        return `<span>${constants.resultsPanel.pager.skippedLinksSeparator}</span>`
     if (idx === currentPageIdx)
         return `<a href="#" onclick="return false" class="current">${idx}</a>`;
     else
@@ -292,7 +295,7 @@ const ErrorPagerLinkItem = (idx, offset, currentPageIdx) => {
 
 const ErrorPagerSizeConfigItem = _ => {
     let out = `<select onchange="displayScanResults(${model.errorsDisplay.offset}, this.value)">`
-    out += constants.resultsPanel.allowedPageSizes
+    out += constants.resultsPanel.pager.allowedPageSizes
         .map((size) => `<option value="${size}" ${size === model.errorsDisplay.pageSize ? 'selected="selected"' : ''}>${size} errors per page</option>`)
         .join('')
     out += `</select>`
