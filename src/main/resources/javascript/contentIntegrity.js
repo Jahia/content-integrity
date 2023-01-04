@@ -317,6 +317,8 @@ const ErrorDetailsItem = (error) => {
 
 const TableRowItem = (...cells) => "<tr><td>" + cells.join("</td><td>") + "</td></tr>"
 
+const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
+
 function renderConfigurations(data) {
     const conf = []
     jQuery.each(data, function (index) {
@@ -434,8 +436,6 @@ function showStopButton(visible, executionID) {
         jQuery("#stopScan").hide();
     }
 }
-
-const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
 
 function addExcludedPath() {
     const input = jQuery("#pathToExclude");
