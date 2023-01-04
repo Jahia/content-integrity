@@ -257,7 +257,7 @@ const ScanResultsSelectorItem = (ids) => {
     return out
 }
 
-const ErrorItem = (error) => TableRowItem([error.nodePath, error.message, `<img src="${constants.baseURL}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`])
+const ErrorItem = (error) => TableRowItem(error.nodePath, error.message, `<img src="${constants.baseURL}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
 
 const ErrorsListItem = (errors) => {
     let out = `<table>`
@@ -311,21 +311,21 @@ const ErrorPagerSizeConfigItem = _ => {
 
 const ErrorDetailsItem = (error) => {
     let out = "<table>"
-    out += TableRowItem(["Check name", error.checkName])
-    out += TableRowItem(["Workspace", error.workspace])
-    out += TableRowItem(["Locale", error.locale])
-    out += TableRowItem(["Path", error.nodePath])
-    out += TableRowItem(["UUID", error.nodeId])
-    out += TableRowItem(["Node type", error.nodePrimaryType])
-    out += TableRowItem(["Mixin types", error.nodeMixins])
-    out += TableRowItem(["Message", error.message])
-    out += TableRowItem(["Error type", error.errorType])
-    error.extraInfos.forEach((info) => out += TableRowItem([info.label, info.value]))
+    out += TableRowItem("Check name", error.checkName)
+    out += TableRowItem("Workspace", error.workspace)
+    out += TableRowItem("Locale", error.locale)
+    out += TableRowItem("Path", error.nodePath)
+    out += TableRowItem("UUID", error.nodeId)
+    out += TableRowItem("Node type", error.nodePrimaryType)
+    out += TableRowItem("Mixin types", error.nodeMixins)
+    out += TableRowItem("Message", error.message)
+    out += TableRowItem("Error type", error.errorType)
+    error.extraInfos.forEach((info) => out += TableRowItem(info.label, info.value))
     out += "</table>"
     return out
 }
 
-const TableRowItem = (cells) => "<tr><td>" + cells.join("</td><td>") + "</td></tr>"
+const TableRowItem = (...cells) => "<tr><td>" + cells.join("</td><td>") + "</td></tr>"
 
 function renderConfigurations(data) {
     const conf = []
