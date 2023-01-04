@@ -22,9 +22,20 @@
 <template:addResources type="css" resources="contentIntegrity.css,jquery-ui.smoothness.css"/>
 <template:addResources>
     <script type="text/javascript">
-        const moduleContentIntegrityURL = '${url.context}${url.currentModule}'
-        const urlContext = '${url.context}'
-        const urlFiles  = '${url.files}'
+        const constants = {
+            resultsPanel: {
+                resultsSelector: {
+                    wrapper: "resultsSelector",
+                    select: "resultList",
+                },
+                allowedPageSizes: [5, 10, 20, 50, 100]
+            },
+            url: {
+                context: "${url.context}",
+                module: "${url.context}${url.currentModule}",
+                files: "${url.context}${url.files}"
+            }
+        }
     </script>
 </template:addResources>
 

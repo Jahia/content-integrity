@@ -10,16 +10,6 @@ const model = {
         pageSize: 20
     }
 }
-const constants = {
-    resultsPanel: {
-        resultsSelector: {
-            wrapper: "resultsSelector",
-            select: "resultList",
-        },
-        allowedPageSizes: [5, 10, 20, 50, 100]
-    },
-    baseURL: undefined
-}
 
 const gqlConfig = {
     query: "{" +
@@ -168,7 +158,7 @@ function escapeConfigName(name) {
 
 function gqlCall(query, successCB, failureCB) {
     jQuery.ajax({
-        url: urlContext + '/modules/graphql',
+        url: constants.url.context + '/modules/graphql',
         type: 'POST',
         contentType: "application/json",
         data: JSON.stringify(query),
@@ -202,11 +192,11 @@ const IntegrityCheckItem = ({id, enabled, name, configurable, documentation}) =>
 
 const HelpButtonItem = (name, url) => {
     if (url === null) return ""
-    return `<a href="${url}" target="_blank"><img class="configureLink" src="${constants.baseURL}/img/help.png" title="${name}: documentation" alt="documentation" /></a>`
+    return `<a href="${url}" target="_blank"><img class="configureLink" src="${constants.url.module}/img/help.png" title="${name}: documentation" alt="documentation" /></a>`
 }
 
 const ConfigureButtonItem = (id) => {
-    return `<img class="configureLink" src="${constants.baseURL}/img/configure.png" title="Configure" alt="configure" checkID="${id}" dialogID="configure-${id}" />`
+    return `<img class="configureLink" src="${constants.url.module}/img/configure.png" title="Configure" alt="configure" checkID="${id}" dialogID="configure-${id}" />`
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
@@ -247,7 +237,7 @@ const BooleanConfigItem = ({name, value}) => {
     return out
 }
 
-const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a href="${urlContext}${urlFiles}${path}" target="_blank">${filename}</a>`
+const ReportFileItem = (filename, path) => `Report: <a href="${constants.url.files}${path}" target="_blank">${filename}</a>`
 
 const ScanResultsSelectorItem = (ids) => {
     const current = model.errorsDisplay.resultsID
@@ -257,7 +247,7 @@ const ScanResultsSelectorItem = (ids) => {
     return out
 }
 
-const ErrorItem = (error) => TableRowItem(error.nodePath, error.message, `<img src="${constants.baseURL}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
+const ErrorItem = (error) => TableRowItem(error.nodePath, error.message, `<img src="${constants.url.module}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
 
 const ErrorsListItem = (errors) => {
     let out = `<table>`
@@ -410,7 +400,7 @@ function renderLogs(executionID) {
             const report = data.integrity.scan.report
             if (report != null && report.length > 0) {
                 const filename = report.slice(report.lastIndexOf('/') + 1)
-                reportFileDiv.html(ReportFileItem(filename, report, urlContext, urlFiles)).show()
+                reportFileDiv.html(ReportFileItem(filename, report)).show()
             }
         }
     }, _ => STOP_PULLING_LOGS);
@@ -537,7 +527,7 @@ function displayScanResults(offset, pageSize) {
 
         const reportFilePath = results.reportFilePath
         if (reportFilePath !== null) {
-            out.append(ReportFileItem(results.reportFileName, results.reportFilePath, urlContext, urlFiles))
+            out.append(ReportFileItem(results.reportFileName, results.reportFilePath))
         }
     })
 }
@@ -572,7 +562,6 @@ function initResultsScreen() {
 }
 
 jQuery(document).ready(function () {
-    constants.baseURL = moduleContentIntegrityURL
     displayPanel("scan")
     loadConfigurations();
     jQuery("#pathToExclude").keypress(function (event){
