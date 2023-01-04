@@ -125,7 +125,7 @@ function getScanResults() {
             "        results:scanResultsDetails(id: $id) {" +
             "            reportFilePath reportFileName errorCount" +
             "            errors(offset: $offset, pageSize: $size) {" +
-            "                id nodePath message" +
+            "                id nodePath nodeId message workspace" +
             "            }" +
             "        }" +
             "    }" +
@@ -247,7 +247,7 @@ const ScanResultsSelectorItem = (ids) => {
     return out
 }
 
-const ErrorItem = (error) => TableRowItem(error.nodePath, error.message, `<img src="${constants.url.module}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
+const ErrorItem = (error) => TableRowItem(JcrBrowserLinkItem(error.nodePath, error.nodeId, error.workspace), error.message, `<img src="${constants.url.module}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
 
 const ErrorsListItem = (errors) => {
     let out = `<table>`
