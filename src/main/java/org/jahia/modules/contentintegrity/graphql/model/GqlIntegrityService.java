@@ -6,6 +6,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -91,7 +93,12 @@ public class GqlIntegrityService {
 
     @GraphQLField
     public Collection<String> getScanResults() {
-        return Utils.getContentIntegrityService().getTestIDs();
+        final ContentIntegrityService integrityService = Utils.getContentIntegrityService();
+        return integrityService.getTestIDs().stream()
+                .map(integrityService::getTestResults)
+                .sorted(Comparator.comparing(ContentIntegrityResults::getTestDate))
+                .map(ContentIntegrityResults::getID)
+                .collect(Collectors.toList());
     }
 
     @GraphQLField
