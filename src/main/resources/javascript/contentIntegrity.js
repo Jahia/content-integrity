@@ -12,7 +12,10 @@ const model = {
 }
 const constants = {
     resultsPanel: {
-        selectID: "resultList",
+        resultsSelector: {
+            wrapper: "resultsSelector",
+            select: "resultList",
+        },
         allowedPageSizes: [5, 10, 20, 50, 100]
     },
     baseURL: undefined
@@ -248,7 +251,7 @@ const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a hre
 
 const ScanResultsSelectorItem = (ids) => {
     const current = model.errorsDisplay.resultsID
-    let out = `<select id="${constants.resultsPanel.selectID}">`
+    let out = `<select id="${constants.resultsPanel.resultsSelector.select}">`
     ids.forEach((id, idx) => out += `<option value="${id}"${current === undefined && idx === 0 || current === id ? " selected='selected'" : ""}>${id}</option>`)
     out += `</select>`
     return out
@@ -495,14 +498,14 @@ function refreshOnActivation(panelID) {
 
 function loadScanResultsList() {
     gqlCall(getScanResultsList(), (data) => {
-        jQuery("#resultsSelector").html(ScanResultsSelectorItem(data.integrity.scanResults))
-        jQuery("#" + constants.resultsPanel.selectID).change(_ => displayScanResults())
+        jQuery("#" + constants.resultsPanel.resultsSelector.wrapper).html(ScanResultsSelectorItem(data.integrity.scanResults))
+        jQuery("#" + constants.resultsPanel.resultsSelector.select).change(_ => displayScanResults())
         if (model.errorsDisplay.resultsID === undefined) displayScanResults()
     })
 }
 
 function displayScanResults(offset, pageSize) {
-    model.errorsDisplay.resultsID = jQuery("#" + constants.resultsPanel.selectID).val()
+    model.errorsDisplay.resultsID = jQuery("#" + constants.resultsPanel.resultsSelector.select).val()
     if (model.errorsDisplay.resultsID === null) return
     model.errorsDisplay.offset = offset === undefined || isNaN(offset) ? 0 : parseInt(offset)
     if (pageSize !== undefined && !isNaN(pageSize)) {
