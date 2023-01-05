@@ -272,25 +272,29 @@ const ErrorsPagerItem = _ => {
 
     const displayedIdx = []
     const isDisplayedIndex = (i) => i <= nbEdgePages || i > lastPage - nbEdgePages || i >= pageIdx - nbSiblingPages && i <= pageIdx + nbSiblingPages
-    for (let i=1; i<=lastPage; i++) {
+    for (let i = 1; i <= lastPage; i++) {
         if (isDisplayedIndex(i)) displayedIdx.push(i)
         else if (displayedIdx.includes(i - 1)) displayedIdx.push(constants.resultsPanel.pager.skippedLinksSeparator.key)
     }
 
     let out = `<div class="resultsPager">`
-    out += displayedIdx.map((idx) => ErrorPagerLinkItem(idx, (idx-1)*pageSize, pageIdx)).join('')
+    if (pageIdx > 1) out += ErrorPagerLinkItem(pageIdx - 1, pageSize, pageIdx, constants.resultsPanel.pager.previous)
+    out += displayedIdx.map((idx) => ErrorPagerLinkItem(idx, pageSize, pageIdx)).join('')
+    console.log(out)
+    if (pageIdx < lastPage) out += ErrorPagerLinkItem(pageIdx + 1, pageSize, pageIdx, constants.resultsPanel.pager.next)
     out += ErrorPagerSizeConfigItem()
     out += `</div>`
     return out
 }
 
-const ErrorPagerLinkItem = (idx, offset, currentPageIdx) => {
+const ErrorPagerLinkItem = (idx, pageSize, currentPageIdx, label) => {
     if (idx === constants.resultsPanel.pager.skippedLinksSeparator.key)
         return `<span>${constants.resultsPanel.pager.skippedLinksSeparator.label}</span>`
+    const offset = (idx - 1) * pageSize
     if (idx === currentPageIdx)
-        return `<a href="#" onclick="return false" class="current">${idx}</a>`;
+        return `<a href="#" onclick="return false" class="current">${label === undefined ? idx : label}</a>`;
     else
-        return `<a href="#" onclick="displayScanResults(${offset});return false">${idx}</a>`;
+        return `<a href="#" onclick="displayScanResults(${offset});return false">${label === undefined ? idx : label}</a>`;
 }
 
 const ErrorPagerSizeConfigItem = _ => {

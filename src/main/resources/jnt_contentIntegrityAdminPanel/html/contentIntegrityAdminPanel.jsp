@@ -35,7 +35,9 @@
                     skippedLinksSeparator: {
                         key: "sep",
                         label: "..."
-                    }
+                    },
+                    previous: "<<",
+                    next: ">>"
                 }
             },
             url: {
