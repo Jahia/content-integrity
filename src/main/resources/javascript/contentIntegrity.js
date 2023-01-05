@@ -274,7 +274,7 @@ const ErrorsPagerItem = _ => {
     const isDisplayedIndex = (i) => i <= nbEdgePages || i > lastPage - nbEdgePages || i >= pageIdx - nbSiblingPages && i <= pageIdx + nbSiblingPages
     for (let i=1; i<=lastPage; i++) {
         if (isDisplayedIndex(i)) displayedIdx.push(i)
-        else if (displayedIdx.includes(i - 1)) displayedIdx.push(null)
+        else if (displayedIdx.includes(i - 1)) displayedIdx.push(constants.resultsPanel.pager.skippedLinksSeparator.key)
     }
 
     let out = `<div class="resultsPager">`
@@ -285,8 +285,8 @@ const ErrorsPagerItem = _ => {
 }
 
 const ErrorPagerLinkItem = (idx, offset, currentPageIdx) => {
-    if (idx === null)
-        return `<span>${constants.resultsPanel.pager.skippedLinksSeparator}</span>`
+    if (idx === constants.resultsPanel.pager.skippedLinksSeparator.key)
+        return `<span>${constants.resultsPanel.pager.skippedLinksSeparator.label}</span>`
     if (idx === currentPageIdx)
         return `<a href="#" onclick="return false" class="current">${idx}</a>`;
     else
