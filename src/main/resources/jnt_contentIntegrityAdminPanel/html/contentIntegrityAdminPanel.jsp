@@ -50,6 +50,7 @@
                     {key: "locale", label: "Locale", display: false},
                     {key: "errorType", label: "Error type", display: false},
                     {key: "message", label: "Message"}
+                    {key: "extraInfosString", label: "Extra info", display: false}
                 ]
             },
             url: {
