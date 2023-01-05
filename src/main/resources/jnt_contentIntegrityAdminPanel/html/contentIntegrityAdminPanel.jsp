@@ -44,12 +44,12 @@
                     {key: "checkName", label: "Check name", display: false},
                     {key: "site", label: "Site"},
                     {key: "workspace", label: "Workspace", display: false},
-                    {key: "nodeId", label: "Workspace", display: false},
-                    {key: "nodePrimaryType", label: "Workspace", display: false},
-                    {key: "nodeMixins", label: "Workspace", display: false},
+                    {key: "nodeId", label: "UUID", display: false},
+                    {key: "nodePrimaryType", label: "Primary type", display: false},
+                    {key: "nodeMixins", label: "Mixins", display: false},
                     {key: "locale", label: "Locale", display: false},
-                    {key: "errorType", label: "Workspace", display: false},
-                    {key: "message", label: "Workspace"}
+                    {key: "errorType", label: "Error type", display: false},
+                    {key: "message", label: "Message"}
                 ]
             },
             url: {

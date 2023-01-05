@@ -75,6 +75,14 @@
     margin-right: 5px;
 }
 
+#results-panel div {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#resultsDetails label {
+    display: inline;
+    padding: 10px
+}
 #resultsDetails table {
     margin-bottom: 20px;
 }

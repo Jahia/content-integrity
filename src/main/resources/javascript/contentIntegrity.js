@@ -249,8 +249,8 @@ const ScanResultsSelectorItem = (ids) => {
     return out
 }
 
-const ErrorItem = (error) => {
-    const cells = model.errorsDisplay.columns.map(({key, jcrBrowserLink}) => {
+const ErrorItem = (error, columns) => {
+    const cells = columns.map(({key, jcrBrowserLink}) => {
         if (jcrBrowserLink === true) return JcrBrowserLinkItem(error[key], error.nodeId, error.workspace)
         return error[key]
     })
@@ -258,13 +258,20 @@ const ErrorItem = (error) => {
 }
 
 const ErrorsListItem = (errors) => {
+    const columns = model.errorsDisplay.columns.filter(({display}) => display !== false)
     let out = `<table>`
-    out += TableHeaderRowItem(...(model.errorsDisplay.columns.map(({key, label}) => label === undefined ? key : label)), "Details")
-    out += errors.map(ErrorItem).join('')
+    out += TableHeaderRowItem(...(columns.map(({key, label}) => label === undefined ? key : label)), "Details")
+    out += errors.map(e => ErrorItem(e, columns)).join('')
     out += `</table>`
     out += ErrorsPagerItem()
     return out
 }
+
+const ErrorsColumnsConfigItem = _ => `<div class="columnsConfig">${model.errorsDisplay.columns.map(({key, label, display}) => {
+    const id = `col-display-${key}`
+    const checked = display === false ? "" : `checked="checked"`
+    return `<span><input type="checkbox" id="${id}" col-id="${key}" ${checked}/><label for="${id}">${label}</label></span>`
+}).join('')}</div>`
 
 const ErrorsPagerItem = _ => {
     if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ErrorPagerSizeConfigItem()
@@ -537,6 +544,7 @@ function displayScanResults(offset, pageSize) {
         model.errorsDisplay.pageSize = parseInt(pageSize)
     }
     model.errorsDisplay.offset = Math.floor(model.errorsDisplay.offset / model.errorsDisplay.pageSize) * model.errorsDisplay.pageSize
+    model.errorsDisplay.columns = constants.resultsPanel.columns.filter(({key}) => key !== undefined)
     gqlCall(getScanResults(), (data) => {
         const results = data.integrity.results
         if (results === null) {
@@ -544,7 +552,17 @@ function displayScanResults(offset, pageSize) {
         }
 
         model.errorsDisplay.errorsCount = results.errorCount
-        model.errorsDisplay.columns = constants.resultsPanel.columns.filter(({key}) => key !== undefined).filter(({display}) => display !== false)
+        out.append(ErrorsColumnsConfigItem())
+        jQuery(".columnsConfig input[type='checkbox']").on("change", function () {
+            const colKey = jQuery(this).attr("col-id")
+            model.errorsDisplay.columns.forEach((col) => {
+                if (col.key === colKey) {
+                    if (col.display === false) col.display = true
+                    else col.display = false
+                }
+            })
+            displayScanResults()
+        })
         out.append(ErrorsListItem(results.errors))
         jQuery(".errorDetails").on("click", function () {
             displayErrorDetails(jQuery(this).attr("error-id"))
