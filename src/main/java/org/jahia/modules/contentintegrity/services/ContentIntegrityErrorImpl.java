@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
 
@@ -73,20 +74,20 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
                 mixins = mixinsBuilder.toString();
             }
             return new ContentIntegrityErrorImpl(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
-                    mixins, node.getSession().getWorkspace().getName(), locale == null ? "-" : locale, message,
+                    mixins, node.getSession().getWorkspace().getName(), locale, message,
                     integrityCheck.getName(), integrityCheck.getId());
         } catch (RepositoryException e) {
             logger.error("", e);
         }
 
-        return new ContentIntegrityErrorImpl(null, null, null, null, null, locale == null ? "-" : locale, message, integrityCheck.getName(), integrityCheck.getId());
+        return new ContentIntegrityErrorImpl(null, null, null, null, null, locale, message, integrityCheck.getName(), integrityCheck.getId());
     }
 
     @Override
     public JSONObject toJSON() {
         try {
             return (new JSONObject()).put("errorType", integrityCheckName).put("workspace", workspace).put("path", path)
-                    .put("uuid", uuid).put("nt", getFullNodetype()).put("locale", locale)
+                    .put("uuid", uuid).put("nt", getFullNodetype()).put("locale", Optional.ofNullable(locale).orElse(StringUtils.EMPTY))
                     .put("message", constraintMessage).put("fixed", fixed);
         } catch (JSONException e) {
             logger.error("", e);
