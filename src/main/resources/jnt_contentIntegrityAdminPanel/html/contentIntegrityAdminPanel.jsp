@@ -40,16 +40,16 @@
                     next: ">>"
                 },
                 columns: [
-                    {key: "nodePath", label: "Path", jcrBrowserLink: true},
                     {key: "checkName", label: "Check name", display: false},
-                    {key: "site", label: "Site"},
+                    {key: "errorType", label: "Error type", display: false},
                     {key: "workspace", label: "Workspace", display: false},
+                    {key: "site", label: "Site"},
+                    {key: "nodePath", label: "Path", jcrBrowserLink: true},
                     {key: "nodeId", label: "UUID", display: false},
-                    {key: "nodePrimaryType", label: "Primary type", display: false},
+                    {key: "nodePrimaryType", label: "Primary type", display: true},
                     {key: "nodeMixins", label: "Mixins", display: false},
                     {key: "locale", label: "Locale", display: false},
-                    {key: "errorType", label: "Error type", display: false},
-                    {key: "message", label: "Message"}
+                    {key: "message", label: "Message"},
                     {key: "extraInfosString", label: "Extra info", display: false}
                 ]
             },
