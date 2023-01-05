@@ -288,7 +288,6 @@ const ErrorsPagerItem = _ => {
     let out = `<div class="resultsPager">`
     if (pageIdx > 1) out += ErrorPagerLinkItem(pageIdx - 1, pageSize, pageIdx, constants.resultsPanel.pager.previous)
     out += displayedIdx.map((idx) => ErrorPagerLinkItem(idx, pageSize, pageIdx)).join('')
-    console.log(out)
     if (pageIdx < lastPage) out += ErrorPagerLinkItem(pageIdx + 1, pageSize, pageIdx, constants.resultsPanel.pager.next)
     out += ErrorPagerSizeConfigItem()
     out += `</div>`
@@ -560,7 +559,6 @@ function displayScanResults(offset, pageSize) {
 
 function displayErrorDetails(id) {
     gqlCall(getErrorDetails(id), (data) => {
-        console.log(data, JSON.stringify(data));
         const error = data.integrity.results.error
         if (error === null) {
             alert("Unknown error")
