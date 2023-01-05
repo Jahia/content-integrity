@@ -270,7 +270,7 @@ const ErrorsListItem = (errors) => {
 const ErrorsColumnsConfigItem = _ => `<div class="columnsConfig">${model.errorsDisplay.columns.map(({key, label, display}) => {
     const id = `col-display-${key}`
     const checked = display === false ? "" : `checked="checked"`
-    return `<span><input type="checkbox" id="${id}" col-id="${key}" ${checked}/><label for="${id}">${label}</label></span>`
+    return `<span><input type="checkbox" id="${id}" col-id="${key}" ${checked}/><label for="${id}">${label === undefined ? key : label}</label></span>`
 }).join('')}</div>`
 
 const ErrorsPagerItem = _ => {
