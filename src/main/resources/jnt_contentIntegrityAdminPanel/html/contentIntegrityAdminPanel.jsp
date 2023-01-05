@@ -38,7 +38,12 @@
                     },
                     previous: "<<",
                     next: ">>"
-                }
+                },
+                columns: [
+                    {key: "nodePath", label: "Path", jcrBrowserLink: true},
+                    {key: "site", label: "Site"},
+                    {key: "workspace", label: "Workspace", display: false}
+                ]
             },
             url: {
                 context: "${url.context}",

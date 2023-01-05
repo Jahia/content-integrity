@@ -119,13 +119,15 @@ function getScanResultsList() {
 }
 
 function getScanResults() {
+    const fields = ["id", "nodePath", "nodeId", "message", "workspace"]
+    model.errorsDisplay.columns.filter(({key}) => !fields.includes(key)).forEach(({key}) => fields.push(key))
     return {
         query: "query ($id : String!, $offset : Int!, $size : Int!) {" +
             "    integrity:contentIntegrity {" +
             "        results:scanResultsDetails(id: $id) {" +
             "            reportFilePath reportFileName errorCount" +
             "            errors(offset: $offset, pageSize: $size) {" +
-            "                id nodePath nodeId message workspace" +
+            fields.join(" ") +
             "            }" +
             "        }" +
             "    }" +
@@ -247,11 +249,17 @@ const ScanResultsSelectorItem = (ids) => {
     return out
 }
 
-const ErrorItem = (error) => TableRowItem(JcrBrowserLinkItem(error.nodePath, error.nodeId, error.workspace), error.message, `<img src="${constants.url.module}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
+const ErrorItem = (error) => {
+    const cells = model.errorsDisplay.columns.map(({key, jcrBrowserLink}) => {
+        if (jcrBrowserLink === true) return JcrBrowserLinkItem(error[key], error.nodeId, error.workspace)
+        return error[key]
+    })
+    return TableRowItem(...cells, `<img src="${constants.url.module}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
+}
 
 const ErrorsListItem = (errors) => {
     let out = `<table>`
-    out += `<tr><th>Path</th><th>Message</th><th>Details</th></tr>`
+    out += TableHeaderRowItem(...(model.errorsDisplay.columns.map(({key, label}) => label === undefined ? key : label)), "Details")
     out += errors.map(ErrorItem).join('')
     out += `</table>`
     out += ErrorsPagerItem()
@@ -322,7 +330,15 @@ const ErrorDetailsItem = (error) => {
     return out
 }
 
-const TableRowItem = (...cells) => "<tr><td>" + cells.join("</td><td>") + "</td></tr>"
+const TableRowItem = (...cells) => TypedTableHeaderRowItem(false, ...cells)
+
+const TableHeaderRowItem = (...cells) => TypedTableHeaderRowItem(true, ...cells)
+
+const TypedTableHeaderRowItem = (isHeader, ...cells) => {
+    const cellType = isHeader ? "th" : "td"
+    const s = cells.join(`</${cellType}><${cellType}>`);
+    return `<tr><${cellType}>${s}</${cellType}></tr>`;
+}
 
 const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
 
@@ -529,6 +545,7 @@ function displayScanResults(offset, pageSize) {
         }
 
         model.errorsDisplay.errorsCount = results.errorCount
+        model.errorsDisplay.columns = constants.resultsPanel.columns.filter(({key}) => key !== undefined).filter(({display}) => display !== false)
         out.append(ErrorsListItem(results.errors))
         jQuery(".errorDetails").on("click", function () {
             displayErrorDetails(jQuery(this).attr("error-id"))
