@@ -41,8 +41,15 @@
                 },
                 columns: [
                     {key: "nodePath", label: "Path", jcrBrowserLink: true},
+                    {key: "checkName", label: "Check name", display: false},
                     {key: "site", label: "Site"},
-                    {key: "workspace", label: "Workspace", display: false}
+                    {key: "workspace", label: "Workspace", display: false},
+                    {key: "nodeId", label: "Workspace", display: false},
+                    {key: "nodePrimaryType", label: "Workspace", display: false},
+                    {key: "nodeMixins", label: "Workspace", display: false},
+                    {key: "locale", label: "Locale", display: false},
+                    {key: "errorType", label: "Workspace", display: false},
+                    {key: "message", label: "Workspace"}
                 ]
             },
             url: {
