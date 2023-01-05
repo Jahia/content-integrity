@@ -544,7 +544,6 @@ function displayScanResults(offset, pageSize) {
         model.errorsDisplay.pageSize = parseInt(pageSize)
     }
     model.errorsDisplay.offset = Math.floor(model.errorsDisplay.offset / model.errorsDisplay.pageSize) * model.errorsDisplay.pageSize
-    model.errorsDisplay.columns = constants.resultsPanel.columns.filter(({key}) => key !== undefined)
     gqlCall(getScanResults(), (data) => {
         const results = data.integrity.results
         if (results === null) {
@@ -588,6 +587,8 @@ function displayErrorDetails(id) {
 }
 
 function initResultsScreen() {
+    model.errorsDisplay.columns = constants.resultsPanel.columns.filter(({key}) => key !== undefined)
+
     jQuery("#errorDetailsPanelWrapper").dialog({
         autoOpen: false,
         resizable: false,
