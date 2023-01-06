@@ -40,18 +40,21 @@
                     next: ">>"
                 },
                 columns: [
-                    {key: "checkName", label: "Check name", display: false},
-                    {key: "errorType", label: "Error type", display: false},
-                    {key: "workspace", label: "Workspace", display: false},
-                    {key: "site", label: "Site"},
+                    {key: "checkName", label: "Check name", display: false, filterable: true},
+                    {key: "errorType", label: "Error type", display: false, filterable: true},
+                    {key: "workspace", label: "Workspace", display: false, filterable: true},
+                    {key: "site", label: "Site", filterable: true},
                     {key: "nodePath", label: "Path", jcrBrowserLink: true},
                     {key: "nodeId", label: "UUID", display: false},
-                    {key: "nodePrimaryType", label: "Primary type", display: true},
+                    {key: "nodePrimaryType", label: "Primary type", display: true, filterable: true},
                     {key: "nodeMixins", label: "Mixins", display: false},
-                    {key: "locale", label: "Locale", display: false},
-                    {key: "message", label: "Message"},
+                    {key: "locale", label: "Locale", display: false, filterable: true},
+                    {key: "message", label: "Message", filterable: true},
                     {key: "extraInfosString", label: "Extra info", display: false}
-                ]
+                ],
+                filters: {
+                    noFilter: "--- ALL ---"
+                }
             },
             url: {
                 context: "${url.context}",

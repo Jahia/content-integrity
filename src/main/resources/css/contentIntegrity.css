@@ -101,3 +101,6 @@
 #errorDetailsPanelWrapper td {
     padding: 5px 20px 5px 5px;
 }
+#resultsDetails .columnsFilters select {
+    width: 120px;
+}

@@ -7,7 +7,11 @@ const model = {
         resultsID: undefined,
         errorsCount: 0,
         offset: 0,
-        pageSize: 20
+        pageSize: 20,
+        filters: {
+            possibleValues: [],
+            active: {}
+        }
     }
 }
 
@@ -118,21 +122,30 @@ function getScanResultsList() {
     }
 }
 
-function getScanResults() {
+function getScanResults(filters) {
     const fields = ["id", "nodePath", "nodeId", "message", "workspace"]
     model.errorsDisplay.columns.filter(({key}) => !fields.includes(key)).forEach(({key}) => fields.push(key))
+    const filteredColumns = filters.map((filter) => filter.key)
+    const activeFiltersJson = model.errorsDisplay.filters.active
+    const activeFilters = []
+    for (let f in activeFiltersJson) {
+        const filterValue = activeFiltersJson[f];
+        if (filterValue !== constants.resultsPanel.filters.noFilter)
+            activeFilters.push(f + ";" + filterValue)
+    }
     return {
-        query: "query ($id : String!, $offset : Int!, $size : Int!) {" +
+        query: "query ($id : String!, $offset : Int!, $size : Int!, $filters : [String]!) {" +
             "    integrity:contentIntegrity {" +
-            "        results:scanResultsDetails(id: $id) {" +
+            "        results:scanResultsDetails(id: $id, filters: $filters) {" +
             "            reportFilePath reportFileName errorCount" +
             "            errors(offset: $offset, pageSize: $size) {" +
             fields.join(" ") +
             "            }" +
+            "            possibleValues(names: [" + filteredColumns.map((name) => `"${name}"`).join(",") + "]) {name values}" +
             "        }" +
             "    }" +
             "}",
-        variables: {id: model.errorsDisplay.resultsID, offset: model.errorsDisplay.offset, size: model.errorsDisplay.pageSize}
+        variables: {id: model.errorsDisplay.resultsID, offset: model.errorsDisplay.offset, size: model.errorsDisplay.pageSize, filters: activeFilters}
     }
 }
 
@@ -273,6 +286,33 @@ const ErrorsColumnsConfigItem = _ => `<div class="columnsConfig">${model.errorsD
     return `<span><input type="checkbox" id="${id}" col-id="${key}" ${checked}/><label for="${id}">${label === undefined ? key : label}</label></span>`
 }).join('')}</div>`
 
+const ErrorsFiltersConfigItem = (filters) => `<div class="columnsFilters">${filters.map(ErrorFilterConfigItem).join('')}</div>`
+
+const ErrorFilterConfigItem = (filter) => {
+    let template;
+    switch (filter.type) {
+        case undefined:
+        case "select":
+            template = ErrorFilterConfigSelectItem
+            break
+        default:
+            console.error("Unsupported filter type", filter.type)
+    }
+    if (template === undefined) return
+
+    const params = {
+        key: filter.key,
+        values: model.errorsDisplay.filters.possibleValues.filter((col) => col.name === filter.key)[0].values
+    }
+    return template(params);
+}
+
+const ErrorFilterConfigSelectItem = ({key, label, values}) => {
+    values.unshift(constants.resultsPanel.filters.noFilter)
+    const current = model.errorsDisplay.filters.active[key]
+    return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => HtmlOptionItem(val, val === current))}</select>`;
+}
+
 const ErrorsPagerItem = _ => {
     if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ErrorPagerSizeConfigItem()
 
@@ -345,6 +385,8 @@ const TypedTableHeaderRowItem = (isHeader, ...cells) => {
     const s = cells.join(`</${cellType}><${cellType}>`);
     return `<tr><${cellType}>${s}</${cellType}></tr>`;
 }
+
+const HtmlOptionItem = (value, selected, label) =>  `<option value="${value}"${selected === true ? ` selected="selected"` : ""}>${label === undefined ? value : label}</option>`
 
 const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
 
@@ -544,13 +586,15 @@ function displayScanResults(offset, pageSize) {
         model.errorsDisplay.pageSize = parseInt(pageSize)
     }
     model.errorsDisplay.offset = Math.floor(model.errorsDisplay.offset / model.errorsDisplay.pageSize) * model.errorsDisplay.pageSize
-    gqlCall(getScanResults(), (data) => {
+    const filters = model.errorsDisplay.columns.filter((col) => col.filterable === true)
+    gqlCall(getScanResults(filters), (data) => {
         const results = data.integrity.results
         if (results === null) {
             return
         }
 
         model.errorsDisplay.errorsCount = results.errorCount
+        model.errorsDisplay.filters.possibleValues = results.possibleValues
         out.append(ErrorsColumnsConfigItem())
         jQuery(".columnsConfig input[type='checkbox']").on("change", function () {
             const colKey = jQuery(this).attr("col-id")
@@ -560,6 +604,12 @@ function displayScanResults(offset, pageSize) {
                     else col.display = false
                 }
             })
+            displayScanResults()
+        })
+        out.append(ErrorsFiltersConfigItem(filters))
+        jQuery(".columnFilter").on("change", function () {
+            model.errorsDisplay.filters.active[jQuery(this).attr("filter")] = jQuery(this).val()
+            model.errorsDisplay.offset = 0
             displayScanResults()
         })
         out.append(ErrorsListItem(results.errors))

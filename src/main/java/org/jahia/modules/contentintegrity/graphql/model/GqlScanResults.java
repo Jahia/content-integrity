@@ -4,12 +4,18 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GqlScanResults {
@@ -20,8 +26,19 @@ public class GqlScanResults {
 
     private final ContentIntegrityResults testResults;
 
-    public GqlScanResults(String id) {
-        testResults = Utils.getContentIntegrityService().getTestResults(id);
+    public GqlScanResults(String id, Collection<String> filters) {
+        final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
+        if (all == null || CollectionUtils.isEmpty(filters))
+            testResults = all;
+        else {
+            final Map<String, String> filtersMap = filters.stream().collect(Collectors.toMap(f -> StringUtils.substringBefore(f, ";"), f -> StringUtils.substringAfter(f, ";")));
+            final List<ContentIntegrityError> filteredErrors = all.getErrors().stream()
+                    .filter(error ->
+                            filtersMap.entrySet().stream().allMatch(filter -> StringUtils.equals(getColumnValue(error, filter.getKey()), filter.getValue()))
+                    )
+                    .collect(Collectors.toList());
+            testResults = new ContentIntegrityResults(all.getTestDate(), all.getTestDuration(), all.getWorkspace(), filteredErrors, all.getExecutionLog());
+        }
     }
 
     public boolean isValid() {
@@ -60,5 +77,36 @@ public class GqlScanResults {
                 .filter(e -> StringUtils.equals(e.getErrorID(), id))
                 .map(GqlScanResultsError::new)
                 .findFirst().orElse(null);
+    }
+
+    @GraphQLField
+    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols) {
+        final Map<String, Set<String>> values = cols.stream().collect(Collectors.toMap(name -> name, name -> new HashSet<>()));
+        testResults.getErrors().forEach(error -> cols.forEach(col -> values.get(col).add(Optional.ofNullable(getColumnValue(error, col)).orElse(StringUtils.EMPTY))));
+
+        return values.entrySet().stream()
+                .map(e -> new GqlScanResultsColumn(e.getKey(), e.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    private String getColumnValue(ContentIntegrityError error, String column) {
+        switch (column) {
+            case "checkName":
+                return error.getIntegrityCheckName();
+            case "errorType":
+                return String.valueOf(Optional.ofNullable(error.getErrorType()).orElse(StringUtils.EMPTY));
+            case "workspace":
+                return error.getWorkspace();
+            case "site":
+                return error.getSite();
+            case "nodePrimaryType":
+                return error.getPrimaryType();
+            case "locale":
+                return error.getLocale();
+            case "message":
+                return error.getConstraintMessage();
+            default:
+                return StringUtils.EMPTY;
+        }
     }
 }

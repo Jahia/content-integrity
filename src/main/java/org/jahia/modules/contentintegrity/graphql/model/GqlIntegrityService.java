@@ -102,8 +102,8 @@ public class GqlIntegrityService {
     }
 
     @GraphQLField
-    public GqlScanResults getScanResultsDetails(@GraphQLName("id") String id) {
-        final GqlScanResults results = new GqlScanResults(id);
+    public GqlScanResults getScanResultsDetails(@GraphQLName("id") String id, @GraphQLName("filters") Collection<String> filters) {
+        final GqlScanResults results = new GqlScanResults(id, filters);
         return results.isValid() ? results : null;
     }
 }
