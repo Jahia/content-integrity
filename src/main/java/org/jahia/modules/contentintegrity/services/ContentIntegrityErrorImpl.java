@@ -18,7 +18,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.UUID;
 
 import static org.jahia.modules.contentintegrity.services.Utils.appendToCSVLine;
 import static org.jahia.modules.contentintegrity.services.Utils.getSiteKey;
@@ -26,7 +28,9 @@ import static org.jahia.modules.contentintegrity.services.Utils.getSiteKey;
 public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityErrorImpl.class);
+    public static final String EXTRA_MESSAGE_KEY = "extra-message";
 
+    private final String id;
     private final String path;
     private final String site;
     private final String uuid;
@@ -37,6 +41,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private final String constraintMessage;
     private final String integrityCheckName;
     private final String integrityCheckID;
+    private Object errorType = null;
     private List<String> extraInfosKeys;
     private Map<String, Object> extraInfos;
     private Map<String, Object> specificExtraInfos;
@@ -44,6 +49,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     private ContentIntegrityErrorImpl(String path, String uuid, String primaryType, String mixins, String workspace,
                                       String locale, String constraintMessage, String integrityCheckName, String integrityCheckID) {
+        id = UUID.randomUUID().toString();
         this.path = path;
         site = getSiteKey(path);
         this.uuid = uuid;
@@ -68,20 +74,20 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
                 mixins = mixinsBuilder.toString();
             }
             return new ContentIntegrityErrorImpl(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
-                    mixins, node.getSession().getWorkspace().getName(), locale == null ? "-" : locale, message,
+                    mixins, node.getSession().getWorkspace().getName(), locale, message,
                     integrityCheck.getName(), integrityCheck.getId());
         } catch (RepositoryException e) {
             logger.error("", e);
         }
 
-        return new ContentIntegrityErrorImpl(null, null, null, null, null, locale == null ? "-" : locale, message, integrityCheck.getName(), integrityCheck.getId());
+        return new ContentIntegrityErrorImpl(null, null, null, null, null, locale, message, integrityCheck.getName(), integrityCheck.getId());
     }
 
     @Override
     public JSONObject toJSON() {
         try {
             return (new JSONObject()).put("errorType", integrityCheckName).put("workspace", workspace).put("path", path)
-                    .put("uuid", uuid).put("nt", getFullNodetype()).put("locale", locale)
+                    .put("uuid", uuid).put("nt", getFullNodetype()).put("locale", Optional.ofNullable(locale).orElse(StringUtils.EMPTY))
                     .put("message", constraintMessage).put("fixed", fixed);
         } catch (JSONException e) {
             logger.error("", e);
@@ -108,6 +114,11 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
         appendToCSVLine(sb, Objects.toString(specificExtraInfos, StringUtils.EMPTY));
 
         return sb.toString();
+    }
+
+    @Override
+    public String getErrorID() {
+        return id;
     }
 
     @Override
@@ -153,6 +164,11 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     @Override
     public String getWorkspace() {
         return workspace;
+    }
+
+    @Override
+    public String getSite() {
+        return site;
     }
 
     @Override
@@ -208,17 +224,20 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     @Override
     public ContentIntegrityError setErrorType(Object type) {
-        return addExtraInfo("error-type", type);
+        if (errorType != null) throw new UnsupportedOperationException("Changing the error type afterwards is not permitted");
+        if (type == null) throw new IllegalArgumentException("Setting an error type to null is not permitted");
+        errorType = type;
+        return this;
     }
 
     @Override
     public Object getErrorType() {
-        return getExtraInfo("error-type");
+        return errorType;
     }
 
     @Override
     public ContentIntegrityError setExtraMsg(String msg) {
-        return addExtraInfo("extra-message", msg);
+        return addExtraInfo(EXTRA_MESSAGE_KEY, msg);
     }
 
     private String getFullNodetype() {

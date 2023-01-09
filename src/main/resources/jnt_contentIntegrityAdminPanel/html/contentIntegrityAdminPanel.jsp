@@ -22,19 +22,62 @@
 <template:addResources type="css" resources="contentIntegrity.css,jquery-ui.smoothness.css"/>
 <template:addResources>
     <script type="text/javascript">
-        const moduleContentIntegrityURL = '${url.context}${url.currentModule}'
-        const urlContext = '${url.context}'
-        const urlFiles  = '${url.files}'
+        const constants = {
+            resultsPanel: {
+                resultsSelector: {
+                    wrapper: "resultsSelector",
+                    select: "resultList",
+                },
+                pager: {
+                    allowedPageSizes: [5, 10, 20, 50, 100],
+                    nbEdgePages: 2,
+                    nbSiblingPages: 1,
+                    skippedLinksSeparator: {
+                        key: "sep",
+                        label: "..."
+                    },
+                    previous: "<<",
+                    next: ">>"
+                },
+                columns: [
+                    {key: "checkName", label: "Check name", display: false, filterable: true},
+                    {key: "errorType", label: "Error type", display: false, filterable: true},
+                    {key: "workspace", label: "Workspace", display: false, filterable: true},
+                    {key: "site", label: "Site", filterable: true},
+                    {key: "nodePath", label: "Path", jcrBrowserLink: true},
+                    {key: "nodeId", label: "UUID", display: false},
+                    {key: "nodePrimaryType", label: "Primary type", display: true, filterable: true},
+                    {key: "nodeMixins", label: "Mixins", display: false},
+                    {key: "locale", label: "Locale", display: false, filterable: true},
+                    {key: "message", label: "Message", filterable: true},
+                    {key: "extraInfosString", label: "Extra info", display: false}
+                ],
+                filters: {
+                    noFilter: "--- ALL ---"
+                }
+            },
+            url: {
+                context: "${url.context}",
+                module: "${url.context}${url.currentModule}",
+                files: "${url.context}${url.files}"
+            }
+        }
     </script>
 </template:addResources>
 
 <h1><fmt:message key="label.settings.title"/></h1>
 <p><fmt:message key="label.contentIntegrity.description"/></p>
 
+<div class="tabs">
+    <span class="tabLink" tabrole="scan">Scan</span>
+    <span class="tabLink" tabrole="results">Results</span>
+</div>
+
+<div id="scan-panel" class="mainPanel">
 <fieldset class="configWrapper">
     <div id="configurations"></div>
     <div>
-        <a href="javascript:selectAllChecks(true)">select all</a> / <a href="javascript:selectAllChecks(false)">unselect all</a>
+        <a href="#" onclick="selectAllChecks(true)">select all</a> / <a href="#" onclick="selectAllChecks(false)">unselect all</a>
     </div>
 </fieldset>
 
@@ -75,3 +118,9 @@
     <div id="reportFile" style="display: none"></div>
 </div>
 <div id="configurationPanelWrapper" style="display: none"></div>
+</div>
+<div id="results-panel" class="mainPanel">
+    <div id="resultsSelector"></div>
+    <div id="resultsDetails"></div>
+</div>
+<div id="errorDetailsPanelWrapper" style="display: none"></div>

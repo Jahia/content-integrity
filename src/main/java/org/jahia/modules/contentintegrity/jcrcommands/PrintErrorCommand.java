@@ -19,9 +19,7 @@ import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 @Command(scope = "jcr", name = "integrity-printError", description = "Prints out an error identified by an integrity check with full details")
 @Service
@@ -82,14 +80,9 @@ public class PrintErrorCommand extends JCRCommandSupport implements Action {
             table.addRow().addContent("Node type", error.getPrimaryType());
             table.addRow().addContent("Mixin types", error.getMixins());
             table.addRow().addContent("Message", error.getConstraintMessage());
+            table.addRow().addContent("Error type", error.getErrorType());
+            error.getAllExtraInfos().forEach((k, v) -> table.addRow().addContent(k, v));
 
-            final Object extraInfos = error.getAllExtraInfos();
-            if (extraInfos instanceof String)
-                table.addRow().addContent("Extra infos", extraInfos);
-            else if (extraInfos instanceof Collection)
-                ((Collection) extraInfos).forEach(o -> table.addRow().addContent("", o));
-            else if (extraInfos instanceof Map)
-                ((Map) extraInfos).forEach((k, v) -> table.addRow().addContent(k, v));
             table.print(System.out, true);
             System.out.println("");
             System.out.println("");

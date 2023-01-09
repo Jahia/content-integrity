@@ -15,6 +15,10 @@ public interface ContentIntegrityService {
 
     ContentIntegrityCheck getContentIntegrityCheck(String id);
 
+    void storeErrorsInCache(ContentIntegrityResults results);
+
+    void removeErrorsFromCache(ContentIntegrityResults results);
+
     ContentIntegrityResults getLatestTestResults();
 
     ContentIntegrityResults getTestResults(String testDate);

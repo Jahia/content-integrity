@@ -5,6 +5,8 @@ import org.json.JSONObject;
 import java.util.Map;
 
 public interface ContentIntegrityError {
+    String getErrorID();
+
     String getPath();
 
     String getUuid();
@@ -16,6 +18,8 @@ public interface ContentIntegrityError {
     String getLocale();
 
     String getWorkspace();
+
+    String getSite();
 
     String getConstraintMessage();
 

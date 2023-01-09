@@ -2,7 +2,17 @@ const RUNNING = "running";
 let logsLoader;
 const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
 const model = {
-    excludedPaths: []
+    excludedPaths: [],
+    errorsDisplay: {
+        resultsID: undefined,
+        errorsCount: 0,
+        offset: 0,
+        pageSize: 20,
+        filters: {
+            possibleValues: [],
+            active: {}
+        }
+    }
 }
 
 const gqlConfig = {
@@ -102,13 +112,68 @@ function getCheckConfsQuery(checkID, reset) {
     }
 }
 
+function getScanResultsList() {
+    return {
+        query: "{" +
+            "    integrity:contentIntegrity {" +
+            "        scanResults" +
+            "    }" +
+            "}"
+    }
+}
+
+function getScanResults(filters) {
+    const fields = ["id", "nodePath", "nodeId", "message", "workspace"]
+    model.errorsDisplay.columns.filter(({key}) => !fields.includes(key)).forEach(({key}) => fields.push(key))
+    const filteredColumns = filters.map((filter) => filter.key)
+    const activeFiltersJson = model.errorsDisplay.filters.active
+    const activeFilters = []
+    for (let f in activeFiltersJson) {
+        const filterValue = activeFiltersJson[f];
+        if (filterValue !== constants.resultsPanel.filters.noFilter)
+            activeFilters.push(f + ";" + filterValue)
+    }
+    return {
+        query: "query ($id : String!, $offset : Int!, $size : Int!, $filters : [String]!) {" +
+            "    integrity:contentIntegrity {" +
+            "        results:scanResultsDetails(id: $id, filters: $filters) {" +
+            "            reportFilePath reportFileName errorCount" +
+            "            errors(offset: $offset, pageSize: $size) {" +
+            fields.join(" ") +
+            "            }" +
+            "            possibleValues(names: [" + filteredColumns.map((name) => `"${name}"`).join(",") + "]) {name values}" +
+            "        }" +
+            "    }" +
+            "}",
+        variables: {id: model.errorsDisplay.resultsID, offset: model.errorsDisplay.offset, size: model.errorsDisplay.pageSize, filters: activeFilters}
+    }
+}
+
+function getErrorDetails(id) {
+    return {
+        query: "query ($id: String!, $resultsID: String!) {" +
+            "    integrity:contentIntegrity {" +
+            "        results:scanResultsDetails(id: $resultsID) {" +
+            "            error:errorById(id: $id) {" +
+            "                checkName workspace locale" +
+            "                nodePath nodeId nodePrimaryType nodeMixins" +
+            "                message errorType" +
+            "                extraInfos { label value } " +
+            "            }" +
+            "        }" +
+            "    }" +
+            "}",
+        variables: {id: id, resultsID: model.errorsDisplay.resultsID}
+    }
+}
+
 function escapeConfigName(name) {
     return "configure_" + name.replaceAll("-", "_")
 }
 
 function gqlCall(query, successCB, failureCB) {
     jQuery.ajax({
-        url: urlContext + '/modules/graphql',
+        url: constants.url.context + '/modules/graphql',
         type: 'POST',
         contentType: "application/json",
         data: JSON.stringify(query),
@@ -134,19 +199,19 @@ function loadConfigurations() {
 const IntegrityCheckItem = ({id, enabled, name, configurable, documentation}) => {
     let out = `<span class="config">`;
     out += `<input id="${id}" class="checkEnabled" type="checkbox" ${enabled ? checked = "checked" : ""}/>${name}`;
-    out += HelpButtonItem(name, documentation, moduleContentIntegrityURL)
-    if (configurable) out += ConfigureButtonItem(id, moduleContentIntegrityURL)
+    out += HelpButtonItem(name, documentation)
+    if (configurable) out += ConfigureButtonItem(id)
     out += `</span>`;
     return out;
 }
 
-const HelpButtonItem = (name, url, baseURL) => {
+const HelpButtonItem = (name, url) => {
     if (url === null) return ""
-    return `<a href="${url}" target="_blank"><img class="configureLink" src="${baseURL}/img/help.png" title="${name}: documentation" alt="Documentation" /></a>`
+    return `<a href="${url}" target="_blank"><img class="configureLink" src="${constants.url.module}/img/help.png" title="${name}: documentation" alt="documentation" /></a>`
 }
 
-const ConfigureButtonItem = (id, baseURL) => {
-    return `<img class="configureLink" src="${baseURL}/img/configure.png" title="configure" alt="Configure" checkID="${id}" dialogID="configure-${id}" />`
+const ConfigureButtonItem = (id) => {
+    return `<img class="configureLink" src="${constants.url.module}/img/configure.png" title="Configure" alt="configure" checkID="${id}" dialogID="configure-${id}" />`
 }
 
 const ConfigPanelItem = ({id, name, configurations}) => {
@@ -187,7 +252,145 @@ const BooleanConfigItem = ({name, value}) => {
     return out
 }
 
-const ReportFileItem = (filename, path, urlContext, urlFiles) => `Report: <a href="${urlContext}${urlFiles}${path}" target="_blank">${filename}</a>`
+const ReportFileItem = (filename, path) => `Report: <a href="${constants.url.files}${path}" target="_blank">${filename}</a>`
+
+const ScanResultsSelectorItem = (ids) => {
+    const current = model.errorsDisplay.resultsID
+    let out = `<select id="${constants.resultsPanel.resultsSelector.select}">`
+    ids.forEach((id) => out += `<option value="${id}"${current === id ? " selected='selected'" : ""}>${id}</option>`)
+    out += `</select>`
+    return out
+}
+
+const ErrorItem = (error, columns) => {
+    const cells = columns.map(({key, jcrBrowserLink}) => {
+        if (jcrBrowserLink === true) return JcrBrowserLinkItem(error[key], error.nodeId, error.workspace)
+        return error[key]
+    })
+    return TableRowItem(...cells, `<img src="${constants.url.module}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
+}
+
+const ErrorsListItem = (errors) => {
+    const columns = model.errorsDisplay.columns.filter(({display}) => display !== false)
+    let out = `<table>`
+    out += TableHeaderRowItem(...(columns.map(({key, label}) => label === undefined ? key : label)), "Details")
+    out += errors.map(e => ErrorItem(e, columns)).join('')
+    out += `</table>`
+    out += ErrorsPagerItem()
+    return out
+}
+
+const ErrorsColumnsConfigItem = _ => `<div class="columnsConfig">${model.errorsDisplay.columns.map(({key, label, display}) => {
+    const id = `col-display-${key}`
+    const checked = display === false ? "" : `checked="checked"`
+    return `<span><input type="checkbox" id="${id}" col-id="${key}" ${checked}/><label for="${id}">${label === undefined ? key : label}</label></span>`
+}).join('')}</div>`
+
+const ErrorsFiltersConfigItem = (filters) => `<div class="columnsFilters">${filters.map(ErrorFilterConfigItem).join('')}</div>`
+
+const ErrorFilterConfigItem = (filter) => {
+    let template;
+    switch (filter.type) {
+        case undefined:
+        case "select":
+            template = ErrorFilterConfigSelectItem
+            break
+        default:
+            console.error("Unsupported filter type", filter.type)
+    }
+    if (template === undefined) return
+
+    const params = {
+        key: filter.key,
+        values: model.errorsDisplay.filters.possibleValues.filter((col) => col.name === filter.key)[0].values
+    }
+    return template(params);
+}
+
+const ErrorFilterConfigSelectItem = ({key, label, values}) => {
+    values.unshift(constants.resultsPanel.filters.noFilter)
+    const current = model.errorsDisplay.filters.active[key]
+    return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => HtmlOptionItem(val, val === current))}</select>`;
+}
+
+const ErrorsPagerItem = _ => {
+    if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ErrorPagerSizeConfigItem()
+
+    const offset = model.errorsDisplay.offset
+    const pageSize = model.errorsDisplay.pageSize
+    const errorsCount = model.errorsDisplay.errorsCount
+    const nbEdgePages = constants.resultsPanel.pager.nbEdgePages
+    const nbSiblingPages = constants.resultsPanel.pager.nbSiblingPages
+
+    const pageIdx = offset / pageSize + 1
+    const lastPage = Math.ceil(errorsCount / pageSize)
+
+    const displayedIdx = []
+    const isDisplayedIndex = (i) => i <= nbEdgePages || i > lastPage - nbEdgePages || i >= pageIdx - nbSiblingPages && i <= pageIdx + nbSiblingPages
+    for (let i = 1; i <= lastPage; i++) {
+        if (isDisplayedIndex(i)) displayedIdx.push(i)
+        else if (displayedIdx.includes(i - 1)) displayedIdx.push(constants.resultsPanel.pager.skippedLinksSeparator.key)
+    }
+
+    let out = `<div class="resultsPager">`
+    if (pageIdx > 1) out += ErrorPagerLinkItem(pageIdx - 1, pageSize, pageIdx, constants.resultsPanel.pager.previous)
+    out += displayedIdx.map((idx) => ErrorPagerLinkItem(idx, pageSize, pageIdx)).join('')
+    if (pageIdx < lastPage) out += ErrorPagerLinkItem(pageIdx + 1, pageSize, pageIdx, constants.resultsPanel.pager.next)
+    out += ErrorPagerSizeConfigItem()
+    out += `</div>`
+    return out
+}
+
+const ErrorPagerLinkItem = (idx, pageSize, currentPageIdx, label) => {
+    if (idx === constants.resultsPanel.pager.skippedLinksSeparator.key)
+        return `<span>${constants.resultsPanel.pager.skippedLinksSeparator.label}</span>`
+    const offset = (idx - 1) * pageSize
+    if (idx === currentPageIdx)
+        return `<a href="#" onclick="return false" class="current">${label === undefined ? idx : label}</a>`;
+    else
+        return `<a href="#" onclick="displayScanResults(${offset});return false">${label === undefined ? idx : label}</a>`;
+}
+
+const ErrorPagerSizeConfigItem = _ => {
+    let out = `<select onchange="displayScanResults(${model.errorsDisplay.offset}, this.value)">`
+    out += constants.resultsPanel.pager.allowedPageSizes
+        .map((size) => `<option value="${size}" ${size === model.errorsDisplay.pageSize ? 'selected="selected"' : ''}>${size} errors per page</option>`)
+        .join('')
+    out += `</select>`
+    return out
+}
+
+const ErrorDetailsItem = (error) => {
+    let out = "<table>"
+    out += TableRowItem("Check name", error.checkName)
+    out += TableRowItem("Workspace", error.workspace)
+    out += TableRowItem("Locale", error.locale)
+    out += TableRowItem("Path", JcrBrowserLinkItem(error.nodePath, error.nodeId, error.workspace))
+    out += TableRowItem("UUID", error.nodeId)
+    out += TableRowItem("Node type", error.nodePrimaryType)
+    out += TableRowItem("Mixin types", error.nodeMixins)
+    out += TableRowItem("Message", error.message)
+    out += TableRowItem("Error type", error.errorType)
+    error.extraInfos.forEach((info) => out += TableRowItem(info.label, info.value))
+    out += "</table>"
+    return out
+}
+
+const TableRowItem = (...cells) => TypedTableHeaderRowItem(false, ...cells)
+
+const TableHeaderRowItem = (...cells) => TypedTableHeaderRowItem(true, ...cells)
+
+const TypedTableHeaderRowItem = (isHeader, ...cells) => {
+    const cellType = isHeader ? "th" : "td"
+    const s = cells.join(`</${cellType}><${cellType}>`);
+    return `<tr><${cellType}>${s}</${cellType}></tr>`;
+}
+
+const HtmlOptionItem = (value, selected, label) =>  `<option value="${value}"${selected === true ? ` selected="selected"` : ""}>${label === undefined ? value : label}</option>`
+
+const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
+
+const JcrBrowserLinkItem = (name, uuid, workspace) => `<a href="${constants.url.context}/modules/tools/jcrBrowser.jsp?workspace=${workspace}&uuid=${uuid}" target="_blank">${name}</a>`
 
 function renderConfigurations(data) {
     const conf = []
@@ -246,7 +449,8 @@ function saveConfigurations(checkID, confs) {
 }
 
 function selectAllChecks(value) {
-    jQuery(".checkEnabled").prop("checked", value);
+    jQuery(".checkEnabled").prop("checked", value)
+    return false
 }
 
 function renderLogs(executionID) {
@@ -271,7 +475,7 @@ function renderLogs(executionID) {
             const report = data.integrity.scan.report
             if (report != null && report.length > 0) {
                 const filename = report.slice(report.lastIndexOf('/') + 1)
-                reportFileDiv.html(ReportFileItem(filename, report, urlContext, urlFiles)).show()
+                reportFileDiv.html(ReportFileItem(filename, report)).show()
             }
         }
     }, _ => STOP_PULLING_LOGS);
@@ -306,8 +510,6 @@ function showStopButton(visible, executionID) {
     }
 }
 
-const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
-
 function addExcludedPath() {
     const input = jQuery("#pathToExclude");
     input.focus()
@@ -320,7 +522,6 @@ function addExcludedPath() {
 }
 
 function removeExcludedPath(path) {
-    console.log("remove " + path)
     if (!model.excludedPaths.includes(path)) return
     model.excludedPaths = model.excludedPaths.filter(p => p !== path)
     renderExcludedPaths()
@@ -335,7 +536,126 @@ function renderExcludedPaths() {
     jQuery(".excludedPath").click(function (){removeExcludedPath(jQuery(this).attr("path"))})
 }
 
+function displayPanel(id) {
+    jQuery(".mainPanel").hide()
+    jQuery("#" + id + "-panel").show()
+    refreshOnActivation(id)
+    jQuery(".tabs .tabLink").removeClass("selected")
+    jQuery(".tabs .tabLink[tabrole=" + id + "]").addClass("selected")
+}
+
+function addPanelListener() {
+    jQuery(".tabs .tabLink").click(function () {
+        displayPanel(jQuery(this).attr("tabrole"))
+    })
+}
+
+function refreshOnActivation(panelID) {
+    switch (panelID) {
+        case "results":
+            activateResultsPanel()
+            break
+        default:
+    }
+}
+
+function activateResultsPanel() {
+    gqlCall(getScanResultsList(), (data) => {
+        let needRefresh = false
+        const ids = data.integrity.scanResults
+        if (!ids.includes(model.errorsDisplay.resultsID)) {
+            model.errorsDisplay.resultsID = ids.find(_ => true)
+            needRefresh = true
+        }
+        jQuery("#" + constants.resultsPanel.resultsSelector.wrapper).html(ScanResultsSelectorItem(ids))
+        jQuery("#" + constants.resultsPanel.resultsSelector.select).change(function () {
+            model.errorsDisplay.resultsID = jQuery(this).val()
+            displayScanResults()
+        })
+        if (needRefresh) displayScanResults()
+    })
+}
+
+function displayScanResults(offset, pageSize) {
+    const out = jQuery("#resultsDetails")
+    out.html("")
+    if (model.errorsDisplay.resultsID === undefined) return
+
+    model.errorsDisplay.offset = offset === undefined || isNaN(offset) ? 0 : parseInt(offset)
+    if (pageSize !== undefined && !isNaN(pageSize)) {
+        model.errorsDisplay.pageSize = parseInt(pageSize)
+    }
+    model.errorsDisplay.offset = Math.floor(model.errorsDisplay.offset / model.errorsDisplay.pageSize) * model.errorsDisplay.pageSize
+    const filters = model.errorsDisplay.columns.filter((col) => col.filterable === true)
+    gqlCall(getScanResults(filters), (data) => {
+        const results = data.integrity.results
+        if (results === null) {
+            return
+        }
+
+        model.errorsDisplay.errorsCount = results.errorCount
+        model.errorsDisplay.filters.possibleValues = results.possibleValues
+        out.append(ErrorsColumnsConfigItem())
+        jQuery(".columnsConfig input[type='checkbox']").on("change", function () {
+            const colKey = jQuery(this).attr("col-id")
+            model.errorsDisplay.columns.forEach((col) => {
+                if (col.key === colKey) {
+                    if (col.display === false) col.display = true
+                    else col.display = false
+                }
+            })
+            displayScanResults()
+        })
+        out.append(ErrorsFiltersConfigItem(filters))
+        jQuery(".columnFilter").on("change", function () {
+            model.errorsDisplay.filters.active[jQuery(this).attr("filter")] = jQuery(this).val()
+            model.errorsDisplay.offset = 0
+            displayScanResults()
+        })
+        out.append(ErrorsListItem(results.errors))
+        jQuery(".errorDetails").on("click", function () {
+            displayErrorDetails(jQuery(this).attr("error-id"))
+        })
+
+        const reportFilePath = results.reportFilePath
+        if (reportFilePath !== null) {
+            out.append(ReportFileItem(results.reportFileName, results.reportFilePath))
+        }
+    })
+}
+
+function displayErrorDetails(id) {
+    gqlCall(getErrorDetails(id), (data) => {
+        const error = data.integrity.results.error
+        if (error === null) {
+            alert("Unknown error")
+            return
+        }
+        const popup = jQuery("#errorDetailsPanelWrapper")
+        popup.html(ErrorDetailsItem(error)).dialog("open")
+    })
+}
+
+function initResultsScreen() {
+    model.errorsDisplay.columns = constants.resultsPanel.columns.filter(({key}) => key !== undefined)
+
+    jQuery("#errorDetailsPanelWrapper").dialog({
+        autoOpen: false,
+        resizable: false,
+        height: "auto",
+        width: 800,
+        modal: true,
+        title: "Error details",
+        buttons: {
+            Cancel: function () {
+                jQuery(this).dialog("close")
+            }
+        }
+    })
+}
+
 jQuery(document).ready(function () {
+    displayPanel("scan")
     loadConfigurations();
     jQuery("#pathToExclude").keypress(function (event){
         // 13: <enter>
@@ -358,4 +678,6 @@ jQuery(document).ready(function () {
         gqlCall(getScanQuery(rootPath, workspace, skipMP, checks), (data) => setupLogsLoader(data.integrity.scan.id));
     });
     wireToRunningScan();
+    initResultsScreen()
+    addPanelListener()
 });

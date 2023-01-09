@@ -1,3 +1,16 @@
+.tabs {
+    margin-bottom: 10px;
+}
+.tabs .tabLink {
+    display: inline-block;
+    padding: 10px 15px;
+    cursor: pointer;
+}
+.tabs .tabLink.selected {
+    border-bottom: 3px solid #086992;
+    cursor: default;
+}
+
 .configWrapper {
     border: black 1px solid;
     padding: 5px;
@@ -60,4 +73,34 @@
     color: white;
     padding: 5px;
     margin-right: 5px;
+}
+
+#results-panel div {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#resultsDetails label {
+    display: inline;
+    padding: 10px
+}
+#resultsDetails table {
+    margin-bottom: 20px;
+}
+#resultsDetails th,
+#resultsDetails td {
+    border: 1px solid;
+    padding: 5px;
+}
+#resultsDetails .resultsPager a {
+    padding: 5px;
+}
+#resultsDetails .resultsPager a.current {
+    border-bottom: 1px solid;
+    cursor: default;
+}
+#errorDetailsPanelWrapper td {
+    padding: 5px 20px 5px 5px;
+}
+#resultsDetails .columnsFilters select {
+    width: 120px;
 }
