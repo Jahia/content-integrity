@@ -315,7 +315,15 @@ const ErrorFilterConfigSelectItem = ({key, label, values}) => {
 }
 
 const ErrorsPagerItem = _ => {
-    if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ErrorPagerSizeConfigItem()
+    return `
+    <div class="resultsPager">
+        ${ErrorPagerButtonsItem()}
+        ${ErrorPagerSizeConfigItem()}
+    </div>`
+}
+
+const ErrorPagerButtonsItem = _ => {
+    if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ""
 
     const offset = model.errorsDisplay.offset
     const pageSize = model.errorsDisplay.pageSize
@@ -333,12 +341,10 @@ const ErrorsPagerItem = _ => {
         else if (displayedIdx.includes(i - 1)) displayedIdx.push(constants.resultsPanel.pager.skippedLinksSeparator.key)
     }
 
-    let out = `<div class="resultsPager">`
+    let out = ""
     if (pageIdx > 1) out += ErrorPagerLinkItem(pageIdx - 1, pageSize, pageIdx, constants.resultsPanel.pager.previous)
     out += displayedIdx.map((idx) => ErrorPagerLinkItem(idx, pageSize, pageIdx)).join('')
     if (pageIdx < lastPage) out += ErrorPagerLinkItem(pageIdx + 1, pageSize, pageIdx, constants.resultsPanel.pager.next)
-    out += ErrorPagerSizeConfigItem()
-    out += `</div>`
     return out
 }
 
