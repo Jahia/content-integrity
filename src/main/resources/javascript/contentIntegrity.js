@@ -5,6 +5,7 @@ const model = {
     excludedPaths: [],
     errorsDisplay: {
         resultsID: undefined,
+        totalErrorsCount: 0,
         errorsCount: 0,
         offset: 0,
         pageSize: 20,
@@ -137,7 +138,7 @@ function getScanResults(filters) {
         query: "query ($id : String!, $offset : Int!, $size : Int!, $filters : [String]!) {" +
             "    integrity:contentIntegrity {" +
             "        results:scanResultsDetails(id: $id, filters: $filters) {" +
-            "            reportFilePath reportFileName errorCount" +
+            "            reportFilePath reportFileName errorCount totalErrorCount" +
             "            errors(offset: $offset, pageSize: $size) {" +
             fields.join(" ") +
             "            }" +
@@ -594,6 +595,7 @@ function displayScanResults(offset, pageSize) {
         }
 
         model.errorsDisplay.errorsCount = results.errorCount
+        model.errorsDisplay.totalErrorsCount = results.totalErrorsCount
         model.errorsDisplay.filters.possibleValues = results.possibleValues
         out.append(ErrorsColumnsConfigItem())
         jQuery(".columnsConfig input[type='checkbox']").on("change", function () {

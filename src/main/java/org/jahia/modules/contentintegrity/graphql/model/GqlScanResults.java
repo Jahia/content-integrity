@@ -25,12 +25,15 @@ public class GqlScanResults {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final ContentIntegrityResults testResults;
+    private final int errorCount, totalErrorCount;
     private final String reportFilePath, reportFileName;
 
     public GqlScanResults(String id, Collection<String> filters) {
         final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
         if (all == null) {
             testResults = null;
+            errorCount = 0;
+            totalErrorCount = 0;
             reportFileName = null;
             reportFilePath = null;
 
@@ -48,6 +51,8 @@ public class GqlScanResults {
                     .collect(Collectors.toList());
             testResults = new ContentIntegrityResults(all.getTestDate(), all.getTestDuration(), all.getWorkspace(), filteredErrors, all.getExecutionLog());
         }
+        errorCount = testResults.getErrors().size();
+        totalErrorCount = all.getErrors().size();
         reportFileName = all.getMetadata("report-path");
         reportFilePath = all.getMetadata("report-filename");
     }
@@ -79,7 +84,12 @@ public class GqlScanResults {
 
     @GraphQLField
     public int getErrorCount() {
-        return testResults.getErrors().size();
+        return errorCount;
+    }
+
+    @GraphQLField
+    public int getTotalErrorCount() {
+        return totalErrorCount;
     }
 
     @GraphQLField
