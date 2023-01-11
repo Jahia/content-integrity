@@ -319,6 +319,7 @@ const ErrorsPagerItem = _ => {
     <div class="resultsPager">
         ${ErrorPagerButtonsItem()}
         ${ErrorPagerSizeConfigItem()}
+        ${ErrorPagerNumberOfErrorsItem()}
     </div>`
 }
 
@@ -365,6 +366,13 @@ const ErrorPagerSizeConfigItem = _ => {
         .join('')
     out += `</select>`
     return out
+}
+
+const ErrorPagerNumberOfErrorsItem = _ => {
+    const totalInfo = model.errorsDisplay.errorCount === model.errorsDisplay.totalErrorCount ?
+        "" : ` (total: ${model.errorsDisplay.totalErrorCount})`
+
+    return `<span>${model.errorsDisplay.errorCount} errors${totalInfo}</span>`
 }
 
 const ErrorDetailsItem = (error) => {
