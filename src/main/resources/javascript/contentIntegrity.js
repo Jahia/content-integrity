@@ -371,8 +371,9 @@ const ErrorPagerSizeConfigItem = _ => {
 const ErrorPagerNumberOfErrorsItem = _ => {
     const totalInfo = model.errorsDisplay.errorCount === model.errorsDisplay.totalErrorCount ?
         "" : ` (total: ${model.errorsDisplay.totalErrorCount})`
+    const errorWord = model.errorsDisplay.errorCount > 1 ? "errors" : "error"
 
-    return `<div>${model.errorsDisplay.errorCount} errors${totalInfo}</div>`
+    return `<div>${model.errorsDisplay.errorCount} ${errorWord}${totalInfo}</div>`
 }
 
 const ErrorDetailsItem = (error) => {
