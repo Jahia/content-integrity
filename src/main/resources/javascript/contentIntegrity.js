@@ -5,8 +5,8 @@ const model = {
     excludedPaths: [],
     errorsDisplay: {
         resultsID: undefined,
-        totalErrorsCount: 0,
-        errorsCount: 0,
+        totalErrorCount: 0,
+        errorCount: 0,
         offset: 0,
         pageSize: 20,
         filters: {
@@ -323,16 +323,16 @@ const ErrorsPagerItem = _ => {
 }
 
 const ErrorPagerButtonsItem = _ => {
-    if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ""
+    if (model.errorsDisplay.errorCount <= model.errorsDisplay.pageSize) return ""
 
     const offset = model.errorsDisplay.offset
     const pageSize = model.errorsDisplay.pageSize
-    const errorsCount = model.errorsDisplay.errorsCount
+    const errorCount = model.errorsDisplay.errorCount
     const nbEdgePages = constants.resultsPanel.pager.nbEdgePages
     const nbSiblingPages = constants.resultsPanel.pager.nbSiblingPages
 
     const pageIdx = offset / pageSize + 1
-    const lastPage = Math.ceil(errorsCount / pageSize)
+    const lastPage = Math.ceil(errorCount / pageSize)
 
     const displayedIdx = []
     const isDisplayedIndex = (i) => i <= nbEdgePages || i > lastPage - nbEdgePages || i >= pageIdx - nbSiblingPages && i <= pageIdx + nbSiblingPages
@@ -600,8 +600,8 @@ function displayScanResults(offset, pageSize) {
             return
         }
 
-        model.errorsDisplay.errorsCount = results.errorCount
-        model.errorsDisplay.totalErrorsCount = results.totalErrorsCount
+        model.errorsDisplay.errorCount = results.errorCount
+        model.errorsDisplay.totalErrorCount = results.totalErrorCount
         model.errorsDisplay.filters.possibleValues = results.possibleValues
         out.append(ErrorsColumnsConfigItem())
         jQuery(".columnsConfig input[type='checkbox']").on("change", function () {
