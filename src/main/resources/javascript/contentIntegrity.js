@@ -372,7 +372,7 @@ const ErrorPagerNumberOfErrorsItem = _ => {
     const totalInfo = model.errorsDisplay.errorCount === model.errorsDisplay.totalErrorCount ?
         "" : ` (total: ${model.errorsDisplay.totalErrorCount})`
 
-    return `<span>${model.errorsDisplay.errorCount} errors${totalInfo}</span>`
+    return `<div>${model.errorsDisplay.errorCount} errors${totalInfo}</div>`
 }
 
 const ErrorDetailsItem = (error) => {
@@ -628,6 +628,7 @@ function displayScanResults(offset, pageSize) {
             model.errorsDisplay.offset = 0
             displayScanResults()
         })
+        out.append(ErrorPagerNumberOfErrorsItem())
         out.append(ErrorsListItem(results.errors))
         jQuery(".errorDetails").on("click", function () {
             displayErrorDetails(jQuery(this).attr("error-id"))
