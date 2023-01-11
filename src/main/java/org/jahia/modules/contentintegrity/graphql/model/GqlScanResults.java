@@ -25,12 +25,21 @@ public class GqlScanResults {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final ContentIntegrityResults testResults;
+    private final String reportFilePath, reportFileName;
 
     public GqlScanResults(String id, Collection<String> filters) {
         final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
-        if (all == null || CollectionUtils.isEmpty(filters))
+        if (all == null) {
+            testResults = null;
+            reportFileName = null;
+            reportFilePath = null;
+
+            return;
+        }
+
+        if (CollectionUtils.isEmpty(filters)) {
             testResults = all;
-        else {
+        } else {
             final Map<String, String> filtersMap = filters.stream().collect(Collectors.toMap(f -> StringUtils.substringBefore(f, ";"), f -> StringUtils.substringAfter(f, ";")));
             final List<ContentIntegrityError> filteredErrors = all.getErrors().stream()
                     .filter(error ->
@@ -39,6 +48,8 @@ public class GqlScanResults {
                     .collect(Collectors.toList());
             testResults = new ContentIntegrityResults(all.getTestDate(), all.getTestDuration(), all.getWorkspace(), filteredErrors, all.getExecutionLog());
         }
+        reportFileName = all.getMetadata("report-path");
+        reportFilePath = all.getMetadata("report-filename");
     }
 
     public boolean isValid() {
@@ -47,12 +58,12 @@ public class GqlScanResults {
 
     @GraphQLField
     public String getReportFilePath() {
-        return testResults.getMetadata("report-path");
+        return reportFilePath;
     }
 
     @GraphQLField
     public String getReportFileName() {
-        return testResults.getMetadata("report-filename");
+        return reportFileName;
     }
 
     @GraphQLField
