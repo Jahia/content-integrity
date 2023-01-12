@@ -13,7 +13,8 @@ const model = {
             possibleValues: [],
             active: {}
         }
-    }
+    },
+    toolsToken: undefined
 }
 
 const gqlConfig = {
@@ -190,6 +191,21 @@ function gqlCall(query, successCB, failureCB) {
             }
             if (successCB !== undefined) successCB(result.data);
         }
+    })
+}
+
+function refreshToolsTokenCall() {
+    jQuery.ajax({
+        url: constants.url.toolsToken,
+        type: 'GET',
+        success: function (result) {
+            if (result.token !== null) {
+                model.toolsToken = result
+            } else {
+                model.toolsToken = undefined
+            }
+        } ,
+        error: (jqXHR, textStatus, errorThrown ) => console.error("Error when refreshing the tools token", ", status:", textStatus, ", source error:", errorThrown)
     })
 }
 
@@ -406,7 +422,10 @@ const HtmlOptionItem = (value, selected, label) =>  `<option value="${value}"${s
 
 const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
 
-const JcrBrowserLinkItem = (name, uuid, workspace) => `<a href="${constants.url.context}/modules/tools/jcrBrowser.jsp?workspace=${workspace}&uuid=${uuid}" target="_blank">${name}</a>`
+const JcrBrowserLinkItem = (name, uuid, workspace) => {
+    if (model.toolsToken === undefined) return name
+    return `<a href="${constants.url.context}/modules/tools/jcrBrowser.jsp?workspace=${workspace}&uuid=${uuid}&toolAccessToken=${model.toolsToken.token}" target="_blank">${name}</a>`;
+}
 
 function renderConfigurations(data) {
     const conf = []
@@ -593,6 +612,8 @@ function activateResultsPanel() {
 }
 
 function displayScanResults(offset, pageSize) {
+    refreshToolsTokenCall()
+
     const out = jQuery("#resultsDetails")
     out.html("")
     if (model.errorsDisplay.resultsID === undefined) return

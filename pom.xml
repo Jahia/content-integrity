@@ -68,7 +68,8 @@
         <jahia-module-signature>MC0CFA2sgZBGojsY/099K6wERBkUVLmOAhUAl1TGDmRRgMVAdDEWKIzuYl1Ox6E=</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <export-package>org.jahia.modules.contentintegrity.api,
-            org.jahia.modules.contentintegrity.services.impl</export-package>
+            org.jahia.modules.contentintegrity.services.impl,
+            org.jahia.modules.contentintegrity.taglib</export-package>
         <graphql-dxm-provider.version>2.3.0</graphql-dxm-provider.version>
         <external-provider.version>4.0.0</external-provider.version>
     </properties>
@@ -154,6 +155,11 @@
             <groupId>io.github.graphql-java</groupId>
             <artifactId>graphql-java-annotations</artifactId>
             <version>${graphql-java-annotations.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet.jsp</groupId>
+            <artifactId>jsp-api</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>
