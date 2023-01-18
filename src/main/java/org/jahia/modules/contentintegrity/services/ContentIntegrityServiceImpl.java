@@ -290,7 +290,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     beginComputingOwnTime();
                     child = (JCRNodeWrapper) it.next();
                     hasNext = it.hasNext(); // Not using a for loop so that it.hasNext() is part of the calculation of the duration of the scan
-                    if (isNodeIgnored(child, skipMountPoints))
+                    if (isNodeIgnored(child, node, skipMountPoints, externalLogger))
                         continue;
                 } finally {
                     endComputingOwnTime();
@@ -378,7 +378,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             return count;
         }
         for (JCRNodeWrapper child : children) {
-            if (isNodeIgnored(child, skipMountPoints))
+            if (isNodeIgnored(child, node, skipMountPoints, externalLogger))
                 continue;
             count = calculateNbNodesToScan(child, excludedPaths, skipMountPoints, count, externalLogger);
         }
@@ -389,11 +389,17 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         return !node.getProvider().isDefault();
     }
 
-    private boolean isNodeIgnored(JCRNodeWrapper node, boolean skipMountPoints) {
+    private boolean isNodeIgnored(JCRNodeWrapper node, JCRNodeWrapper parent, boolean skipMountPoints, ExternalLogger externalLogger) {
         final String path = node.getPath();
         if ("/jcr:system".equals(path)) {
             logger.debug("Skipping {}", path);
             return true; // If the test is started from /jcr:system or somewhere under, then it will not be skipped (this method is not executed on the root node of the scan, it is used to filter the children when traversing the subtree)
+        }
+        final String parentPath = parent.getPath();
+        final String parentPathPlusSlash = StringUtils.equals(parentPath, "/") ? parentPath : parentPath.concat("/");
+        if (!StringUtils.equals(path, parentPathPlusSlash + node.getName())) {
+            Utils.log(String.format("Ignoring a child node as it is not the child of its parent node, according to their respective paths: %s", path), Utils.LOG_LEVEL.ERROR, logger, externalLogger);
+            return true;
         }
         if (skipMountPoints && isExternalNode(node)) {
             logger.info("Skipping {}", path);
