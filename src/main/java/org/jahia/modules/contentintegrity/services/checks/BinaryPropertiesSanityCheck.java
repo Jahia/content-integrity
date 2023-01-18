@@ -5,6 +5,7 @@ import org.apache.jackrabbit.core.data.DataStoreException;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
@@ -92,9 +93,13 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                 if (!isValid) {
                     final String locale = node.isNodeType(Constants.JAHIANT_TRANSLATION) ?
                             getTranslationNodeLocale(node) : null;
-                    errors.addError(createError(node, locale, "Invalid binary property")
+                    final ContentIntegrityError error = createError(node, locale, "Invalid binary property")
                             .addExtraInfo("property-name", property.getName())
-                            .addExtraInfo("property-path", property.getPath(), true));
+                            .addExtraInfo("property-path", property.getPath(), true);
+                    if (size == 0) {
+                        error.setExtraMsg("Warning: the binary length is zero byte. This can be a false positive if an empty file has been uploaded");
+                    }
+                    errors.addError(error);
                 }
             }
         } catch (RepositoryException e) {
