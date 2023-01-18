@@ -333,7 +333,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     final ContentIntegrityErrorList checkResult = beforeChildren ?
                             integrityCheck.checkIntegrityBeforeChildren(node) :
                             integrityCheck.checkIntegrityAfterChildren(node);
-                    handleResult(checkResult, node, fixErrors, integrityCheck, errors);
+                    handleResult(checkResult, node, fixErrors, integrityCheck, errors, externalLogger);
                 } catch (Throwable t) {
                     logFatalError(node, t, integrityCheck, externalLogger);
                 }
@@ -415,7 +415,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
     }
 
-    private void handleResult(ContentIntegrityErrorList checkResult, JCRNodeWrapper node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors) {
+    private void handleResult(ContentIntegrityErrorList checkResult, JCRNodeWrapper node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors, ExternalLogger externalLogger) {
         if (checkResult == null || !checkResult.hasErrors()) return;
         for (ContentIntegrityError integrityError : checkResult.getNestedErrors()) {
             if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
@@ -426,7 +426,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 }
             errors.add(integrityError);
             if (errors.size() % 1000 == 0) {
-                logger.info(String.format("%d errors tracked so far", errors.size()));
+                Utils.log(String.format("%d errors tracked so far", errors.size()), logger, externalLogger);
             }
         }
     }
