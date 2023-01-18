@@ -13,6 +13,7 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.Binary;
 import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.PropertyType;
@@ -64,20 +65,29 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
             while (properties.hasNext()) {
                 property = properties.nextProperty();
                 if (property.getType() != PropertyType.BINARY) continue;
+                final Binary binary = property.getBinary();
+                final long size = binary.getSize();
                 if (downloadStream) {
                     try {
-                        final InputStream stream = property.getBinary().getStream();
-                        final int readLength = IOUtils.read(stream, new byte[1]);
-                        isValid = acceptZeroByteBinaries ?
-                                readLength >= 0 :
-                                readLength > 0;
-                    } catch (DataStoreException | IOException dse) {
+                        if (!acceptZeroByteBinaries && size == 0) {
+                            isValid = false;
+                        } else {
+                            final InputStream stream = binary.getStream();
+                            int length = 0;
+                            int readLength;
+                            do {
+                                readLength = IOUtils.read(stream, new byte[1024]);
+                                length += readLength;
+                            } while (readLength > 0);
+                            isValid = length == size;
+                        }
+                    } catch (DataStoreException | IOException e) {
                         isValid = false;
                     }
                 } else {
                     isValid = acceptZeroByteBinaries ?
-                            property.getBinary().getSize() >= 0 :
-                            property.getBinary().getSize() > 0;
+                            size >= 0 :
+                            size > 0;
                 }
                 if (!isValid) {
                     final String locale = node.isNodeType(Constants.JAHIANT_TRANSLATION) ?
