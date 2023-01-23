@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -14,7 +15,7 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityCheckConfigurationImpl.class);
 
-    private final Map<String, DefaultConfiguration> defaultParameters = new HashMap<>();
+    private final Map<String, DefaultConfiguration> defaultParameters = new LinkedHashMap<>();
     private final Map<String, Object> customParameters = new HashMap<>();
 
     @Override
