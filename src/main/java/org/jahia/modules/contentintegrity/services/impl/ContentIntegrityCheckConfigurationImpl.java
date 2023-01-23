@@ -25,6 +25,9 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
 
     @Override
     public void declareDefaultParameter(String name, Object value, Function<String, Object> stringValueParser, String description) {
+        if (defaultParameters.containsKey(name))
+            throw new IllegalArgumentException(String.format("Already declared parameter: %s", name));
+
         defaultParameters.put(name, new DefaultConfiguration(value, stringValueParser, description));
     }
 
