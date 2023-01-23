@@ -4,6 +4,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,7 +21,7 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
 
     @Override
     public Set<String> getConfigurationNames() {
-        return defaultParameters.keySet();
+        return Collections.unmodifiableSet(defaultParameters.keySet());
     }
 
     @Override
