@@ -24,42 +24,57 @@ public class GqlScanResults {
 
     private static final int MAX_PAGE_SIZE = 100;
 
-    private final ContentIntegrityResults testResults;
+    private final List<ContentIntegrityError> errors;
+    private final int errorCount, totalErrorCount;
+    private final String reportFilePath, reportFileName;
 
     public GqlScanResults(String id, Collection<String> filters) {
         final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
-        if (all == null || CollectionUtils.isEmpty(filters))
-            testResults = all;
-        else {
+        if (all == null) {
+            errors = null;
+            errorCount = 0;
+            totalErrorCount = 0;
+            reportFileName = null;
+            reportFilePath = null;
+
+            return;
+        }
+
+        if (CollectionUtils.isEmpty(filters)) {
+            errors = all.getErrors();
+        } else {
             final Map<String, String> filtersMap = filters.stream().collect(Collectors.toMap(f -> StringUtils.substringBefore(f, ";"), f -> StringUtils.substringAfter(f, ";")));
-            final List<ContentIntegrityError> filteredErrors = all.getErrors().stream()
+            errors = all.getErrors().stream()
                     .filter(error ->
                             filtersMap.entrySet().stream().allMatch(filter -> StringUtils.equals(getColumnValue(error, filter.getKey()), filter.getValue()))
                     )
                     .collect(Collectors.toList());
-            testResults = new ContentIntegrityResults(all.getTestDate(), all.getTestDuration(), all.getWorkspace(), filteredErrors, all.getExecutionLog());
         }
+        errorCount = errors.size();
+        totalErrorCount = all.getErrors().size();
+        reportFileName = all.getMetadata("report-path");
+        reportFilePath = all.getMetadata("report-filename");
     }
 
     public boolean isValid() {
-        return testResults != null;
+        return errors != null;
     }
 
     @GraphQLField
     public String getReportFilePath() {
-        return testResults.getMetadata("report-path");
+        return reportFilePath;
     }
 
     @GraphQLField
     public String getReportFileName() {
-        return testResults.getMetadata("report-filename");
+        return reportFileName;
     }
 
     @GraphQLField
     public Collection<GqlScanResultsError> getErrors(@GraphQLName("offset") int offset, @GraphQLName("pageSize") int pageSize) {
         if (offset < 0 || offset >= getErrorCount() || pageSize < 1) return CollectionUtils.emptyCollection();
 
-        return testResults.getErrors().stream()
+        return errors.stream()
                 .skip(offset)
                 .limit(Math.min(pageSize, MAX_PAGE_SIZE))
                 .map(GqlScanResultsError::new)
@@ -68,12 +83,17 @@ public class GqlScanResults {
 
     @GraphQLField
     public int getErrorCount() {
-        return testResults.getErrors().size();
+        return errorCount;
+    }
+
+    @GraphQLField
+    public int getTotalErrorCount() {
+        return totalErrorCount;
     }
 
     @GraphQLField
     public GqlScanResultsError getErrorById(@GraphQLName("id") String id) {
-        return testResults.getErrors().stream()
+        return errors.stream()
                 .filter(e -> StringUtils.equals(e.getErrorID(), id))
                 .map(GqlScanResultsError::new)
                 .findFirst().orElse(null);
@@ -82,7 +102,7 @@ public class GqlScanResults {
     @GraphQLField
     public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols) {
         final Map<String, Set<String>> values = cols.stream().collect(Collectors.toMap(name -> name, name -> new HashSet<>()));
-        testResults.getErrors().forEach(error -> cols.forEach(col -> values.get(col).add(Optional.ofNullable(getColumnValue(error, col)).orElse(StringUtils.EMPTY))));
+        errors.forEach(error -> cols.forEach(col -> values.get(col).add(Optional.ofNullable(getColumnValue(error, col)).orElse(StringUtils.EMPTY))));
 
         return values.entrySet().stream()
                 .map(e -> new GqlScanResultsColumn(e.getKey(), e.getValue()))

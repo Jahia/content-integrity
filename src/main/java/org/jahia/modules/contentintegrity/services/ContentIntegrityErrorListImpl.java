@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ContentIntegrityErrorListImpl implements ContentIntegrityErrorList {
@@ -44,7 +45,7 @@ public class ContentIntegrityErrorListImpl implements ContentIntegrityErrorList 
     using a package-private visibility for the method should be enough.
      */
     public List<ContentIntegrityError> getNestedErrors() {
-        return nestedErrors;
+        return Collections.unmodifiableList(nestedErrors);
     }
 
     @Override

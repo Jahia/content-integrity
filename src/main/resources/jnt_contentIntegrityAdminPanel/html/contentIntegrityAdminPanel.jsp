@@ -59,7 +59,8 @@
             url: {
                 context: "${url.context}",
                 module: "${url.context}${url.currentModule}",
-                files: "${url.context}${url.files}"
+                files: "${url.context}${url.files}",
+                toolsToken: "<c:url value="${url.context}${url.base}${currentNode.path}.toolsToken.json" />"
             }
         }
     </script>

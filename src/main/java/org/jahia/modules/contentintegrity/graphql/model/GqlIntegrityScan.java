@@ -8,6 +8,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.WordUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.graphql.util.GqlUtils;
@@ -26,6 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GqlIntegrityScan {
 
@@ -35,6 +38,9 @@ public class GqlIntegrityScan {
     private static final Map<String, List<String>> executionLog = new HashMap<>();
     private static final Map<String, String> executionReports = new HashMap<>();
     private static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
+    private static final int LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE = 100;
+    private static final int LOGS_LIMIT_CLIENT_SIDE_END_SIZE = 500;
+    private static final int LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE = LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE + LOGS_LIMIT_CLIENT_SIDE_END_SIZE + 1;
 
     private String id;
 
@@ -88,7 +94,12 @@ public class GqlIntegrityScan {
         executionStatus.put(id, Status.RUNNING);
         final List<String> output = new ArrayList<>();
         executionLog.put(id, output);
-        final GqlExternalLogger console = output::add;
+        final GqlExternalLogger console = new GqlExternalLogger() {
+            @Override
+            public void logLine(String e) {
+                output.add(WordUtils.abbreviate(e, 200, 250, " [...]"));
+            }
+        };
 
         if (CollectionUtils.isEmpty(checksToRun)) {
             output.add("No check selected");
@@ -132,7 +143,17 @@ public class GqlIntegrityScan {
     @GraphQLField
     @GraphQLName("logs")
     public List<String> getExecutionLogs() {
-        return Optional.ofNullable(executionLog.get(id)).orElse(Collections.singletonList(Status.UNKNOWN.getDescription()));
+        if (!executionLog.containsKey(id)) {
+            return Collections.singletonList(Status.UNKNOWN.getDescription());
+        }
+
+        final List<String> logs = executionLog.get(id);
+        final int size = logs.size();
+        if (size < LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE) return logs;
+
+        final Stream<String> limitMsg = Stream.of(StringUtils.EMPTY, String.format("Limit reached. Displaying the last %d lines", LOGS_LIMIT_CLIENT_SIDE_END_SIZE), StringUtils.EMPTY);
+        final Stream<String> logsBeginning = Stream.concat(logs.stream().limit(LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE), limitMsg);
+        return Stream.concat(logsBeginning, logs.stream().skip(size - LOGS_LIMIT_CLIENT_SIDE_END_SIZE)).collect(Collectors.toList());
     }
 
     @GraphQLField

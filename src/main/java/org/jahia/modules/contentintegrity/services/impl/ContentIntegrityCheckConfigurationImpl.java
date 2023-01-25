@@ -4,7 +4,9 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -14,16 +16,19 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityCheckConfigurationImpl.class);
 
-    private final Map<String, DefaultConfiguration> defaultParameters = new HashMap<>();
+    private final Map<String, DefaultConfiguration> defaultParameters = new LinkedHashMap<>();
     private final Map<String, Object> customParameters = new HashMap<>();
 
     @Override
     public Set<String> getConfigurationNames() {
-        return defaultParameters.keySet();
+        return Collections.unmodifiableSet(defaultParameters.keySet());
     }
 
     @Override
     public void declareDefaultParameter(String name, Object value, Function<String, Object> stringValueParser, String description) {
+        if (defaultParameters.containsKey(name))
+            throw new IllegalArgumentException(String.format("Already declared parameter: %s", name));
+
         defaultParameters.put(name, new DefaultConfiguration(value, stringValueParser, description));
     }
 

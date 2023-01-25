@@ -6,6 +6,7 @@ import org.jahia.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class ContentIntegrityResults {
     }
 
     public List<ContentIntegrityError> getErrors() {
-        return errors;
+        return Collections.unmodifiableList(errors);
     }
 
     public String getWorkspace() {
@@ -64,7 +65,7 @@ public class ContentIntegrityResults {
     }
 
     public List<String> getExecutionLog() {
-        return executionLog;
+        return Collections.unmodifiableList(executionLog);
     }
 
     public ContentIntegrityResults setExecutionID(String executionID) {

@@ -5,14 +5,16 @@ const model = {
     excludedPaths: [],
     errorsDisplay: {
         resultsID: undefined,
-        errorsCount: 0,
+        totalErrorCount: 0,
+        errorCount: 0,
         offset: 0,
         pageSize: 20,
         filters: {
             possibleValues: [],
             active: {}
         }
-    }
+    },
+    toolsToken: undefined
 }
 
 const gqlConfig = {
@@ -137,7 +139,7 @@ function getScanResults(filters) {
         query: "query ($id : String!, $offset : Int!, $size : Int!, $filters : [String]!) {" +
             "    integrity:contentIntegrity {" +
             "        results:scanResultsDetails(id: $id, filters: $filters) {" +
-            "            reportFilePath reportFileName errorCount" +
+            "            reportFilePath reportFileName errorCount totalErrorCount" +
             "            errors(offset: $offset, pageSize: $size) {" +
             fields.join(" ") +
             "            }" +
@@ -189,6 +191,21 @@ function gqlCall(query, successCB, failureCB) {
             }
             if (successCB !== undefined) successCB(result.data);
         }
+    })
+}
+
+function refreshToolsTokenCall() {
+    jQuery.ajax({
+        url: constants.url.toolsToken,
+        type: 'GET',
+        success: function (result) {
+            if (result.token !== null) {
+                model.toolsToken = result
+            } else {
+                model.toolsToken = undefined
+            }
+        } ,
+        error: (jqXHR, textStatus, errorThrown ) => console.error("Error when refreshing the tools token", ", status:", textStatus, ", source error:", errorThrown)
     })
 }
 
@@ -314,16 +331,25 @@ const ErrorFilterConfigSelectItem = ({key, label, values}) => {
 }
 
 const ErrorsPagerItem = _ => {
-    if (model.errorsDisplay.errorsCount <= model.errorsDisplay.pageSize) return ErrorPagerSizeConfigItem()
+    return `
+    <div class="resultsPager">
+        ${ErrorPagerButtonsItem()}
+        ${ErrorPagerSizeConfigItem()}
+        ${ErrorPagerNumberOfErrorsItem()}
+    </div>`
+}
+
+const ErrorPagerButtonsItem = _ => {
+    if (model.errorsDisplay.errorCount <= model.errorsDisplay.pageSize) return ""
 
     const offset = model.errorsDisplay.offset
     const pageSize = model.errorsDisplay.pageSize
-    const errorsCount = model.errorsDisplay.errorsCount
+    const errorCount = model.errorsDisplay.errorCount
     const nbEdgePages = constants.resultsPanel.pager.nbEdgePages
     const nbSiblingPages = constants.resultsPanel.pager.nbSiblingPages
 
     const pageIdx = offset / pageSize + 1
-    const lastPage = Math.ceil(errorsCount / pageSize)
+    const lastPage = Math.ceil(errorCount / pageSize)
 
     const displayedIdx = []
     const isDisplayedIndex = (i) => i <= nbEdgePages || i > lastPage - nbEdgePages || i >= pageIdx - nbSiblingPages && i <= pageIdx + nbSiblingPages
@@ -332,12 +358,10 @@ const ErrorsPagerItem = _ => {
         else if (displayedIdx.includes(i - 1)) displayedIdx.push(constants.resultsPanel.pager.skippedLinksSeparator.key)
     }
 
-    let out = `<div class="resultsPager">`
+    let out = ""
     if (pageIdx > 1) out += ErrorPagerLinkItem(pageIdx - 1, pageSize, pageIdx, constants.resultsPanel.pager.previous)
     out += displayedIdx.map((idx) => ErrorPagerLinkItem(idx, pageSize, pageIdx)).join('')
     if (pageIdx < lastPage) out += ErrorPagerLinkItem(pageIdx + 1, pageSize, pageIdx, constants.resultsPanel.pager.next)
-    out += ErrorPagerSizeConfigItem()
-    out += `</div>`
     return out
 }
 
@@ -358,6 +382,14 @@ const ErrorPagerSizeConfigItem = _ => {
         .join('')
     out += `</select>`
     return out
+}
+
+const ErrorPagerNumberOfErrorsItem = _ => {
+    const totalInfo = model.errorsDisplay.errorCount === model.errorsDisplay.totalErrorCount ?
+        "" : ` (total: ${model.errorsDisplay.totalErrorCount})`
+    const errorWord = model.errorsDisplay.errorCount > 1 ? "errors" : "error"
+
+    return `<div>${model.errorsDisplay.errorCount} ${errorWord}${totalInfo}</div>`
 }
 
 const ErrorDetailsItem = (error) => {
@@ -390,7 +422,10 @@ const HtmlOptionItem = (value, selected, label) =>  `<option value="${value}"${s
 
 const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
 
-const JcrBrowserLinkItem = (name, uuid, workspace) => `<a href="${constants.url.context}/modules/tools/jcrBrowser.jsp?workspace=${workspace}&uuid=${uuid}" target="_blank">${name}</a>`
+const JcrBrowserLinkItem = (name, uuid, workspace) => {
+    if (model.toolsToken === undefined) return name
+    return `<a href="${constants.url.context}/modules/tools/jcrBrowser.jsp?workspace=${workspace}&uuid=${uuid}&toolAccessToken=${model.toolsToken.token}" target="_blank">${name}</a>`;
+}
 
 function renderConfigurations(data) {
     const conf = []
@@ -577,6 +612,8 @@ function activateResultsPanel() {
 }
 
 function displayScanResults(offset, pageSize) {
+    refreshToolsTokenCall()
+
     const out = jQuery("#resultsDetails")
     out.html("")
     if (model.errorsDisplay.resultsID === undefined) return
@@ -593,7 +630,8 @@ function displayScanResults(offset, pageSize) {
             return
         }
 
-        model.errorsDisplay.errorsCount = results.errorCount
+        model.errorsDisplay.errorCount = results.errorCount
+        model.errorsDisplay.totalErrorCount = results.totalErrorCount
         model.errorsDisplay.filters.possibleValues = results.possibleValues
         out.append(ErrorsColumnsConfigItem())
         jQuery(".columnsConfig input[type='checkbox']").on("change", function () {
@@ -612,6 +650,7 @@ function displayScanResults(offset, pageSize) {
             model.errorsDisplay.offset = 0
             displayScanResults()
         })
+        out.append(ErrorPagerNumberOfErrorsItem())
         out.append(ErrorsListItem(results.errors))
         jQuery(".errorDetails").on("click", function () {
             displayErrorDetails(jQuery(this).attr("error-id"))
