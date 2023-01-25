@@ -69,11 +69,12 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                 final Binary binary = property.getBinary();
                 final long size = binary.getSize();
                 if (downloadStream) {
+                    InputStream stream = null;
                     try {
                         if (!acceptZeroByteBinaries && size == 0) {
                             isValid = false;
                         } else {
-                            final InputStream stream = binary.getStream();
+                            stream = binary.getStream();
                             int length = 0;
                             int readLength;
                             do {
@@ -84,6 +85,8 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                         }
                     } catch (DataStoreException | IOException e) {
                         isValid = false;
+                    } finally {
+                        IOUtils.closeQuietly(stream);
                     }
                 } else {
                     isValid = acceptZeroByteBinaries ?
