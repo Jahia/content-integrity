@@ -1,7 +1,6 @@
 package org.jahia.modules.contentintegrity.taglib;
 
 import org.jahia.settings.SettingsBean;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -57,7 +56,6 @@ public class ToolsTokenTag extends TagSupport {
         }
     }
 
-    @NotNull
     private Supplier<String> generateNewToken(HashMap<String, Long> tokens, HttpSession session) {
         return () -> {
             final String token = generateTokenKey();
