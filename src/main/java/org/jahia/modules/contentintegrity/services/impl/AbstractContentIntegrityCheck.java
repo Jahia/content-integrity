@@ -91,6 +91,8 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         if (prop instanceof String) setSkipIfHasProp((String) prop);
     }
 
+    protected void activateInternal(ComponentContext context) {}
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         return null;
