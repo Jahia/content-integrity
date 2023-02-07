@@ -38,7 +38,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private String validity_jahiaMinimumVersion = null;  // TODO if another criteria is some day required, introduce a list of validity conditions as for the execution conditions
     private boolean validity_jahiaMinimumVersionBoundIncluded = false;
 
-    protected void activate(ComponentContext context) {
+    protected final void activate(ComponentContext context) {
         if (logger.isDebugEnabled()) logger.debug(String.format("Activating check %s", getClass().getCanonicalName()));
         if (context == null) {
             logger.error("The ComponentContext is null");
@@ -102,97 +102,97 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public boolean areConditionsMatched(JCRNodeWrapper node) {
+    public final boolean areConditionsMatched(JCRNodeWrapper node) {
         for (ExecutionCondition condition : conditions) {
             if (!condition.matches(node)) return false;
         }
         return true;
     }
 
-    protected void addCondition(ExecutionCondition condition) {
+    protected final void addCondition(ExecutionCondition condition) {
         conditions.add(condition);
     }
 
-    public void setConditions(List<ExecutionCondition> conditions) {
+    public final void setConditions(List<ExecutionCondition> conditions) {
         for (ExecutionCondition condition : conditions) {
             addCondition(condition);
         }
     }
 
     @Override
-    public boolean areConditionsReachable(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+    public final boolean areConditionsReachable(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         return conditions.stream().allMatch(c -> c.isReachableCondition(scanRootNode, excludedPaths) >= 0);
     }
 
     @Override
-    public float getPriority() {
+    public final float getPriority() {
         return priority;
     }
 
     @Override
-    public boolean isEnabled() {
+    public final boolean isEnabled() {
         return enabled;
     }
 
     @Override
-    public boolean canRun() {
+    public final boolean canRun() {
         return !scanDurationDisabled;
     }
 
     @Override
-    public void setEnabled(boolean enabled) {
+    public final void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
-    protected void setScanDurationDisabled(boolean scanDurationDisabled) {
+    protected final void setScanDurationDisabled(boolean scanDurationDisabled) {
         this.scanDurationDisabled = scanDurationDisabled;
     }
 
-    public String getDescription() {
+    public final String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public final void setDescription(String description) {
         this.description = description;
     }
 
     @Override
-    public String getId() {
+    public final String getId() {
         return id;
     }
 
     @Override
-    public void setId(String id) {
+    public final void setId(String id) {
         this.id = id;
     }
 
     @Override
-    public String getName() {
+    public final String getName() {
         return this.getClass().getSimpleName();
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return String.format("%s (id: %s, priority: %s, enabled: %s)", getName(), getId(), priority, enabled);
     }
 
     @Override
-    public String toFullString() {
+    public final String toFullString() {
         return String.format("%s %s", this, printConditions());
     }
 
     @Override
-    public void resetOwnTime() {
+    public final void resetOwnTime() {
         ownTime = 0L;
     }
 
     @Override
-    public long getOwnTime() {
+    public final long getOwnTime() {
         return ownTime;
     }
 
     @Override
-    public void trackOwnTime(long time) {
+    public final void trackOwnTime(long time) {
         ownTime += time;
     }
 
@@ -217,7 +217,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public void trackFatalError() {
+    public final void trackFatalError() {
         fatalErrorCount += 1;
         if (fatalErrorCount >= FATAL_ERRORS_THRESHOLD) {
             logger.warn(String.format("Automatically disabling the check as it is raising too many unhandled errors: %s", getName()));
@@ -253,7 +253,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     protected void finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {}
 
     @Override
-    public boolean isValid() {
+    public final boolean isValid() {
         if (validity_jahiaMinimumVersion == null) return true;
         final Version checkVersion;
         try {
