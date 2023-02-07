@@ -89,6 +89,8 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         if (prop instanceof String) setApplyIfHasProp((String) prop);
         prop = context.getProperties().get(ExecutionCondition.SKIP_IF_HAS_PROP);
         if (prop instanceof String) setSkipIfHasProp((String) prop);
+
+        activateInternal(context);
     }
 
     protected void activateInternal(ComponentContext context) {}
