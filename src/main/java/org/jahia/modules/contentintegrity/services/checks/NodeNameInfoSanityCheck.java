@@ -15,7 +15,6 @@ import javax.jcr.RepositoryException;
 import java.util.function.Function;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ENABLED + ":Boolean=false",
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_NODENAMEINFO
 })
 public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck {
