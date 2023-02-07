@@ -9,8 +9,10 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.external.ExtensionNode;
 import org.jahia.modules.external.ExternalNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -58,7 +60,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
         }
 
         // skip the node if it can have been checked while scanning the default workspace
-        if (isInLiveWorkspace(node) && nodeExists(identifier, getSystemSession(Constants.EDIT_WORKSPACE, false)))
+        if (JCRUtils.isInLiveWorkspace(node) && JCRUtils.nodeExists(identifier, JCRUtils.getSystemSession(Constants.EDIT_WORKSPACE, false)))
             return null;
 
         try {
@@ -78,7 +80,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
             if (numVersions > threshold)
                 return createSingleError(createError(node, String.format("The node has over %s versions", threshold))
                         .addExtraInfo("versions-count", numVersions)
-                        .addExtraInfo("versions-count-range", getApproximateCount(numVersions, threshold)));
+                        .addExtraInfo("versions-count-range", Utils.getApproximateCount(numVersions, threshold)));
         } catch (RepositoryException e) {
             logger.error(String.format("Error while checking the version history of the node %s", identifier), e);
         }

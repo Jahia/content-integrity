@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -37,7 +38,7 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
             if (size > threshold)
                 return createSingleError(createError(node, String.format("The node has over %s children", threshold))
                         .addExtraInfo("children-count", size, true)
-                        .addExtraInfo("children-count-range", getApproximateCount(size, threshold)));
+                        .addExtraInfo("children-count-range", Utils.getApproximateCount(size, threshold)));
         } catch (RepositoryException e) {
             logger.error("", e);
         }

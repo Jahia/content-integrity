@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -45,7 +46,6 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private static final String DEEP_COMPARE_PUBLISHED_NODES = "deep-compare-published-nodes";
     private static final String JMIX_LIVE_PROPERTIES = "jmix:liveProperties";
     private static final String J_LIVE_PROPERTIES = "j:liveProperties";
-    private static final String JMIX_ORIGIN_WS = "jmix:originWS";
     private static final List<String> DEFAULT_ONLY_MIXINS = Collections.singletonList("jmix:deletedChildren");
     /*
     Properties which can be defined on either workspace, and be missing on the other one.
@@ -93,8 +93,8 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
-            final JCRSessionWrapper defaultSession = getSystemSession(EDIT_WORKSPACE, true);
-            if (node.isNodeType(JMIX_ORIGIN_WS) && node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString())) {
+            final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(EDIT_WORKSPACE, true);
+            if (JCRUtils.isUGCNode(node)) {
                 // UGC
                 // TODO: check if there's a node with the same ID in default
                 return null;
@@ -161,7 +161,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         */
         if (StringUtils.equals(defaultNode.getPath(), "/")) return;
 
-        if (hasPendingModifications(defaultNode)) return;
+        if (JCRUtils.hasPendingModifications(defaultNode)) return;
 
         try {
             final PropertyIterator properties = defaultNode.getRealNode().getProperties();
@@ -175,7 +175,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                                 .addExtraInfo("property name", pName));
                     }
                 } else if (!NOT_COMPARED_PROPERTIES.contains(pName) &&
-                        !propertyValueEquals(defaultProperty, liveNode.getRealNode().getProperty(pName))) {
+                        !JCRUtils.propertyValueEquals(defaultProperty, liveNode.getRealNode().getProperty(pName))) {
                     errors.addError(createError(liveNode, "Different value for a property in default and live on a published node")
                             .setErrorType(ErrorType.DIFFERENT_PROP_VAL)
                             .addExtraInfo("property name", pName));
