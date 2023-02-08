@@ -7,6 +7,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
@@ -55,7 +56,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     @Override
     public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        final JCRSessionWrapper defaultSession = getSystemSession(EDIT_WORKSPACE, false);
+        final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);
         try {
             processRole(defaultSession.getNode("/roles"), null, true);
         } catch (RepositoryException e) {
@@ -145,9 +146,9 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 }
                 if (srcAce == null) {
                     boolean isFalsePositive = false;
-                    if (isInLiveWorkspace(externalAceNode)) {
-                        final JCRSessionWrapper defaultSession = getSystemSession(EDIT_WORKSPACE, true);
-                        if (nodeExists(value.getString(), defaultSession)) isFalsePositive = true;
+                    if (JCRUtils.isInLiveWorkspace(externalAceNode)) {
+                        final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(EDIT_WORKSPACE, true);
+                        if (JCRUtils.nodeExists(value.getString(), defaultSession)) isFalsePositive = true;
                     }
                     if (!isFalsePositive)
                         errors.addError(createError(externalAceNode, "Broken reference to source ACE")

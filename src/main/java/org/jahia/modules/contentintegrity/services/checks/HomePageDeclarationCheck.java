@@ -5,6 +5,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -48,7 +49,7 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                 } else if (node.hasNode(HOME_PAGE_FALLBACK_NAME)) {
                     final JCRNodeWrapper homeNode = node.getNode(HOME_PAGE_FALLBACK_NAME);
                     if (homeNode.isNodeType(JAHIANT_PAGE)) {
-                        if (isInLiveWorkspace(node))
+                        if (JCRUtils.isInLiveWorkspace(node))
                             return null; // Let's consider it is not an error, if fixed in default, then it will get fixed in live after publishing
                         final String msg = String.format("The site has no page flagged as home, but one is named '%s'", HOME_PAGE_FALLBACK_NAME);
                         return createSingleError(createError(node, msg)
@@ -61,7 +62,7 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                                 .addExtraInfo("home-node-type", homeNode.getPrimaryNodeTypeName()));
                     }
                 } else {
-                    if (isInLiveWorkspace(node))
+                    if (JCRUtils.isInLiveWorkspace(node))
                         return null; // Not an error, the home page has maybe not yet been published
                     final String msg = String.format("The site has no page flagged as home and no one is named '%s'", HOME_PAGE_FALLBACK_NAME);
                     return createSingleError(createError(node, msg)
@@ -96,7 +97,7 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                 }
                 return false;
             case MULTIPLE_HOMES:
-                if (isInDefaultWorkspace(site)) {
+                if (JCRUtils.isInDefaultWorkspace(site)) {
                     JCRNodeWrapper home = null;
                     if (site.hasNode(HOME_PAGE_FALLBACK_NAME)) {
                         home = site.getNode(HOME_PAGE_FALLBACK_NAME);
@@ -115,7 +116,7 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                     }
                     return true;
                 } else {
-                    final JCRSessionWrapper session_default = getSystemSession(EDIT_WORKSPACE, false);
+                    final JCRSessionWrapper session_default = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);
                     JCRNodeWrapper home_default = null;
                     final JCRNodeWrapper site_default = session_default.getNode(site.getPath());
                     for (JCRNodeWrapper child : site_default.getNodes()) {

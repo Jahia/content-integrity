@@ -2,7 +2,6 @@ package org.jahia.modules.contentintegrity.services.impl;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.bin.Jahia;
 import org.jahia.commons.Version;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
@@ -11,37 +10,21 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorImpl;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorListImpl;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
-import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
-import javax.jcr.Property;
-import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-import javax.jcr.Value;
-import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
-import static org.jahia.api.Constants.JCR_LASTMODIFIED;
-import static org.jahia.api.Constants.LASTPUBLISHED;
 
 public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
-
-    private static final long APPROXIMATE_COUNT_FACTOR = 10L;
 
     private float priority = 100f;
     private boolean enabled = true;
@@ -55,7 +38,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private String validity_jahiaMinimumVersion = null;  // TODO if another criteria is some day required, introduce a list of validity conditions as for the execution conditions
     private boolean validity_jahiaMinimumVersionBoundIncluded = false;
 
-    protected void activate(ComponentContext context) {
+    protected final void activate(ComponentContext context) {
         if (logger.isDebugEnabled()) logger.debug(String.format("Activating check %s", getClass().getCanonicalName()));
         if (context == null) {
             logger.error("The ComponentContext is null");
@@ -106,7 +89,11 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         if (prop instanceof String) setApplyIfHasProp((String) prop);
         prop = context.getProperties().get(ExecutionCondition.SKIP_IF_HAS_PROP);
         if (prop instanceof String) setSkipIfHasProp((String) prop);
+
+        activateInternal(context);
     }
+
+    protected void activateInternal(ComponentContext context) {}
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -119,97 +106,97 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public boolean areConditionsMatched(JCRNodeWrapper node) {
+    public final boolean areConditionsMatched(JCRNodeWrapper node) {
         for (ExecutionCondition condition : conditions) {
             if (!condition.matches(node)) return false;
         }
         return true;
     }
 
-    protected void addCondition(ExecutionCondition condition) {
+    protected final void addCondition(ExecutionCondition condition) {
         conditions.add(condition);
     }
 
-    public void setConditions(List<ExecutionCondition> conditions) {
+    public final void setConditions(List<ExecutionCondition> conditions) {
         for (ExecutionCondition condition : conditions) {
             addCondition(condition);
         }
     }
 
     @Override
-    public boolean areConditionsReachable(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+    public final boolean areConditionsReachable(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         return conditions.stream().allMatch(c -> c.isReachableCondition(scanRootNode, excludedPaths) >= 0);
     }
 
     @Override
-    public float getPriority() {
+    public final float getPriority() {
         return priority;
     }
 
     @Override
-    public boolean isEnabled() {
+    public final boolean isEnabled() {
         return enabled;
     }
 
     @Override
-    public boolean canRun() {
+    public final boolean canRun() {
         return !scanDurationDisabled;
     }
 
     @Override
-    public void setEnabled(boolean enabled) {
+    public final void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
-    protected void setScanDurationDisabled(boolean scanDurationDisabled) {
+    protected final void setScanDurationDisabled(boolean scanDurationDisabled) {
         this.scanDurationDisabled = scanDurationDisabled;
     }
 
-    public String getDescription() {
+    public final String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public final void setDescription(String description) {
         this.description = description;
     }
 
     @Override
-    public String getId() {
+    public final String getId() {
         return id;
     }
 
     @Override
-    public void setId(String id) {
+    public final void setId(String id) {
         this.id = id;
     }
 
     @Override
-    public String getName() {
+    public final String getName() {
         return this.getClass().getSimpleName();
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return String.format("%s (id: %s, priority: %s, enabled: %s)", getName(), getId(), priority, enabled);
     }
 
     @Override
-    public String toFullString() {
+    public final String toFullString() {
         return String.format("%s %s", this, printConditions());
     }
 
     @Override
-    public void resetOwnTime() {
+    public final void resetOwnTime() {
         ownTime = 0L;
     }
 
     @Override
-    public long getOwnTime() {
+    public final long getOwnTime() {
         return ownTime;
     }
 
     @Override
-    public void trackOwnTime(long time) {
+    public final void trackOwnTime(long time) {
         ownTime += time;
     }
 
@@ -234,7 +221,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     @Override
-    public void trackFatalError() {
+    public final void trackFatalError() {
         fatalErrorCount += 1;
         if (fatalErrorCount >= FATAL_ERRORS_THRESHOLD) {
             logger.warn(String.format("Automatically disabling the check as it is raising too many unhandled errors: %s", getName()));
@@ -270,7 +257,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     protected void finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {}
 
     @Override
-    public boolean isValid() {
+    public final boolean isValid() {
         if (validity_jahiaMinimumVersion == null) return true;
         final Version checkVersion;
         try {
@@ -283,163 +270,6 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         final Version jahiaVersion = new Version(Jahia.VERSION);
         final int compareTo = jahiaVersion.compareTo(checkVersion);
         return validity_jahiaMinimumVersionBoundIncluded ? compareTo >= 0 : compareTo > 0;
-    }
-
-    /*
-        Utility methods
-    */
-
-    private boolean isInWorkspace(JCRNodeWrapper node, String workspace) {
-        try {
-            return StringUtils.equals(node.getSession().getWorkspace().getName(), workspace);
-        } catch (RepositoryException e) {
-            logger.error("", e);
-            return false;
-        }
-    }
-
-    protected boolean isInDefaultWorkspace(JCRNodeWrapper node) {
-        return isInWorkspace(node, Constants.EDIT_WORKSPACE);
-    }
-
-    protected boolean isInLiveWorkspace(JCRNodeWrapper node) {
-        return isInWorkspace(node, Constants.LIVE_WORKSPACE);
-    }
-
-    protected JCRSessionWrapper getSystemSession(String workspace, boolean refresh) {
-        try {
-            final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
-            if (refresh) session.refresh(false);
-            return session;
-        } catch (RepositoryException e) {
-            logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
-            return null;
-        }
-    }
-
-    protected boolean nodeExists(String uuid, JCRSessionWrapper session) {
-        try {
-            session.getNodeByUUID(uuid);
-            return true;
-        } catch (RepositoryException e) {
-            return false;
-        }
-    }
-
-    protected String getTranslationNodeLocale(Node translationNode) {
-        try {
-            if (translationNode.hasProperty(Constants.JCR_LANGUAGE))
-                return translationNode.getProperty(Constants.JCR_LANGUAGE).getString();
-        } catch (RepositoryException e) {
-            logger.error(String.format("Impossible to read the property %s on a translation node", Constants.JCR_LANGUAGE), e);
-        }
-        return getTranslationNodeLocaleFromNodeName(translationNode);
-    }
-
-    protected String getTranslationNodeLocaleFromNodeName(Node translationNode) {
-        try {
-            return translationNode.getName().substring("j:translation_".length());
-        } catch (RepositoryException e) {
-            logger.error("Impossible to extract the locale", e);
-            return null;
-        }
-    }
-
-    protected boolean hasPendingModifications(JCRNodeWrapper node) {
-        try {
-            if (!StringUtils.equals(node.getSession().getWorkspace().getName(), Constants.EDIT_WORKSPACE))
-                throw new IllegalArgumentException("The publication status can be tested only in the default workspace");
-
-            if (!node.isNodeType(JAHIAMIX_LASTPUBLISHED)) return false;
-            if (node.isNodeType(Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT)) return true;
-            if (!node.hasProperty(LASTPUBLISHED)) return true;
-            final Calendar lastPublished = node.getProperty(LASTPUBLISHED).getDate();
-            if (lastPublished == null) return true;
-            if (!node.hasProperty(JCR_LASTMODIFIED)) {
-                // If this occurs, then it should be detected by a dedicated integrityCheck. But here there's no way to deal with such node.
-                logger.error("The node has no last modification date set " + node.getPath());
-                return false;
-            }
-            final Calendar lastModified = node.getProperty(JCR_LASTMODIFIED).getDate();
-
-            return lastModified.after(lastPublished);
-        } catch (RepositoryException e) {
-            logger.error("", e);
-            // If we can't validate that there are some pending modifications here, then we assume that there are no one.
-            return false;
-        }
-    }
-
-    protected boolean propertyValueEquals(Property p1, Property p2) throws RepositoryException {
-        if (p1.isMultiple() != p2.isMultiple()) return false;
-        if (p1.isMultiple()) return propertyValueEqualsMultiple(p1, p2);
-        return valueEquals(p1.getValue(), p2.getValue());
-    }
-
-    private boolean valueEquals(Value v1, Value v2) {
-        if (v1 == null && v2 == null) return true;
-        if (v1 == null || v2 == null) return false;
-
-        final int type1 = v1.getType();
-        if (type1 != v2.getType()) return false;
-
-        try {
-            switch (type1) {
-                case PropertyType.STRING:
-                case PropertyType.REFERENCE:
-                case PropertyType.WEAKREFERENCE:
-                case PropertyType.NAME:
-                case PropertyType.PATH:
-                case PropertyType.URI:
-                    return StringUtils.equals(v1.getString(), v2.getString());
-                case PropertyType.DATE:
-                    return v1.getDate().equals(v2.getDate());
-                case PropertyType.DOUBLE:
-                    return v1.getDouble() == v2.getDouble();
-                case PropertyType.DECIMAL:
-                    return v1.getDecimal().equals(v2.getDecimal());
-                case PropertyType.LONG:
-                    return v1.getLong() == v2.getLong();
-                case PropertyType.BOOLEAN:
-                    return v1.getBoolean() == v2.getBoolean();
-                // binary values are not compared
-                case PropertyType.BINARY:
-                default:
-                    return true;
-            }
-        } catch (RepositoryException re) {
-            logger.error("", re);
-            return true;
-        }
-    }
-
-    private boolean propertyValueEqualsMultiple(Property p1, Property p2) throws RepositoryException {
-        final Value[] values1 = p1.getValues();
-        final Value[] values2 = p2.getValues();
-        if (values1.length != values2.length) return false;
-
-        final Map<Integer, List<Value>> valuesMap1 = Arrays.stream(values1).collect(Collectors.groupingBy(Value::getType));
-        return Arrays.stream(p2.getValues()).noneMatch(v2 -> {
-            final int type = v2.getType();
-            if (!valuesMap1.containsKey(type)) return true;
-            // TODO: this might fail with properties holding several times the same value:
-            // { a, a, b } will be seen as equal to { a, b, b }
-            return valuesMap1.get(type).stream().noneMatch(v1 -> valueEquals(v1, v2));
-        });
-    }
-
-    protected String getApproximateCount(long count, long threshold) {
-        final long rangeBottom, rangeTop;
-        if (count < threshold * APPROXIMATE_COUNT_FACTOR) {
-            rangeBottom = Math.floorDiv(count, threshold) * threshold;
-            rangeTop = rangeBottom + threshold;
-        } else {
-            long i = APPROXIMATE_COUNT_FACTOR;
-            while (count > i * APPROXIMATE_COUNT_FACTOR) i *= APPROXIMATE_COUNT_FACTOR;
-            rangeBottom = threshold * i;
-            rangeTop = threshold * i * APPROXIMATE_COUNT_FACTOR;
-        }
-        return String.format("%d - %d", rangeBottom, rangeTop);
     }
 
     /*

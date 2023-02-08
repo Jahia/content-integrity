@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -69,11 +70,12 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                 final Binary binary = property.getBinary();
                 final long size = binary.getSize();
                 if (downloadStream) {
+                    InputStream stream = null;
                     try {
                         if (!acceptZeroByteBinaries && size == 0) {
                             isValid = false;
                         } else {
-                            final InputStream stream = binary.getStream();
+                            stream = binary.getStream();
                             int length = 0;
                             int readLength;
                             do {
@@ -84,6 +86,8 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                         }
                     } catch (DataStoreException | IOException e) {
                         isValid = false;
+                    } finally {
+                        IOUtils.closeQuietly(stream);
                     }
                 } else {
                     isValid = acceptZeroByteBinaries ?
@@ -92,7 +96,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                 }
                 if (!isValid) {
                     final String locale = node.isNodeType(Constants.JAHIANT_TRANSLATION) ?
-                            getTranslationNodeLocale(node) : null;
+                            JCRUtils.getTranslationNodeLocale(node) : null;
                     final ContentIntegrityError error = createError(node, locale, "Invalid binary property")
                             .addExtraInfo("property-name", property.getName())
                             .addExtraInfo("property-path", property.getPath(), true);

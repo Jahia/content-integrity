@@ -31,9 +31,12 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
     private final HashSet<String> lockRelatedProperties = new HashSet<>();
 
     @Override
-    protected void activate(ComponentContext context) {
-        super.activate(context);
-        init();
+    protected void activateInternal(ComponentContext context) {
+        lockRelatedProperties.clear();
+        lockRelatedProperties.add("j:lockTypes");
+        lockRelatedProperties.add("j:locktoken");
+        lockRelatedProperties.add(JCR_LOCKISDEEP);
+        lockRelatedProperties.add(JCR_LOCKOWNER);
     }
 
     @Override
@@ -78,13 +81,5 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
         } catch (RepositoryException e) {
             logger.error(String.format("Error while checking the node %s", node.getPath()), e);
         }
-    }
-
-    private void init() {
-        lockRelatedProperties.clear();
-        lockRelatedProperties.add("j:lockTypes");
-        lockRelatedProperties.add("j:locktoken");
-        lockRelatedProperties.add(JCR_LOCKISDEEP);
-        lockRelatedProperties.add(JCR_LOCKOWNER);
     }
 }

@@ -12,6 +12,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.external.ExternalNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
@@ -560,7 +561,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 final Node realTranslationNode = getRealNode(translationNode);
                 if (realTranslationNode == null)
                     continue;
-                final String locale = getTranslationNodeLocale(translationNode);
+                final String locale = JCRUtils.getTranslationNodeLocale(translationNode);
                 if (StringUtils.isBlank(locale)) {
                     logger.error(String.format("Skipping a translation node since its language is invalid: %s", translationNode.getIdentifier()));
                     continue;

@@ -6,6 +6,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
@@ -48,7 +49,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
-            final JCRSessionWrapper liveSession = getSystemSession(LIVE_WORKSPACE, true);
+            final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(LIVE_WORKSPACE, true);
             if (node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean()) {
                 final JCRNodeWrapper liveNode;
                 try {
@@ -67,7 +68,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                 final String nodePath = node.getPath();
                 if (!inheritedErrors.containsKey(DIFFERENT_PATH_ROOT) && !StringUtils.equals(nodePath, liveNode.getPath())) {
                     inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
-                    if (!hasPendingModifications(node)) {
+                    if (!JCRUtils.hasPendingModifications(node)) {
                         final String msg = "Found a published node, with no pending modifications, but the path in live is different";
                         final ContentIntegrityError error = createError(node, msg)
                                 .addExtraInfo("live-node-path", liveNode.getPath(), true);

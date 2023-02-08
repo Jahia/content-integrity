@@ -47,6 +47,7 @@ public class Utils {
     private static final String NODE_UNDER_SITE_PATH_PREFIX = "/sites/";
     private static final String NODE_UNDER_MODULES_PATH_PREFIX = "/modules/";
     private static final char NODE_PATH_SEPARATOR_CHAR = '/';
+    private static final long APPROXIMATE_COUNT_FACTOR = 10L;
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -333,5 +334,19 @@ public class Utils {
 
         return StringUtils.length(path) > NODE_UNDER_SITE_PATH_PREFIX.length() && StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
                 StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1] : null;
+    }
+
+    public static String getApproximateCount(long count, long threshold) {
+        final long rangeBottom, rangeTop;
+        if (count < threshold * APPROXIMATE_COUNT_FACTOR) {
+            rangeBottom = Math.floorDiv(count, threshold) * threshold;
+            rangeTop = rangeBottom + threshold;
+        } else {
+            long i = APPROXIMATE_COUNT_FACTOR;
+            while (count > i * APPROXIMATE_COUNT_FACTOR) i *= APPROXIMATE_COUNT_FACTOR;
+            rangeBottom = threshold * i;
+            rangeTop = threshold * i * APPROXIMATE_COUNT_FACTOR;
+        }
+        return String.format("%d - %d", rangeBottom, rangeTop);
     }
 }
