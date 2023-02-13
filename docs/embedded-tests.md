@@ -14,6 +14,7 @@
   * [PublicationSanityDefaultCheck](#publicationsanitydefaultcheck)
   * [PublicationSanityLiveCheck](#publicationsanitylivecheck)
   * [SiteLevelSystemGroupsCheck](#sitelevelsystemgroupscheck)
+  * [StaticInternalLinksCheck](#staticInternalLinksCheck)
   * [TemplatesIndexationCheck](#templatesindexationcheck)
   * [UndeclaredNodeTypesCheck](#undeclarednodetypescheck)
   * [UndeployedModulesReferencesCheck](#undeployedmodulesreferencescheck)
@@ -286,6 +287,19 @@ If a `site-privileged` group is not member of the `privileged` group, you need t
 If the `privileged` group is missing, you will need to recreate it, and then add every `site-privileged` group as a member.
 
 If the `site-privileged` group is missing, you will need to recreate it. Then, it will be required to identify the users/groups which need to be member of this group. 
+
+## StaticInternalLinksCheck
+
+In the rich text editor, one should use the "link" feature to create internal links, select a page, and let the software create the internal link correctly.
+But it happens that users copy the URL of a page from their browser's address bar, and paste it in the editor. As a consequence, the internal link is not considered as such, and is handled as an external link. As a consequence, the link gets broken if the target page is renamed or moved. And no warning is displayed if one deletes the target page.
+
+This check iterates the properties of type `string` and reports any occurrence of a domain declared on one of the websites (primary domain or alternative one).
+
+This check is disabled by default since the effect of the reported errors has a functional impact more than is a technical inconsistency, and because there's a high risk of false positives. 
+
+### Dealing with errors
+
+If a reported error is qualified as legit, then the content has to be fixed manually and republished if the error is present in live as well.
 
 ## TemplatesIndexationCheck
 
