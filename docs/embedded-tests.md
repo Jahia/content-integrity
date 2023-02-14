@@ -67,11 +67,11 @@ If the number of errors is important, you can also merge the `datastore` folder 
 
 ## ChildNodeDefinitionsSanityCheck
 
-Detect the nodes which are not allowed by the definition of their parent node.
+Detects the nodes which are not allowed by the definition of their parent node.
 
 ### Dealing with errors
 
-Usually, such issue appears after a modification of some definitions. If the name of the child node has been renamed, then the related nodes should be renamed accordingly in the JCR.
+Usually, such issue appears after a modification of some definitions. If the name of the child node has been modified in the definitions, then the related nodes should be renamed accordingly in the JCR.
 
 If the child node is of a type that is not allowed anymore by its parent, then such node should be deleted or moved to a new parent.
 
@@ -88,7 +88,7 @@ The JCR is not designed to handle flat storage, and such structure has an impact
 
 ### Dealing with errors
 
-You need to refactor your data model, usually splitting those nodes into some subtrees. One possible solution involves the Jahia built-in [auto split feature](https://academy.jahia.com/documentation/developer/jahia/8/advanced-guide-v8/manipulating-content-with-apis/jcr-api#Auto_splitting_nodes).
+You need to refactor your data model, usually splitting those nodes into some subtrees. One possible solution involves the Jahia built-in [auto split feature](https://academy.jahia.com/documentation/developer/jahia/8/working-with-our-apis/manipulating-content-with-apis/using-the-jcr-api#autosplitting-nodes).
 
 If the problem is related to regular nodes (as opposed to UGC), then it has to be fixed in the `default` workspace and then propagated to the `live` workspace through publication.
 
@@ -124,7 +124,7 @@ If no page is flagged as home, but a direct sub-node of the site node is named `
 
 ## JCRLanguagePropertyCheck
 
-Translation nodes (nodes of type `jnt:translation`) are named after a naming convention. The node must be `j:translation_xx`, where `xx` is the language code. The node also holds a property named `jcr:language`, which has the language code as a value.  
+Translation nodes (nodes of type `jnt:translation`) are named after a naming convention. The node must be named `j:translation_xx`, where `xx` is the language code. The node also holds a property named `jcr:language`, which has the language code as a value.  
 The language code must be the same in the node name and the value of the property.
 
 Example of valid translation node:
@@ -139,7 +139,7 @@ Example of valid translation node:
 
 ### Dealing with errors
 
-Errors are usually located under `/modules`, in a node part of a template. The root cause is usually an uncontrolled copy/paste in the `repository.xml` file. In such case, just fix the issue in the XML file, and redeploy the module.
+Errors are usually located under `/modules`, in a node being part of a template. The root cause is usually an uncontrolled copy/paste in the `repository.xml` file. In such case, just fix the issue in the XML file, and redeploy the module.
 
 Otherwise, you will need to fix the node in the JCR, updating the property value to match the node name.  
 If the impacted nodes are automatically created, for example from some custom java code, it is important as well to identify & fix the faulty code, in order to avoid reintroducing the issue.
