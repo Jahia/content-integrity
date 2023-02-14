@@ -35,6 +35,13 @@ _work in progress_
 
 Detects the properties of type `binary` for which the value can't be loaded. 
 
+### Configuration
+
+| Name                      |  Type   | Default Value | Description                                                                                                                                                                               |
+|---------------------------|:-------:|:-------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| download-stream           | boolean |     false     | If `true`, each binary property is validated by reading its value as a stream (time consuming operation). Otherwise, only the length of the binary is read                                |
+| accept-zero-byte-binaries | boolean |     true      | If `true`, the binary properties with a valid zero byte length value will not be reported as errors. Otherwise, the binary is considered as valid only if its length is greater than zero |
+
 ### Dealing with errors
 
 If the number of errors is limited, it should be analyzed on a node by node basis.  
@@ -45,7 +52,7 @@ Since the binary data can be store either in the database or on the filesystem (
 
 #### Database storage
 
-With this storage type, there is no possibility to fix the issue directly in the database. If the binaries are missing as a consequence of a recent operation, then the Jahia environment should be restored from a backup taken before the faulty operation. If you are not sure of the time of the operation, and need to confirm that the backup to be restored will solve the issue, the only solution is to restore this backup on another environment and run an integrity check.  
+With this storage type, there is no possibility to fix the issue directly in the database. If the binaries are missing as a consequence of a recent operation, then the Jahia environment should be restored from a backup taken before the faulty operation. If you are not sure of the time of the operation, and need to confirm that the backup to be restored will solve the issue, the only solution is to restore this backup on another environment and run an integrity check there.  
 
 If restoring the production from a backup is not an option, then you can restore the backup on another server and extract the missing binaries from this environment to fix the data on production. For nodes of type `jnt:file`, the files can be downloaded from this environment and re-uploaded on production. To avoid breaking references to the files, do not delete/recreate the file. You can upload a new binary on an existing file node.  
 If the production is clustered, this temporary environment can be simply restored as a standalone environment. 
