@@ -30,7 +30,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck {
         try {
             if (JCRUtils.isInDefaultWorkspace(node)) {
                 if (JCRUtils.isNeverPublished(node)) {
-                    validateMissingFullpathProperty(node, errors);
+                    ensureMissingFullpathProperty(node, errors);
                 } else if (!JCRUtils.hasPendingModifications(node)) {
                     validateConsistentFullpathProperty(node, errors);
                 } else {
@@ -46,7 +46,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck {
                 }
             } else {
                 if (JCRUtils.isUGCNode(node)) {
-                    validateMissingFullpathProperty(node, errors);
+                    ensureMissingFullpathProperty(node, errors);
                 } else {
                     validateConsistentFullpathProperty(node, errors);
                 }
@@ -59,7 +59,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck {
         return errors;
     }
 
-    private void validateMissingFullpathProperty (JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
+    private void ensureMissingFullpathProperty(JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
         // TODO : the message should be different for a never published node in default and a UGC node in live
         if (node.hasProperty(Constants.FULLPATH)) {
             errors.addError(createError(node, String.format("Unexpected %s property", Constants.FULLPATH))
