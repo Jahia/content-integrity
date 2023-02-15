@@ -186,7 +186,55 @@ If an important number of nodes are impacted, you will need to write a script to
 
 ## NodeNameInfoSanityCheck
 
-_work in progress_
+Each node has a name and a path. This information is copied to properties on the nodes: `j:nodename` and `j:fullpath`.
+Renaming or moving a node, or one of its parents updates one or both properties. They are supposed to be automatically synchronized.
+
+### Dealing with errors
+
+#### Missing j:fullpath property
+
+`Error code: MISSING_FULLPATH`
+
+**Description**: `j:fullpath` is managed by the publication process. Therefore, it must be missing in the workspace `default` only on nodes which have never been published, and in the workspace `live` only on UGC nodes. But it must be present on every node which has been published at least once (no matter the current publication status).
+
+Republishing the node should be enough to add the missing property to the node, in `default` and `live`.
+
+#### Unexpected j:fullpath property
+
+`Error code: UNEXPECTED_FULLPATH`
+
+**Description**: `j:fullpath` is managed by the publication process. Therefore, it must be missing in the workspace `default` on nodes which have never been published, and in the workspace `live` on UGC nodes.
+
+Fixing this error is not critical, but identifying when and how this property has been created is important.
+The property can be deleted from the node to fix the error.
+
+#### Invalid j:fullpath property
+
+`Error code: INVALID_FULLPATH`
+
+**Description**: `j:fullpath` is managed by the publication process. Therefore, it must have as a value the path of the node at the time of the last publication. As a consequence, in each workspace the value must match the current path of the node in the `live` workspace.
+
+Republishing the node should be enough to fix the value of the property, in `default` and `live`.
+
+#### Missing j:nodename property
+
+`Error code: MISSING_NODENAME`
+
+**Description**: `j:nodename` is set when the node is created or renamed. It should be defined on any node.
+
+In the `default` workspace, renaming the node and then renaming it back to its current name should be sufficient to fix the error.
+Then, the node needs to be republished to propagate the fix to the `live`, if relevant.
+On UGC nodes, the property needs to be added using a script.
+
+#### Invalid j:nodename property
+
+`Error code: INVALID_NODENAME`
+
+**Description**: `j:nodename` is set when the node is created or renamed. It should always be consistent with the node name.
+
+In the `default` workspace, renaming the node and then renaming it back to its current name should be sufficient to fix the error.
+Then, the node needs to be republished to propagate the fix to the `live`, if relevant.
+On UGC nodes, the property needs to be modified using a script.
 
 ## PropertyDefinitionsSanityCheck
 
