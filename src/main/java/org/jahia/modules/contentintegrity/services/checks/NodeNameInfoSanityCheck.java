@@ -28,35 +28,39 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck {
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
 
         try {
-            if (JCRUtils.isInDefaultWorkspace(node)) {
-                if (JCRUtils.isNeverPublished(node)) {
-                    ensureMissingFullpathProperty(node, errors);
-                } else if (!JCRUtils.hasPendingModifications(node)) {
-                    validateConsistentFullpathProperty(node, errors);
-                } else {
-                    // In this case, we expect the property to hold the path of the node in live, since it was the path the last time the node was published
-                    validateStringProperty(node, Constants.FULLPATH, defaultNode -> {
-                        try {
-                            return JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE).getNodeByUUID(defaultNode.getIdentifier()).getPath();
-                        } catch (RepositoryException e) {
-                            logger.error("", e);
-                            return null; // TODO : this should never happen, but if it does, the resulting behavior in uncontrolled
-                        }
-                    }, errors, ErrorType.MISSING_FULLPATH, ErrorType.INVALID_FULLPATH);
-                }
-            } else {
-                if (JCRUtils.isUGCNode(node)) {
-                    ensureMissingFullpathProperty(node, errors);
-                } else {
-                    validateConsistentFullpathProperty(node, errors);
-                }
-            }
+            validateFullPathProperty(node, errors);
             validateStringProperty(node, Constants.NODENAME, JCRNodeWrapper::getName, errors, ErrorType.MISSING_NODENAME, ErrorType.INVALID_NODENAME);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
 
         return errors;
+    }
+
+    private void validateFullPathProperty(JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
+        if (JCRUtils.isInDefaultWorkspace(node)) {
+            if (JCRUtils.isNeverPublished(node)) {
+                ensureMissingFullpathProperty(node, errors);
+            } else if (!JCRUtils.hasPendingModifications(node)) {
+                validateConsistentFullpathProperty(node, errors);
+            } else {
+                // In this case, we expect the property to hold the path of the node in live, since it was the path the last time the node was published
+                validateStringProperty(node, Constants.FULLPATH, defaultNode -> {
+                    try {
+                        return JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE).getNodeByUUID(defaultNode.getIdentifier()).getPath();
+                    } catch (RepositoryException e) {
+                        logger.error("", e);
+                        return null; // TODO : this should never happen, but if it does, the resulting behavior in uncontrolled
+                    }
+                }, errors, ErrorType.MISSING_FULLPATH, ErrorType.INVALID_FULLPATH);
+            }
+        } else {
+            if (JCRUtils.isUGCNode(node)) {
+                ensureMissingFullpathProperty(node, errors);
+            } else {
+                validateConsistentFullpathProperty(node, errors);
+            }
+        }
     }
 
     private void ensureMissingFullpathProperty(JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
