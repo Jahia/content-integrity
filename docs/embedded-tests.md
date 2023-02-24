@@ -189,6 +189,16 @@ If an important number of nodes are impacted, you will need to write a script to
 Each node has a name and a path. This information is copied to properties on the nodes: `j:nodename` and `j:fullpath`.
 Renaming or moving a node, or one of its parents updates one or both properties. They are supposed to be automatically synchronized.
 
+The property `j:fullpath` is deprecated and will be removed from Jahia in a future version. 
+- If your code leverages this property, you should rewrite it. But you might want to enable the validation of the property in the meantime
+- Otherwise, you should not enable its validation, since no feature in the product leverages, and so an invalid value has no consequence 
+
+### Configuration
+
+| Name           |  Type   | Default Value | Description                                     |
+|----------------|:-------:|:-------------:|-------------------------------------------------|
+| check-fullpath | boolean |     false     | If `true`, the property `j:fullpath` is checked |
+
 ### Dealing with errors
 
 #### Missing j:fullpath property

@@ -3,8 +3,10 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
@@ -14,14 +16,33 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import java.util.function.Function;
 
+import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
+
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_NODENAMEINFO
 })
-public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck {
+public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
 
     private static final Logger logger = LoggerFactory.getLogger(NodeNameInfoSanityCheck.class);
+    private static final String CHECK_FULLPATH = "check-fullpath";
 
-    private enum ErrorType {MISSING_FULLPATH, UNEXPECTED_FULLPATH, INVALID_FULLPATH, MISSING_NODENAME, INVALID_NODENAME}
+    private final ContentIntegrityCheckConfiguration configurations;
+
+    public NodeNameInfoSanityCheck() {
+        configurations = new ContentIntegrityCheckConfigurationImpl();
+        configurations.declareDefaultParameter(CHECK_FULLPATH, Boolean.FALSE, BOOLEAN_PARSER, String.format("If true, the property %s is checked. This property is deprecated, but might be used in your own code. You should enable its check only in this case, and plan a refactoring of your code", Constants.FULLPATH));
+    }
+
+    private enum ErrorType {MISSING_FULLPATH, UNEXPECTED_FULLPATH, INVALID_FULLPATH, MISSING_NODENAME, INVALID_NODENAME;}
+
+    @Override
+    public ContentIntegrityCheckConfiguration getConfigurations() {
+        return configurations;
+    }
+
+    private boolean checkFullPath() {
+        return (boolean) getConfigurations().getParameter(CHECK_FULLPATH);
+    }
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -38,6 +59,8 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck {
     }
 
     private void validateFullPathProperty(JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
+        if (!checkFullPath()) return;
+
         if (JCRUtils.isInDefaultWorkspace(node)) {
             if (JCRUtils.isNeverPublished(node)) {
                 ensureMissingFullpathProperty(node, errors);
