@@ -281,7 +281,7 @@ const ReportFileListItem = (files) => {
     if (validFiles.length === 0) return ""
 
     let out = validFiles.length > 1 ? "Reports:" : "Report:"
-    files.forEach(({filename, path}) => out += ReportFileItem(filename, path))
+    validFiles.forEach(({filename, path}) => out += ReportFileItem(filename, path))
     return out
 }
 
