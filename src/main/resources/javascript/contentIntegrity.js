@@ -524,7 +524,7 @@ function renderLogs(executionID) {
             const reports = data.integrity.scan.reports
             if (reports != null) {
                 const out = ReportFileListItem(reports)
-                if (out.length > 0) reportFileDiv.html().show()
+                if (out.length > 0) reportFileDiv.html(out).show()
             }
         }
     }, _ => STOP_PULLING_LOGS);
