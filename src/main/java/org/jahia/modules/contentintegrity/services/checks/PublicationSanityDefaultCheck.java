@@ -50,12 +50,14 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
             final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(LIVE_WORKSPACE, true);
-            if (node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean()) {
+            final boolean flaggedPublished = node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean();
+            if (flaggedPublished || node.isNodeType("jmix:autoPublish")) {
                 final JCRNodeWrapper liveNode;
                 try {
                     liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());
                 } catch (ItemNotFoundException infe) {
-                    final String msg = "Found a node flagged as published, but no corresponding live node exists";
+                    final String msg = String.format("Found a node %s, but no corresponding live node exists",
+                            flaggedPublished? "flagged as published" : "auto-published");
                     final ContentIntegrityError error = createError(node, msg)
                             .setErrorType(ErrorType.NO_LIVE_NODE);
                     return createSingleError(error);
