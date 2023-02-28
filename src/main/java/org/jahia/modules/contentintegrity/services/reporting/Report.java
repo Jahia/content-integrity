@@ -1,17 +1,23 @@
 package org.jahia.modules.contentintegrity.services.reporting;
 
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
-import org.jahia.settings.SettingsBean;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 public abstract class Report {
 
-    public static final String REPORT_COLUMN_NAMES_CONF = "modules.contentIntegrity.csv.header";
+    private static final List<String> DEFAULT_COLUMN_ITEMS = Collections.unmodifiableList(Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Site", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information", "Specific extra information"));
 
     abstract public void write(OutputStream stream, ContentIntegrityResults results, boolean withColumnHeaders, boolean excludeFixedErrors) throws IOException;
 
@@ -23,15 +29,34 @@ public abstract class Report {
 
     abstract public String getFileContentType();
 
-    protected final String getColumns() {
-        return SettingsBean.getInstance().getString(REPORT_COLUMN_NAMES_CONF, null);
+    protected final List<String> getColumns() {
+        return DEFAULT_COLUMN_ITEMS;
     }
 
-    protected final List<String> getReportContent(ContentIntegrityResults results, boolean excludeFixedErrors) {
-        return results.getErrors().stream()
-                .filter(error -> !excludeFixedErrors || !error.isFixed())
-                .map(ContentIntegrityError::toCSV)
-                .collect(Collectors.toList());
+    protected static List<String> toTextElementsList(ContentIntegrityError error) {
+        final List<String> list = new ArrayList<>();
+        toTextElements(error, list::add);
+        return list;
     }
 
+    protected static void toTextElements(ContentIntegrityError error, Consumer<String> accumulator) {
+        accumulator.accept(Objects.toString(error.getIntegrityCheckID()));
+        accumulator.accept(Objects.toString(error.isFixed()));
+        accumulator.accept(Objects.toString(error.getErrorType()));
+        accumulator.accept(error.getWorkspace());
+        accumulator.accept(error.getUuid());
+        accumulator.accept(error.getPath());
+        accumulator.accept(error.getSite());
+        accumulator.accept(error.getPrimaryType());
+        accumulator.accept(error.getMixins());
+        accumulator.accept(error.getLocale());
+        accumulator.accept(error.getConstraintMessage());
+        accumulator.accept(mapToString(error.getExtraInfos()));
+        accumulator.accept(mapToString(error.getSpecificExtraInfos()));
+    }
+
+    private static String mapToString(Map map) {
+        if (MapUtils.isEmpty(map)) return StringUtils.EMPTY;
+        return Objects.toString(map);
+    }
 }

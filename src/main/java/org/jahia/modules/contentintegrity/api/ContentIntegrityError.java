@@ -27,6 +27,10 @@ public interface ContentIntegrityError {
 
     String getIntegrityCheckID();
 
+    Map<String, Object> getExtraInfos();
+
+    Map<String, Object> getSpecificExtraInfos();
+
     Map<String, Object> getAllExtraInfos();
 
     boolean isFixed();
@@ -34,8 +38,6 @@ public interface ContentIntegrityError {
     void setFixed(boolean fixed);
 
     JSONObject toJSON();
-
-    String toCSV();
 
     Object getExtraInfo(String key);
 

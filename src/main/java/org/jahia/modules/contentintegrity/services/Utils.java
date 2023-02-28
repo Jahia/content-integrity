@@ -39,9 +39,6 @@ public class Utils {
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
     private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
-    private static final String CSV_SEPARATOR = ";";
-    private static final String CSV_VALUE_WRAPPER = "\"";
-    private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
     private static final String ALL_WORKSPACES = "all-workspaces";
     private static final String NODE_UNDER_SITE_PATH_PREFIX = "/sites/";
     private static final String NODE_UNDER_MODULES_PATH_PREFIX = "/modules/";
@@ -153,15 +150,6 @@ public class Utils {
         } else {
             return service.getContentIntegrityChecksIdentifiers(true).stream().filter(id -> !blackList.contains(id)).collect(Collectors.toList());
         }
-    }
-
-    public static void appendToCSVLine(StringBuilder line, Object value) {
-        if (line.length() > 0) line.append(CSV_SEPARATOR);
-        line.append(CSV_VALUE_WRAPPER);
-        if (value != null) {
-            line.append(StringUtils.replace(String.valueOf(value), CSV_VALUE_WRAPPER, ESCAPED_CSV_VALUE_WRAPPER));
-        }
-        line.append(CSV_VALUE_WRAPPER);
     }
 
     public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean withCsvHeader, ExternalLogger externalLogger) {
