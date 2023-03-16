@@ -13,7 +13,6 @@ import javax.jcr.Property;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
-
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
@@ -60,7 +59,7 @@ public class JCRUtils {
      * Evaluates if the node has some pending modifications, and so the node can be published.
      * If the node has a translation sub node in the session language and if i18n has to be considered, this one is considered as well for the calculation
      *
-     * @param node the node
+     * @param node         the node
      * @param considerI18n if true, the calculation involves the translation node
      * @return true if the node has some pending modifications
      */
@@ -228,5 +227,20 @@ public class JCRUtils {
             // { a, a, b } will be seen as equal to { a, b, b }
             return valuesMap1.get(type).stream().noneMatch(v1 -> valueEquals(v1, v2));
         });
+    }
+
+    public static JCRNodeWrapper getOrCreateNode(JCRNodeWrapper parent, String name, String type) throws RepositoryException {
+        final JCRNodeWrapper node;
+
+        if (parent.hasNode(name)) {
+            node = parent.getNode(name);
+            if (!node.isNodeType(type)) {
+                throw new RepositoryException(String.format("The node %s already exists, but is not of type %s", node.getPath(), type));
+            }
+        } else {
+            node = parent.addNode(name, type);
+        }
+
+        return node;
     }
 }

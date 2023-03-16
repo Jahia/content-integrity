@@ -12,6 +12,7 @@ import org.apache.commons.lang.WordUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.graphql.util.GqlUtils;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityReport;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
@@ -36,7 +37,7 @@ public class GqlIntegrityScan {
 
     private static final Map<String, Status> executionStatus = new LinkedHashMap<>();
     private static final Map<String, List<String>> executionLog = new HashMap<>();
-    private static final Map<String, String> executionReports = new HashMap<>();
+    private static final Map<String, List<ContentIntegrityReport>> executionReports = new HashMap<>();
     private static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
     private static final int LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE = 100;
     private static final int LOGS_LIMIT_CLIENT_SIDE_END_SIZE = 500;
@@ -126,7 +127,8 @@ public class GqlIntegrityScan {
                     } else {
                         final int nbErrors = mergedResults.getErrors().size();
                         console.logLine(String.format("%d error%s found", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s"));
-                        executionReports.put(id, Utils.writeDumpInTheJCR(mergedResults, false, false, console));
+                        if (Utils.writeDumpInTheJCR(mergedResults, false, true, console))
+                            executionReports.put(id, mergedResults.getReports());
                     }
                 }
                 executionStatus.put(id, Status.FINISHED);
@@ -169,9 +171,12 @@ public class GqlIntegrityScan {
     }
 
     @GraphQLField
-    @GraphQLName("report")
-    public String getReportPath() {
-        return executionReports.get(id);
+    @GraphQLName("reports")
+    public List<GqlScanReportFile> getReports() {
+        if (!executionReports.containsKey(id)) return null;
+        return executionReports.get(id).stream()
+                .map(GqlScanReportFile::new)
+                .collect(Collectors.toList());
     }
 
     @GraphQLField

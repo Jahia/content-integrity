@@ -62,7 +62,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private final ContentIntegrityCheckConfiguration configurations;
 
     private ExtendedNodeType jntTranslationNt;
-    private Map<String, Boolean> jntTranslationNtParents = new HashMap<>();
+    private final Map<String, Boolean> jntTranslationNtParents = new HashMap<>();
 
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();

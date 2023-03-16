@@ -1,7 +1,6 @@
 package org.jahia.modules.contentintegrity.services;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
@@ -14,15 +13,14 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NodeType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
 
-import static org.jahia.modules.contentintegrity.services.Utils.appendToCSVLine;
 import static org.jahia.modules.contentintegrity.services.Utils.getSiteKey;
 
 public class ContentIntegrityErrorImpl implements ContentIntegrityError {
@@ -96,27 +94,6 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     }
 
     @Override
-    public String toCSV() {
-        final StringBuilder sb = new StringBuilder();
-
-        appendToCSVLine(sb, String.valueOf(integrityCheckID));
-        appendToCSVLine(sb, String.valueOf(fixed));
-        appendToCSVLine(sb, getErrorType());
-        appendToCSVLine(sb, workspace);
-        appendToCSVLine(sb, uuid);
-        appendToCSVLine(sb, path);
-        appendToCSVLine(sb, site);
-        appendToCSVLine(sb, primaryType);
-        appendToCSVLine(sb, mixins);
-        appendToCSVLine(sb, locale);
-        appendToCSVLine(sb, constraintMessage);
-        appendToCSVLine(sb, Objects.toString(extraInfos, StringUtils.EMPTY));
-        appendToCSVLine(sb, Objects.toString(specificExtraInfos, StringUtils.EMPTY));
-
-        return sb.toString();
-    }
-
-    @Override
     public String getErrorID() {
         return id;
     }
@@ -182,8 +159,18 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     }
 
     @Override
+    public Map<String, Object> getExtraInfos() {
+        return Collections.unmodifiableMap(Optional.ofNullable(extraInfos).orElse(Collections.emptyMap()));
+    }
+
+    @Override
+    public Map<String, Object> getSpecificExtraInfos() {
+        return Collections.unmodifiableMap(Optional.ofNullable(specificExtraInfos).orElse(Collections.emptyMap()));
+    }
+
+    @Override
     public Map<String, Object> getAllExtraInfos() {
-        if (CollectionUtils.isEmpty(extraInfosKeys)) return MapUtils.EMPTY_MAP;
+        if (CollectionUtils.isEmpty(extraInfosKeys)) return Collections.emptyMap();
 
         final LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         for (String key : extraInfosKeys) {

@@ -14,6 +14,7 @@
   * [PublicationSanityDefaultCheck](#publicationsanitydefaultcheck)
   * [PublicationSanityLiveCheck](#publicationsanitylivecheck)
   * [SiteLevelSystemGroupsCheck](#sitelevelsystemgroupscheck)
+  * [StaticInternalLinksCheck](#staticInternalLinksCheck)
   * [TemplatesIndexationCheck](#templatesindexationcheck)
   * [UndeclaredNodeTypesCheck](#undeclarednodetypescheck)
   * [UndeployedModulesReferencesCheck](#undeployedmodulesreferencescheck)
@@ -34,6 +35,13 @@ _work in progress_
 
 Detects the properties of type `binary` for which the value can't be loaded. 
 
+### Configuration
+
+| Name                      |  Type   | Default Value | Description                                                                                                                                                                               |
+|---------------------------|:-------:|:-------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| download-stream           | boolean |     false     | If `true`, each binary property is validated by reading its value as a stream (time consuming operation). Otherwise, only the length of the binary is read                                |
+| accept-zero-byte-binaries | boolean |     true      | If `true`, the binary properties with a valid zero byte length value will not be reported as errors. Otherwise, the binary is considered as valid only if its length is greater than zero |
+
 ### Dealing with errors
 
 If the number of errors is limited, it should be analyzed on a node by node basis.  
@@ -44,7 +52,7 @@ Since the binary data can be store either in the database or on the filesystem (
 
 #### Database storage
 
-With this storage type, there is no possibility to fix the issue directly in the database. If the binaries are missing as a consequence of a recent operation, then the Jahia environment should be restored from a backup taken before the faulty operation. If you are not sure of the time of the operation, and need to confirm that the backup to be restored will solve the issue, the only solution is to restore this backup on another environment and run an integrity check.  
+With this storage type, there is no possibility to fix the issue directly in the database. If the binaries are missing as a consequence of a recent operation, then the Jahia environment should be restored from a backup taken before the faulty operation. If you are not sure of the time of the operation, and need to confirm that the backup to be restored will solve the issue, the only solution is to restore this backup on another environment and run an integrity check there.  
 
 If restoring the production from a backup is not an option, then you can restore the backup on another server and extract the missing binaries from this environment to fix the data on production. For nodes of type `jnt:file`, the files can be downloaded from this environment and re-uploaded on production. To avoid breaking references to the files, do not delete/recreate the file. You can upload a new binary on an existing file node.  
 If the production is clustered, this temporary environment can be simply restored as a standalone environment. 
@@ -59,11 +67,11 @@ If the number of errors is important, you can also merge the `datastore` folder 
 
 ## ChildNodeDefinitionsSanityCheck
 
-Detect the nodes which are not allowed by the definition of their parent node.
+Detects the nodes which are not allowed by the definition of their parent node.
 
 ### Dealing with errors
 
-Usually, such issue appears after a modification of some definitions. If the name of the child node has been renamed, then the related nodes should be renamed accordingly in the JCR.
+Usually, such issue appears after a modification of some definitions. If the name of the child node has been modified in the definitions, then the related nodes should be renamed accordingly in the JCR.
 
 If the child node is of a type that is not allowed anymore by its parent, then such node should be deleted or moved to a new parent.
 
@@ -80,7 +88,7 @@ The JCR is not designed to handle flat storage, and such structure has an impact
 
 ### Dealing with errors
 
-You need to refactor your data model, usually splitting those nodes into some subtrees. One possible solution involves the Jahia built-in [auto split feature](https://academy.jahia.com/documentation/developer/jahia/8/advanced-guide-v8/manipulating-content-with-apis/jcr-api#Auto_splitting_nodes).
+You need to refactor your data model, usually splitting those nodes into some subtrees. One possible solution involves the Jahia built-in [auto split feature](https://academy.jahia.com/documentation/developer/jahia/8/working-with-our-apis/manipulating-content-with-apis/using-the-jcr-api#autosplitting-nodes).
 
 If the problem is related to regular nodes (as opposed to UGC), then it has to be fixed in the `default` workspace and then propagated to the `live` workspace through publication.
 
@@ -116,7 +124,7 @@ If no page is flagged as home, but a direct sub-node of the site node is named `
 
 ## JCRLanguagePropertyCheck
 
-Translation nodes (nodes of type `jnt:translation`) are named after a naming convention. The node must be `j:translation_xx`, where `xx` is the language code. The node also holds a property named `jcr:language`, which has the language code as a value.  
+Translation nodes (nodes of type `jnt:translation`) are named after a naming convention. The node must be named `j:translation_xx`, where `xx` is the language code. The node also holds a property named `jcr:language`, which has the language code as a value.  
 The language code must be the same in the node name and the value of the property.
 
 Example of valid translation node:
@@ -131,7 +139,7 @@ Example of valid translation node:
 
 ### Dealing with errors
 
-Errors are usually located under `/modules`, in a node part of a template. The root cause is usually an uncontrolled copy/paste in the `repository.xml` file. In such case, just fix the issue in the XML file, and redeploy the module.
+Errors are usually located under `/modules`, in a node being part of a template. The root cause is usually an uncontrolled copy/paste in the `repository.xml` file. In such case, just fix the issue in the XML file, and redeploy the module.
 
 Otherwise, you will need to fix the node in the JCR, updating the property value to match the node name.  
 If the impacted nodes are automatically created, for example from some custom java code, it is important as well to identify & fix the faulty code, in order to avoid reintroducing the issue.
@@ -178,7 +186,65 @@ If an important number of nodes are impacted, you will need to write a script to
 
 ## NodeNameInfoSanityCheck
 
-_work in progress_
+Each node has a name and a path. This information is copied to properties on the nodes: `j:nodename` and `j:fullpath`.
+Renaming or moving a node, or one of its parents updates one or both properties. They are supposed to be automatically synchronized.
+
+The property `j:fullpath` is deprecated and will be removed from Jahia in a future version. 
+- If your code leverages this property, you should rewrite it. But you might want to enable the validation of the property in the meantime
+- Otherwise, you should not enable its validation, since no feature in the product leverages, and so an invalid value has no consequence 
+
+### Configuration
+
+| Name           |  Type   | Default Value | Description                                     |
+|----------------|:-------:|:-------------:|-------------------------------------------------|
+| check-fullpath | boolean |     false     | If `true`, the property `j:fullpath` is checked |
+
+### Dealing with errors
+
+#### Missing j:fullpath property
+
+`Error code: MISSING_FULLPATH`
+
+**Description**: `j:fullpath` is managed by the publication process. Therefore, it must be missing in the workspace `default` only on nodes which have never been published, and in the workspace `live` only on UGC nodes. But it must be present on every node which has been published at least once (no matter the current publication status).
+
+Republishing the node should be enough to add the missing property to the node, in `default` and `live`.
+
+#### Unexpected j:fullpath property
+
+`Error code: UNEXPECTED_FULLPATH`
+
+**Description**: `j:fullpath` is managed by the publication process. Therefore, it must be missing in the workspace `default` on nodes which have never been published, and in the workspace `live` on UGC nodes.
+
+Fixing this error is not critical, but identifying when and how this property has been created is important.
+The property can be deleted from the node to fix the error.
+
+#### Invalid j:fullpath property
+
+`Error code: INVALID_FULLPATH`
+
+**Description**: `j:fullpath` is managed by the publication process. Therefore, it must have as a value the path of the node at the time of the last publication. As a consequence, in each workspace the value must match the current path of the node in the `live` workspace.
+
+Republishing the node should be enough to fix the value of the property, in `default` and `live`.
+
+#### Missing j:nodename property
+
+`Error code: MISSING_NODENAME`
+
+**Description**: `j:nodename` is set when the node is created or renamed. It should be defined on any node.
+
+In the `default` workspace, renaming the node and then renaming it back to its current name should be sufficient to fix the error.
+Then, the node needs to be republished to propagate the fix to the `live`, if relevant.
+On UGC nodes, the property needs to be added using a script.
+
+#### Invalid j:nodename property
+
+`Error code: INVALID_NODENAME`
+
+**Description**: `j:nodename` is set when the node is created or renamed. It should always be consistent with the node name.
+
+In the `default` workspace, renaming the node and then renaming it back to its current name should be sufficient to fix the error.
+Then, the node needs to be republished to propagate the fix to the `live`, if relevant.
+On UGC nodes, the property needs to be modified using a script.
 
 ## PropertyDefinitionsSanityCheck
 
@@ -235,12 +301,14 @@ _work in progress_
 
 ## PublicationSanityDefaultCheck
 
-When a node is flagged as published in the `default` workspace, then a node with the same identifier must exist in the `live` workspace.  
+When a node is flagged as published in the `default` workspace or is of type `jmix:autoPublish`, then a node with the same identifier must exist in the `live` workspace.  
 If the node has no pending modification, then the path must be the same in the two workspaces.
 
 ### Dealing with errors
 
 If the node is flagged as published, but there's no live node with the same identifier, then you need to remove the property `j:published` from the node in the default workspace. Then you can republish the node if needed.
+
+If the node is of type `jmix:autoPublish`, but there's no live node with the same identifier, then you can do any modification on the node in `default`, what should trigger the publication of the node.
 
 If the node has no pending modification but its path differs in the `live` workspace, then you can do a fake modification on the node (for example, adding some blank at the end of a richtext, or changing the value of a property, and then setting back the initial value) in order to get back the possibility to publish the node. 
 
@@ -286,6 +354,19 @@ If a `site-privileged` group is not member of the `privileged` group, you need t
 If the `privileged` group is missing, you will need to recreate it, and then add every `site-privileged` group as a member.
 
 If the `site-privileged` group is missing, you will need to recreate it. Then, it will be required to identify the users/groups which need to be member of this group. 
+
+## StaticInternalLinksCheck
+
+In the rich text editor, one should use the "link" feature to create internal links, select a page, and let the software create the internal link correctly.
+But it happens that users copy the URL of a page from their browser's address bar, and paste it in the editor. As a consequence, the internal link is not considered as such, and is handled as an external link. As a consequence, the link gets broken if the target page is renamed or moved. And no warning is displayed if one deletes the target page.
+
+This check iterates the properties of type `string` and reports any occurrence of a domain declared on one of the websites (primary domain or alternative one).
+
+This check is disabled by default since the effect of the reported errors has a functional impact more than is a technical inconsistency, and because there's a high risk of false positives. 
+
+### Dealing with errors
+
+If a reported error is qualified as legit, then the content has to be fixed manually and republished if the error is present in live as well.
 
 ## TemplatesIndexationCheck
 
