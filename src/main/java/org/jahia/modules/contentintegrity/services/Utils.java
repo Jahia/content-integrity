@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.reporting.CsvReport;
+import org.jahia.modules.contentintegrity.services.reporting.ExcelReport;
 import org.jahia.modules.contentintegrity.services.reporting.Report;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRCallback;
@@ -24,14 +25,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -44,7 +47,7 @@ public class Utils {
     private static final String NODE_UNDER_MODULES_PATH_PREFIX = "/modules/";
     private static final char NODE_PATH_SEPARATOR_CHAR = '/';
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
-    private static final List<Class<? extends Report>> reportTypes = Collections.singletonList(CsvReport.class);
+    private static final List<Class<? extends Report>> reportTypes = Arrays.asList(ExcelReport.class, CsvReport.class);
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -325,10 +328,14 @@ public class Utils {
     }
 
     public static String getSiteKey(String path, boolean considerModulesAsSites) {
-        if (considerModulesAsSites && StringUtils.length(path) > NODE_UNDER_MODULES_PATH_PREFIX.length() && StringUtils.startsWith(path, NODE_UNDER_MODULES_PATH_PREFIX))
-            return StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1];
+        return getSiteKey(path, considerModulesAsSites, null);
+    }
 
-        return StringUtils.length(path) > NODE_UNDER_SITE_PATH_PREFIX.length() && StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
+    public static String getSiteKey(String path, boolean considerModulesAsSites, Function<String,String> moduleKeyRewriter) {
+        if (considerModulesAsSites && StringUtils.startsWith(path, NODE_UNDER_MODULES_PATH_PREFIX))
+            return Optional.ofNullable(moduleKeyRewriter).orElseGet(() -> key -> key).apply(StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1]);
+
+        return StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
                 StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1] : null;
     }
 

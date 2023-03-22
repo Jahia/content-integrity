@@ -26,7 +26,10 @@ import static org.jahia.modules.contentintegrity.services.Utils.getSiteKey;
 public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityErrorImpl.class);
-    public static final String EXTRA_MESSAGE_KEY = "extra-message";
+
+    private static final String EXTRA_MESSAGE_KEY = "extra-message";
+    private static final String MODULE_PREFIX = "module ";
+    private static final String NO_SITE = "<no site> ";
 
     private final String id;
     private final String path;
@@ -49,7 +52,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
                                       String locale, String constraintMessage, String integrityCheckName, String integrityCheckID) {
         id = UUID.randomUUID().toString();
         this.path = path;
-        site = getSiteKey(path);
+        site = Optional.ofNullable(getSiteKey(path, true, MODULE_PREFIX::concat)).orElse(NO_SITE);
         this.uuid = uuid;
         this.primaryType = primaryType;
         this.mixins = mixins;
@@ -211,7 +214,8 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     @Override
     public ContentIntegrityError setErrorType(Object type) {
-        if (errorType != null) throw new UnsupportedOperationException("Changing the error type afterwards is not permitted");
+        if (errorType != null)
+            throw new UnsupportedOperationException("Changing the error type afterwards is not permitted");
         if (type == null) throw new IllegalArgumentException("Setting an error type to null is not permitted");
         errorType = type;
         return this;

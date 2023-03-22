@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -276,20 +277,28 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         checkNode(node, activeChecks, errors, fixErrors, true, externalLogger);
         try {
             boolean hasNext;
-            final JCRNodeIteratorWrapper it;
+            final Iterator<JCRNodeWrapper> children;
+            int childIdx = 0;
             try {
                 beginComputingOwnTime();
-                it = node.getNodes();
-                hasNext = it.hasNext();
+                children = node.getNodes().iterator();
+                hasNext = children.hasNext();
             } finally {
                 endComputingOwnTime();
             }
+            JCRNodeWrapper child;
             while (hasNext) {
-                JCRNodeWrapper child;
+                childIdx++;
                 try {
                     beginComputingOwnTime();
-                    child = (JCRNodeWrapper) it.next();
-                    hasNext = it.hasNext(); // Not using a for loop so that it.hasNext() is part of the calculation of the duration of the scan
+                    try {
+                        child = children.next(); // Not using a for loop so that it.next() is part of the calculation of the duration of the scan, and internal errors can be catched
+                    } catch (Throwable t) {
+                        Utils.log(String.format("Impossible to load the child node %d of %s , skipping it and its subtree", childIdx, node.getPath()),
+                                Utils.LOG_LEVEL.ERROR, logger, t, externalLogger);
+                        continue;
+                    }
+                    hasNext = children.hasNext(); // Not calculating in the while loop so that it.hasNext() is part of the calculation of the duration of the scan
                     if (isNodeIgnored(child, node, skipMountPoints, externalLogger))
                         continue;
                 } finally {
@@ -348,7 +357,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         try {
             nbNodesToScan = calculateNbNodesToScan(node, excludedPaths, skipMountPoints, 0L, externalLogger);
             Utils.log(String.format("%s nodes to scan", nbNodesToScan), logger, externalLogger);
-        } catch (RepositoryException e) {
+        } catch (InterruptedScanException e) {
+            throw e;
+        } catch (Throwable e) {
             logger.error("", e);
         }
         nbNodesToScanCalculationDuration = System.currentTimeMillis() - start;
@@ -369,15 +380,25 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         if (count % SESSION_REFRESH_INTERVAL == 0)
             node.getSession().refresh(false);
 
-        final JCRNodeIteratorWrapper children;
+        final Iterator<JCRNodeWrapper> children;
+        int childIdx = 0;
         try {
-            children = node.getNodes();
+            children = node.getNodes().iterator();
         } catch (Throwable t) {
             Utils.log(String.format("Impossible to load the child nodes of %s , skipping them in the calculation of the number of nodes to scan", node.getPath()),
                     Utils.LOG_LEVEL.ERROR, logger, t, externalLogger);
             return count;
         }
-        for (JCRNodeWrapper child : children) {
+        JCRNodeWrapper child;
+        while (children.hasNext()) {
+            childIdx++;
+            try {
+                child = children.next();
+            } catch (Throwable t) {
+                Utils.log(String.format("Impossible to load the child %d node of %s , skipping it in the calculation of the number of nodes to scan", childIdx, node.getPath()),
+                        Utils.LOG_LEVEL.ERROR, logger, t, externalLogger);
+                continue;
+            }
             if (isNodeIgnored(child, node, skipMountPoints, externalLogger))
                 continue;
             count = calculateNbNodesToScan(child, excludedPaths, skipMountPoints, count, externalLogger);

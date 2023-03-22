@@ -280,9 +280,13 @@ const ReportFileListItem = (files) => {
     }).filter(f => f !== null)
     if (validFiles.length === 0) return ""
 
-    let out = validFiles.length > 1 ? "Reports:" : "Report:"
-    validFiles.forEach(({filename, path}) => out += ReportFileItem(filename, path))
-    return out
+    if (validFiles.length === 1) {
+        const file = validFiles[0]
+        return "Report: " + ReportFileItem(file.filename, file.path)
+    }
+    let out = "Reports:<ul>"
+    validFiles.forEach(({filename, path}) => out += `<li>${ReportFileItem(filename, path)}</li>`)
+    return out + "</ul>"
 }
 
 const ScanResultsSelectorItem = (ids) => {
@@ -531,7 +535,7 @@ function renderLogs(executionID) {
 }
 
 function setupLogsLoader(executionID) {
-    if (logsLoader !== null) clearInterval(logsLoader);
+    if (logsLoader !== null) STOP_PULLING_LOGS();
     renderLogs(executionID);
     logsLoader = setInterval((id) => {renderLogs(id)}, 5000, executionID)
 }
