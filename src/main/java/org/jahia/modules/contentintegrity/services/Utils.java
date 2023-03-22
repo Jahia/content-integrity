@@ -47,7 +47,7 @@ public class Utils {
     private static final String NODE_UNDER_MODULES_PATH_PREFIX = "/modules/";
     private static final char NODE_PATH_SEPARATOR_CHAR = '/';
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
-    private static final List<Class<? extends Report>> reportTypes = Arrays.asList(CsvReport.class, ExcelReport.class);
+    private static final List<Class<? extends Report>> reportTypes = Arrays.asList(ExcelReport.class, CsvReport.class);
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
