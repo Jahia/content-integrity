@@ -326,10 +326,10 @@ public class Utils {
     }
 
     public static String getSiteKey(String path, boolean considerModulesAsSites) {
-        if (considerModulesAsSites && StringUtils.length(path) > NODE_UNDER_MODULES_PATH_PREFIX.length() && StringUtils.startsWith(path, NODE_UNDER_MODULES_PATH_PREFIX))
+        if (considerModulesAsSites && StringUtils.startsWith(path, NODE_UNDER_MODULES_PATH_PREFIX))
             return StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1];
 
-        return StringUtils.length(path) > NODE_UNDER_SITE_PATH_PREFIX.length() && StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
+        return StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
                 StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1] : null;
     }
 
