@@ -531,7 +531,7 @@ function renderLogs(executionID) {
 }
 
 function setupLogsLoader(executionID) {
-    if (logsLoader !== null) clearInterval(logsLoader);
+    if (logsLoader !== null) STOP_PULLING_LOGS();
     renderLogs(executionID);
     logsLoader = setInterval((id) => {renderLogs(id)}, 5000, executionID)
 }
