@@ -31,8 +31,10 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -326,8 +328,12 @@ public class Utils {
     }
 
     public static String getSiteKey(String path, boolean considerModulesAsSites) {
+        return getSiteKey(path, considerModulesAsSites, null);
+    }
+
+    public static String getSiteKey(String path, boolean considerModulesAsSites, Function<String,String> moduleKeyRewriter) {
         if (considerModulesAsSites && StringUtils.startsWith(path, NODE_UNDER_MODULES_PATH_PREFIX))
-            return StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1];
+            return Optional.ofNullable(moduleKeyRewriter).orElseGet(() -> key -> key).apply(StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1]);
 
         return StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
                 StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1] : null;
