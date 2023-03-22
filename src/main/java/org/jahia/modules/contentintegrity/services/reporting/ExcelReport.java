@@ -49,7 +49,6 @@ public class ExcelReport extends Report {
         final Workbook wb = new XSSFWorkbook();
         final XSSFSheet sheet = (XSSFSheet) wb.createSheet(WorkbookUtil.createSafeSheetName(MAIN_SHEET_NAME));
 
-        String firstColName = null;
         int rowNum = 0;
         Row row;
         // Add header
@@ -57,9 +56,6 @@ public class ExcelReport extends Report {
             row = sheet.createRow((short) rowNum++);
             final String[] colNames = getColumns().toArray(new String[0]);
             final int nbColumns = colNames.length;
-            if (nbColumns > 0) {
-                firstColName = colNames[0];
-            }
             for (int i = 0; i < nbColumns; i++) {
                 row.createCell(i).setCellValue(colNames[i]);
             }
@@ -67,7 +63,6 @@ public class ExcelReport extends Report {
 
         final List<List<String>> content = getReportContent(results, excludeFixedErrors);
         if (CollectionUtils.isNotEmpty(content)) {
-            int nbFields;
             for (List<String> data : content) {
                 row = sheet.createRow((short) rowNum++);
                 for (int i = 0; i < data.size(); i++) {
@@ -88,22 +83,14 @@ public class ExcelReport extends Report {
                 new CellReference(1, 1), sheet);
         // Check ID
         pivotTable.addRowLabel(0);
+        // Error message
+        pivotTable.addRowLabel(10);
         // Workspace
         pivotTable.addRowLabel(3);
-        // Error message
-        pivotTable.addRowLabel(9);
-        // Node primary type
+        // Site
         pivotTable.addRowLabel(6);
-        // Extra information
-        pivotTable.addRowLabel(10);
-        // Node path
-        pivotTable.addRowLabel(5);
         // Count data
-        if (StringUtils.isNotEmpty(firstColName)) {
-            pivotTable.addColumnLabel(DataConsolidateFunction.COUNT, 2, "Count of " + firstColName);
-        } else {
-            pivotTable.addColumnLabel(DataConsolidateFunction.COUNT, 2, "Count");
-        }
+        pivotTable.addColumnLabel(DataConsolidateFunction.COUNT, 2, "Count");
 
         try {
             wb.write(stream);
