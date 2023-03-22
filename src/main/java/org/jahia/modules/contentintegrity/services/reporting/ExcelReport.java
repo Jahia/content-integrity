@@ -92,6 +92,8 @@ public class ExcelReport extends Report {
         // Count data
         pivotTable.addColumnLabel(DataConsolidateFunction.COUNT, 2, "Count");
 
+        wb.setSheetOrder(sheet.getSheetName(), wb.getNumberOfSheets() - 1);
+
         try {
             wb.write(stream);
         } catch (IOException e) {
