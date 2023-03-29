@@ -5,6 +5,7 @@ import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.utils.DatabaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,10 @@ import javax.jcr.Property;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
@@ -148,11 +153,35 @@ public class JCRUtils {
     }
 
     public static boolean nodeExists(String uuid, JCRSessionWrapper session) {
+        return nodeExists(uuid, session, false);
+    }
+
+    public static boolean nodeExists(String uuid, JCRSessionWrapper session, boolean verifyUnmountedVirtualNodes) {
         try {
-            session.getNodeByUUID(uuid);
+            session.getNodeByIdentifier(uuid);
             return true;
         } catch (RepositoryException e) {
+            return verifyUnmountedVirtualNodes && isVirtualNodeIdentifier(uuid);
+        }
+    }
+
+    public static boolean isVirtualNodeIdentifier(String uuid) {
+        Connection conn = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            conn = DatabaseUtils.getDatasource().getConnection();
+            statement = conn.prepareStatement("select * from jahia_external_mapping where internalUuid=?");
+            statement.setString(1, uuid);
+            resultSet = statement.executeQuery();
+            return resultSet.next();
+        } catch (SQLException throwables) {
+            //uuid is not an external reference
             return false;
+        } finally {
+            DatabaseUtils.closeQuietly(resultSet);
+            DatabaseUtils.closeQuietly(statement);
+            DatabaseUtils.closeQuietly(conn);
         }
     }
 
