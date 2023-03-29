@@ -5,6 +5,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
@@ -321,6 +322,14 @@ public class Utils {
         final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
         contentIntegrityService.storeErrorsInCache(mergedResults);
         return mergedResults;
+    }
+
+    public static ContentIntegrityErrorList mergeErrorLists(ContentIntegrityErrorList... errorLists) {
+        return Arrays.stream(errorLists)
+                .filter(Objects::nonNull)
+                .filter(ContentIntegrityErrorList::hasErrors)
+                .reduce(ContentIntegrityErrorList::addAll)
+                .orElse(null);
     }
 
     public static String getSiteKey(String path) {
