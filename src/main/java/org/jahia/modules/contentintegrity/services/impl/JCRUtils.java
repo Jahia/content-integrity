@@ -44,6 +44,10 @@ public class JCRUtils {
         return node.isNodeType(JMIX_ORIGIN_WS) && node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString());
     }
 
+    public static boolean isExternalNode(JCRNodeWrapper node) {
+        return !node.getProvider().isDefault();
+    }
+
     /**
      * Evaluates if the node has some pending modifications, and so the node can be published.
      * If the node has a translation sub node in the session language, this one is not considered, the calculation is done only on the node itself.

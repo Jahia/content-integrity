@@ -14,6 +14,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
@@ -406,10 +407,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         return count;
     }
 
-    private boolean isExternalNode(JCRNodeWrapper node) {
-        return !node.getProvider().isDefault();
-    }
-
     private boolean isNodeIgnored(JCRNodeWrapper node, JCRNodeWrapper parent, boolean skipMountPoints, ExternalLogger externalLogger) {
         final String path = node.getPath();
         if ("/jcr:system".equals(path)) {
@@ -422,7 +419,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             Utils.log(String.format("Ignoring a child node as it is not the child of its parent node, according to their respective paths: %s", path), Utils.LOG_LEVEL.ERROR, logger, externalLogger);
             return true;
         }
-        if (skipMountPoints && isExternalNode(node)) {
+        if (skipMountPoints && JCRUtils.isExternalNode(node)) {
             logger.info("Skipping {}", path);
             return true;
         } else return false;
