@@ -247,4 +247,27 @@ public class JCRUtils {
 
         return node;
     }
+
+    public static <R, T> R runJcrCallBack(T param, JcrCallBack<T, R> jcrCallBack) {
+        return runJcrCallBack(param, jcrCallBack, null);
+    }
+
+    public static <R, T> R runJcrCallBack(T param, JcrCallBack<T, R> jcrCallBack, R defaultValue) {
+        return runJcrCallBack(param, jcrCallBack, defaultValue, true);
+    }
+
+    public static <R, T> R runJcrCallBack(T param, JcrCallBack<T, R> jcrCallBack, R defaultValue, boolean logError) {
+        try {
+            return jcrCallBack.execute(param);
+        } catch (RepositoryException e) {
+            if (logError) {
+                logger.error("", e);
+            }
+            return defaultValue;
+        }
+    }
+
+    public interface JcrCallBack<T, R> {
+        R execute(T param) throws RepositoryException;
+    }
 }
