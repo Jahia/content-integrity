@@ -367,6 +367,14 @@ If the property is single-valued, then its value should be set to null, or anoth
 
 If the property is multi-valued, the invalid value should be removed from the list if some other values are valid, or the values should be updated.
 
+`BROKEN_REF_TO_VN`
+
+**Description**: the missing referenced node is a virtual node.
+
+If the virtual node is temporarily missing, for example because of a connectivity issue at `DataSource` level, the error has to be considered as false positive.
+
+If the virtual node is gone forever, then the property should be fixed the same way as for a regular node.
+
 #### Invalid back references
 
 `Error code: INVALID_BACK_REF`
@@ -377,7 +385,7 @@ This can happen only when the node holding the reference is a virtual node, the 
 
 If the virtual node is temporarily missing, for example because of a connectivity issue at `DataSource` level, the error has to be considered as false positive.
 
-If the virtual is gone forever, then the extension node should be deleted from the JCR, what will clean the reference as well.
+If the virtual node is gone forever, then the extension node should be deleted from the JCR, what will clean the reference as well.
 
 ## SiteLevelSystemGroupsCheck
 

@@ -45,7 +45,7 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
         return configurations;
     }
 
-    private enum ErrorType {INVALID_BACK_REF, BROKEN_REF}
+    private enum ErrorType {INVALID_BACK_REF, BROKEN_REF, BROKEN_REF_TO_VN}
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -100,7 +100,13 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
             case PropertyType.WEAKREFERENCE:
                 return JCRUtils.runJcrCallBack(value, v -> {
                     final String uuid = v.getString();
-                    if (JCRUtils.nodeExists(uuid, checkedNode.getSession(), true)) return null;
+                    if (JCRUtils.nodeExists(uuid, checkedNode.getSession())) return null;
+                    if (JCRUtils.isVirtualNodeIdentifier(uuid)) {
+                        return createSingleError(createError(checkedNode, "Broken reference to a virtual node")
+                                .setErrorType(ErrorType.BROKEN_REF_TO_VN)
+                                .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Property::getName, CALCULATION_ERROR))
+                                .addExtraInfo("missing-uuid", uuid, true));
+                    }
                     return createSingleError(createError(checkedNode, "Broken reference")
                             .setErrorType(ErrorType.BROKEN_REF)
                             .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Property::getName, CALCULATION_ERROR))
