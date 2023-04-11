@@ -349,15 +349,14 @@ public class Utils {
     }
 
     public static String getApproximateCount(long count, long threshold) {
-        final long rangeBottom, rangeTop;
-        if (count < threshold * APPROXIMATE_COUNT_FACTOR) {
-            rangeBottom = Math.floorDiv(count, threshold) * threshold;
-            rangeTop = rangeBottom + threshold;
-        } else {
-            long i = APPROXIMATE_COUNT_FACTOR;
-            while (count > i * APPROXIMATE_COUNT_FACTOR) i *= APPROXIMATE_COUNT_FACTOR;
-            rangeBottom = threshold * i;
-            rangeTop = threshold * i * APPROXIMATE_COUNT_FACTOR;
+        if (count < 0) throw new IllegalArgumentException(String.format("The count can't be negative: %d", count));
+        if (threshold <= 0) throw new IllegalArgumentException(String.format("The threshold can't be negative or equal to zero: %d", threshold));
+
+        long rangeBottom = 0;
+        long rangeTop = threshold;
+        while (count > rangeTop) {
+            rangeBottom = rangeTop;
+            rangeTop *= APPROXIMATE_COUNT_FACTOR;
         }
         return String.format("%d - %d", rangeBottom, rangeTop);
     }
