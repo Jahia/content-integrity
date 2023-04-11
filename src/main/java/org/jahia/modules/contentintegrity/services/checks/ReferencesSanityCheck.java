@@ -1,9 +1,11 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
@@ -21,11 +23,27 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULATION_ERROR;
+import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
-public class ReferencesSanityCheck extends AbstractContentIntegrityCheck {
+public class ReferencesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
 
     private static final Logger logger = LoggerFactory.getLogger(ReferencesSanityCheck.class);
+    private static final String VALIDATE_REFS = "validate-refs";
+    private static final String VALIDATE_BACK_REFS = "validate-back-refs";
+
+    private final ContentIntegrityCheckConfiguration configurations;
+
+    public ReferencesSanityCheck() {
+        configurations = new ContentIntegrityCheckConfigurationImpl();
+        configurations.declareDefaultParameter(VALIDATE_REFS, Boolean.TRUE, BOOLEAN_PARSER, "Check the references sanity");
+        configurations.declareDefaultParameter(VALIDATE_BACK_REFS, Boolean.FALSE, BOOLEAN_PARSER, "Check the back references sanity");
+    }
+
+    @Override
+    public ContentIntegrityCheckConfiguration getConfigurations() {
+        return configurations;
+    }
 
     private enum ErrorType {INVALID_BACK_REF, BROKEN_REF}
 
@@ -38,6 +56,8 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck {
     }
 
     private ContentIntegrityErrorList checkReferences(JCRNodeWrapper node) {
+        if (!((Boolean) getConfigurations().getParameter(VALIDATE_REFS))) return null;
+
         final PropertyIterator properties = JCRUtils.runJcrCallBack(node, Node::getProperties);
         if (properties == null) return null;
 
@@ -92,6 +112,8 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck {
     }
 
     private ContentIntegrityErrorList checkBackReferences(JCRNodeWrapper node) {
+        if (!((Boolean) getConfigurations().getParameter(VALIDATE_BACK_REFS))) return null;
+
         final PropertyIterator weakReferences = JCRUtils.isExternalNode(node) ? null : JCRUtils.runJcrCallBack(node, Node::getWeakReferences);
         final PropertyIterator references = JCRUtils.isExternalNode(node) ? null : JCRUtils.runJcrCallBack(node, Node::getReferences);
         return Utils.mergeErrorLists(
