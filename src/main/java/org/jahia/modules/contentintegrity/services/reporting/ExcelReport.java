@@ -46,6 +46,12 @@ public class ExcelReport extends Report {
 
     @Override
     public void write(OutputStream stream, ContentIntegrityResults results, boolean withColumnHeaders, boolean excludeFixedErrors) throws IOException {
+        final int maxRows = SpreadsheetVersion.EXCEL2007.getLastRowIndex();
+        if ((results.getErrors().size() + 1) > maxRows) {
+            logger.error(String.format("The number of errors is too high to be written in an Excel sheet. Max number of rows: %d", maxRows));
+            return;
+        }
+
         final Workbook wb = new XSSFWorkbook();
         final XSSFSheet sheet = (XSSFSheet) wb.createSheet(WorkbookUtil.createSafeSheetName(MAIN_SHEET_NAME));
 
@@ -53,7 +59,7 @@ public class ExcelReport extends Report {
         Row row;
         // Add header
         if (withColumnHeaders) {
-            row = sheet.createRow((short) rowNum++);
+            row = sheet.createRow(rowNum++);
             final String[] colNames = getColumns().toArray(new String[0]);
             final int nbColumns = colNames.length;
             for (int i = 0; i < nbColumns; i++) {
@@ -64,7 +70,7 @@ public class ExcelReport extends Report {
         final List<List<String>> content = getReportContent(results, excludeFixedErrors);
         if (CollectionUtils.isNotEmpty(content)) {
             for (List<String> data : content) {
-                row = sheet.createRow((short) rowNum++);
+                row = sheet.createRow(rowNum++);
                 for (int i = 0; i < data.size(); i++) {
                     row.createCell(i).setCellValue(data.get(i));
                 }

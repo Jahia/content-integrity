@@ -183,8 +183,8 @@ public class Utils {
                         } catch (InstantiationException | IllegalAccessException e) {
                             logger.error("Impossible to load the report generator", e);
                             return;
-                        } catch (IOException e) {
-                            logger.error("Impossible to generate the report content", e);
+                        } catch (Throwable t) {
+                            logger.error("Impossible to generate the report content", t);
                             return;
                         }
                         final byte[] bytes = out.toByteArray();
