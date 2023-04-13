@@ -1,7 +1,6 @@
 package org.jahia.modules.contentintegrity.services.impl;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -25,11 +24,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
-import static org.jahia.api.Constants.JCR_LASTMODIFIED;
-import static org.jahia.api.Constants.LASTPUBLISHED;
-import static org.jahia.api.Constants.LIVE_WORKSPACE;
-import static org.jahia.api.Constants.ORIGIN_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LASTMODIFIED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ORIGIN_WORKSPACE;
 
 public class JCRUtils {
 

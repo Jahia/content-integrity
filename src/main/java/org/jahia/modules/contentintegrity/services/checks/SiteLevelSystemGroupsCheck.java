@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import java.util.Collection;
 
-import static org.jahia.api.Constants.EDIT_WORKSPACE;
-import static org.jahia.api.Constants.JAHIANT_VIRTUALSITE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_VIRTUALSITE;
 import static org.jahia.services.usermanager.JahiaGroupManagerService.PRIVILEGED_GROUPNAME;
 import static org.jahia.services.usermanager.JahiaGroupManagerService.SITE_PRIVILEGED_GROUPNAME;
 

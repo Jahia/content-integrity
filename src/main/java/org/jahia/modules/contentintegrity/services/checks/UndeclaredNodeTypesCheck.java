@@ -20,8 +20,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
-import static org.jahia.api.Constants.JCR_MIXINTYPES;
-import static org.jahia.api.Constants.JCR_PRIMARYTYPE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_MIXINTYPES;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PRIMARYTYPE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
 public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {

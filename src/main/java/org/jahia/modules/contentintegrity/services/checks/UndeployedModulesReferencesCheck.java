@@ -1,12 +1,12 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.jahia.api.Constants;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRNodeWrapper;

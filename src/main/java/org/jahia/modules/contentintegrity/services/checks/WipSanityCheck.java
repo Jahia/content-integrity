@@ -15,15 +15,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import static org.jahia.api.Constants.EDIT_WORKSPACE;
-import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
-import static org.jahia.api.Constants.JAHIANT_TRANSLATION;
-import static org.jahia.api.Constants.WORKINPROGRESS;
-import static org.jahia.api.Constants.WORKINPROGRESS_LANGUAGES;
-import static org.jahia.api.Constants.WORKINPROGRESS_STATUS;
-import static org.jahia.api.Constants.WORKINPROGRESS_STATUS_ALLCONTENT;
-import static org.jahia.api.Constants.WORKINPROGRESS_STATUS_DISABLED;
-import static org.jahia.api.Constants.WORKINPROGRESS_STATUS_LANG;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_TRANSLATION;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_LANGUAGES;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_ALLCONTENT;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_DISABLED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_LANG;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + EDIT_WORKSPACE,

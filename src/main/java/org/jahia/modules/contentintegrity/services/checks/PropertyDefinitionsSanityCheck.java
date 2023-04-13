@@ -4,13 +4,13 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.value.InternalValue;
 import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.external.ExternalNodeImpl;
@@ -47,7 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.jahia.api.Constants.JAHIANT_TRANSLATION;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_TRANSLATION;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=" + JAHIANT_TRANSLATION

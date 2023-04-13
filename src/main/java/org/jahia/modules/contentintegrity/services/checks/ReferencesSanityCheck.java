@@ -1,7 +1,6 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
@@ -25,7 +24,7 @@ import javax.jcr.nodetype.PropertyDefinition;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static org.jahia.api.Constants.MIX_VERSIONABLE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.MIX_VERSIONABLE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULATION_ERROR;
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 

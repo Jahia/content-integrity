@@ -2,12 +2,12 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -31,9 +31,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static org.jahia.api.Constants.EDIT_WORKSPACE;
-import static org.jahia.api.Constants.LIVE_WORKSPACE;
-import static org.jahia.api.Constants.ORIGIN_WORKSPACE;
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
@@ -93,7 +90,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
-            final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(EDIT_WORKSPACE, true);
+            final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(Constants.EDIT_WORKSPACE, true);
             if (JCRUtils.isUGCNode(node)) {
                 // UGC
                 // TODO: check if there's a node with the same ID in default

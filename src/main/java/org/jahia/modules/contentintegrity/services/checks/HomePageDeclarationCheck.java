@@ -1,10 +1,10 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 
-import static org.jahia.api.Constants.EDIT_WORKSPACE;
-import static org.jahia.api.Constants.JAHIANT_PAGE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_PAGE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,

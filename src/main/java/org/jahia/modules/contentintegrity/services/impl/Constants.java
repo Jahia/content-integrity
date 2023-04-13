@@ -3,7 +3,7 @@ package org.jahia.modules.contentintegrity.services.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Constants {
+public class Constants extends org.jahia.api.Constants {
 
     private static final Logger logger = LoggerFactory.getLogger(Constants.class);
 

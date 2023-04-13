@@ -1,9 +1,9 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.osgi.service.component.annotations.Component;
