@@ -212,6 +212,14 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return ContentIntegrityErrorImpl.createError(node, null, message, this);
     }
 
+    protected final ContentIntegrityError createErrorI18n(JCRNodeWrapper node, String message) {
+        return JCRUtils.runJcrCallBack(node, n -> {
+            if (n.isNodeType(Constants.JAHIANT_TRANSLATION))
+                return ContentIntegrityErrorImpl.createError(node.getParent(), JCRUtils.getTranslationNodeLocale(n), message, this);
+            return ContentIntegrityErrorImpl.createError(n, null, message, this);
+        });
+    }
+
     protected final ContentIntegrityErrorList createEmptyErrorsList() {
         return ContentIntegrityErrorListImpl.createEmptyList();
     }
