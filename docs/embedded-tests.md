@@ -350,10 +350,11 @@ Properties of type `weakreference` can hold a broken reference by design (this s
 
 ### Configuration
 
-| Name               |  Type   | Default Value | Description                                                                                                                                  |
-|--------------------|:-------:|:-------------:|----------------------------------------------------------------------------------------------------------------------------------------------|
-| validate-refs      | boolean |     true      | If true, the value of every property of type `reference` / `weakreference` will be inspected                                                 |
-| validate-back-refs | boolean |     false     | If true, the references pointing to the current node will be evaluated. This operation is time consuming and will increase the scan duration |
+| Name                     |  Type   | Default Value | Description                                                                                                                                                  |
+|--------------------------|:-------:|:-------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| validate-refs            | boolean |     true      | If true, the value of every property of type `reference` / `weakreference` will be inspected                                                                 |
+| validate-back-refs       | boolean |     false     | If true, the references pointing to the current node will be evaluated. This operation is time consuming and will increase the scan duration                 |
+| validate-version-history | boolean |     false     | If true, the references used to link the node to its version history will be evaluated. This operation is time consuming and will increase the scan duration |
 
 ### Dealing with errors
 

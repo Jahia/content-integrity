@@ -1,5 +1,7 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.apache.commons.lang.StringUtils;
+import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
@@ -19,9 +21,11 @@ import javax.jcr.PropertyIterator;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
+import javax.jcr.nodetype.PropertyDefinition;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static org.jahia.api.Constants.MIX_VERSIONABLE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULATION_ERROR;
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
@@ -31,6 +35,7 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
     private static final Logger logger = LoggerFactory.getLogger(ReferencesSanityCheck.class);
     private static final String VALIDATE_REFS = "validate-refs";
     private static final String VALIDATE_BACK_REFS = "validate-back-refs";
+    private static final String VALIDATE_VERSION_HISTORY = "validate-version-history";
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -38,6 +43,7 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
         configurations = new ContentIntegrityCheckConfigurationImpl();
         configurations.declareDefaultParameter(VALIDATE_REFS, Boolean.TRUE, BOOLEAN_PARSER, "Check the references sanity");
         configurations.declareDefaultParameter(VALIDATE_BACK_REFS, Boolean.FALSE, BOOLEAN_PARSER, "Check the back references sanity");
+        configurations.declareDefaultParameter(VALIDATE_VERSION_HISTORY, Boolean.FALSE, BOOLEAN_PARSER, "Check the version history");
     }
 
     @Override
@@ -65,13 +71,18 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
 
         while (properties.hasNext()) {
             final Property property = properties.nextProperty();
+            final PropertyDefinition definition;
             try {
-                property.getDefinition();
+                definition = property.getDefinition();
                 property.getType();
             } catch (RepositoryException e) {
                 logger.error(String.format("Skipping %s as its definition is inconsistent", JCRUtils.runJcrCallBack(property, Item::getPath, CALCULATION_ERROR)), e);
                 continue;
             }
+            if (!((Boolean) getConfigurations().getParameter(VALIDATE_VERSION_HISTORY)) && StringUtils.equals(definition.getDeclaringNodeType().getName(), MIX_VERSIONABLE)) {
+                continue;
+            }
+
             final Boolean isMultiple = JCRUtils.runJcrCallBack(property, Property::isMultiple);
             if (isMultiple == null) continue;
 
