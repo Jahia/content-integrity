@@ -43,20 +43,36 @@ public interface ContentIntegrityError {
 
     /**
      * Specifies an extra information which is useful to analyze and understand the error.
+     * <p>
+     * Shortcut to {@link #addExtraInfo(String, Object, boolean) addExtraInfo(key, value, false)}
      *
-     * Shortcut to addExtraInfo(key, value, false)
-     *
-     * @param key
-     * @param value
-     * @return
+     * @param key   the key
+     * @param value the value
+     * @return the current error
      */
     ContentIntegrityError addExtraInfo(String key, Object value);
 
+    /**
+     * Specifies an extra information which is useful to analyze and understand the error.
+     * <p>
+     * Errors flagged as specific or not will be separated in the generated reports, not specific infos being useful to aggregate similar errors where specific infos make each error unique.
+     *
+     * @param key             the key
+     * @param value           the value
+     * @param isErrorSpecific true if the info can't be used for aggregation, false otherwise
+     * @return the current error
+     */
     ContentIntegrityError addExtraInfo(String key, Object value, boolean isErrorSpecific);
 
     ContentIntegrityError setErrorType(Object type);
 
     Object getErrorType();
 
+    /**
+     * Defines a message to help understanding the error. This message is not embedded in the report.
+     *
+     * @param msg the text of the message
+     * @return the current error
+     */
     ContentIntegrityError setExtraMsg(String msg);
 }
