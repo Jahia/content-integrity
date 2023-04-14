@@ -112,12 +112,12 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
                     final String uuid = v.getString();
                     if (JCRUtils.nodeExists(uuid, checkedNode.getSession())) return null;
                     if (JCRUtils.isVirtualNodeIdentifier(uuid)) {
-                        return createSingleError(createErrorI18n(checkedNode, "Broken reference to a virtual node")
+                        return createSingleError(createPropertyRelatedError(checkedNode, "Broken reference to a virtual node")
                                 .setErrorType(ErrorType.BROKEN_REF_TO_VN)
                                 .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Property::getName, CALCULATION_ERROR))
                                 .addExtraInfo("missing-uuid", uuid, true));
                     }
-                    return createSingleError(createErrorI18n(checkedNode, "Broken reference")
+                    return createSingleError(createPropertyRelatedError(checkedNode, "Broken reference")
                             .setErrorType(ErrorType.BROKEN_REF)
                             .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Property::getName, CALCULATION_ERROR))
                             .addExtraInfo("missing-uuid", uuid, true));
