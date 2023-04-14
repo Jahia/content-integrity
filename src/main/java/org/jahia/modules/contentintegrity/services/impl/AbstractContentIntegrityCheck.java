@@ -222,10 +222,10 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
      * @return an error object
      */
     protected final ContentIntegrityError createPropertyRelatedError(JCRNodeWrapper node, String message) {
-        return JCRUtils.runJcrCallBack(node, n -> {
-            if (n.isNodeType(Constants.JAHIANT_TRANSLATION))
-                return ContentIntegrityErrorImpl.createError(n.getParent(), JCRUtils.getTranslationNodeLocale(n), message, this);
-            return createError(n, message);
+        return JCRUtils.runJcrSupplierCallBack(() -> {
+            if (node.isNodeType(Constants.JAHIANT_TRANSLATION))
+                return ContentIntegrityErrorImpl.createError(node.getParent(), JCRUtils.getTranslationNodeLocale(node), message, this);
+            return createError(node, message);
         });
     }
 

@@ -108,8 +108,8 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
         switch (value.getType()) {
             case PropertyType.REFERENCE:
             case PropertyType.WEAKREFERENCE:
-                return JCRUtils.runJcrCallBack(value, v -> {
-                    final String uuid = v.getString();
+                return JCRUtils.runJcrSupplierCallBack(() -> {
+                    final String uuid = value.getString();
                     if (JCRUtils.nodeExists(uuid, checkedNode.getSession())) return null;
                     if (JCRUtils.isVirtualNodeIdentifier(uuid)) {
                         return createSingleError(createPropertyRelatedError(checkedNode, "Broken reference to a virtual node")
@@ -153,7 +153,7 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
                 errors.addError(createError(checkedNode, "Missing referencing node")
                         .setErrorType(ErrorType.INVALID_BACK_REF)
                         .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Item::getName, CALCULATION_ERROR))
-                        .addExtraInfo("referencing-node-path", JCRUtils.runJcrCallBack(property, p -> p.getParent().getPath(), CALCULATION_ERROR), true));
+                        .addExtraInfo("referencing-node-path", JCRUtils.runJcrSupplierCallBack(() -> property.getParent().getPath(), CALCULATION_ERROR), true));
             }
         }
         return errors;
