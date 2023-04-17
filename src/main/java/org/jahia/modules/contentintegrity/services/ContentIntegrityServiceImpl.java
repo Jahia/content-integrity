@@ -5,6 +5,7 @@ import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.bin.Jahia;
+import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
@@ -145,7 +146,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
 
         try {
-            JCRSessionFactory.getInstance().closeAllSessions();
+            JcrSessionFilter.endRequest();
             final JCRSessionWrapper session = JCRUtils.getSystemSession(workspace);
             if (session == null) return null;
 
@@ -207,7 +208,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
             }
         } finally {
-            JCRSessionFactory.getInstance().closeAllSessions();
+            JcrSessionFilter.endRequest();
             System.clearProperty(INTERRUPT_PROP_NAME);
             semaphore.release();
         }
