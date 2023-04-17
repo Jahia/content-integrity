@@ -5,6 +5,7 @@ import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.bin.Jahia;
+import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.exceptions.JahiaException;
 import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
@@ -14,10 +15,10 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
-import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -35,11 +36,9 @@ import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
@@ -147,14 +146,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         }
 
         try {
-            JCRSessionFactory.getInstance().closeAllSessions();
-            final JCRSessionWrapper session;
-            try {
-                session = getSystemSession(workspace);
-            } catch (RepositoryException e) {
-                logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
-                return null;
-            }
+            JcrSessionFilter.endRequest();
+            final JCRSessionWrapper session = JCRUtils.getSystemSession(workspace);
+            if (session == null) return null;
+
             try {
                 final JCRNodeWrapper node = session.getNode(path);
                 final String excludedPathsDesc = CollectionUtils.isNotEmpty(excludedPaths) ?
@@ -213,7 +208,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
             }
         } finally {
-            JCRSessionFactory.getInstance().closeAllSessions();
+            JcrSessionFilter.endRequest();
             System.clearProperty(INTERRUPT_PROP_NAME);
             semaphore.release();
         }
@@ -406,10 +401,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         return count;
     }
 
-    private boolean isExternalNode(JCRNodeWrapper node) {
-        return !node.getProvider().isDefault();
-    }
-
     private boolean isNodeIgnored(JCRNodeWrapper node, JCRNodeWrapper parent, boolean skipMountPoints, ExternalLogger externalLogger) {
         final String path = node.getPath();
         if ("/jcr:system".equals(path)) {
@@ -422,7 +413,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             Utils.log(String.format("Ignoring a child node as it is not the child of its parent node, according to their respective paths: %s", path), Utils.LOG_LEVEL.ERROR, logger, externalLogger);
             return true;
         }
-        if (skipMountPoints && isExternalNode(node)) {
+        if (skipMountPoints && JCRUtils.isExternalNode(node)) {
             logger.info("Skipping {}", path);
             return true;
         } else return false;
@@ -464,7 +455,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     public void fixErrors(List<ContentIntegrityError> errors) {
-        final Map<String, JCRSessionWrapper> sessions = new HashMap<>();
         for (ContentIntegrityError error : errors) {
             final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
             if (integrityCheck == null) {
@@ -474,16 +464,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
 
             final String workspace = error.getWorkspace();
-            JCRSessionWrapper session = sessions.get(workspace);
-            if (session == null) {
-                try {
-                    session = getSystemSession(workspace);
-                } catch (RepositoryException e) {
-                    logger.error(String.format("Impossible to get the session for workspace %s", workspace), e);
-                    continue;
-                }
-                sessions.put(workspace, session);
-            }
+            final JCRSessionWrapper session = JCRUtils.getSystemSession(workspace);
+            if (session == null) continue;
+
             try {
                 final String uuid = error.getUuid();
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
@@ -494,10 +477,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 logger.error(String.format("Failed to fix the error %s", error.toJSON()), e);
             }
         }
-    }
-
-    private JCRSessionWrapper getSystemSession(String workspace) throws RepositoryException {
-        return JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
     }
 
     @Override

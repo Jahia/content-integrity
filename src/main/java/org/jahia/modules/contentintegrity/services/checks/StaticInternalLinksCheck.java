@@ -1,12 +1,12 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.sites.JahiaSitesService;
@@ -50,7 +50,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck {
     @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         try {
-            final JCRSessionWrapper systemSession = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null);
+            final JCRSessionWrapper systemSession = JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, false);
             JahiaSitesService.getInstance().getSitesNodeList(systemSession).stream()
                     .map(JCRSiteNode::getAllServerNames)
                     .forEach(domains::addAll);

@@ -212,6 +212,23 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return ContentIntegrityErrorImpl.createError(node, null, message, this);
     }
 
+    /**
+     * Creates an error related to a property.
+     * If the node is a translation node, the error will be linked to the parent node, and the locale will be calculated from the translation node.
+     * Otherwise, the effect is the same as with {@link #createError(JCRNodeWrapper, String) createError}
+     *
+     * @param node    the node which holds the property
+     * @param message the error message
+     * @return an error object
+     */
+    protected final ContentIntegrityError createPropertyRelatedError(JCRNodeWrapper node, String message) {
+        return JCRUtils.runJcrSupplierCallBack(() -> {
+            if (node.isNodeType(Constants.JAHIANT_TRANSLATION))
+                return ContentIntegrityErrorImpl.createError(node.getParent(), JCRUtils.getTranslationNodeLocale(node), message, this);
+            return createError(node, message);
+        });
+    }
+
     protected final ContentIntegrityErrorList createEmptyErrorsList() {
         return ContentIntegrityErrorListImpl.createEmptyList();
     }

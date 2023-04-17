@@ -1,10 +1,10 @@
 package org.jahia.modules.contentintegrity.services.impl;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.utils.DatabaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +13,10 @@ import javax.jcr.Property;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
@@ -20,11 +24,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
-import static org.jahia.api.Constants.JCR_LASTMODIFIED;
-import static org.jahia.api.Constants.LASTPUBLISHED;
-import static org.jahia.api.Constants.LIVE_WORKSPACE;
-import static org.jahia.api.Constants.ORIGIN_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LASTMODIFIED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ORIGIN_WORKSPACE;
 
 public class JCRUtils {
 
@@ -42,6 +46,10 @@ public class JCRUtils {
         if (!StringUtils.equals(node.getSession().getWorkspace().getName(), Constants.LIVE_WORKSPACE))
             throw new IllegalArgumentException("Only nodes from the live workspace can be tested");
         return node.isNodeType(JMIX_ORIGIN_WS) && node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString());
+    }
+
+    public static boolean isExternalNode(JCRNodeWrapper node) {
+        return !node.getProvider().isDefault();
     }
 
     /**
@@ -144,11 +152,35 @@ public class JCRUtils {
     }
 
     public static boolean nodeExists(String uuid, JCRSessionWrapper session) {
+        return nodeExists(uuid, session, false);
+    }
+
+    public static boolean nodeExists(String uuid, JCRSessionWrapper session, boolean verifyUnmountedVirtualNodes) {
         try {
-            session.getNodeByUUID(uuid);
+            session.getNodeByIdentifier(uuid);
             return true;
         } catch (RepositoryException e) {
+            return verifyUnmountedVirtualNodes && isVirtualNodeIdentifier(uuid);
+        }
+    }
+
+    public static boolean isVirtualNodeIdentifier(String uuid) {
+        Connection conn = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            conn = DatabaseUtils.getDatasource().getConnection();
+            statement = conn.prepareStatement("select * from jahia_external_mapping where internalUuid=?");
+            statement.setString(1, uuid);
+            resultSet = statement.executeQuery();
+            return resultSet.next();
+        } catch (SQLException throwables) {
+            //uuid is not an external reference
             return false;
+        } finally {
+            DatabaseUtils.closeQuietly(resultSet);
+            DatabaseUtils.closeQuietly(statement);
+            DatabaseUtils.closeQuietly(conn);
         }
     }
 
@@ -242,5 +274,51 @@ public class JCRUtils {
         }
 
         return node;
+    }
+
+    public static <R> R runJcrSupplierCallBack(JcrSupplierCallBack<R> jcrCallBack) {
+        return runJcrSupplierCallBack(jcrCallBack, (R) null);
+    }
+
+    public static <R> R runJcrSupplierCallBack(JcrSupplierCallBack<R> jcrCallBack, R defaultValue) {
+        return runJcrSupplierCallBack(jcrCallBack, defaultValue, true);
+    }
+
+    public static <R> R runJcrSupplierCallBack(JcrSupplierCallBack<R> jcrCallBack, R defaultValue, boolean logError) {
+        try {
+            return jcrCallBack.execute();
+        } catch (RepositoryException e) {
+            if (logError) {
+                logger.error("", e);
+            }
+            return defaultValue;
+        }
+    }
+
+    public interface JcrSupplierCallBack<R> {
+        R execute() throws RepositoryException;
+    }
+
+    public static <R, T> R runJcrCallBack(T param, JcrCallBack<T, R> jcrCallBack) {
+        return runJcrCallBack(param, jcrCallBack, null);
+    }
+
+    public static <R, T> R runJcrCallBack(T param, JcrCallBack<T, R> jcrCallBack, R defaultValue) {
+        return runJcrCallBack(param, jcrCallBack, defaultValue, true);
+    }
+
+    public static <R, T> R runJcrCallBack(T param, JcrCallBack<T, R> jcrCallBack, R defaultValue, boolean logError) {
+        try {
+            return jcrCallBack.execute(param);
+        } catch (RepositoryException e) {
+            if (logError) {
+                logger.error("", e);
+            }
+            return defaultValue;
+        }
+    }
+
+    public interface JcrCallBack<T, R> {
+        R execute(T param) throws RepositoryException;
     }
 }

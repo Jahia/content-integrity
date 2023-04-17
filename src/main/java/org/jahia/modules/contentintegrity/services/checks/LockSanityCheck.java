@@ -1,11 +1,11 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.osgi.service.component.ComponentContext;
@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import java.util.HashSet;
 
-import static org.jahia.api.Constants.JCR_LOCKISDEEP;
-import static org.jahia.api.Constants.JCR_LOCKOWNER;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LOCKISDEEP;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LOCKOWNER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE,

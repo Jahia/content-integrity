@@ -72,7 +72,7 @@ You have to write a java class to implement your custom check.
         @Override
         public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
             try {
-                JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null).getNode(node.getPath());
+                JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, false).getNode(node.getPath());
             } catch (RepositoryException e) {
                 return createSingleError(node, "The site has been partially deleted");
             }

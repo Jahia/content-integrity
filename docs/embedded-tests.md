@@ -13,6 +13,7 @@
   * [PropertyDefinitionsSanityCheck](#propertydefinitionssanitycheck)
   * [PublicationSanityDefaultCheck](#publicationsanitydefaultcheck)
   * [PublicationSanityLiveCheck](#publicationsanitylivecheck)
+  * [ReferencesSanityCheck](#referencessanitycheck)
   * [SiteLevelSystemGroupsCheck](#sitelevelsystemgroupscheck)
   * [StaticInternalLinksCheck](#staticInternalLinksCheck)
   * [TemplatesIndexationCheck](#templatesindexationcheck)
@@ -191,7 +192,7 @@ Renaming or moving a node, or one of its parents updates one or both properties.
 
 The property `j:fullpath` is deprecated and will be removed from Jahia in a future version. 
 - If your code leverages this property, you should rewrite it. But you might want to enable the validation of the property in the meantime
-- Otherwise, you should not enable its validation, since no feature in the product leverages, and so an invalid value has no consequence 
+- Otherwise, you should not enable its validation, since no feature in the product leverages it, and so an invalid value has no consequence 
 
 ### Configuration
 
@@ -341,6 +342,51 @@ If the node is the remaining of a failed deletion, which has been completed only
 If the node is incorrectly missing in `default`, you need to delete the `live` node, recreate the `default` node, and republish it.
 
 _work in progress_
+
+## ReferencesSanityCheck
+
+When properties of type `weakreference` or `reference` have a value, this value is a reference to another node in the same workspace.
+Properties of type `weakreference` can hold a broken reference by design (this should not be possible with `reference`), mostly when you delete a node which is referenced from another one.
+
+### Configuration
+
+| Name                     |  Type   | Default Value | Description                                                                                                                                                  |
+|--------------------------|:-------:|:-------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| validate-refs            | boolean |     true      | If true, the value of every property of type `reference` / `weakreference` will be inspected                                                                 |
+| validate-back-refs       | boolean |     false     | If true, the references pointing to the current node will be evaluated. This operation is time consuming and will increase the scan duration                 |
+| validate-version-history | boolean |     false     | If true, the references used to link the node to its version history will be evaluated. This operation is time consuming and will increase the scan duration |
+
+### Dealing with errors
+
+#### Broken references
+
+`Error code: BROKEN_REF`
+
+**Description**: the property has a not `null` value, but the referenced node is missing.
+
+If the property is single-valued, then its value should be set to null, or another node should be referenced. If the property is mandatory, only the latter option is possible.
+
+If the property is multi-valued, the invalid value should be removed from the list if some other values are valid, or the values should be updated.
+
+`BROKEN_REF_TO_VN`
+
+**Description**: the missing referenced node is a virtual node.
+
+If the virtual node is temporarily missing, for example because of a connectivity issue at `DataSource` level, the error has to be considered as false positive.
+
+If the virtual node is gone forever, then the property should be fixed the same way as for a regular node.
+
+#### Invalid back references
+
+`Error code: INVALID_BACK_REF`
+
+**Description**: the node is referenced by a node which is missing.
+
+This can happen only when the node holding the reference is a virtual node, the property is not virtual, and this node is not exposed by the `DataSource` at the time of the scan.
+
+If the virtual node is temporarily missing, for example because of a connectivity issue at `DataSource` level, the error has to be considered as false positive.
+
+If the virtual node is gone forever, then the extension node should be deleted from the JCR, what will clean the reference as well.
 
 ## SiteLevelSystemGroupsCheck
 

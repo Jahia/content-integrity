@@ -1,9 +1,9 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 
-import static org.jahia.api.Constants.JCR_LANGUAGE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LANGUAGE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_TRANSLATION

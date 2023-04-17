@@ -3,10 +3,11 @@ package org.jahia.modules.contentintegrity.services;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.reporting.CsvReport;
 import org.jahia.modules.contentintegrity.services.reporting.ExcelReport;
@@ -47,7 +48,7 @@ public class Utils {
     private static final String NODE_UNDER_MODULES_PATH_PREFIX = "/modules/";
     private static final char NODE_PATH_SEPARATOR_CHAR = '/';
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
-    private static final List<Class<? extends Report>> reportTypes = Arrays.asList(ExcelReport.class, CsvReport.class);
+    private static final List<Class<? extends Report>> reportTypes = Arrays.asList(CsvReport.class, ExcelReport.class);
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -182,8 +183,8 @@ public class Utils {
                         } catch (InstantiationException | IllegalAccessException e) {
                             logger.error("Impossible to load the report generator", e);
                             return;
-                        } catch (IOException e) {
-                            logger.error("Impossible to generate the report content", e);
+                        } catch (Throwable t) {
+                            logger.error("Impossible to generate the report content", t);
                             return;
                         }
                         final byte[] bytes = out.toByteArray();
@@ -323,6 +324,14 @@ public class Utils {
         return mergedResults;
     }
 
+    public static ContentIntegrityErrorList mergeErrorLists(ContentIntegrityErrorList... errorLists) {
+        return Arrays.stream(errorLists)
+                .filter(Objects::nonNull)
+                .filter(ContentIntegrityErrorList::hasErrors)
+                .reduce(ContentIntegrityErrorList::addAll)
+                .orElse(null);
+    }
+
     public static String getSiteKey(String path) {
         return getSiteKey(path, false);
     }
@@ -340,15 +349,14 @@ public class Utils {
     }
 
     public static String getApproximateCount(long count, long threshold) {
-        final long rangeBottom, rangeTop;
-        if (count < threshold * APPROXIMATE_COUNT_FACTOR) {
-            rangeBottom = Math.floorDiv(count, threshold) * threshold;
-            rangeTop = rangeBottom + threshold;
-        } else {
-            long i = APPROXIMATE_COUNT_FACTOR;
-            while (count > i * APPROXIMATE_COUNT_FACTOR) i *= APPROXIMATE_COUNT_FACTOR;
-            rangeBottom = threshold * i;
-            rangeTop = threshold * i * APPROXIMATE_COUNT_FACTOR;
+        if (count < 0) throw new IllegalArgumentException(String.format("The count can't be negative: %d", count));
+        if (threshold <= 0) throw new IllegalArgumentException(String.format("The threshold can't be negative or equal to zero: %d", threshold));
+
+        long rangeBottom = 0;
+        long rangeTop = threshold;
+        while (count > rangeTop) {
+            rangeBottom = rangeTop;
+            rangeTop *= APPROXIMATE_COUNT_FACTOR;
         }
         return String.format("%d - %d", rangeBottom, rangeTop);
     }
