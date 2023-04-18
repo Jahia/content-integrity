@@ -24,11 +24,11 @@ public class UserAccountSanityCheck extends AbstractContentIntegrityCheck {
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         final String username = String.format("u:%s", node.getName());
         // guest is not owner of his node
-        if (StringUtils.equals(username, "u:guest")) return null;
+        if (StringUtils.equals(username, Constants.GUEST_USER_KEY)) return null;
         final Map<String, List<String[]>> aclEntries = node.getAclEntries();
         if (aclEntries.containsKey(username)) {
             final String path = node.getPath();
-            if (aclEntries.get(username).stream().filter(acl -> StringUtils.equals(acl[0], path) && StringUtils.equals(acl[1], "GRANT") && StringUtils.equals(acl[2], "owner")).count() != 1) {
+            if (aclEntries.get(username).stream().filter(acl -> StringUtils.equals(acl[0], path) && StringUtils.equals(acl[1], Constants.ACE_TYPE_GRANT) && StringUtils.equals(acl[2], Constants.ROLE_OWNER)).count() != 1) {
                 return createSingleError(createError(node, "The user is not owner of his account node"));
             }
         }

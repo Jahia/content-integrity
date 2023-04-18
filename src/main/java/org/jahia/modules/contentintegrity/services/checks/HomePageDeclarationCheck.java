@@ -18,6 +18,8 @@ import javax.jcr.RepositoryException;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_PAGE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FLAG;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FALLBACK_NAME;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,
@@ -26,8 +28,6 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT
 public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(HomePageDeclarationCheck.class);
-    private static final String HOME_PAGE_FLAG = "j:isHomePage";
-    private static final String HOME_PAGE_FALLBACK_NAME = "home";
 
     private enum ErrorType {NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME, FALLBACK_ON_NAME_WRONG_TYPE}
 

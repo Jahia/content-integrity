@@ -25,6 +25,7 @@ import java.util.Locale;
 public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
+    private static final String CONDITION_VALUES_SEPARATOR = ",";
 
     private float priority = 100f;
     private boolean enabled = true;
@@ -376,7 +377,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     private void setApplyOnNodeTypes(String nodeTypes) {
-        if (nodeTypes.contains(",")) {
+        if (nodeTypes.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition condition = new AnyOfCondition();
             for (String nodeType : Patterns.COMMA.split(nodeTypes)) {
                 condition.add(new NodeTypeCondition(nodeType.trim()));
@@ -389,7 +390,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     private void setSkipOnNodeTypes(String nodeTypes) {
         ExecutionCondition condition = null;
-        if (nodeTypes.contains(",")) {
+        if (nodeTypes.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition anyOf = new AnyOfCondition();
             for (String nodeType : Patterns.COMMA.split(nodeTypes)) {
                 anyOf.add(new NodeTypeCondition(nodeType.trim()));
@@ -463,7 +464,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     private void setApplyOnSubTrees(String trees) {
-        if (trees.contains(",")) {
+        if (trees.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition condition = new AnyOfCondition();
             for (String tree : Patterns.COMMA.split(trees)) {
                 condition.add(new SubtreeCondition(tree.trim()));
@@ -476,7 +477,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     private void setSkipOnSubTrees(String trees) {
         ExecutionCondition condition = null;
-        if (trees.contains(",")) {
+        if (trees.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition anyOf = new AnyOfCondition();
             for (String tree : Patterns.COMMA.split(trees)) {
                 anyOf.add(new SubtreeCondition(tree.trim()));
@@ -515,7 +516,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     private void setApplyIfHasProp(String properties) {
-        if (properties.contains(",")) {
+        if (properties.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition condition = new AnyOfCondition();
             for (String prop : Patterns.COMMA.split(properties)) {
                 condition.add(new HasPropertyCondition(prop.trim()));
@@ -528,7 +529,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     private void setSkipIfHasProp(String properties) {
         ExecutionCondition condition = null;
-        if (properties.contains(",")) {
+        if (properties.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition anyOf = new AnyOfCondition();
             for (String prop : Patterns.COMMA.split(properties)) {
                 anyOf.add(new HasPropertyCondition(prop.trim()));

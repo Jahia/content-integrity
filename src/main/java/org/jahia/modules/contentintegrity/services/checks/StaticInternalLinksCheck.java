@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULATION_ERROR;
+
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ENABLED + ":Boolean=false"
 })
@@ -99,7 +101,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck {
         } catch (RepositoryException e) {
             logger.error("", e);
         }
-        propertyName = StringUtils.defaultString(tmpPropName, "<failed to calculate>");
+        propertyName = StringUtils.defaultString(tmpPropName, CALCULATION_ERROR);
         try {
             final String text = value.getString();
             domains.forEach(domain -> {

@@ -31,6 +31,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_DELETED_CHILDREN;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_LIVE_PROPERTIES;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LIVE_PROPERTIES;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NODE_PATH;
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
@@ -41,18 +45,18 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityLiveCheck.class);
 
     private static final String DEEP_COMPARE_PUBLISHED_NODES = "deep-compare-published-nodes";
-    private static final String JMIX_LIVE_PROPERTIES = "jmix:liveProperties";
-    private static final String J_LIVE_PROPERTIES = "j:liveProperties";
-    private static final List<String> DEFAULT_ONLY_MIXINS = Collections.singletonList("jmix:deletedChildren");
+    private static final String LIVE_MIXINS_DECLARATION_PREFIX = "jcr:mixinTypes=";
+
+    private static final List<String> DEFAULT_ONLY_MIXINS = Collections.singletonList(JMIX_DELETED_CHILDREN);
     /*
     Properties which can be defined on either workspace, and be missing on the other one.
 
     Lock related properties are ignored because they are set on a single WS (usually the default WS), and do not alter the publication status
      */
-    private static final Collection<String> IGNORED_WS_ONLY_PROPS = Arrays.asList("jcr:lockOwner", "j:lockTypes", "j:locktoken", "jcr:lockIsDeep", Constants.FULLPATH, Constants.NODENAME);
+    private static final Collection<String> IGNORED_WS_ONLY_PROPS = Arrays.asList(Constants.JCR_LOCK_OWNER, Constants.J_LOCK_TYPES, Constants.J_LOCKTOKEN, Constants.JCR_LOCK_IS_DEEP, Constants.FULLPATH, Constants.NODENAME);
     /*
      */
-    private static final Collection<String> IGNORED_DEFAULT_ONLY_PROPS = CollectionUtils.union(Arrays.asList("j:deletedChildren"), IGNORED_WS_ONLY_PROPS);
+    private static final Collection<String> IGNORED_DEFAULT_ONLY_PROPS = CollectionUtils.union(Arrays.asList(Constants.J_DELETED_CHILDREN), IGNORED_WS_ONLY_PROPS);
     /*
     J_LIVE_PROPERTIES is set on the node only in the live WS to keep track of the UGC properties
     NODENAME is sometimes missing in the default WS. Since it reflects the node name, let's ignore it
@@ -66,7 +70,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private static final Collection<String> NOT_COMPARED_PROPERTIES = Arrays.asList(Constants.JCR_LASTMODIFIED, Constants.JCR_LASTMODIFIEDBY,
             Constants.JCR_BASEVERSION, Constants.JCR_PREDECESSORS,
             Constants.JCR_MIXINTYPES, Constants.FULLPATH, Constants.NODENAME,
-            "j:lockTypes");
+            Constants.J_LOCK_TYPES);
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -119,12 +123,12 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                         TODO: handle this correctly if the tracking of such property gets fixed in the product
                          */
                         final Property property = properties.nextProperty();
-                        if (!StringUtils.startsWith(property.getName(), "jcr:")) {
+                        if (!StringUtils.startsWith(property.getName(), Constants.PROPERTY_DEFINITION_NAME_JCR_PREFIX)) {
                             isUGC = false;
                             break;
                         }
                     }
-                } else if (node.isNodeType(Constants.JAHIANT_PERMISSION) && StringUtils.startsWith(node.getPath(), "/modules")) {
+                } else if (node.isNodeType(Constants.JAHIANT_PERMISSION) && StringUtils.startsWith(node.getPath(), Constants.MODULES_TREE_PATH)) {
                     /*
                     It seems that some permissions are autocreated when the module is installed,
                     in the live workspace, but they do not have any j:originWS property
@@ -156,7 +160,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         When ACL are defined on the repository root, jmix:accessControlled is added to the node in default , but not in live,
         what makes differences on the property jcr:mixinTypes
         */
-        if (StringUtils.equals(defaultNode.getPath(), "/")) return;
+        if (StringUtils.equals(defaultNode.getPath(), ROOT_NODE_PATH)) return;
 
         if (JCRUtils.hasPendingModifications(defaultNode)) return;
 
@@ -214,7 +218,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         return Arrays.stream(liveNode.getProperty(J_LIVE_PROPERTIES).getValues())
                 .map(this::getStringValue)
                 .filter(Objects::nonNull)
-                .filter(v -> !StringUtils.startsWith(v, "jcr:mixinTypes="))
+                .filter(v -> !StringUtils.startsWith(v, LIVE_MIXINS_DECLARATION_PREFIX))
                 .collect(Collectors.toSet());
     }
 
@@ -242,8 +246,8 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             if (liveNode.isNodeType(JMIX_LIVE_PROPERTIES) && liveNode.hasProperty(J_LIVE_PROPERTIES)) {
                 ugcMixins = Arrays.stream(liveNode.getProperty(J_LIVE_PROPERTIES).getValues())
                         .map(this::getStringValue)
-                        .filter(v -> StringUtils.startsWith(v, "jcr:mixinTypes="))
-                        .map(v -> StringUtils.substring(v, "jcr:mixinTypes=".length()))
+                        .filter(v -> StringUtils.startsWith(v, LIVE_MIXINS_DECLARATION_PREFIX))
+                        .map(v -> StringUtils.substring(v, LIVE_MIXINS_DECLARATION_PREFIX.length()))
                         .collect(Collectors.toSet());
             }
             final Set<String> finalUgcMixins = ugcMixins;

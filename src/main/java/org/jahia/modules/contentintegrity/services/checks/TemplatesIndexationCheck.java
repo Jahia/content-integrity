@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.query.QueryResultWrapper;
@@ -14,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
+
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=jnt:template",
@@ -27,7 +30,7 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper template) {
         // Example: /modules/templates-system/9.0.0/templates/base/home
         final String templatePath = template.getPath();
-        final String[] parts = StringUtils.split(templatePath, "/", 4);
+        final String[] parts = StringUtils.split(templatePath, JCR_PATH_SEPARATOR, 4);
         if (parts.length != 4) {
             logger.error(String.format("Unexpected template path: %s", templatePath));
             return null;

@@ -18,10 +18,12 @@ import java.util.HashSet;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LOCKISDEEP;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LOCKOWNER;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LOCKTOKEN;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LOCK_TYPES;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE,
-        ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=j:lockTypes,j:locktoken," + JCR_LOCKISDEEP + "," + JCR_LOCKOWNER
+        ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=" + J_LOCK_TYPES + "," + J_LOCKTOKEN + "," + JCR_LOCKISDEEP + "," + JCR_LOCKOWNER
 })
 public class LockSanityCheck extends AbstractContentIntegrityCheck {
 
@@ -33,8 +35,8 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
     @Override
     protected void activateInternal(ComponentContext context) {
         lockRelatedProperties.clear();
-        lockRelatedProperties.add("j:lockTypes");
-        lockRelatedProperties.add("j:locktoken");
+        lockRelatedProperties.add(J_LOCK_TYPES);
+        lockRelatedProperties.add(J_LOCKTOKEN);
         lockRelatedProperties.add(JCR_LOCKISDEEP);
         lockRelatedProperties.add(JCR_LOCKOWNER);
     }
@@ -70,8 +72,8 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
         try {
             if (!node.isNodeType(Constants.JAHIANT_TRANSLATION)) return;
 
-            for (JCRValueWrapper value : node.getProperty("j:lockTypes").getValues()) {
-                if (!StringUtils.equals(value.getString(), " deletion :deletion")) continue;
+            for (JCRValueWrapper value : node.getProperty(J_LOCK_TYPES).getValues()) {
+                if (!StringUtils.equals(value.getString(), Constants.LOCK_TYPE_DELETION)) continue;
                 if (!node.getParent().isNodeType(Constants.JAHIAMIX_MARKED_FOR_DELETION)) {
                     errors.addError(createError(node, "Deletion lock remaining on a translation node")
                             .setErrorType(ErrorType.DELETION_LOCK_ON_I18N));

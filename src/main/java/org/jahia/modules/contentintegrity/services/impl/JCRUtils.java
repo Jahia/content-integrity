@@ -29,6 +29,7 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LAS
 import static org.jahia.modules.contentintegrity.services.impl.Constants.LASTPUBLISHED;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.ORIGIN_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.TRANSLATION_NODE_PREFIX;
 
 public class JCRUtils {
 
@@ -196,7 +197,7 @@ public class JCRUtils {
 
     public static String getTranslationNodeLocaleFromNodeName(Node translationNode) {
         try {
-            return translationNode.getName().substring("j:translation_".length());
+            return translationNode.getName().substring(TRANSLATION_NODE_PREFIX.length());
         } catch (RepositoryException e) {
             logger.error("Impossible to extract the locale", e);
             return null;
