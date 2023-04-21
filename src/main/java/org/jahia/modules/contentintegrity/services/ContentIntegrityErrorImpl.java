@@ -30,6 +30,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private static final String EXTRA_MESSAGE_KEY = "extra-message";
     private static final String MODULE_PREFIX = "module ";
     private static final String NO_SITE = "<no site> ";
+    private static final int EXTRA_INFO_STRING_VALUE_MAX_LENGTH = 100;
 
     private final String id;
     private final String path;
@@ -202,12 +203,13 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
             throw new IllegalArgumentException(String.format("Key already defined: %s", key));
 
         extraInfosKeys.add(key);
+        final Object storedValue = value instanceof String ? StringUtils.left((String) value, EXTRA_INFO_STRING_VALUE_MAX_LENGTH) : value;
         if (isErrorSpecific) {
             if (specificExtraInfos == null) specificExtraInfos = new TreeMap<>();
-            specificExtraInfos.put(key, value);
+            specificExtraInfos.put(key, storedValue);
         } else {
             if (extraInfos == null) extraInfos = new TreeMap<>();
-            extraInfos.put(key, value);
+            extraInfos.put(key, storedValue);
         }
         return this;
     }
