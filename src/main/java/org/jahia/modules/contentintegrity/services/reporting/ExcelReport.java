@@ -45,7 +45,7 @@ public class ExcelReport extends Report {
     }
 
     @Override
-    public void write(OutputStream stream, ContentIntegrityResults results, boolean withColumnHeaders, boolean excludeFixedErrors) throws IOException {
+    public void write(OutputStream stream, ContentIntegrityResults results, boolean excludeFixedErrors) throws IOException {
         final int maxRows = SpreadsheetVersion.EXCEL2007.getLastRowIndex();
         if ((results.getErrors().size() + 1) > maxRows) {
             logger.error(String.format("The number of errors is too high to be written in an Excel sheet. Max number of rows: %d", maxRows));
@@ -58,14 +58,12 @@ public class ExcelReport extends Report {
         int rowNum = 0;
         Row row;
         // Add header
-        if (withColumnHeaders) {
             row = sheet.createRow(rowNum++);
             final String[] colNames = getColumns().toArray(new String[0]);
             final int nbColumns = colNames.length;
             for (int i = 0; i < nbColumns; i++) {
                 row.createCell(i).setCellValue(colNames[i]);
             }
-        }
 
         final List<List<String>> content = getReportContent(results, excludeFixedErrors);
         if (CollectionUtils.isNotEmpty(content)) {

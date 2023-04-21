@@ -44,10 +44,6 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
             "This option has no effect if not combined with -d")
     private boolean uploadDump;
 
-    @Option(name = "-nh", aliases = {"--noCSVHeader"}, description = "Generates a CSV file without header. " +
-            "This option is ignored when not generating a CSV file")
-    private boolean noCsvHeader;
-
     @Override
     public Object execute() throws Exception {
         final ContentIntegrityResults results;
@@ -69,10 +65,10 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
         session.put(LAST_PRINTED_TEST, testDate);
         if (dumpToCSV) {
             if (uploadDump) {
-                if (!Utils.writeDumpInTheJCR(results, excludeFixedErrors, !noCsvHeader, CONSOLE)) {
+                if (!Utils.writeDumpInTheJCR(results, excludeFixedErrors, CONSOLE)) {
                     System.out.println("Failed to write the report in the JCR");
                 }
-            } else if (!Utils.writeDumpOnTheFilesystem(results, excludeFixedErrors, !noCsvHeader)) {
+            } else if (!Utils.writeDumpOnTheFilesystem(results, excludeFixedErrors)) {
                 System.out.println("Failed to write the report on the filesystem");
             }
         } else {

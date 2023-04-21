@@ -128,13 +128,12 @@ Allows to reprint the result of a previous test.
                          
 **Options:**
 
-| Name | alias                |         Value          | Mandatory | Multiple | Description                                                                                                              |
-|------|----------------------|:----------------------:|:---------:|:--------:|--------------------------------------------------------------------------------------------------------------------------|
-| -l   | --limit              | positive integer, [20] |           |          | Specifies the maximum number of errors to print out                                                                      |
-| -d   | --dump , --dumpToCSV |                        |           |          | Dumps the errors into a CSV file in temp/content-integrity/ if used. The limit option is ignored when dumping            |
-| -u   | --upload             |                        |           |          | Uploads the dump in the JCR instead of writing in on the filesystem. This option has no effect if not combined with `-d` |
-| -nh  | --noCSVHeader        |                        |           |          | Generates a CSV file without header. This option is ignored when not generating a CSV file                               |
-| -ef  | --excludeFixedErrors |                        |           |          | Coming soon                                                                                                              |
+| Name | alias                |         Value          | Mandatory | Multiple | Description                                                                                                                      |
+|------|----------------------|:----------------------:|:---------:|:--------:|----------------------------------------------------------------------------------------------------------------------------------|
+| -l   | --limit              | positive integer, [20] |           |          | Specifies the maximum number of errors to print out                                                                              |
+| -d   | --dump               |                        |           |          | Dumps the errors into report files in temp/content-integrity/ if used. The limit option is ignored when dumping                  |
+| -u   | --upload             |                        |           |          | Uploads the report files in the JCR instead of writing in on the filesystem. This option has no effect if not combined with `-d` |
+| -ef  | --excludeFixedErrors |                        |           |          | Coming soon                                                                                                                      |
 
 **Example:**
 
@@ -142,7 +141,8 @@ Allows to reprint the result of a previous test.
     Content integrity tested in 141 ms
     No error found
     jahia@dx()> jcr:integrity-printTestResults -d
-    Dumped into C:\DigitalExperienceManager-EnterpriseDistribution-7.2.3.0\tomcat\temp\content-integrity\2018_05_23-12_36_34_385-full.csv
+    Dumped into C:\DigitalExperienceManager-EnterpriseDistribution-7.2.3.0\tomcat\temp\content-integrity\default_2023_04_21-13_34_15_786-full.csv
+    Dumped into C:\DigitalExperienceManager-EnterpriseDistribution-7.2.3.0\tomcat\temp\content-integrity\default_2023_04_21-13_34_15_786-full.xlsx
  
 #### <a name="jcr-integrity-configureCheck"></a>jcr:integrity-configureCheck   
 Allows to configure a registered integrity check. Please note that for the moment, the configuration is reset when restarting the module implementing the check,

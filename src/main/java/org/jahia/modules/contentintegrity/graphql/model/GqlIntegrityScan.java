@@ -127,7 +127,7 @@ public class GqlIntegrityScan {
                     } else {
                         final int nbErrors = mergedResults.getErrors().size();
                         console.logLine(String.format("%d error%s found", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s"));
-                        if (Utils.writeDumpInTheJCR(mergedResults, false, true, console))
+                        if (Utils.writeDumpInTheJCR(mergedResults, false, console))
                             executionReports.put(id, mergedResults.getReports());
                     }
                 }
