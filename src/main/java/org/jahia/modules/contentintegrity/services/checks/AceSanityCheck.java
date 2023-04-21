@@ -175,7 +175,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 .setErrorType(ErrorType.ROLES_DIFFER_ON_SOURCE_ACE)
                                 .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
                                 .addExtraInfo("src-ace-path", srcAce.getPath(), true)
-                                .setExtraMsg(String.format("Impossible to check if the roles defined on the external ACE and the source ACE are consistant, since the property %s is missing on the source ACE", J_ROLES)));
+                                .setExtraMsg(String.format("Impossible to check if the roles defined on the external ACE and the source ACE are consistent, since the property %s is missing on the source ACE", J_ROLES)));
                     } else {
                         final List<String> externalAceRoles = getRoleNames(externalAceNode);
                         if (CollectionUtils.isEmpty(externalAceRoles)) {
