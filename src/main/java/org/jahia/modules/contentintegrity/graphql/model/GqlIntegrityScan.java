@@ -16,6 +16,7 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityReport;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
+import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,9 @@ public class GqlIntegrityScan {
     private static final int LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE = 100;
     private static final int LOGS_LIMIT_CLIENT_SIDE_END_SIZE = 500;
     private static final int LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE = LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE + LOGS_LIMIT_CLIENT_SIDE_END_SIZE + 1;
+    public static final String ABBREVIATED_LINE_SUFFIX = " [...]";
+    public static final String NO_CHECK_SELECTED = "No check selected";
+    public static final String NO_ERROR_FOUND = "No error found";
 
     private String id;
 
@@ -98,12 +102,12 @@ public class GqlIntegrityScan {
         final GqlExternalLogger console = new GqlExternalLogger() {
             @Override
             public void logLine(String e) {
-                output.add(WordUtils.abbreviate(e, 200, 250, " [...]"));
+                output.add(WordUtils.abbreviate(e, 200, 250, ABBREVIATED_LINE_SUFFIX));
             }
         };
 
         if (CollectionUtils.isEmpty(checksToRun)) {
-            output.add("No check selected");
+            output.add(NO_CHECK_SELECTED);
             executionStatus.put(id, Status.FINISHED);
             return id;
         }
@@ -116,14 +120,14 @@ public class GqlIntegrityScan {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
                     if (executionStatus.get(id) != Status.RUNNING) break;
-                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse("/"), excludedPaths, skipMountPoints, ws, checksToExecute, console);
+                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse(Constants.ROOT_NODE_PATH), excludedPaths, skipMountPoints, ws, checksToExecute, console);
                     if (contentIntegrityResults != null)
                         results.add(contentIntegrityResults.setExecutionID(id));
                 }
                 if (uploadResults) {
                     final ContentIntegrityResults mergedResults = Utils.mergeResults(results);
                     if (mergedResults == null || CollectionUtils.isEmpty(mergedResults.getErrors())) {
-                        console.logLine("No error found");
+                        console.logLine(NO_ERROR_FOUND);
                     } else {
                         final int nbErrors = mergedResults.getErrors().size();
                         console.logLine(String.format("%d error%s found", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s"));
