@@ -43,10 +43,13 @@ public class GqlScanResults {
         if (CollectionUtils.isEmpty(filters)) {
             errors = all.getErrors();
         } else {
-            final Map<String, String> filtersMap = filters.stream().collect(Collectors.toMap(f -> StringUtils.substringBefore(f, ";"), f -> StringUtils.substringAfter(f, ";")));
+            final Map<String, String> filtersMap = filters.stream()
+                    .map(f -> StringUtils.split(f, ";", 2))
+                    .filter(f -> f.length == 2)
+                    .collect(Collectors.toMap(f -> f[0], f -> f[1]));
             errors = all.getErrors().stream()
                     .filter(error ->
-                            filtersMap.entrySet().stream().allMatch(filter -> StringUtils.equals(getColumnValue(error, filter.getKey()), filter.getValue()))
+                            filtersMap.entrySet().stream().allMatch(filter -> columnValueMatches(error, filter.getKey(), filter.getValue()))
                     )
                     .collect(Collectors.toList());
         }
@@ -124,5 +127,9 @@ public class GqlScanResults {
             default:
                 return StringUtils.EMPTY;
         }
+    }
+
+    private boolean columnValueMatches(ContentIntegrityError error, String column, String value) {
+        return StringUtils.equals(getColumnValue(error, column), value);
     }
 }
