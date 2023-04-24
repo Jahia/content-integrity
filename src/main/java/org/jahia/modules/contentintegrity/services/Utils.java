@@ -328,8 +328,15 @@ public class Utils {
         return Arrays.stream(errorLists)
                 .filter(Objects::nonNull)
                 .filter(ContentIntegrityErrorList::hasErrors)
-                .reduce(ContentIntegrityErrorList::addAll)
-                .orElse(null);
+                .reduce(null, Utils::mergeErrorLists);
+    }
+
+    private static ContentIntegrityErrorList mergeErrorLists(ContentIntegrityErrorList list1, ContentIntegrityErrorList list2) {
+        if (list1 == null) {
+            return new ContentIntegrityErrorListImpl().addAll(list2);
+        } else {
+            return list1.addAll(list2);
+        }
     }
 
     public static String getSiteKey(String path) {
