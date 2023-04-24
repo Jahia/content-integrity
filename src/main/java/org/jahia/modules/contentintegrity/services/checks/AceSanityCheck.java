@@ -34,12 +34,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_PERMISSIONS_PATH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_ACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_PERMISSIONS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ACE_TYPE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_EXTERNAL_PERMISSIONS_NAME;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_PERMISSIONS_PATH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINCIPAL;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_SOURCE_ACE;

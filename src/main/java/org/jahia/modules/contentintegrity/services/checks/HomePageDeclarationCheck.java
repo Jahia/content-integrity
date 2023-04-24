@@ -17,9 +17,9 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_PAGE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FLAG;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FALLBACK_NAME;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FLAG;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_PAGE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,
