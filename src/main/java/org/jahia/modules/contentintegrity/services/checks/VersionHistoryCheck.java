@@ -65,7 +65,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
 
         try {
             final JCRSessionWrapper session = node.getSession();
-            final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode("/").getProvider());
+            final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode(Constants.ROOT_NODE_PATH).getProvider());
             final InternalVersionManager vm = providerSession.getInternalVersionManager();
             final InternalVersionHistory history;
             try {

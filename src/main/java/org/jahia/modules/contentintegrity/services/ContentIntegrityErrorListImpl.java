@@ -33,9 +33,7 @@ public class ContentIntegrityErrorListImpl implements ContentIntegrityErrorList 
     @Override
     public ContentIntegrityErrorList addAll(ContentIntegrityErrorList otherList) {
         if (otherList == null) return this;
-        for (ContentIntegrityError error : otherList.getNestedErrors()) {
-            addError(error);
-        }
+        otherList.getNestedErrors().forEach(this::addError);
         return this;
     }
 

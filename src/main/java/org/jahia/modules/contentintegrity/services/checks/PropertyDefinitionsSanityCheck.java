@@ -58,6 +58,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
     private static final String CHECK_SITE_LANGS_ONLY_KEY = "site-langs-only";
     private static final boolean DEFAULT_CHECK_SITE_LANGS_ONLY_KEY = false;
+    private static final String BINARY_VALUE_STR = "<binary>";
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -105,7 +106,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         final ExtendedPropertyDefinition[] extendedPropertyDefinitions = nodeType.getPropertyDefinitions();
         for (ExtendedPropertyDefinition propertyDefinition : extendedPropertyDefinitions) {
             final String propertyDefinitionName = propertyDefinition.getName();
-            if (StringUtils.equals(propertyDefinitionName, "*")) continue;
+            if (StringUtils.equals(propertyDefinitionName, Constants.PROPERTY_DEFINITION_NAME_WILDCARD)) continue;
             if (checkedProperties.containsKey(propertyDefinitionName)) {
                 if (logger.isDebugEnabled()) {
                     logger.debug(String.format("Already encountered the property %s when checking the type %s on the node %s",
@@ -134,7 +135,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private void checkMandatoryProperty(JCRNodeWrapper node, Node propertyNode, String pName,
                                         ExtendedPropertyDefinition propertyDefinition, String locale,
                                         ContentIntegrityErrorList errors) throws RepositoryException {
-        if (StringUtils.equals(pName, "*")) return;
+        if (StringUtils.equals(pName, Constants.PROPERTY_DEFINITION_NAME_WILDCARD)) return;
         if (!propertyDefinition.isMandatory()) return;
         if (node.getRealNode() instanceof ExternalNodeImpl) {
             final String declaringType = propertyDefinition.getDeclaringNodeType().getName();
@@ -215,7 +216,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 namedPropertyDefinitions.putAll(extendedNodeType.getPropertyDefinitionsAsMap());
                 if (unstructuredPropertyDefinitions == null) return;
                 for (ExtendedPropertyDefinition propertyDefinition : extendedNodeType.getPropertyDefinitions()) {
-                    if (StringUtils.equals(propertyDefinition.getName(), "*")) {
+                    if (StringUtils.equals(propertyDefinition.getName(), Constants.PROPERTY_DEFINITION_NAME_WILDCARD)) {
                         unstructuredPropertyDefinitions.put(getExtendedPropertyType(propertyDefinition), propertyDefinition);
                     }
                 }
@@ -238,7 +239,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
 
             boolean isUndeclared;
             PropertyDefinition propertyDefinition = null;
-            if (node.isNodeType("jnt:externalProviderExtension")) {
+            if (node.isNodeType(Constants.JNT_EXTERNAL_PROVIDER_EXTENSION)) {
                 final JCRPropertyWrapper p;
                 try {
                     p = jahiaNode.getSession().getNode(node.getPath()).getProperty(pName);
@@ -248,7 +249,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     if this case happens again with other types, a more generic solution would be
                         if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
                      */
-                    if (StringUtils.equals(property.getDefinition().getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
+                    if (StringUtils.equals(property.getDefinition().getDeclaringNodeType().getName(), Constants.JMIX_EXTERNAL_PROVIDER_EXTENSION))
                         continue;
                 } catch (RepositoryException re) {
                     // The property exists only at extension node level, let's skip it
@@ -273,7 +274,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 if this case happens again with other types, a more generic solution would be
                     if (!jahiaNode.isNodeType(propertyDefinition.getDeclaringNodeType().getName())) continue;
                  */
-                if (propertyDefinition != null && StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), "jmix:externalProviderExtension"))
+                if (propertyDefinition != null && StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), Constants.JMIX_EXTERNAL_PROVIDER_EXTENSION))
                     continue;
                 if (namedPropertyDefinitions.containsKey(pName)) {
                     if (isI18n && propertyDefinition != null) {
@@ -282,7 +283,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     } else {
                         isUndeclared = namedPropertyDefinitions.get(pName).isInternationalized() != isI18n;
                     }
-                } else if (propertyDefinition != null && StringUtils.equals(propertyDefinition.getName(), "*")) {
+                } else if (propertyDefinition != null && StringUtils.equals(propertyDefinition.getName(), Constants.PROPERTY_DEFINITION_NAME_WILDCARD)) {
                     isUndeclared = unstructuredPropertyDefinitions.keySet().stream().noneMatch(k -> areExtendedPropertyTypesCompliant(getExtendedPropertyType(property, isI18n), k));
                 } else if (propertyDefinition != null) {
                     isUndeclared = false;
@@ -344,7 +345,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                                JCRNodeWrapper jahiaNode, String locale,
                                ContentIntegrityErrorList errors) throws RepositoryException {
         if (isValueEmpty(value)) return;
-        final String valueStr = value.getType() == PropertyType.BINARY ? "<binary>" : value.getString();
+        final String valueStr = value.getType() == PropertyType.BINARY ? BINARY_VALUE_STR : value.getString();
         if (!constraintIsValid(value, epd)) {
             trackInvalidValueConstraint(pName, epd, valueStr, valueIdx, jahiaNode, locale, epd.getValueConstraints(), errors);
         }
@@ -436,7 +437,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         if (propertyDefinition == null) return namedPropertyDefinitions.get(property.getName());
 
         final String propertyDefinitionName = propertyDefinition.getName();
-        if (StringUtils.equals(propertyDefinitionName, "*")) {
+        if (StringUtils.equals(propertyDefinitionName, Constants.PROPERTY_DEFINITION_NAME_WILDCARD)) {
             if (isI18n && StringUtils.equals(propertyDefinition.getDeclaringNodeType().getName(), JAHIANT_TRANSLATION)) {
                 final ExtendedPropertyDefinition epd = namedPropertyDefinitions.get(property.getName());
                 if (epd != null && epd.isInternationalized()) return epd;

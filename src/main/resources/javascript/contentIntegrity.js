@@ -416,7 +416,7 @@ const ErrorDetailsItem = (error) => {
     out += TableRowItem("Workspace", error.workspace)
     out += TableRowItem("Locale", error.locale)
     out += TableRowItem("Path", JcrBrowserLinkItem(error.nodePath, error.nodeId, error.workspace))
-    out += TableRowItem("UUID", error.nodeId)
+    out += TableRowItem("UUID", JcrBrowserLinkItem(error.nodeId, error.nodeId, error.workspace))
     out += TableRowItem("Node type", error.nodePrimaryType)
     out += TableRowItem("Mixin types", error.nodeMixins)
     out += TableRowItem("Message", error.message)

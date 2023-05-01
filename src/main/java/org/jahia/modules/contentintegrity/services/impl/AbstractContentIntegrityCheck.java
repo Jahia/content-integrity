@@ -25,6 +25,7 @@ import java.util.Locale;
 public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
+    private static final String CONDITION_VALUES_SEPARATOR = ",";
 
     private float priority = 100f;
     private boolean enabled = true;
@@ -259,19 +260,27 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {}
 
     @Override
-    public final void finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
-        finalizeIntegrityTestInternal(scanRootNode, excludedPaths);
+    public final ContentIntegrityErrorList finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        final ContentIntegrityErrorList errorList = finalizeIntegrityTestInternal(scanRootNode, excludedPaths);
         // TODO the next lines are useless. scanDurationDisabled can be set to true for other reasons. And it is set to false in initializeIntegrityTest() in any case.
         if (!scanDurationDisabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
             setScanDurationDisabled(false);
         }
+        return errorList;
     }
 
     /**
-     * This method is run once on each check after finishing a scan
+     * This method is run once on each check after finishing a scan.
+     * It has the possibility to send a last list of errors, for example if the check is buffering the nodes instead analyzing them one by one.
+     *
+     * @param scanRootNode the root node of the scan
+     * @param excludedPaths the paths which are excluded from the scan
+     * @return some integrity errors
      */
-    protected void finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {}
+    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        return null;
+    }
 
     @Override
     public final boolean isValid() {
@@ -376,7 +385,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     private void setApplyOnNodeTypes(String nodeTypes) {
-        if (nodeTypes.contains(",")) {
+        if (nodeTypes.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition condition = new AnyOfCondition();
             for (String nodeType : Patterns.COMMA.split(nodeTypes)) {
                 condition.add(new NodeTypeCondition(nodeType.trim()));
@@ -389,7 +398,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     private void setSkipOnNodeTypes(String nodeTypes) {
         ExecutionCondition condition = null;
-        if (nodeTypes.contains(",")) {
+        if (nodeTypes.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition anyOf = new AnyOfCondition();
             for (String nodeType : Patterns.COMMA.split(nodeTypes)) {
                 anyOf.add(new NodeTypeCondition(nodeType.trim()));
@@ -463,7 +472,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     private void setApplyOnSubTrees(String trees) {
-        if (trees.contains(",")) {
+        if (trees.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition condition = new AnyOfCondition();
             for (String tree : Patterns.COMMA.split(trees)) {
                 condition.add(new SubtreeCondition(tree.trim()));
@@ -476,7 +485,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     private void setSkipOnSubTrees(String trees) {
         ExecutionCondition condition = null;
-        if (trees.contains(",")) {
+        if (trees.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition anyOf = new AnyOfCondition();
             for (String tree : Patterns.COMMA.split(trees)) {
                 anyOf.add(new SubtreeCondition(tree.trim()));
@@ -515,7 +524,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     private void setApplyIfHasProp(String properties) {
-        if (properties.contains(",")) {
+        if (properties.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition condition = new AnyOfCondition();
             for (String prop : Patterns.COMMA.split(properties)) {
                 condition.add(new HasPropertyCondition(prop.trim()));
@@ -528,7 +537,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     private void setSkipIfHasProp(String properties) {
         ExecutionCondition condition = null;
-        if (properties.contains(",")) {
+        if (properties.contains(CONDITION_VALUES_SEPARATOR)) {
             final AnyOfCondition anyOf = new AnyOfCondition();
             for (String prop : Patterns.COMMA.split(properties)) {
                 anyOf.add(new HasPropertyCondition(prop.trim()));

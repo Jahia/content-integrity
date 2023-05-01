@@ -34,7 +34,7 @@ public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityChe
             so that the node can accept translation sub nodes, no matter the definition.
             If not, let's continue with the regular test, in case such subnode would be anyway allowed, by another mean that jmix:i18n
              */
-            if (node.isNodeType(Constants.JAHIANT_TRANSLATION) && parent.isNodeType("jmix:i18n")) return null;
+            if (node.isNodeType(Constants.JAHIANT_TRANSLATION) && parent.isNodeType(Constants.JAHIA_MIX_I18N)) return null;
 
             final List<String> types = new ArrayList<>();
             types.add(node.getPrimaryNodeTypeName());

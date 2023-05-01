@@ -24,8 +24,8 @@ import javax.jcr.nodetype.PropertyDefinition;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.MIX_VERSIONABLE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULATION_ERROR;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.MIX_VERSIONABLE;
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)

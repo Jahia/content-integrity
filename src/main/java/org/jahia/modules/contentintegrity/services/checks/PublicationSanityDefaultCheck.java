@@ -41,9 +41,10 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     }
 
     @Override
-    public void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+    public ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         inheritedErrors.clear();
         scanRoot = null;
+        return null;
     }
 
     @Override
@@ -51,7 +52,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
         try {
             final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(LIVE_WORKSPACE, true);
             final boolean flaggedPublished = node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean();
-            if (flaggedPublished || node.isNodeType("jmix:autoPublish")) {
+            if (flaggedPublished || node.isNodeType(Constants.JMIX_AUTO_PUBLISH)) {
                 final JCRNodeWrapper liveNode;
                 try {
                     liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());

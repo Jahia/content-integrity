@@ -156,7 +156,7 @@ public class Utils {
         }
     }
 
-    public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, boolean withCsvHeader, ExternalLogger externalLogger) {
+    public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, ExternalLogger externalLogger) {
         final AtomicInteger reportsCount = new AtomicInteger();
         try {
             JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<Void>() {
@@ -179,7 +179,7 @@ public class Utils {
                         final ByteArrayOutputStream out = new ByteArrayOutputStream();
                         try {
                             reportGenerator = rt.newInstance();
-                            reportGenerator.write(out, results, withCsvHeader, excludeFixedErrors);
+                            reportGenerator.write(out, results, excludeFixedErrors);
                         } catch (InstantiationException | IllegalAccessException e) {
                             logger.error("Impossible to load the report generator", e);
                             return;
@@ -249,7 +249,7 @@ public class Utils {
         reportNode.setProperty("integrity:countByErrorType", countByErrorType);
     }
 
-    public static boolean writeDumpOnTheFilesystem(ContentIntegrityResults results, boolean excludeFixedErrors, boolean withCsvHeader) {
+    public static boolean writeDumpOnTheFilesystem(ContentIntegrityResults results, boolean excludeFixedErrors) {
         final File outputDir = new File(System.getProperty("java.io.tmpdir"), "content-integrity");
         final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
 
@@ -260,7 +260,7 @@ public class Utils {
                 final ByteArrayOutputStream out = new ByteArrayOutputStream();
                 try {
                     reportGenerator = rt.newInstance();
-                    reportGenerator.write(out, results, withCsvHeader, excludeFixedErrors);
+                    reportGenerator.write(out, results, excludeFixedErrors);
                 } catch (InstantiationException | IllegalAccessException e) {
                     logger.error("Impossible to load the report generator", e);
                     return;
@@ -328,8 +328,15 @@ public class Utils {
         return Arrays.stream(errorLists)
                 .filter(Objects::nonNull)
                 .filter(ContentIntegrityErrorList::hasErrors)
-                .reduce(ContentIntegrityErrorList::addAll)
-                .orElse(null);
+                .reduce(null, Utils::mergeErrorLists);
+    }
+
+    private static ContentIntegrityErrorList mergeErrorLists(ContentIntegrityErrorList list1, ContentIntegrityErrorList list2) {
+        if (list1 == null) {
+            return new ContentIntegrityErrorListImpl().addAll(list2);
+        } else {
+            return list1.addAll(list2);
+        }
     }
 
     public static String getSiteKey(String path) {

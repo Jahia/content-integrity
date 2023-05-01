@@ -45,8 +45,9 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
     }
 
     @Override
-    protected void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         availableModules.clear();
+        return null;
     }
 
     @Override

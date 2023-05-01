@@ -20,7 +20,6 @@ import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
-
 import java.io.IOException;
 import java.io.InputStream;
 

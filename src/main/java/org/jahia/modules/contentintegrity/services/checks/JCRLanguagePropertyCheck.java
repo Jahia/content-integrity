@@ -30,7 +30,7 @@ public class JCRLanguagePropertyCheck extends AbstractContentIntegrityCheck {
                 return createSingleError(createError(node, JCRUtils.getTranslationNodeLocaleFromNodeName(node), msg));
             }
             final String langPropValue = node.getProperty(JCR_LANGUAGE).getString();
-            if (!node.getName().equals("j:translation_".concat(langPropValue))) {
+            if (!node.getName().equals(Constants.TRANSLATION_NODE_PREFIX.concat(langPropValue))) {
                 final String msg = String.format("The value of the property %s is inconsistent with the node name", JCR_LANGUAGE);
                 return createSingleError(createError(node, JCRUtils.getTranslationNodeLocaleFromNodeName(node), msg)
                         .addExtraInfo("jcr-language-prop-value", langPropValue));

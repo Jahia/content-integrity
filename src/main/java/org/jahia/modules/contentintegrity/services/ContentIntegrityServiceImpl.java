@@ -20,7 +20,6 @@ import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.SpringContextSingleton;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.DateUtils;
 import org.osgi.framework.Constants;
@@ -188,7 +187,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
                 }
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
-                    integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
+                    final ContentIntegrityErrorList lastErrors = integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
+                    handleResult(lastErrors, null, false, integrityCheck, errors, externalLogger);
                 }
                 final long testDuration = System.currentTimeMillis() - start;
                 final List<String> summary = new ArrayList<>();

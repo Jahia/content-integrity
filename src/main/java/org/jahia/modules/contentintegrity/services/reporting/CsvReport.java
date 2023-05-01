@@ -25,8 +25,8 @@ public class CsvReport extends Report {
     private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
 
     @Override
-    public void write(OutputStream out, ContentIntegrityResults results, boolean withColumnHeaders, boolean excludeFixedErrors) throws IOException {
-        IOUtils.writeLines(toCSVFileContent(results, withColumnHeaders, excludeFixedErrors), null, out, StandardCharsets.UTF_8);
+    public void write(OutputStream out, ContentIntegrityResults results, boolean excludeFixedErrors) throws IOException {
+        IOUtils.writeLines(toCSVFileContent(results, excludeFixedErrors), null, out, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -39,15 +39,13 @@ public class CsvReport extends Report {
         return "text/csv";
     }
 
-    private List<String> toCSVFileContent(ContentIntegrityResults results, boolean withColumnHeaders, boolean excludeFixedErrors) {
+    private List<String> toCSVFileContent(ContentIntegrityResults results, boolean excludeFixedErrors) {
         final List<String> lines = getReportContent(results, excludeFixedErrors);
-        if (withColumnHeaders) {
-            String header = SettingsBean.getInstance().getString(REPORT_COLUMN_NAMES_CONF, null);
-            if (StringUtils.isBlank(header)) {
-                header = toCSVLine(getColumns());
-            }
-            lines.add(0, header);
+        String header = SettingsBean.getInstance().getString(REPORT_COLUMN_NAMES_CONF, null);
+        if (StringUtils.isBlank(header)) {
+            header = toCSVLine(getColumns());
         }
+        lines.add(0, header);
 
         return lines;
     }

@@ -34,6 +34,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_PERMISSIONS_PATH;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_ACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_PERMISSIONS;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ACE_TYPE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_EXTERNAL_PERMISSIONS_NAME;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINCIPAL;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_SOURCE_ACE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_ACE
@@ -42,14 +51,6 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(AceSanityCheck.class);
-    private static final String JNT_EXTERNAL_ACE = "jnt:externalAce";
-    private static final String JNT_EXTERNAL_PERMISSIONS = "jnt:externalPermissions";
-    private static final String J_PRINCIPAL = "j:principal";
-    private static final String J_EXTERNAL_PERMISSIONS_NAME = "j:externalPermissionsName";
-    private static final String J_ROLES = "j:roles";
-    private static final String J_SOURCE_ACE = "j:sourceAce";
-    private static final String J_PATH = "j:path";
-    private static final String J_ACE_TYPE = "j:aceType";
     private static final Pattern CURRENT_SITE_PATTERN = Pattern.compile("^currentSite");
 
     private final Map<String, Role> roles = new HashMap<>();
@@ -73,11 +74,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 roles.get(parentRole).getExternalPermissions().forEach(role::addExternalPermission);
             }
             for (JCRNodeWrapper extPerm : JCRContentUtils.getNodes(roleNode, JNT_EXTERNAL_PERMISSIONS)) {
-                if (!extPerm.hasProperty(J_PATH)) {
-                    logger.error(String.format("Skipping the external permission %s since it is invalid (no %s property)", extPerm.getPath(), J_PATH));
+                if (!extPerm.hasProperty(EXTERNAL_PERMISSIONS_PATH)) {
+                    logger.error(String.format("Skipping the external permission %s since it is invalid (no %s property)", extPerm.getPath(), EXTERNAL_PERMISSIONS_PATH));
                     continue;
                 }
-                role.addExternalPermission(extPerm.getName(), extPerm.getPropertyAsString(J_PATH));
+                role.addExternalPermission(extPerm.getName(), extPerm.getPropertyAsString(EXTERNAL_PERMISSIONS_PATH));
             }
             roleName = role.getName();
             roles.put(roleName, role);
@@ -88,8 +89,9 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     @Override
-    public void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+    public ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         roles.clear();
+        return null;
     }
 
     @Override
@@ -114,7 +116,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         if (!externalAceNode.hasProperty(J_ACE_TYPE)) {
             errors.addError(createError(externalAceNode, "External ACE without property ".concat(J_ACE_TYPE))
                     .setErrorType(ErrorType.NO_ACE_TYPE_PROP));
-        } else if (!StringUtils.equals("GRANT", aceType = externalAceNode.getPropertyAsString(J_ACE_TYPE))) {
+        } else if (!StringUtils.equals(Constants.ACE_TYPE_GRANT, aceType = externalAceNode.getPropertyAsString(J_ACE_TYPE))) {
             errors.addError(createError(externalAceNode, "External ACE with an invalid ".concat(J_ACE_TYPE))
                     .setErrorType(ErrorType.INVALID_ACE_TYPE_PROP)
                     .addExtraInfo("defined-ace-type", aceType));
@@ -158,7 +160,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
                 final String srcAceType;
                 final String srcAceIdentifier = srcAce.getIdentifier();
-                if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals("GRANT", srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
+                if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals(Constants.ACE_TYPE_GRANT, srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
                     errors.addError(createError(externalAceNode, "The source ACE is not of type GRANT")
                             .setErrorType(ErrorType.SOURCE_ACE_NOT_TYPE_GRANT)
                             .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
@@ -174,7 +176,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 .setErrorType(ErrorType.ROLES_DIFFER_ON_SOURCE_ACE)
                                 .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
                                 .addExtraInfo("src-ace-path", srcAce.getPath(), true)
-                                .setExtraMsg(String.format("Impossible to check if the roles defined on the external ACE and the source ACE are consistant, since the property %s is missing on the source ACE", J_ROLES)));
+                                .setExtraMsg(String.format("Impossible to check if the roles defined on the external ACE and the source ACE are consistent, since the property %s is missing on the source ACE", J_ROLES)));
                     } else {
                         final List<String> externalAceRoles = getRoleNames(externalAceNode);
                         if (CollectionUtils.isEmpty(externalAceRoles)) {
@@ -210,10 +212,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 } else {
                                     expectedPath.append(externalAcePathPattern);
                                 }
-                                if (expectedPath.charAt(expectedPath.length() - 1) != '/') {
-                                    expectedPath.append('/');
+                                if (expectedPath.charAt(expectedPath.length() - 1) != Constants.JCR_PATH_SEPARATOR_CHAR) {
+                                    expectedPath.append(Constants.JCR_PATH_SEPARATOR_CHAR);
                                 }
-                                expectedPath.append("j:acl/").append(externalAceNode.getName());
+                                expectedPath.append(Constants.ACL).append(JCR_PATH_SEPARATOR).append(externalAceNode.getName());
                                 if (!StringUtils.equals(expectedPath.toString(), externalAceNode.getPath())) {
                                     errors.addError(createError(externalAceNode, "The external ACE has not the expected path")
                                             .setErrorType(ErrorType.INVALID_EXTERNAL_ACE_PATH)
@@ -267,7 +269,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     .setErrorType(ErrorType.NO_ACE_TYPE_PROP));
         } else {
             aceType = aceNode.getPropertyAsString(J_ACE_TYPE);
-            isGrantAce = StringUtils.equals(aceType, "GRANT");
+            isGrantAce = StringUtils.equals(aceType, Constants.ACE_TYPE_GRANT);
         }
 
         if (!aceNode.hasProperty(J_ROLES)) {

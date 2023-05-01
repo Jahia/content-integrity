@@ -19,7 +19,7 @@ public abstract class Report {
 
     private static final List<String> DEFAULT_COLUMN_ITEMS = Collections.unmodifiableList(Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Site", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information", "Specific extra information"));
 
-    abstract public void write(OutputStream stream, ContentIntegrityResults results, boolean withColumnHeaders, boolean excludeFixedErrors) throws IOException;
+    abstract public void write(OutputStream stream, ContentIntegrityResults results, boolean excludeFixedErrors) throws IOException;
 
     public final String getFileName(String signature) {
         return String.format("%s.%s", signature, getFileExtension());
