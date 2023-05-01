@@ -187,7 +187,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
                 }
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
-                    integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
+                    final ContentIntegrityErrorList lastErrors = integrityCheck.finalizeIntegrityTest(node, trimmedExcludedPaths);
+                    handleResult(lastErrors, null, false, integrityCheck, errors, externalLogger);
                 }
                 final long testDuration = System.currentTimeMillis() - start;
                 final List<String> summary = new ArrayList<>();

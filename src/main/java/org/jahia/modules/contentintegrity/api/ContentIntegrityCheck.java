@@ -44,7 +44,7 @@ public interface ContentIntegrityCheck {
 
     void initializeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths);
 
-    void finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths);
+    ContentIntegrityErrorList finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths);
 
     boolean isValid();
 

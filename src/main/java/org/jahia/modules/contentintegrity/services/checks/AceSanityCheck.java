@@ -89,8 +89,9 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     @Override
-    public void finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+    public ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         roles.clear();
+        return null;
     }
 
     @Override

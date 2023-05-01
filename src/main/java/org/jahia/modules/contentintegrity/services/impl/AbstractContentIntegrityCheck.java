@@ -260,19 +260,27 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {}
 
     @Override
-    public final void finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
-        finalizeIntegrityTestInternal(scanRootNode, excludedPaths);
+    public final ContentIntegrityErrorList finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        final ContentIntegrityErrorList errorList = finalizeIntegrityTestInternal(scanRootNode, excludedPaths);
         // TODO the next lines are useless. scanDurationDisabled can be set to true for other reasons. And it is set to false in initializeIntegrityTest() in any case.
         if (!scanDurationDisabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));
             setScanDurationDisabled(false);
         }
+        return errorList;
     }
 
     /**
-     * This method is run once on each check after finishing a scan
+     * This method is run once on each check after finishing a scan.
+     * It has the possibility to send a last list of errors, for example if the check is buffering the nodes instead analyzing them one by one.
+     *
+     * @param scanRootNode the root node of the scan
+     * @param excludedPaths the paths which are excluded from the scan
+     * @return some integrity errors
      */
-    protected void finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {}
+    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        return null;
+    }
 
     @Override
     public final boolean isValid() {
