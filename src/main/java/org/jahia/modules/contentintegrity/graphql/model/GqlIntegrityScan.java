@@ -130,7 +130,14 @@ public class GqlIntegrityScan {
                         console.logLine(NO_ERROR_FOUND);
                     } else {
                         final int nbErrors = mergedResults.getErrors().size();
-                        console.logLine(String.format("%d error%s found", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s"));
+                        final String details = workspaces.size() == 1 ?
+                                StringUtils.EMPTY :
+                                results.stream()
+                                        .map(r -> r.getWorkspace() + " : " + r.getErrors().size())
+                                        .collect(Collectors.joining(" , ", " [", "]"));
+
+                        console.logLine(String.format("%d error%s found%s", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s", details));
+
                         if (Utils.writeDumpInTheJCR(mergedResults, false, console))
                             executionReports.put(id, mergedResults.getReports());
                     }
