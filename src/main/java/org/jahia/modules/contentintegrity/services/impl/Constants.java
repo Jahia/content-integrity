@@ -47,4 +47,7 @@ public class Constants extends org.jahia.api.Constants {
 
     public static final String JNT_EXTERNAL_PROVIDER_EXTENSION = "jnt:externalProviderExtension";
     public static final String JMIX_EXTERNAL_PROVIDER_EXTENSION = "jmix:externalProviderExtension";
+
+    public static final String JAHIANT_REFERENCEINFIELD_FIELDNAME = "j:fieldName";
+    public static final String JAHIANT_REFERENCEINFIELD_LANG_SEP = "_";
 }

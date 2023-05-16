@@ -71,6 +71,8 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                 final String nodePath = node.getPath();
                 if (!inheritedErrors.containsKey(DIFFERENT_PATH_ROOT) && !StringUtils.equals(nodePath, liveNode.getPath())) {
                     inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
+                    // Here we check the pending modifications without considering the translation subnodes. Only a renaming of node can
+                    // change its path, what should result in pending modifications on the node itself
                     if (!JCRUtils.hasPendingModifications(node)) {
                         final String msg = "Found a published node, with no pending modifications, but the path in live is different";
                         final ContentIntegrityError error = createError(node, msg)
