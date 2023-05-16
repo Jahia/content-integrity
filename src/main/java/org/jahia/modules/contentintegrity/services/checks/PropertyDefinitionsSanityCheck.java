@@ -545,12 +545,8 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             final List<Locale> locales = node.getSession().getWorkspace().getName().equals(Constants.EDIT_WORKSPACE) ?
                     site.getLanguagesAsLocales() : site.getActiveLiveLanguagesAsLocales();
             for (Locale locale : locales) {
-                final Node translationNode;
-                try {
-                    translationNode = node.getI18N(locale, false);
-                } catch (ItemNotFoundException infe) {
-                    continue;
-                }
+                final Node translationNode = JCRUtils.getI18N(node, locale);
+                if (translationNode == null) continue;
                 final Node realTranslationNode = getRealNode(translationNode);
                 if (realTranslationNode != null)
                     translationNodeProcessor.execute(realTranslationNode, LanguageCodeConverters.localeToLanguageTag(locale));

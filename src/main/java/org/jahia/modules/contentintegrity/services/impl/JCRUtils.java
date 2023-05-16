@@ -89,14 +89,14 @@ public class JCRUtils {
             final Locale locale;
             if (node.isNodeType(JAHIAMIX_LASTPUBLISHED)) {
                 nodeForCalculation = node;
-                translationNode = considerI18n && (locale = node.getSession().getLocale()) != null && node.hasI18N(locale) ? node.getI18N(locale) : null;
+                translationNode = considerI18n && (locale = node.getSession().getLocale()) != null ? getI18N(node, locale) : null;
             } else if (allowTechnicalNodes) {
                 translationNode = null;
                 final JCRNodeWrapper publicationRoot = JCRContentUtils.getParentOfType(node, JAHIAMIX_LASTPUBLISHED);
                 if (publicationRoot == null) return false;
                 locale = getTechnicalNodeLocale(node);
                 if (locale != null) {
-                    nodeForCalculation = publicationRoot.hasI18N(locale) ? publicationRoot.getI18N(locale) : null;
+                    nodeForCalculation = getI18N(publicationRoot, locale);
                 } else {
                     nodeForCalculation = publicationRoot;
                 }
@@ -232,6 +232,24 @@ public class JCRUtils {
             logger.error("Impossible to extract the locale", e);
             return null;
         }
+    }
+
+    public static Node getI18N(JCRNodeWrapper node, Locale locale) {
+        try {
+            if (node.hasI18N(locale)) return node.getI18N(locale, false);
+        } catch (RepositoryException e) {
+            logger.error("", e);
+        }
+        return null;
+    }
+
+    public static JCRNodeWrapper getI18NWrapper(JCRNodeWrapper node, Locale locale) {
+        try {
+            if (node.hasI18N(locale)) return node.getSession().getNode(node.getI18N(locale, false).getPath());
+        } catch (RepositoryException e) {
+            logger.error("", e);
+        }
+        return null;
     }
 
     public static boolean propertyValueEquals(Property p1, Property p2) throws RepositoryException {
