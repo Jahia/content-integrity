@@ -326,7 +326,7 @@ public class JCRUtils {
     }
 
     public static <R> R runJcrSupplierCallBack(JcrSupplierCallBack<R> jcrCallBack) {
-        return runJcrSupplierCallBack(jcrCallBack, (R) null);
+        return runJcrSupplierCallBack(jcrCallBack, null);
     }
 
     public static <R> R runJcrSupplierCallBack(JcrSupplierCallBack<R> jcrCallBack, R defaultValue) {
