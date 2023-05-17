@@ -135,7 +135,7 @@ public class JCRUtils {
         }
     }
 
-    private static Locale getTechnicalNodeLocale(JCRNodeWrapper node) throws RepositoryException {
+    public static Locale getTechnicalNodeLocale(JCRNodeWrapper node) throws RepositoryException {
         if (node.isNodeType(Constants.JAHIANT_REFERENCEINFIELD)) {
             final String fieldName = node.getPropertyAsString(Constants.JAHIANT_REFERENCEINFIELD_FIELDNAME);
             return LanguageCodeConverters.languageCodeToLocale(StringUtils.substringAfterLast(fieldName, Constants.JAHIANT_REFERENCEINFIELD_LANG_SEP));
