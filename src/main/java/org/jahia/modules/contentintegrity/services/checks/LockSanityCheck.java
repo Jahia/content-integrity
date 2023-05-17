@@ -71,13 +71,20 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
     private void checkPartialMarkedForDeletionLock(JCRNodeWrapper node, ContentIntegrityErrorList errors) {
         try {
             if (!node.isNodeType(Constants.JAHIANT_TRANSLATION)) return;
+            if (!node.hasProperty(J_LOCK_TYPES)) return;
 
+            boolean isLockedForDeletion = false;
             for (JCRValueWrapper value : node.getProperty(J_LOCK_TYPES).getValues()) {
-                if (!StringUtils.equals(value.getString(), Constants.LOCK_TYPE_DELETION)) continue;
-                if (!node.getParent().isNodeType(Constants.JAHIAMIX_MARKED_FOR_DELETION)) {
-                    errors.addError(createError(node, "Deletion lock remaining on a translation node")
-                            .setErrorType(ErrorType.DELETION_LOCK_ON_I18N));
+                if (StringUtils.equals(value.getString(), Constants.LOCK_TYPE_DELETION)) {
+                    isLockedForDeletion = true;
+                    break;
                 }
+            }
+            if (!isLockedForDeletion) return;
+
+            if (!node.getParent().isNodeType(Constants.JAHIAMIX_MARKED_FOR_DELETION)) {
+                errors.addError(createError(node, "Deletion lock remaining on a translation node")
+                        .setErrorType(ErrorType.DELETION_LOCK_ON_I18N));
             }
 
         } catch (RepositoryException e) {
