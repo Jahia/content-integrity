@@ -89,11 +89,10 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
             if (isMultiple) {
                 final Value[] values = JCRUtils.runJcrCallBack(property, Property::getValues);
                 if (values == null) continue;
-                propErrors = Arrays.stream(values)
+                propErrors = Utils.mergeErrorLists(Arrays.stream(values)
                         .map(v -> checkPropertyValue(v, node, property))
                         .filter(Objects::nonNull)
-                        .reduce(Utils::mergeErrorLists)
-                        .orElse(null);
+                        .toArray(ContentIntegrityErrorList[]::new));
             } else {
                 final Value value = JCRUtils.runJcrCallBack(property, Property::getValue);
                 if (value == null) continue;
