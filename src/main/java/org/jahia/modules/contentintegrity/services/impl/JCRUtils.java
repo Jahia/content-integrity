@@ -1,10 +1,12 @@
 package org.jahia.modules.contentintegrity.services.impl;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.DatabaseUtils;
+import org.jahia.utils.LanguageCodeConverters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,31 +58,55 @@ public class JCRUtils {
     /**
      * Evaluates if the node has some pending modifications, and so the node can be published.
      * If the node has a translation sub node in the session language, this one is not considered, the calculation is done only on the node itself.
+     * This method is not allowed to be called with a technical node as a parameter.
      *
      * @param node the node
      * @return true if the node has some pending modifications
      */
     public static boolean hasPendingModifications(JCRNodeWrapper node) {
-        return hasPendingModifications(node, false);
+        return hasPendingModifications(node, false, false);
     }
 
     /**
      * Evaluates if the node has some pending modifications, and so the node can be published.
-     * If the node has a translation sub node in the session language and if i18n has to be considered, this one is considered as well for the calculation
+     * If the node has a translation sub node in the session language and if i18n has to be considered, this one is considered as well for the calculation.
+     * If the specified node is a technical subnode (such as access rights, references in text, ...), then the calculation
+     * will be done on the parent node to which the specified node is attached in regard to the publication, since the
+     * only way to publish the specified node is to publish this parent.
      *
      * @param node         the node
      * @param considerI18n if true, the calculation involves the translation node
+     * @param allowTechnicalNodes  if true, the specified node can be a technical subnode
      * @return true if the node has some pending modifications
      */
-    public static boolean hasPendingModifications(JCRNodeWrapper node, boolean considerI18n) {
+    public static boolean hasPendingModifications(JCRNodeWrapper node, boolean considerI18n, boolean allowTechnicalNodes) {
         try {
-            final Locale locale;
-            if (!considerI18n
-                    || (locale = node.getSession().getLocale()) == null
-                    || !node.hasI18N(locale))
-                return hasPendingModificationsInternal(node);
+            if (!isInDefaultWorkspace(node))
+                throw new IllegalArgumentException("The publication status can be tested only in the default workspace");
 
-            return hasPendingModificationsInternal(node) || hasPendingModificationsInternal(node.getI18N(locale));
+            final Node nodeForCalculation;
+            final Node translationNode;
+            final Locale locale;
+            if (node.isNodeType(JAHIAMIX_LASTPUBLISHED)) {
+                nodeForCalculation = node;
+                translationNode = considerI18n && (locale = node.getSession().getLocale()) != null ? getI18N(node, locale) : null;
+            } else if (allowTechnicalNodes) {
+                translationNode = null;
+                final JCRNodeWrapper publicationRoot = JCRContentUtils.getParentOfType(node, JAHIAMIX_LASTPUBLISHED);
+                if (publicationRoot == null) return false;
+                locale = getTechnicalNodeLocale(node);
+                if (locale != null) {
+                    nodeForCalculation = getI18N(publicationRoot, locale);
+                } else {
+                    nodeForCalculation = publicationRoot;
+                }
+            } else {
+                throw new IllegalArgumentException("The publication status can be tested only on nodes of type " + JAHIAMIX_LASTPUBLISHED);
+            }
+
+            if (nodeForCalculation == null) return false;
+            if (translationNode == null) return hasPendingModificationsInternal(nodeForCalculation);
+            return hasPendingModificationsInternal(nodeForCalculation) || hasPendingModificationsInternal(translationNode);
         } catch (RepositoryException e) {
             logger.error("", e);
             // If we can't validate that there are some pending modifications here, then we assume that there are no one.
@@ -90,10 +116,6 @@ public class JCRUtils {
 
     private static boolean hasPendingModificationsInternal(Node node) {
         try {
-            if (!isInDefaultWorkspace(node))
-                throw new IllegalArgumentException("The publication status can be tested only in the default workspace");
-
-            if (!node.isNodeType(JAHIAMIX_LASTPUBLISHED)) return false;
             if (node.isNodeType(Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT)) return true;
             if (!node.hasProperty(LASTPUBLISHED)) return true;
             final Calendar lastPublished = node.getProperty(LASTPUBLISHED).getDate();
@@ -111,6 +133,14 @@ public class JCRUtils {
             // If we can't validate that there are some pending modifications here, then we assume that there are no one.
             return false;
         }
+    }
+
+    public static Locale getTechnicalNodeLocale(JCRNodeWrapper node) throws RepositoryException {
+        if (node.isNodeType(Constants.JAHIANT_REFERENCEINFIELD)) {
+            final String fieldName = node.getPropertyAsString(Constants.JAHIANT_REFERENCEINFIELD_FIELDNAME);
+            return LanguageCodeConverters.languageCodeToLocale(StringUtils.substringAfterLast(fieldName, Constants.JAHIANT_REFERENCEINFIELD_LANG_SEP));
+        }
+        return null;
     }
 
     public static boolean isNeverPublished(JCRNodeWrapper node) throws RepositoryException {
@@ -204,6 +234,24 @@ public class JCRUtils {
         }
     }
 
+    public static Node getI18N(JCRNodeWrapper node, Locale locale) {
+        try {
+            if (node.hasI18N(locale)) return node.getI18N(locale, false);
+        } catch (RepositoryException e) {
+            logger.error("", e);
+        }
+        return null;
+    }
+
+    public static JCRNodeWrapper getI18NWrapper(JCRNodeWrapper node, Locale locale) {
+        try {
+            if (node.hasI18N(locale)) return node.getSession().getNode(node.getI18N(locale, false).getPath());
+        } catch (RepositoryException e) {
+            logger.error("", e);
+        }
+        return null;
+    }
+
     public static boolean propertyValueEquals(Property p1, Property p2) throws RepositoryException {
         if (p1.isMultiple() != p2.isMultiple()) return false;
         if (p1.isMultiple()) return propertyValueEqualsMultiple(p1, p2);
@@ -278,7 +326,7 @@ public class JCRUtils {
     }
 
     public static <R> R runJcrSupplierCallBack(JcrSupplierCallBack<R> jcrCallBack) {
-        return runJcrSupplierCallBack(jcrCallBack, (R) null);
+        return runJcrSupplierCallBack(jcrCallBack, null);
     }
 
     public static <R> R runJcrSupplierCallBack(JcrSupplierCallBack<R> jcrCallBack, R defaultValue) {

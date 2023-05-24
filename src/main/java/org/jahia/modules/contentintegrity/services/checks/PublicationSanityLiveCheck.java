@@ -10,6 +10,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -26,11 +27,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_DELETED_CHILDREN;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_LIVE_PROPERTIES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LIVE_PROPERTIES;
@@ -138,6 +141,27 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
 
                 if (isUGC) return null;
 
+                if (!node.isNodeType(JAHIAMIX_LASTPUBLISHED)) {
+                    final JCRNodeWrapper publicationRoot = JCRUtils.runJcrSupplierCallBack(() -> JCRContentUtils.getParentOfType(node, JAHIAMIX_LASTPUBLISHED), null, false);
+                    if (publicationRoot != null) {
+                        // The node is a technical node attached to a publication compliant node  (such as access rights, references in text, ...)
+                        final JCRNodeWrapper publicationRootDefault = JCRUtils.runJcrSupplierCallBack(() -> defaultSession.getNodeByIdentifier(publicationRoot.getIdentifier()), null, false);
+                        if (publicationRootDefault == null) {
+                            // The parent itself holds the error, reporting it again on the technical node would be too verbose
+                            return null;
+                        }
+                        final Locale technicalNodeLocale = JCRUtils.getTechnicalNodeLocale(node);
+                        final JCRNodeWrapper nodeToCheck;
+                        if (technicalNodeLocale != null) {
+                            nodeToCheck = JCRUtils.getI18NWrapper(publicationRootDefault, technicalNodeLocale);
+                        } else {
+                            nodeToCheck = publicationRootDefault;
+                        }
+                        // The fact that the node is missing in default might be related to the pending modifications
+                        if (JCRUtils.hasPendingModifications(nodeToCheck)) return null;
+                    }
+                }
+
                 final String msg = "Found not-UGC node which exists only in live";
                 final ContentIntegrityError error = createError(node, msg)
                         .setErrorType(ErrorType.NO_DEFAULT_NODE);
@@ -162,7 +186,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         */
         if (StringUtils.equals(defaultNode.getPath(), ROOT_NODE_PATH)) return;
 
-        if (JCRUtils.hasPendingModifications(defaultNode)) return;
+        if (JCRUtils.hasPendingModifications(defaultNode, false, true)) return;
 
         try {
             final PropertyIterator properties = defaultNode.getRealNode().getProperties();

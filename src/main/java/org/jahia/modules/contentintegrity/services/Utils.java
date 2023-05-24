@@ -314,10 +314,7 @@ public class Utils {
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-        final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).reduce(new ArrayList<>(), (strings, strings2) -> {
-            strings.addAll(strings2);
-            return strings;
-        });
+        final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).flatMap(List::stream).collect(Collectors.toList());;
 
         final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
         contentIntegrityService.storeErrorsInCache(mergedResults);
@@ -325,18 +322,17 @@ public class Utils {
     }
 
     public static ContentIntegrityErrorList mergeErrorLists(ContentIntegrityErrorList... errorLists) {
-        return Arrays.stream(errorLists)
+        if (errorLists.length == 0) return null;
+
+        final List<ContentIntegrityErrorList> notEmptyLists = Arrays.stream(errorLists)
                 .filter(Objects::nonNull)
                 .filter(ContentIntegrityErrorList::hasErrors)
-                .reduce(null, Utils::mergeErrorLists);
-    }
+                .collect(Collectors.toList());
+        if (notEmptyLists.isEmpty()) return null;
 
-    private static ContentIntegrityErrorList mergeErrorLists(ContentIntegrityErrorList list1, ContentIntegrityErrorList list2) {
-        if (list1 == null) {
-            return new ContentIntegrityErrorListImpl().addAll(list2);
-        } else {
-            return list1.addAll(list2);
-        }
+        return notEmptyLists.stream()
+                .flatMap(list -> list.getNestedErrors().stream())
+                .collect(ContentIntegrityErrorListImpl::createEmptyList, ContentIntegrityErrorList::addError, Utils::mergeErrorLists);
     }
 
     public static String getSiteKey(String path) {

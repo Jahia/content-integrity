@@ -130,7 +130,14 @@ public class GqlIntegrityScan {
                         console.logLine(NO_ERROR_FOUND);
                     } else {
                         final int nbErrors = mergedResults.getErrors().size();
-                        console.logLine(String.format("%d error%s found", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s"));
+                        final String details = workspaces.size() == 1 ?
+                                StringUtils.EMPTY :
+                                results.stream()
+                                        .map(r -> r.getWorkspace() + " : " + r.getErrors().size())
+                                        .collect(Collectors.joining(" , ", " [", "]"));
+
+                        console.logLine(String.format("%d error%s found%s", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s", details));
+
                         if (Utils.writeDumpInTheJCR(mergedResults, false, console))
                             executionReports.put(id, mergedResults.getReports());
                     }
@@ -155,7 +162,7 @@ public class GqlIntegrityScan {
 
         final List<String> logs = executionLog.get(id);
         final int size = logs.size();
-        if (size < LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE) return logs;
+        if (size < LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE) return new ArrayList<>(logs);
 
         final Stream<String> limitMsg = Stream.of(StringUtils.EMPTY, String.format("Limit reached. Displaying the last %d lines", LOGS_LIMIT_CLIENT_SIDE_END_SIZE), StringUtils.EMPTY);
         final Stream<String> logsBeginning = Stream.concat(logs.stream().limit(LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE), limitMsg);

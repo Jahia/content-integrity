@@ -150,6 +150,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             if (session == null) return null;
 
             try {
+                if (!session.nodeExists(path)) {
+                    Utils.log(String.format("The node %s does not exist in the workspace %s", path, session.getWorkspace().getName()), logger, externalLogger);
+                    return null;
+                }
                 final JCRNodeWrapper node = session.getNode(path);
                 final String excludedPathsDesc = CollectionUtils.isNotEmpty(excludedPaths) ?
                         excludedPaths.stream().collect(Collectors.joining(" , ", " (excluded paths: ", " )")) : StringUtils.EMPTY;
