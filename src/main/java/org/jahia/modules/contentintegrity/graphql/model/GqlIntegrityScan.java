@@ -162,7 +162,7 @@ public class GqlIntegrityScan {
 
         final List<String> logs = executionLog.get(id);
         final int size = logs.size();
-        if (size < LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE) return logs;
+        if (size < LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE) return new ArrayList<>(logs);
 
         final Stream<String> limitMsg = Stream.of(StringUtils.EMPTY, String.format("Limit reached. Displaying the last %d lines", LOGS_LIMIT_CLIENT_SIDE_END_SIZE), StringUtils.EMPTY);
         final Stream<String> logsBeginning = Stream.concat(logs.stream().limit(LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE), limitMsg);
