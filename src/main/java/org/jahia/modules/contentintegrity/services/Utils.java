@@ -171,6 +171,7 @@ public class Utils {
                         outputDir = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER)
                                 .addNode(resultsSignature, Constants.JAHIANT_FOLDER);
                         outputDir.addMixin("jmix:nolive");
+                        writeReportMetadata(outputDir, results);
                     } catch (RepositoryException re) {
                         logger.error("Impossible to retrieve the reports folder", re);
                         return null;
@@ -195,7 +196,6 @@ public class Utils {
                         try {
                             reportNode = outputDir.uploadFile(reportGenerator.getFileName(resultsSignature), new ByteArrayInputStream(bytes), reportGenerator.getFileContentType());
                             reportNode.addMixin("jmix:nolive");
-                            writeReportMetadata(reportNode, results);
                             session.save();
                         } catch (RepositoryException e) {
                             logger.error("Impossible to upload the report", e);
