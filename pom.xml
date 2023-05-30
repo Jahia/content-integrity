@@ -127,6 +127,7 @@
                             ${jahia.plugin.projectPackageImport},
                             *
                         </Import-Package>
+                        <Content-Integrity-Version>${project.version}</Content-Integrity-Version>
                     </instructions>
                 </configuration>
             </plugin>

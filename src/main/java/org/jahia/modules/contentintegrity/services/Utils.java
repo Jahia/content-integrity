@@ -17,6 +17,8 @@ import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRTemplate;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,6 +227,7 @@ public class Utils {
         final GregorianCalendar testDate = new GregorianCalendar();
         testDate.setTimeInMillis(results.getTestDate());
         reportNode.setProperty("integrity:executionDate", testDate);
+        reportNode.setProperty("integrity:moduleVersion", getContentIntegrityVersion());
         reportNode.setProperty("integrity:executionLog", StringUtils.join(results.getExecutionLog(), "\n"));
         final Map<String, List<ContentIntegrityError>> errorsByType = results.getErrors().stream()
                 .collect(Collectors.groupingBy(ContentIntegrityError::getIntegrityCheckID));
@@ -362,5 +365,10 @@ public class Utils {
             rangeTop *= APPROXIMATE_COUNT_FACTOR;
         }
         return String.format("%d - %d", rangeBottom, rangeTop);
+    }
+
+    public static String getContentIntegrityVersion() {
+        final Bundle bundle = FrameworkUtil.getBundle(Utils.class);
+        return bundle.getSymbolicName() + " " + bundle.getHeaders().get("Content-Integrity-Version");
     }
 }
