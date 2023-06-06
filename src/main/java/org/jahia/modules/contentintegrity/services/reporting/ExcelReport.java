@@ -50,12 +50,12 @@ public class ExcelReport extends Report {
         int rowNum = 0;
         Row row;
         // Add header
-            row = sheet.createRow(rowNum++);
-            final String[] colNames = getColumns().toArray(new String[0]);
-            final int nbColumns = colNames.length;
-            for (int i = 0; i < nbColumns; i++) {
-                row.createCell(i).setCellValue(colNames[i]);
-            }
+        row = sheet.createRow(rowNum++);
+        final String[] colNames = getColumns().toArray(new String[0]);
+        final int nbColumns = colNames.length;
+        for (int i = 0; i < nbColumns; i++) {
+            row.createCell(i).setCellValue(colNames[i]);
+        }
 
         final List<List<String>> content = getReportContent(results, excludeFixedErrors);
         if (CollectionUtils.isNotEmpty(content)) {

@@ -40,15 +40,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_SITE_PATH_PREFIX;
+
 public class Utils {
 
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
     private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
     private static final String ALL_WORKSPACES = "all-workspaces";
-    private static final String NODE_UNDER_SITE_PATH_PREFIX = "/sites/";
-    private static final String NODE_UNDER_MODULES_PATH_PREFIX = "/modules/";
-    private static final char NODE_PATH_SEPARATOR_CHAR = '/';
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
     private static final List<Class<? extends Report>> reportTypes = Arrays.asList(CsvReport.class, ExcelReport.class);
 
@@ -170,7 +171,7 @@ public class Utils {
                         final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
                         outputDir = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER)
                                 .addNode(resultsSignature, Constants.JAHIANT_FOLDER);
-                        outputDir.addMixin("jmix:nolive");
+                        outputDir.addMixin(Constants.JAHIAMIX_NOLIVE);
                         writeReportMetadata(outputDir, results);
                     } catch (RepositoryException re) {
                         logger.error("Impossible to retrieve the reports folder", re);
@@ -195,7 +196,7 @@ public class Utils {
                         final JCRNodeWrapper reportNode;
                         try {
                             reportNode = outputDir.uploadFile(reportGenerator.getFileName(resultsSignature), new ByteArrayInputStream(bytes), reportGenerator.getFileContentType());
-                            reportNode.addMixin("jmix:nolive");
+                            reportNode.addMixin(Constants.JAHIAMIX_NOLIVE);
                             session.save();
                         } catch (RepositoryException e) {
                             logger.error("Impossible to upload the report", e);
@@ -348,10 +349,10 @@ public class Utils {
 
     public static String getSiteKey(String path, boolean considerModulesAsSites, Function<String,String> moduleKeyRewriter) {
         if (considerModulesAsSites && StringUtils.startsWith(path, NODE_UNDER_MODULES_PATH_PREFIX))
-            return Optional.ofNullable(moduleKeyRewriter).orElseGet(() -> key -> key).apply(StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1]);
+            return Optional.ofNullable(moduleKeyRewriter).orElseGet(() -> key -> key).apply(StringUtils.split(path, JCR_PATH_SEPARATOR_CHAR)[1]);
 
         return StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
-                StringUtils.split(path, NODE_PATH_SEPARATOR_CHAR)[1] : null;
+                StringUtils.split(path, JCR_PATH_SEPARATOR_CHAR)[1] : null;
     }
 
     public static String getApproximateCount(long count, long threshold) {
@@ -369,6 +370,6 @@ public class Utils {
 
     public static String getContentIntegrityVersion() {
         final Bundle bundle = FrameworkUtil.getBundle(Utils.class);
-        return bundle.getSymbolicName() + " " + bundle.getHeaders().get("Content-Integrity-Version");
+        return String.format("%s %s", bundle.getSymbolicName(), bundle.getHeaders().get(Constants.MANIFEST_HEADER_CONTENT_INTEGRITY_VERSION));
     }
 }
