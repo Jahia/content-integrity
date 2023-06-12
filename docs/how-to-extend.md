@@ -87,7 +87,13 @@ Then you will want to overwrite `checkIntegrityBeforeChildren(JCRNodeWrapper nod
 Most of the time, you will implement `checkIntegrityBeforeChildren`. Implement `checkIntegrityAfterChildren`
 when you need to test the integrity of a node after having tested the integrity of its subtree.
 
-If one (or several) integrity error is detected on the scanned node, return an instance of `ContentIntegrityErrorList`, `null` otherwise.
+If one (or several) integrity error is detected on the scanned node, return an instance of `ContentIntegrityErrorList` and add it each individual error.
+If no error is found, return `null` or an instance of `ContentIntegrityErrorList` which contains no error.
+
+If your class extends `AbstractContentIntegrityCheck`, several factory methods can be used:
+- `createError()` : methods to create individual `ContentIntegrityError` Objects
+- `createEmptyErrorsList()` : method to create a new empty error list. Errors can be added to this list afterward
+- `createSingleError()` : method to create a new error list, initialized with the specified error. More errors can be added to this list afterward  
 
 #### Registration into the service
 
@@ -120,8 +126,8 @@ If not configured, the default priority will be used (100)
 
 #### Enabled
 
-Each integrity check can be flaged as disabled. If not configured, the check will be enabled by default.
-It can be relevant to disable by default a check that would time consuming. Such a check can be dynamically enabled
+Each integrity check can be flagged as disabled. If not configured, the check will be enabled by default.
+It can be relevant to disable by default a check that would be time-consuming. Such a check can be dynamically enabled
 at any time, a faulty one can be disabled. See [jcr:integrity-configureCheck](#jcr-integrity-configureCheck)
 
 **Example:**
@@ -183,6 +189,7 @@ Specifies on which subtrees the check has to be executed. The root node of a spe
 
 #### Apply if has properties / skip if has properties  
 
-Specifies some properties which the node must have (or not have) to be checked. Several property names can be listed, comma separated.
+Specifies some properties which the node must have (or not have) to be checked. Several property names can be listed, comma separated. 
+If several properties are listed, the check will be executed on any node which has at least one of the specified properties.
 
     ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=j:workInProgress,j:workInProgressStatus"
