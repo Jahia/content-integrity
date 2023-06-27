@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_SITE_PATH_PREFIX;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
 
 public class Utils {
 
@@ -239,11 +240,11 @@ public class Utils {
                     e.getValue().stream()
                             .collect(Collectors.groupingBy(ContentIntegrityError::getConstraintMessage))
                             .forEach((key, value) -> {
-                                lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 4), key, value.size()));
+                                lines.add(String.format("%s%s : %d", StringUtils.repeat(SPACE, 4), key, value.size()));
                                 if (multipleWorkspacesScanned) {
                                     value.stream()
                                             .collect(Collectors.groupingBy(ContentIntegrityError::getWorkspace))
-                                            .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", StringUtils.repeat(" ", 8), msg, errors.size())));
+                                            .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", StringUtils.repeat(SPACE, 8), msg, errors.size())));
                                 }
                             });
                     return lines;
