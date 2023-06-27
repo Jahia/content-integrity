@@ -8,6 +8,7 @@ public class Constants extends org.jahia.api.Constants {
     private static final Logger logger = LoggerFactory.getLogger(Constants.class);
 
     public static final String CALCULATION_ERROR = "<calculation error>";
+    public static final String SPACE = " ";
 
     public static final char JCR_PATH_SEPARATOR_CHAR = '/';
     public static final String JCR_PATH_SEPARATOR = "/";
