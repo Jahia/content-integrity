@@ -323,7 +323,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             .setErrorType(ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
                             .addExtraInfo("ace-type", aceType)
                             .addExtraInfo("ace-roles", roles)
-                            .addExtraInfo("external-ace", extAce.getPath()));
+                            .addExtraInfo("external-ace", extAce.getPath(), true));
                 }
             }
         }
