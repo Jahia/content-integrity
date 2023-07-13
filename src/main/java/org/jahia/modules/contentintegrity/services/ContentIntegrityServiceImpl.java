@@ -157,7 +157,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final JCRNodeWrapper node = session.getNode(path);
                 final String excludedPathsDesc = CollectionUtils.isNotEmpty(excludedPaths) ?
                         excludedPaths.stream().collect(Collectors.joining(" , ", " (excluded paths: ", " )")) : StringUtils.EMPTY;
-                Utils.log(String.format("Starting to check the integrity under %s in the workspace %s%s", path, workspace, excludedPathsDesc), logger, externalLogger);
+                Utils.log(String.format("Starting to check the integrity under %s in the workspace %s%s with %s", path, workspace, excludedPathsDesc, Utils.getContentIntegrityVersion()), logger, externalLogger);
                 final List<ContentIntegrityError> errors = new ArrayList<>();
                 final long start = System.currentTimeMillis();
                 resetCounters();

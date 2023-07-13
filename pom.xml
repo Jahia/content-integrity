@@ -114,6 +114,7 @@
                     <instructions>
                         <Karaf-Commands>*</Karaf-Commands>
                         <_dsannotations>*</_dsannotations>
+                        <Content-Integrity-Version>${project.version}</Content-Integrity-Version>
                     </instructions>
                 </configuration>
             </plugin>

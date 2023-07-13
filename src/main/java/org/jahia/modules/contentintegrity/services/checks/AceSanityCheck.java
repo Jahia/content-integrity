@@ -43,6 +43,7 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.J_EXTER
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINCIPAL;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_SOURCE_ACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_ACE
@@ -253,7 +254,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 logger.error("", e);
                 return null;
             }
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+        }).filter(Objects::nonNull).sorted().collect(Collectors.toList());
     }
 
     private ContentIntegrityErrorList checkRegularAce(JCRNodeWrapper aceNode) throws RepositoryException {
@@ -307,13 +308,22 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
         if (!isGrantAce) {
             final PropertyIterator references = aceNode.getWeakReferences();
+            String roles = null;
             while (references.hasNext()) {
                 final Node extAce = references.nextProperty().getParent();
                 if (extAce.isNodeType(JNT_EXTERNAL_ACE)) {
+                    if (roles == null) {
+                        if (aceNode.hasProperty(J_ROLES)) {
+                            roles = String.join(SPACE, getRoleNames(aceNode));
+                        } else {
+                            roles = StringUtils.EMPTY;
+                        }
+                    }
                     errors.addError(createError(aceNode, "ACE of type different from GRANT with an external ACE")
                             .setErrorType(ErrorType.ACE_NON_GRANT_WITH_EXTERNAL_ACE)
                             .addExtraInfo("ace-type", aceType)
-                            .addExtraInfo("external-ace", extAce.getPath()));
+                            .addExtraInfo("ace-roles", roles)
+                            .addExtraInfo("external-ace", extAce.getPath(), true));
                 }
             }
         }

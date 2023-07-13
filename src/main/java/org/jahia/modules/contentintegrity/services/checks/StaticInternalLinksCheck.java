@@ -106,7 +106,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck {
             final String text = value.getString();
             domains.forEach(domain -> {
                 if (StringUtils.contains(text, domain)) {
-                    errors.addError(createError(node, "Hardcoded site domain in a String value")
+                    errors.addError(createPropertyRelatedError(node, "Hardcoded site domain in a String value")
                             .addExtraInfo("property-name", propertyName)
                             .addExtraInfo("property-value", getTextExtract(text, domain), true)
                             .addExtraInfo("domain", domain));

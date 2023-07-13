@@ -8,11 +8,15 @@ public class Constants extends org.jahia.api.Constants {
     private static final Logger logger = LoggerFactory.getLogger(Constants.class);
 
     public static final String CALCULATION_ERROR = "<calculation error>";
+    public static final String SPACE = " ";
 
     public static final char JCR_PATH_SEPARATOR_CHAR = '/';
     public static final String JCR_PATH_SEPARATOR = "/";
     public static final String ROOT_NODE_PATH = JCR_PATH_SEPARATOR;
     public static final String MODULES_TREE_PATH = "/modules";
+    public static final String NODE_UNDER_MODULES_PATH_PREFIX = MODULES_TREE_PATH + JCR_PATH_SEPARATOR;
+    public static final String SITES_TREE_PATH = "/sites";
+    public static final String NODE_UNDER_SITE_PATH_PREFIX = SITES_TREE_PATH + JCR_PATH_SEPARATOR;
 
     public static final String JAHIA_MIX_I18N = "jmix:i18n";
     public static final String TRANSLATION_NODE_PREFIX = "j:translation_";
@@ -50,4 +54,7 @@ public class Constants extends org.jahia.api.Constants {
 
     public static final String JAHIANT_REFERENCEINFIELD_FIELDNAME = "j:fieldName";
     public static final String JAHIANT_REFERENCEINFIELD_LANG_SEP = "_";
+    public static final String JAHIAMIX_NOLIVE = "jmix:nolive";
+
+    public static final String MANIFEST_HEADER_CONTENT_INTEGRITY_VERSION = "Content-Integrity-Version";
 }

@@ -6,6 +6,7 @@
 - integrity:errorsCount (long) protected
 - integrity:scannedWorkspace (string) protected
 - integrity:executionDate (date) protected
+- integrity:moduleVersion (string) protected
 - integrity:duration (string) protected
 - integrity:countByErrorType (string, textarea) protected
 - integrity:executionLog (string, textarea) protected
