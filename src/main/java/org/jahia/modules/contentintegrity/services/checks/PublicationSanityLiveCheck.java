@@ -154,6 +154,11 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                         final JCRNodeWrapper nodeToCheck;
                         if (technicalNodeLocale != null) {
                             nodeToCheck = JCRUtils.getI18NWrapper(publicationRootDefault, technicalNodeLocale);
+                            if (nodeToCheck == null) {
+                                // The technical node is related to a locale for which no translation subnode exists. That's another error for which a dedicated check should be implemented (TODO)
+                                // Example: a jnt:referenceInField node, with j:fieldName=text_de and no sibling node j:translation_de
+                                return null;
+                            }
                         } else {
                             nodeToCheck = publicationRootDefault;
                         }
