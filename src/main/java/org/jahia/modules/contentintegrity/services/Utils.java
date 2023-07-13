@@ -53,6 +53,7 @@ public class Utils {
     private static final String ALL_WORKSPACES = "all-workspaces";
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
     private static final List<Class<? extends Report>> reportTypes = Arrays.asList(CsvReport.class, ExcelReport.class);
+    public static final String JAVA_ERROR_PREFIX = "[java error]";
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -128,15 +129,16 @@ public class Utils {
             }
         }
         if (externalLoggers.length > 0) {
+            final String msg;
             if (StringUtils.isNotBlank(message)) {
-                for (ExternalLogger l : externalLoggers) {
-                    l.logLine(message);
-                }
+                msg = t == null ? message : String.format("%s %s", JAVA_ERROR_PREFIX, message);
             } else if (t != null) {
-                final String msg = String.format("%s: %s", t.getClass().getName(), t.getMessage());
-                for (ExternalLogger l : externalLoggers) {
-                    l.logLine(msg);
-                }
+                msg = String.format("%s %s: %s", JAVA_ERROR_PREFIX, t.getClass().getName(), t.getMessage());
+            } else {
+                return;
+            }
+            for (ExternalLogger l : externalLoggers) {
+                l.logLine(msg);
             }
         }
     }
