@@ -14,6 +14,7 @@ public class Constants extends org.jahia.api.Constants {
     public static final String JCR_PATH_SEPARATOR = "/";
     public static final String ROOT_NODE_PATH = JCR_PATH_SEPARATOR;
     public static final String MODULES_TREE_PATH = "/modules";
+    public static final String MODULES_SUBTREE_PATH_PREFIX = MODULES_TREE_PATH + JCR_PATH_SEPARATOR;
     public static final String NODE_UNDER_MODULES_PATH_PREFIX = MODULES_TREE_PATH + JCR_PATH_SEPARATOR;
     public static final String SITES_TREE_PATH = "/sites";
     public static final String NODE_UNDER_SITE_PATH_PREFIX = SITES_TREE_PATH + JCR_PATH_SEPARATOR;

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.MODULES_SUBTREE_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.PUBLISHED;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
@@ -52,7 +53,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
         try {
             final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(LIVE_WORKSPACE, true);
             final boolean flaggedPublished = node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean();
-            if (flaggedPublished || node.isNodeType(Constants.JMIX_AUTO_PUBLISH)) {
+            if (flaggedPublished || node.isNodeType(Constants.JMIX_AUTO_PUBLISH) || StringUtils.startsWith(node.getPath(), MODULES_SUBTREE_PATH_PREFIX)) {
                 final JCRNodeWrapper liveNode;
                 try {
                     liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());
