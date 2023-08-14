@@ -5,11 +5,14 @@
 # <a name="summary"></a>Content Integrity
 Jahia module that provides an extensible service to test the integrity of the content
 * [How to use it](#how-to-use)
-    * [jcr:integrity-check](#jcrintegrity-check) 
-    * [jcr:integrity-printError](#jcr-integrity-printError) 
-    * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
-    * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
-    * [jcr:integrity-configureCheck](#jcr-integrity-configureCheck) 
+    * [Configuration](#configuration)
+    * [UI](#how-to-use-ui)
+    * [Karaf Shell commands](#karaf-shell-commands)
+        * [jcr:integrity-check](#jcrintegrity-check) 
+        * [jcr:integrity-printError](#jcr-integrity-printError) 
+        * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
+        * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
+        * [jcr:integrity-configureCheck](#jcr-integrity-configureCheck) 
 * [Embedded tests](docs/embedded-tests.md#summary)
 * [FAQ](#faq)
 * [How to extend it](docs/how-to-extend.md#summary) 
@@ -18,7 +21,33 @@ Jahia module that provides an extensible service to test the integrity of the co
 
 ## <a name="how-to-use"></a>How to use?
 
-### Basic usage
+### Configuration
+
+Users require to be granted the permission `adminContentIntegrity` at server level to be able to run an integrity scan.
+
+By default, this permission is added to the role `server-administrator`, thus any server administrator is able to use the feature.
+
+### <a name="how-to-use-ui"></a>UI
+
+The module registers an additional page in the administration.
+
+![Overview](./docs/img/ui-overview.png)
+
+All the available checks (provided by the module itself, or by extensions) are listed. Those configured as active are preselected. 
+
+Some checks are configurable. A button is displayed in front of those to open the related configuration screen: ![picto-configure](./src/main/resources/img/configure.png)
+
+The scan is executed on a tree, by default on the whole JCR, starting from its root node. To scan a single site, a specific section, the files hierarchy of a site, ... , specify the related root node as the root of the scan.
+
+All the nodes under the specified one will be scanned, unless some subtrees are specified to be excluded. If needed, specify the path of the root nodes of those trees to skip.
+
+The scan can be run on a single workspace, or on both.
+
+Virtual nodes (e.g. exposed by an EDP connector) can be excluded from the scan. This is useful when processing those nodes involve a lot of connections to an 3rd party system, with an important impact on the duration of the scan.
+
+When running a scan, the related logs are displayed in the UI. The scan is run in background, and leaving the screen will have no impact on its execution. When the scan is over, the results can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`), or viewed in the UI, in the tab `Results`.
+
+### Karaf Shell commands
 The content integrity service is available through the [Karaf console](https://academy.jahia.com/documentation/system-administrator/jahia/8/installing-and-configuring-jahia/installing-configuring-and-troubleshooting-jahia/configuring-jahia-features#osgi-ssh-console).
 
 Use `jcr:cd {path}` to position yourself on the node from which you want to start the scan.
@@ -34,7 +63,6 @@ Use `jcr:integrity-check` to run a content integrity test.
     No error found
     jahia@dx()>
     
-### Commands
 #### jcr:integrity-check  
 Runs a scan of the current tree and current workspace.
 
