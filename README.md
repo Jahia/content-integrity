@@ -216,7 +216,7 @@ Coming soon
 
 ### Scan interruption
 
-You can interrupt a running scan by defining a system property named `modules.contentIntegrity.interrupt`. 
+You can interrupt a running scan from the UI, or by defining a system property named `modules.contentIntegrity.interrupt`. 
 You can for example run the following script in a groovy console:
 
     System.setProperty("modules.contentIntegrity.interrupt", "true")
@@ -228,4 +228,4 @@ Most of the checks are purely related to the JCR, and do not need to be executed
 The following checks rely on some local resources, and should be run on every server in a cluster:
 * TemplatesIndexationCheck
 
-Refer to [jcr:integrity-check](#jcrintegrity-check) to run a scan with a specified list of checks to execute.
+In the UI, the checks to execute can be easily selected. If using the Karaf Shell, refer to [jcr:integrity-check](#jcrintegrity-check) to run a scan with a specified list of checks to execute.
