@@ -43,7 +43,9 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.J_EXTER
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINCIPAL;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_SOURCE_ACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.SLASH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.UNDERSCORE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_ACE
@@ -374,17 +376,17 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final String expectedNodeName;
 
         if (isExternal) {
-            expectedNodeName = new StringBuilder("REF")
-                    .append(ace.getPropertyAsString("j:roles"))
-                    .append("_")
-                    .append(ace.getPropertyAsString("j:externalPermissionsName"))
-                    .append("_")
-                    .append(JCRContentUtils.replaceColon(ace.getPropertyAsString("j:principal")).replaceAll("/", "_"))
+            expectedNodeName = new StringBuilder(Constants.EXTERNAL_ACE_NODENAME_PREFIX)
+                    .append(ace.getPropertyAsString(J_ROLES))
+                    .append(UNDERSCORE)
+                    .append(ace.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME))
+                    .append(UNDERSCORE)
+                    .append(JCRContentUtils.replaceColon(ace.getPropertyAsString(J_PRINCIPAL)).replaceAll(SLASH, UNDERSCORE))
                     .toString();
         } else {
-            expectedNodeName = new StringBuilder(ace.getPropertyAsString("j:aceType"))
-                    .append("_")
-                    .append(JCRContentUtils.replaceColon(ace.getPropertyAsString("j:principal")).replaceAll("/", "_"))
+            expectedNodeName = new StringBuilder(ace.getPropertyAsString(J_ACE_TYPE))
+                    .append(UNDERSCORE)
+                    .append(JCRContentUtils.replaceColon(ace.getPropertyAsString(J_PRINCIPAL)).replaceAll(SLASH, UNDERSCORE))
                     .toString();
         }
 

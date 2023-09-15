@@ -45,6 +45,9 @@ import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NODE_PATH;
+
 @Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
         Constants.SERVICE_PID + "=org.jahia.modules.contentintegrity.service",
         Constants.SERVICE_DESCRIPTION + "=Content integrity service",
@@ -164,7 +167,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final Set<String> trimmedExcludedPaths = new HashSet<>();
                 if (CollectionUtils.isNotEmpty(excludedPaths)) {
                     for (String excludedPath : excludedPaths) {
-                        trimmedExcludedPaths.add(("/".equals(excludedPath) || !excludedPath.endsWith("/")) ? excludedPath : excludedPath.substring(0, excludedPath.length() - 1));
+                        trimmedExcludedPaths.add((ROOT_NODE_PATH.equals(excludedPath) || !excludedPath.endsWith(JCR_PATH_SEPARATOR)) ? excludedPath : excludedPath.substring(0, excludedPath.length() - 1));
                     }
                 }
                 calculateNbNodesToScan(node, trimmedExcludedPaths, skipMountPoints, externalLogger);
@@ -412,7 +415,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             return true; // If the test is started from /jcr:system or somewhere under, then it will not be skipped (this method is not executed on the root node of the scan, it is used to filter the children when traversing the subtree)
         }
         final String parentPath = parent.getPath();
-        final String parentPathPlusSlash = StringUtils.equals(parentPath, "/") ? parentPath : parentPath.concat("/");
+        final String parentPathPlusSlash = StringUtils.equals(parentPath, ROOT_NODE_PATH) ? parentPath : parentPath.concat(JCR_PATH_SEPARATOR);
         if (!StringUtils.equals(path, parentPathPlusSlash + node.getName())) {
             Utils.log(String.format("Ignoring a child node as it is not the child of its parent node, according to their respective paths: %s", path), Utils.LOG_LEVEL.ERROR, logger, externalLogger);
             return true;

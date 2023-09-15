@@ -22,6 +22,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
+
 public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
@@ -450,12 +452,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         private final String treePathPlusSlash;
 
         public SubtreeCondition(String treePath) {
-            if (treePath.endsWith("/")) {
+            if (treePath.endsWith(JCR_PATH_SEPARATOR)) {
                 this.treePath = treePath.length() == 1 ? treePath : treePath.substring(0, treePath.length() - 1);
                 treePathPlusSlash = treePath;
             } else {
                 this.treePath = treePath;
-                treePathPlusSlash = treePath.concat("/");
+                treePathPlusSlash = treePath.concat(JCR_PATH_SEPARATOR);
             }
         }
 
