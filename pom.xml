@@ -123,7 +123,7 @@
                         As a consequence, we need to override the generated import-package to work with both versions
                         -->
                         <Import-Package>
-                            graphql.annotations.annotationTypes;version="[6.1,8)",
+                            graphql.annotations.annotationTypes;version="[6.1,99)",
                             ${jahia.plugin.projectPackageImport},
                             *
                         </Import-Package>
