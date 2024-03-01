@@ -3,7 +3,6 @@ package org.jahia.modules.contentintegrity.services.reporting;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.settings.SettingsBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +22,11 @@ public class CsvReport extends Report {
     private static final String CSV_VALUE_WRAPPER = "\"";
     private static final String CSV_EMPTY_VALUE = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
     private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
+    public static final int MAX_NUMBER_OF_LINES = 500 * 1000;
 
     @Override
-    public void write(OutputStream out, ContentIntegrityResults results, boolean excludeFixedErrors) throws IOException {
-        IOUtils.writeLines(toCSVFileContent(results, excludeFixedErrors), null, out, StandardCharsets.UTF_8);
+    public void write(OutputStream out, List<ContentIntegrityError> errors) throws IOException {
+        IOUtils.writeLines(toCSVFileContent(errors), null, out, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -39,8 +39,13 @@ public class CsvReport extends Report {
         return "text/csv";
     }
 
-    private List<String> toCSVFileContent(ContentIntegrityResults results, boolean excludeFixedErrors) {
-        final List<String> lines = getReportContent(results, excludeFixedErrors);
+    @Override
+    public int getMaxNumberOfLines() {
+        return MAX_NUMBER_OF_LINES;
+    }
+
+    private List<String> toCSVFileContent(List<ContentIntegrityError> errors) {
+        final List<String> lines = getReportContent(errors);
         String header = SettingsBean.getInstance().getString(REPORT_COLUMN_NAMES_CONF, null);
         if (StringUtils.isBlank(header)) {
             header = toCSVLine(getColumns());
@@ -50,9 +55,8 @@ public class CsvReport extends Report {
         return lines;
     }
 
-    private List<String> getReportContent(ContentIntegrityResults results, boolean excludeFixedErrors) {
-        return results.getErrors().stream()
-                .filter(error -> !excludeFixedErrors || !error.isFixed())
+    private List<String> getReportContent(List<ContentIntegrityError> errors) {
+        return errors.stream()
                 .map(CsvReport::toCSVLine)
                 .collect(Collectors.toList());
     }
