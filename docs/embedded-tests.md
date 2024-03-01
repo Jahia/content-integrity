@@ -321,9 +321,10 @@ For the published nodes, if the node with the same identifier in the `default` w
 
 ### Configuration
 
-| Name                         |  Type   | Default Value | Description                                                                                                              |
-|------------------------------|:-------:|:-------------:|--------------------------------------------------------------------------------------------------------------------------|
-| deep-compare-published-nodes | boolean |     false     | If true, the value of every property will be compared between default and live on the nodes without pending modification |
+| Name                                 |  Type   | Default Value | Description                                                                                                                                                                               |
+|--------------------------------------|:-------:|:-------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| deep-compare-published-nodes         | boolean |     false     | If true, the value of every property will be compared between default and live on the nodes without pending modification                                                                  |
+| report-live-only-undefined-ugc-nodes | boolean |     false     | If true, the nodes which exist only in live, and for which we don't track if they are UGC nodes, will be reported as errors. Most of those errors should be considered as false positives |
 
 ### Dealing with errors
 

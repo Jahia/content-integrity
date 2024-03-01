@@ -78,10 +78,17 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
                 }, errors, ErrorType.MISSING_FULLPATH, ErrorType.INVALID_FULLPATH);
             }
         } else {
-            if (JCRUtils.isUGCNode(node)) {
-                ensureMissingFullpathProperty(node, errors);
-            } else {
-                validateConsistentFullpathProperty(node, errors);
+            final JCRUtils.UGC_STATE ugcState = JCRUtils.isUGCNode(node);
+            switch (ugcState) {
+                case UGC:
+                case UNDEFINED:
+                    ensureMissingFullpathProperty(node, errors);
+                    break;
+                case NON_UGC:
+                    validateConsistentFullpathProperty(node, errors);
+                    break;
+                case INCONSISTENT:
+                default:
             }
         }
     }

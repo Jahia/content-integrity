@@ -48,8 +48,9 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityLiveCheck.class);
 
     private static final String DEEP_COMPARE_PUBLISHED_NODES = "deep-compare-published-nodes";
-    private static final String LIVE_MIXINS_DECLARATION_PREFIX = "jcr:mixinTypes=";
+    private static final String REPORT_LIVE_ONLY_UNDEFINED_UGC_NODES = "report-live-only-undefined-ugc-nodes";
 
+    private static final String LIVE_MIXINS_DECLARATION_PREFIX = "jcr:mixinTypes=";
     private static final List<String> DEFAULT_ONLY_MIXINS = Collections.singletonList(JMIX_DELETED_CHILDREN);
     /*
     Properties which can be defined on either workspace, and be missing on the other one.
@@ -77,11 +78,12 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
 
     private final ContentIntegrityCheckConfiguration configurations;
 
-    private enum ErrorType {NO_DEFAULT_NODE, MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL, DIFFERENT_MIXINS}
+    private enum ErrorType {NO_DEFAULT_NODE, MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL, DIFFERENT_MIXINS, INCONSISTENT_UGC}
 
     public PublicationSanityLiveCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
         configurations.declareDefaultParameter(DEEP_COMPARE_PUBLISHED_NODES, false, BOOLEAN_PARSER, "If true, the value of every property will be compared between default and live on the nodes without pending modification");
+        configurations.declareDefaultParameter(REPORT_LIVE_ONLY_UNDEFINED_UGC_NODES, false, BOOLEAN_PARSER, "If true, the nodes which exist only in live, and for which we don't track if they are UGC nodes, will be reported as errors. Most of those errors should be considered as false positives.");
         // TODO: for multi-value properties, compare the order of the values
     }
 
@@ -94,15 +96,24 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
         return (boolean) configurations.getParameter(DEEP_COMPARE_PUBLISHED_NODES);
     }
 
+    private boolean isReportLiveOnlyUndefinedUgcNodes() {
+        return (boolean) configurations.getParameter(REPORT_LIVE_ONLY_UNDEFINED_UGC_NODES);
+    }
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
             final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(Constants.EDIT_WORKSPACE, true);
-            if (JCRUtils.isUGCNode(node)) {
+            final JCRUtils.UGC_STATE ugcState = JCRUtils.isUGCNode(node);
+            if (ugcState == JCRUtils.UGC_STATE.UGC) {
                 // UGC
                 // TODO: check if there's a node with the same ID in default
                 return null;
             }
+            if (ugcState == JCRUtils.UGC_STATE.INCONSISTENT) {
+                return createSingleError(createError(node, "Missing jmix:originWS property").setErrorType(ErrorType.INCONSISTENT_UGC));
+            }
+
             final JCRNodeWrapper defaultNode;
             try {
                 defaultNode = defaultSession.getNodeByIdentifier(node.getIdentifier());
@@ -131,12 +142,24 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                             break;
                         }
                     }
-                } else if (node.isNodeType(Constants.JAHIANT_PERMISSION) && StringUtils.startsWith(node.getPath(), Constants.MODULES_TREE_PATH)) {
+                } else if (ugcState == JCRUtils.UGC_STATE.UNDEFINED) {
                     /*
-                    It seems that some permissions are autocreated when the module is installed,
-                    in the live workspace, but they do not have any j:originWS property
+                       Can't determine if the node is a UGC node or not. In that case, we need to assume that it is (or take the risk to report false positives)
+                       Seen with permissions under /modules. Some permissions are autocreated when the module is installed, in the live workspace
+                       Seen with ACE defined in live, jnt:ace doesn't inherit from jmix:originWS
                      */
-                    isUGC = true;
+                    if (node.isNodeType(Constants.JAHIANT_PERMISSION) && StringUtils.startsWith(node.getPath(), Constants.MODULES_TREE_PATH)) {
+                        /*
+                           It seems that some permissions are autocreated when the module is installed,
+                           in the live workspace, but they do not have any j:originWS property
+                         */
+                        isUGC = true;
+                    } else {
+                        /*
+                           Seen with ACE defined in live, jnt:ace doesn't inherit from jmix:originWS
+                        */
+                        isUGC = !isReportLiveOnlyUndefinedUgcNodes();
+                    }
                 }
 
                 if (isUGC) return null;
