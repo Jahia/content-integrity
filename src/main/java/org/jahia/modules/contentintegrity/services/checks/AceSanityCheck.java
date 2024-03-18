@@ -43,7 +43,9 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.J_EXTER
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINCIPAL;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_SOURCE_ACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.SLASH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.UNDERSCORE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_ACE
@@ -112,6 +114,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private ContentIntegrityErrorList checkExternalAce(JCRNodeWrapper externalAceNode) throws RepositoryException {
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         errors.addAll(checkPrincipalOnAce(externalAceNode));
+        errors.addAll(checkAceNodeName(externalAceNode, true));
 
         final String aceType;
         if (!externalAceNode.hasProperty(J_ACE_TYPE)) {
@@ -260,6 +263,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private ContentIntegrityErrorList checkRegularAce(JCRNodeWrapper aceNode) throws RepositoryException {
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         errors.addAll(checkPrincipalOnAce(aceNode));
+        errors.addAll(checkAceNodeName(aceNode, false));
 
         final boolean isGrantAce;
         final String aceType;
@@ -368,6 +372,31 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         return p;
     }
 
+    private ContentIntegrityErrorList checkAceNodeName(JCRNodeWrapper ace, boolean isExternal) {
+        final String expectedNodeName;
+
+        if (isExternal) {
+            expectedNodeName = new StringBuilder(Constants.EXTERNAL_ACE_NODENAME_PREFIX)
+                    .append(ace.getPropertyAsString(J_ROLES))
+                    .append(UNDERSCORE)
+                    .append(ace.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME))
+                    .append(UNDERSCORE)
+                    .append(JCRContentUtils.replaceColon(ace.getPropertyAsString(J_PRINCIPAL)).replaceAll(SLASH, UNDERSCORE))
+                    .toString();
+        } else {
+            expectedNodeName = new StringBuilder(ace.getPropertyAsString(J_ACE_TYPE))
+                    .append(UNDERSCORE)
+                    .append(JCRContentUtils.replaceColon(ace.getPropertyAsString(J_PRINCIPAL)).replaceAll(SLASH, UNDERSCORE))
+                    .toString();
+        }
+
+        if (StringUtils.equals(ace.getName(), expectedNodeName)) return null;
+        return createSingleError(
+                createError(ace, "ACE with an invalid nodename")
+                        .setErrorType(ErrorType.INVALID_NODENAME)
+                        .addExtraInfo("expected-nodename", expectedNodeName, true));
+    }
+
     @Override
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
         if (!Constants.EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
@@ -401,7 +430,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private enum ErrorType {
-        NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
+        NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP, INVALID_NODENAME,
         NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, INVALID_EXTERNAL_ACE_PATH, SOURCE_ACE_NOT_TYPE_GRANT,
         INVALID_EXTERNAL_PERMISSIONS, MISSING_EXTERNAL_ACE, ACE_NON_GRANT_WITH_EXTERNAL_ACE,
         NO_ROLES_PROP, INVALID_ROLES_PROP,

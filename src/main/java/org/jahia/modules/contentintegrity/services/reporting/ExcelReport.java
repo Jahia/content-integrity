@@ -11,7 +11,7 @@ import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.XSSFPivotTable;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +37,14 @@ public class ExcelReport extends Report {
     }
 
     @Override
-    public void write(OutputStream stream, ContentIntegrityResults results, boolean excludeFixedErrors) throws IOException {
+    public int getMaxNumberOfLines() {
+        return SpreadsheetVersion.EXCEL2007.getLastRowIndex() - 1;
+    }
+
+    @Override
+    public void write(OutputStream stream, List<ContentIntegrityError> errors) throws IOException {
         final int maxRows = SpreadsheetVersion.EXCEL2007.getLastRowIndex();
-        if ((results.getErrors().size() + 1) > maxRows) {
+        if ((errors.size() + 1) > maxRows) {
             logger.error(String.format("The number of errors is too high to be written in an Excel sheet. Max number of rows: %d", maxRows));
             return;
         }
@@ -57,7 +62,7 @@ public class ExcelReport extends Report {
             row.createCell(i).setCellValue(colNames[i]);
         }
 
-        final List<List<String>> content = getReportContent(results, excludeFixedErrors);
+        final List<List<String>> content = getReportContent(errors);
         if (CollectionUtils.isNotEmpty(content)) {
             for (List<String> data : content) {
                 row = sheet.createRow(rowNum++);
@@ -97,9 +102,8 @@ public class ExcelReport extends Report {
         }
     }
 
-    private List<List<String>> getReportContent(ContentIntegrityResults results, boolean excludeFixedErrors) {
-        return results.getErrors().stream()
-                .filter(error -> !excludeFixedErrors || !error.isFixed())
+    private List<List<String>> getReportContent(List<ContentIntegrityError> errors) {
+        return errors.stream()
                 .map(Report::toTextElementsList)
                 .collect(Collectors.toList());
     }

@@ -39,16 +39,21 @@ public class JCRUtils {
 
     private static final String JMIX_ORIGIN_WS = "jmix:originWS";
 
+    public enum UGC_STATE {UGC, NON_UGC, UNDEFINED, INCONSISTENT}
+
     /**
      * Evaluates if the node is a UGC node
      *
      * @param node the node
      * @return true if the node is a UGC node
      */
-    public static boolean isUGCNode(JCRNodeWrapper node) throws RepositoryException {
+    public static UGC_STATE isUGCNode(JCRNodeWrapper node) throws RepositoryException {
         if (!StringUtils.equals(node.getSession().getWorkspace().getName(), Constants.LIVE_WORKSPACE))
             throw new IllegalArgumentException("Only nodes from the live workspace can be tested");
-        return node.isNodeType(JMIX_ORIGIN_WS) && node.hasProperty(ORIGIN_WORKSPACE) && LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString());
+        if (!node.isNodeType(JMIX_ORIGIN_WS)) return UGC_STATE.UNDEFINED;
+        if (!node.hasProperty(ORIGIN_WORKSPACE)) return UGC_STATE.INCONSISTENT;
+        return LIVE_WORKSPACE.equals(node.getProperty(ORIGIN_WORKSPACE).getString()) ?
+                UGC_STATE.UGC : UGC_STATE.NON_UGC;
     }
 
     public static boolean isExternalNode(JCRNodeWrapper node) {

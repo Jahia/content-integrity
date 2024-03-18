@@ -20,7 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.MODULES_SUBTREE_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.PUBLISHED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NODE_PATH;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_LASTPUBLISHED,
@@ -52,7 +54,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
         try {
             final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(LIVE_WORKSPACE, true);
             final boolean flaggedPublished = node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean();
-            if (flaggedPublished || node.isNodeType(Constants.JMIX_AUTO_PUBLISH)) {
+            if (flaggedPublished || node.isNodeType(Constants.JMIX_AUTO_PUBLISH) || StringUtils.startsWith(node.getPath(), MODULES_SUBTREE_PATH_PREFIX)) {
                 final JCRNodeWrapper liveNode;
                 try {
                     liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());
@@ -77,7 +79,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                         final String msg = "Found a published node, with no pending modifications, but the path in live is different";
                         final ContentIntegrityError error = createError(node, msg)
                                 .addExtraInfo("live-node-path", liveNode.getPath(), true);
-                        if (!StringUtils.equals(nodePath, "/") && StringUtils.equals(nodePath, scanRoot)) {
+                        if (!StringUtils.equals(nodePath, ROOT_NODE_PATH) && StringUtils.equals(nodePath, scanRoot)) {
                             inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
                             error.setErrorType(ErrorType.DIFFERENT_PATH_POTENTIAL_FP);
                             error.setExtraMsg("Warning: this node is the root of the scan, but not the root of the JCR. So the error might be a false positive, if the node is under a node which has been moved, but this move operation has not been published yet. To clarify this, you need to analyze the parent nodes, or redo the scan from a higher level");

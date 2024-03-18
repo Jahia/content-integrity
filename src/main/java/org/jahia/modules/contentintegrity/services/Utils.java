@@ -12,10 +12,9 @@ import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.reporting.CsvReport;
 import org.jahia.modules.contentintegrity.services.reporting.ExcelReport;
 import org.jahia.modules.contentintegrity.services.reporting.Report;
+import org.jahia.modules.contentintegrity.services.reporting.ReportWriter;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -52,7 +51,7 @@ public class Utils {
     private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
     private static final String ALL_WORKSPACES = "all-workspaces";
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
-    private static final List<Class<? extends Report>> reportTypes = Arrays.asList(CsvReport.class, ExcelReport.class);
+    private static final List<Report> reportGenerators = Arrays.asList(new CsvReport(), new ExcelReport());
     public static final String JAVA_ERROR_PREFIX = "[java error]";
 
     public enum LOG_LEVEL {
@@ -163,62 +162,96 @@ public class Utils {
     }
 
     public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, ExternalLogger externalLogger) {
-        final AtomicInteger reportsCount = new AtomicInteger();
         try {
-            JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<Void>() {
-                @Override
-                public Void doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                    final String resultsSignature = results.getSignature(excludeFixedErrors);
-                    final JCRNodeWrapper outputDir;
-                    try {
-                        final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
-                        outputDir = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER)
-                                .addNode(resultsSignature, Constants.JAHIANT_FOLDER);
-                        outputDir.addMixin(Constants.JAHIAMIX_NOLIVE);
-                        writeReportMetadata(outputDir, results);
-                    } catch (RepositoryException re) {
-                        logger.error("Impossible to retrieve the reports folder", re);
-                        return null;
-                    }
-
-                    reportTypes.forEach(rt -> {
-                        final Report reportGenerator;
-                        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        try {
-                            reportGenerator = rt.newInstance();
-                            reportGenerator.write(out, results, excludeFixedErrors);
-                        } catch (InstantiationException | IllegalAccessException e) {
-                            logger.error("Impossible to load the report generator", e);
-                            return;
-                        } catch (Throwable t) {
-                            logger.error("Impossible to generate the report content", t);
-                            return;
-                        }
-                        final byte[] bytes = out.toByteArray();
-
-                        final JCRNodeWrapper reportNode;
-                        try {
-                            reportNode = outputDir.uploadFile(reportGenerator.getFileName(resultsSignature), new ByteArrayInputStream(bytes), reportGenerator.getFileContentType());
-                            reportNode.addMixin(Constants.JAHIAMIX_NOLIVE);
-                            session.save();
-                        } catch (RepositoryException e) {
-                            logger.error("Impossible to upload the report", e);
-                            return;
-                        }
-                        final String reportPath = reportNode.getPath();
-                        results.addJcrReport(reportNode.getName(), reportPath, reportGenerator.getFileExtension());
-                        reportsCount.incrementAndGet();
-                        externalLogger.logLine("Written the report in " + reportPath);
-                    });
-
-                    return null;
+            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+                final String resultsSignature = results.getSignature(excludeFixedErrors);
+                final JCRNodeWrapper outputDir;
+                try {
+                    final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
+                    outputDir = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER)
+                            .addNode(resultsSignature, Constants.JAHIANT_FOLDER);
+                    outputDir.addMixin(Constants.JAHIAMIX_NOLIVE);
+                    writeReportMetadata(outputDir, results);
+                } catch (RepositoryException re) {
+                    logger.error("Impossible to retrieve the reports folder", re);
+                    return false;
                 }
+
+                return writeReports(results, excludeFixedErrors, (name, extension, contentType, data) -> {
+                    final JCRNodeWrapper reportNode;
+                    try {
+                        reportNode = outputDir.uploadFile(name, new ByteArrayInputStream(data), contentType);
+                        reportNode.addMixin(Constants.JAHIAMIX_NOLIVE);
+                        session.save();
+                    } catch (RepositoryException e) {
+                        logger.error("Impossible to upload the report", e);
+                        return false;
+                    }
+                    final String reportPath = reportNode.getPath();
+                    results.addJcrReport(reportNode.getName(), reportPath, extension);
+                    externalLogger.logLine("Written the report in " + reportPath);
+
+                    return true;
+                });
             });
         } catch (RepositoryException e) {
             logger.error("", e);
+            return false;
         }
+    }
 
-        return reportsCount.get() == reportTypes.size();
+    private static boolean writeReports(ContentIntegrityResults results, boolean excludeFixedErrors, ReportWriter reportWriter) {
+        final String resultsSignature = results.getSignature(excludeFixedErrors);
+        final Integer chunksSize = reportGenerators.stream()
+                .map(Report::getMaxNumberOfLines)
+                .min(Integer::compareTo)
+                .get();
+        final long nbErrors = results.getErrors().stream()
+                .filter(error -> !excludeFixedErrors || !error.isFixed())
+                .count();
+        if (nbErrors < chunksSize) {
+            final List<ContentIntegrityError> errors = results.getErrors().stream()
+                    .filter(error -> !excludeFixedErrors || !error.isFixed())
+                    .collect(Collectors.toList());
+            return writeReports(errors, resultsSignature, reportWriter);
+        } else {
+            long dumpedErrors = 0L;
+            int idx = 0;
+            boolean success = true;
+            while (dumpedErrors < nbErrors) {
+                final List<ContentIntegrityError> errors = results.getErrors().stream()
+                        .filter(error -> !excludeFixedErrors || !error.isFixed())
+                        .skip(dumpedErrors)
+                        .limit(chunksSize)
+                        .collect(Collectors.toList());
+                idx++;
+                dumpedErrors += chunksSize;
+                success &= writeReports(errors, String.format("%s--%d", resultsSignature, idx), reportWriter);
+            }
+            return success;
+        }
+    }
+
+    private static boolean writeReports(List<ContentIntegrityError> errors, String fileNameSignature, ReportWriter reportWriter) {
+        final AtomicInteger reportsCount = new AtomicInteger();
+        reportGenerators.forEach(reportGenerator -> {
+            final ByteArrayOutputStream out = new ByteArrayOutputStream();
+            try {
+                reportGenerator.write(out, errors);
+            } catch (Throwable t) {
+                logger.error("Impossible to generate the report content", t);
+                return;
+            }
+            final byte[] bytes = out.toByteArray();
+            if (reportWriter.saveFile(reportGenerator.getFileName(fileNameSignature),
+                    reportGenerator.getFileExtension(),
+                    reportGenerator.getFileContentType(),
+                    bytes)) {
+                reportsCount.incrementAndGet();
+            }
+        });
+
+        return reportsCount.get() == reportGenerators.size();
     }
 
     private static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
@@ -261,44 +294,29 @@ public class Utils {
         final boolean folderCreated = outputDir.exists() || outputDir.mkdirs();
 
         if (folderCreated && outputDir.canWrite()) {
-            final AtomicInteger reportsCount = new AtomicInteger();
-            reportTypes.forEach(rt -> {
-                final Report reportGenerator;
-                final ByteArrayOutputStream out = new ByteArrayOutputStream();
-                try {
-                    reportGenerator = rt.newInstance();
-                    reportGenerator.write(out, results, excludeFixedErrors);
-                } catch (InstantiationException | IllegalAccessException e) {
-                    logger.error("Impossible to load the report generator", e);
-                    return;
-                } catch (IOException e) {
-                    logger.error("Impossible to generate the report content", e);
-                    return;
-                }
-                final byte[] bytes = out.toByteArray();
-                final File file = new File(outputDir, reportGenerator.getFileName(results.getSignature(excludeFixedErrors)));
+            return writeReports(results, excludeFixedErrors, (name, extension, contentType, data) -> {
+                final File file = new File(outputDir, name);
                 final boolean exists = file.exists();
                 if (!exists) {
                     try {
                         file.createNewFile();
                     } catch (IOException e) {
                         logger.error("Impossible to create the file", e);
-                        return;
+                        return false;
                     }
                 }
                 try {
-                    FileUtils.writeByteArrayToFile(file, bytes);
+                    FileUtils.writeByteArrayToFile(file, data);
                 } catch (IOException e) {
                     logger.error("Impossible to write the file content", e);
-                    return;
+                    return false;
                 }
                 final String reportPath = file.getPath();
-                results.addFilesystemReport(file.getName(), reportPath, reportGenerator.getFileExtension());
-                reportsCount.incrementAndGet();
+                results.addFilesystemReport(file.getName(), reportPath, extension);
                 System.out.println(String.format("%s %s", exists ? "Overwritten" : "Dumped into", reportPath));
-            });
 
-            return reportsCount.get() == reportTypes.size();
+                return true;
+            });
         } else {
             logger.error("Impossible to write the folder " + outputDir.getPath());
         }

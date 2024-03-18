@@ -9,11 +9,14 @@ public class Constants extends org.jahia.api.Constants {
 
     public static final String CALCULATION_ERROR = "<calculation error>";
     public static final String SPACE = " ";
+    public static final String UNDERSCORE = "_";
+    public static final String SLASH = "/";
 
-    public static final char JCR_PATH_SEPARATOR_CHAR = '/';
-    public static final String JCR_PATH_SEPARATOR = "/";
+    public static final char JCR_PATH_SEPARATOR_CHAR = SLASH.charAt(0);
+    public static final String JCR_PATH_SEPARATOR = SLASH;
     public static final String ROOT_NODE_PATH = JCR_PATH_SEPARATOR;
     public static final String MODULES_TREE_PATH = "/modules";
+    public static final String MODULES_SUBTREE_PATH_PREFIX = MODULES_TREE_PATH + JCR_PATH_SEPARATOR;
     public static final String NODE_UNDER_MODULES_PATH_PREFIX = MODULES_TREE_PATH + JCR_PATH_SEPARATOR;
     public static final String SITES_TREE_PATH = "/sites";
     public static final String NODE_UNDER_SITE_PATH_PREFIX = SITES_TREE_PATH + JCR_PATH_SEPARATOR;
@@ -35,6 +38,7 @@ public class Constants extends org.jahia.api.Constants {
     public static final String J_ROLES = "j:roles";
     public static final String J_SOURCE_ACE = "j:sourceAce";
     public static final String EXTERNAL_PERMISSIONS_PATH = "j:path";
+    public static final String EXTERNAL_ACE_NODENAME_PREFIX = "REF";
     public static final String J_ACE_TYPE = "j:aceType";
     public static final String ACE_TYPE_GRANT = "GRANT";
     public static final String GUEST_USER_KEY = "u:guest";
@@ -53,7 +57,7 @@ public class Constants extends org.jahia.api.Constants {
     public static final String JMIX_EXTERNAL_PROVIDER_EXTENSION = "jmix:externalProviderExtension";
 
     public static final String JAHIANT_REFERENCEINFIELD_FIELDNAME = "j:fieldName";
-    public static final String JAHIANT_REFERENCEINFIELD_LANG_SEP = "_";
+    public static final String JAHIANT_REFERENCEINFIELD_LANG_SEP = UNDERSCORE;
     public static final String JAHIAMIX_NOLIVE = "jmix:nolive";
 
     public static final String MANIFEST_HEADER_CONTENT_INTEGRITY_VERSION = "Content-Integrity-Version";
