@@ -36,8 +36,8 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
         }
         final int modulePathLength = parts[0].length() + parts[1].length() + parts[2].length() + 3;
         final String modulePath = templatePath.substring(0, modulePathLength);
-
-        final String query = String.format("select * from [jnt:template] as w where isdescendantnode(w, ['%s']) and name(w)='%s'",
+        
+        final String query = String.format("select * from [jnt:template] where isdescendantnode('%s') and name()='%s'",
                 JCRContentUtils.sqlEncode(modulePath), JCRContentUtils.sqlEncode(template.getName()));
         final QueryWrapper q;
         try {
