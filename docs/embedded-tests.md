@@ -21,6 +21,7 @@
   * [UndeployedModulesReferencesCheck](#undeployedmodulesreferencescheck)
   * [UserAccountSanityCheck](#useraccountsanitycheck)
   * [VersionHistoryCheck](#versionhistorycheck)
+  * [VersionsSanityCheck](#versionsanitycheck)
   * [WipSanityCheck](#wipsanitycheck)
 * [How to extend it](how-to-extend.md#summary)
 * [Groovy scripts](groovy-scripts.md#summary)
@@ -491,6 +492,12 @@ import org.jahia.services.history.NodeVersionHistoryHelper
 
 NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(nodeIdentifier))
 ```
+
+## VersionsSanityCheck
+    
+Analyzes the versions tree, and checks the consistency of the version nodes.  
+The versions tree is not scanned by default. To have this test executed, the scan root node must be `/jcr:system`, `/jcr:system/jcr:versionStorage` or any other node under.  
+In addition to the identified errors, the check will compute some statistics about the scanned tree. To analyze a specific subtree of the version storage, just run the scan from this tree.
 
 ## WipSanityCheck
 
