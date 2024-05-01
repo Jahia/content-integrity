@@ -21,6 +21,7 @@
   * [UndeployedModulesReferencesCheck](#undeployedmodulesreferencescheck)
   * [UserAccountSanityCheck](#useraccountsanitycheck)
   * [VersionHistoryCheck](#versionhistorycheck)
+  * [VersionsSanityCheck](#versionsanitycheck)
   * [WipSanityCheck](#wipsanitycheck)
 * [How to extend it](how-to-extend.md#summary)
 * [Groovy scripts](groovy-scripts.md#summary)
@@ -302,16 +303,37 @@ _work in progress_
 
 ## PublicationSanityDefaultCheck
 
-When a node is flagged as published in the `default` workspace or is of type `jmix:autoPublish`, then a node with the same identifier must exist in the `live` workspace.  
-If the node has no pending modification, then the path must be the same in the two workspaces.
-
 ### Dealing with errors
+
+#### No live node
+
+`Error code: NO_LIVE_NODE`
+
+**Description**: When a node is flagged as published in the `default` workspace or is of type `jmix:autoPublish`, then a node with the same identifier must exist in the `live` workspace.  
 
 If the node is flagged as published, but there's no live node with the same identifier, then you need to remove the property `j:published` from the node in the default workspace. Then you can republish the node if needed.
 
 If the node is of type `jmix:autoPublish`, but there's no live node with the same identifier, then you can do any modification on the node in `default`, what should trigger the publication of the node.
 
-If the node has no pending modification but its path differs in the `live` workspace, then you can do a fake modification on the node (for example, adding some blank at the end of a richtext, or changing the value of a property, and then setting back the initial value) in order to get back the possibility to publish the node. 
+#### Different path in live
+
+`Error code: DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP`
+
+**Description**: If the node has no pending modification, then the path must be the same in the two workspaces.
+
+If the node has no pending modification but its path differs in the `live` workspace, then you can do a fake modification on the node (for example, adding some blank at the end of a richtext, or changing the value of a property, and then setting back the initial value) in order to get back the possibility to publish the node.
+
+#### Live node with the same path but a different uuid
+
+`Error code: PATH_CONFLICT`
+
+**Description**: A live has the same path but a different uuid. As a consequence, publishing the current node is not possible.
+
+Errors require a case by case analysis.
+
+If the `live` node is a UGC node: either the `live` node or the `default` node has to be renamed to not conflict anymore.
+
+If the `live` node is not a UGC node, it must have a different path in the `default` workspace. Usually, such conflict is a consequence of a renaming or move operation which has not been published yet. Publishing this second node will update its path in `live`, ending the conflict up. 
 
 ## PublicationSanityLiveCheck
 
@@ -411,6 +433,12 @@ This check iterates the properties of type `string` and reports any occurrence o
 
 This check is disabled by default since the effect of the reported errors has a functional impact more than is a technical inconsistency, and because there's a high risk of false positives. 
 
+### Configuration
+
+| Name                     |  Type   | Default Value | Description                                                          |
+|--------------------------|:-------:|:-------------:|----------------------------------------------------------------------|
+| ignore-localhost         | boolean |     true      | If true, only the domains different from `localhost` will be scanned |
+
 ### Dealing with errors
 
 If a reported error is qualified as legit, then the content has to be fixed manually and republished if the error is present in live as well.
@@ -491,6 +519,12 @@ import org.jahia.services.history.NodeVersionHistoryHelper
 
 NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(nodeIdentifier))
 ```
+
+## VersionsSanityCheck
+    
+Analyzes the versions tree, and checks the consistency of the version nodes.  
+The versions tree is not scanned by default. To have this test executed, the scan root node must be `/jcr:system`, `/jcr:system/jcr:versionStorage` or any other node under.  
+In addition to the identified errors, the check will compute some statistics about the scanned tree. To analyze a specific subtree of the version storage, just run the scan from this tree.
 
 ## WipSanityCheck
 

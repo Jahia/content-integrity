@@ -41,7 +41,8 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NO
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.LIVE_WORKSPACE
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.LIVE_WORKSPACE,
+        ContentIntegrityCheck.ExecutionCondition.SKIP_ON_EXTERNAL_NODES + "=true"
 })
 public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
 

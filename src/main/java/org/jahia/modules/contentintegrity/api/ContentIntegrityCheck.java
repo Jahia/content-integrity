@@ -7,8 +7,8 @@ import java.util.Collection;
 
 public interface ContentIntegrityCheck {
 
-    String PRIORITY = "ContentIntegrityCheck.priority";
-    String ENABLED = "ContentIntegrityCheck.enabled";
+    String PRIORITY = "ContentIntegrityCheck.priority:Float";
+    String ENABLED = "ContentIntegrityCheck.enabled:Boolean";
 
     ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node);
 
@@ -97,6 +97,10 @@ public interface ContentIntegrityCheck {
         String IF_HAS_PROP = "IfHasProperties";
         String APPLY_IF_HAS_PROP = APPLY + IF_HAS_PROP;
         String SKIP_IF_HAS_PROP = SKIP + IF_HAS_PROP;
+
+        String ON_EXTERNAL_NODES = "OnExternalNodes:Boolean";
+        String APPLY_ON_EXTERNAL_NODES = APPLY + ON_EXTERNAL_NODES;
+        String SKIP_ON_EXTERNAL_NODES = SKIP + ON_EXTERNAL_NODES;
     }
 
     public interface ValidityCondition {
