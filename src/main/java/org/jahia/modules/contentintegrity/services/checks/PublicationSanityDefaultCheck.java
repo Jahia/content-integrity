@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
+import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,7 +34,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
     private static final String DIFFERENT_PATH_ROOT = "different-path-root";
 
-    private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP}
+    private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP, PATH_CONFLICT}
     private final Map<String, Object> inheritedErrors = new HashMap<>();
     private String scanRoot = null;
 
@@ -51,8 +52,24 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
+        ContentIntegrityErrorList errors = null;
         try {
             final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(LIVE_WORKSPACE, true);
+
+            JCRNodeWrapper samePathLiveNode = null;
+            try {
+                samePathLiveNode = liveSession.getNode(node.getPath());
+            } catch (PathNotFoundException ignored) {}
+            if (samePathLiveNode != null) {
+                final String samePathLiveNodeIdentifier = samePathLiveNode.getIdentifier();
+                if (!StringUtils.equals(node.getIdentifier(), samePathLiveNodeIdentifier)) {
+                    final ContentIntegrityError error = createError(node, "Live node with same path but different uuid")
+                            .setErrorType(ErrorType.PATH_CONFLICT)
+                            .addExtraInfo("live-node-uuid", samePathLiveNodeIdentifier, true);
+                    errors = trackError(errors, error);
+                }
+            }
+
             final boolean flaggedPublished = node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean();
             if (flaggedPublished || node.isNodeType(Constants.JMIX_AUTO_PUBLISH) || StringUtils.startsWith(node.getPath(), MODULES_SUBTREE_PATH_PREFIX)) {
                 final JCRNodeWrapper liveNode;
@@ -63,7 +80,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                             flaggedPublished? "flagged as published" : "auto-published");
                     final ContentIntegrityError error = createError(node, msg)
                             .setErrorType(ErrorType.NO_LIVE_NODE);
-                    return createSingleError(error);
+                    return trackError(errors, error);
                 }
 
                 /*
@@ -86,15 +103,16 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                         } else {
                             error.setErrorType(ErrorType.DIFFERENT_PATH);
                         }
-                        return createSingleError(error);
+                        errors = trackError(errors, error);
                     }
                 }
             }
-            return null;
         } catch (RepositoryException e) {
             logger.error("", e);
-            return null;
         }
+
+        return errors;
+
         /*
         When checking if there's a node with the same ID in live, we never check if it has jmix:origin:Ws=live
         because PublicationSanityLiveCheck detects the nodes with jmix:origin:Ws=live and raises an error when there's

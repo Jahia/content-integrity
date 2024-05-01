@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
 
@@ -238,6 +239,10 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected final ContentIntegrityErrorList createSingleError(ContentIntegrityError error) {
         return ContentIntegrityErrorListImpl.createSingleError(error);
+    }
+
+    protected final ContentIntegrityErrorList trackError(ContentIntegrityErrorList errorList, ContentIntegrityError error) {
+        return Optional.ofNullable(errorList).orElseGet(this::createEmptyErrorsList).addError(error);
     }
 
     @Override

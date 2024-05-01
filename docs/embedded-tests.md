@@ -314,6 +314,18 @@ If the node is of type `jmix:autoPublish`, but there's no live node with the sam
 
 If the node has no pending modification but its path differs in the `live` workspace, then you can do a fake modification on the node (for example, adding some blank at the end of a richtext, or changing the value of a property, and then setting back the initial value) in order to get back the possibility to publish the node. 
 
+#### Live node with the same path but a different uuid
+
+`Error code: PATH_CONFLICT`
+
+**Description**: A live has the same path but a different uuid. As a consequence, publishing the current node is not possible.
+
+Errors require a case by case analysis.
+
+If the `live` node is a UGC node: either the `live` node or the `default` node has to be renamed to not conflict anymore.
+
+If the `live` node is not a UGC node, it must have a different path in the `default` workspace. Usually, such conflict is a consequence of a renaming or move operation which has not been published yet. Publishing this second node will update its path in `live`, ending the conflict up. 
+
 ## PublicationSanityLiveCheck
 
 In the `live` workspace, nodes are either published nodes or UGC nodes.   
