@@ -30,7 +30,7 @@ import java.util.Set;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULATION_ERROR;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ENABLED + ":Boolean=false"
+        ContentIntegrityCheck.ENABLED + "=false"
 })
 public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck {
 

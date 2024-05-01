@@ -22,6 +22,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
 
@@ -49,7 +51,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             return;
         }
 
-        Object prop = context.getProperties().get(PRIORITY);
+        Object prop = context.getProperties().get(StringUtils.substringBefore(PRIORITY, ":"));
         if (prop instanceof Float) priority = (float) prop;
         else if (prop instanceof String) {
             try {
@@ -57,7 +59,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             } catch (NumberFormatException ignored) {}
         }
 
-        prop = context.getProperties().get(ENABLED);
+        prop = context.getProperties().get(StringUtils.substringBefore(ENABLED, ":"));
         if (prop instanceof Boolean) enabled = (Boolean) prop;
         else if (prop instanceof String) enabled = Boolean.parseBoolean((String) prop);
 
@@ -74,27 +76,36 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
 
         // TODO check if it is possible to keep the declaration order
-        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_NT);
-        if (prop instanceof String) setApplyOnNodeTypes((String) prop);
-        prop = context.getProperties().get(ExecutionCondition.SKIP_ON_NT);
-        if (prop instanceof String) setSkipOnNodeTypes((String) prop);
+        processProperty(ExecutionCondition.APPLY_ON_NT, context, this::parseString, this::setApplyOnNodeTypes);
+        processProperty(ExecutionCondition.SKIP_ON_NT, context, this::parseString, this::setSkipOnNodeTypes);
 
-        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_SUBTREES);
-        if (prop instanceof String) setApplyOnSubTrees((String) prop);
-        prop = context.getProperties().get(ExecutionCondition.SKIP_ON_SUBTREES);
-        if (prop instanceof String) setSkipOnSubTrees((String) prop);
+        processProperty(ExecutionCondition.APPLY_ON_SUBTREES, context, this::parseString, this::setApplyOnSubTrees);
+        processProperty(ExecutionCondition.SKIP_ON_SUBTREES, context, this::parseString, this::setSkipOnSubTrees);
 
-        prop = context.getProperties().get(ExecutionCondition.APPLY_ON_WS);
-        if (prop instanceof String) setApplyOnWorkspace((String) prop);
-        prop = context.getProperties().get(ExecutionCondition.SKIP_ON_WS);
-        if (prop instanceof String) setSkipOnWorkspace((String) prop);
+        processProperty(ExecutionCondition.APPLY_ON_WS, context, this::parseString, this::setApplyOnWorkspace);
+        processProperty(ExecutionCondition.SKIP_ON_WS, context, this::parseString, this::setSkipOnWorkspace);
 
-        prop = context.getProperties().get(ExecutionCondition.APPLY_IF_HAS_PROP);
-        if (prop instanceof String) setApplyIfHasProp((String) prop);
-        prop = context.getProperties().get(ExecutionCondition.SKIP_IF_HAS_PROP);
-        if (prop instanceof String) setSkipIfHasProp((String) prop);
+        processProperty(ExecutionCondition.APPLY_IF_HAS_PROP, context, this::parseString, this::setApplyIfHasProp);
+        processProperty(ExecutionCondition.SKIP_IF_HAS_PROP, context, this::parseString, this::setSkipIfHasProp);
+
+        processProperty(ExecutionCondition.APPLY_ON_EXTERNAL_NODES, context, this::parseBoolean, this::setApplyOnExternalNodes);
+        processProperty(ExecutionCondition.SKIP_ON_EXTERNAL_NODES, context, this::parseBoolean, this::setSkipOnExternalNodes);
 
         activateInternal(context);
+    }
+
+    private <T> void processProperty(String key, ComponentContext context, Function<Object, T> parser, Consumer<T> processor) {
+        Object prop = context.getProperties().get(StringUtils.substringBefore(key, ":"));
+        if (prop == null) return;
+        processor.accept(parser.apply(prop));
+    }
+
+    private String parseString(Object o) {
+        return o instanceof String ? (String) o : null;
+    }
+
+    private Boolean parseBoolean(Object o) {
+        return o instanceof Boolean ? (Boolean) o : null;
     }
 
     protected void activateInternal(ComponentContext context) {}
@@ -557,5 +568,32 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
             addCondition(new NotCondition(condition));
         }
 
+    }
+
+    public static class ExternalNodeCondition implements ExecutionCondition {
+
+        private final boolean processExternalNodes;
+
+        public ExternalNodeCondition(boolean processExternalNodes) {
+            this.processExternalNodes = processExternalNodes;
+        }
+
+        @Override
+        public boolean matches(JCRNodeWrapper node) {
+            return processExternalNodes || !JCRUtils.isExternalNode(node);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("processExternalNodes = %s", processExternalNodes);
+        }
+    }
+
+    private void setApplyOnExternalNodes(boolean processExternalNodes) {
+        addCondition(new ExternalNodeCondition(processExternalNodes));
+    }
+
+    private void setSkipOnExternalNodes(boolean skipExternalNodes) {
+        addCondition(new ExternalNodeCondition(!skipExternalNodes));
     }
 }

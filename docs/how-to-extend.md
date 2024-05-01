@@ -120,7 +120,7 @@ If not configured, the default priority will be used (100)
 **Example:**
 
     @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-            ContentIntegrityCheck.PRIORITY + ":Float=50"
+            ContentIntegrityCheck.PRIORITY + "=50"
     })
 
 
@@ -133,7 +133,7 @@ at any time, a faulty one can be disabled. See [jcr:integrity-configureCheck](#j
 **Example:**
 
     @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-            ContentIntegrityCheck.ENABLED + ":Boolean=false"
+            ContentIntegrityCheck.ENABLED + "=false"
     })
 
 #### Minimum Jahia version
@@ -193,3 +193,9 @@ Specifies some properties which the node must have (or not have) to be checked. 
 If several properties are listed, the check will be executed on any node which has at least one of the specified properties.
 
     ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=j:workInProgress,j:workInProgressStatus"
+  
+#### Apply on external nodes / skip on external nodes
+
+Specifies if the node external nodes (exposed by an EDP) have to be checked.
+
+    ContentIntegrityCheck.ExecutionCondition.SKIP_ON_EXTERNAL_NODES + "=true"

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.PRIORITY + ":Float=0" // For performances purpose, the result of getNodes() will be stored in the JR low level cache and will fasten any other check using it as well
+        ContentIntegrityCheck.PRIORITY + "=0" // For performances purpose, the result of getNodes() will be stored in the JR low level cache and will fasten any other check using it as well
 })
 public class FlatStorageCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
 
