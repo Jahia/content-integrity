@@ -72,6 +72,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
         } catch (RepositoryException e) {
             logger.error("", e);
         }
+        if (domains.isEmpty()) setScanDurationDisabled(true);
     }
 
     @Override
