@@ -303,16 +303,25 @@ _work in progress_
 
 ## PublicationSanityDefaultCheck
 
-When a node is flagged as published in the `default` workspace or is of type `jmix:autoPublish`, then a node with the same identifier must exist in the `live` workspace.  
-If the node has no pending modification, then the path must be the same in the two workspaces.
-
 ### Dealing with errors
+
+#### No live node
+
+`Error code: NO_LIVE_NODE`
+
+**Description**: When a node is flagged as published in the `default` workspace or is of type `jmix:autoPublish`, then a node with the same identifier must exist in the `live` workspace.  
 
 If the node is flagged as published, but there's no live node with the same identifier, then you need to remove the property `j:published` from the node in the default workspace. Then you can republish the node if needed.
 
 If the node is of type `jmix:autoPublish`, but there's no live node with the same identifier, then you can do any modification on the node in `default`, what should trigger the publication of the node.
 
-If the node has no pending modification but its path differs in the `live` workspace, then you can do a fake modification on the node (for example, adding some blank at the end of a richtext, or changing the value of a property, and then setting back the initial value) in order to get back the possibility to publish the node. 
+#### Different path in live
+
+`Error code: DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP`
+
+**Description**: If the node has no pending modification, then the path must be the same in the two workspaces.
+
+If the node has no pending modification but its path differs in the `live` workspace, then you can do a fake modification on the node (for example, adding some blank at the end of a richtext, or changing the value of a property, and then setting back the initial value) in order to get back the possibility to publish the node.
 
 #### Live node with the same path but a different uuid
 
