@@ -23,10 +23,13 @@ import static org.jahia.api.Constants.JCR_FROZENUUID;
 import static org.jahia.api.Constants.JCR_VERSIONABLEUUID;
 import static org.jahia.api.Constants.NT_VERSION;
 
+/*
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/jcr:system/jcr:versionStorage",
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.NT_VERSIONHISTORY
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.NT_VERSIONHISTORY,
+        ContentIntegrityCheck.ENABLED + "=false"
 })
+ */
 public class VersionSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(VersionSanityCheck.class);
