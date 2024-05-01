@@ -113,6 +113,8 @@ public class GqlIntegrityScan {
         }
 
         Executors.newSingleThreadExecutor().execute(() -> {
+            Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+
             final ContentIntegrityService service = getService();
             final List<String> checksToExecute = Utils.getChecksToExecute(service, checksToRun, null, console);
             final List<String> workspaces = workspace.getWorkspaces();
