@@ -173,6 +173,14 @@ public class JCRUtils {
         return isInWorkspace(node, Constants.LIVE_WORKSPACE);
     }
 
+    public static JCRSessionWrapper getSystemEditSession() {
+        return getSystemSession(Constants.EDIT_WORKSPACE);
+    }
+
+    public static JCRSessionWrapper getSystemLiveSession() {
+        return getSystemSession(Constants.LIVE_WORKSPACE);
+    }
+
     public static JCRSessionWrapper getSystemSession(String workspace) {
         return getSystemSession(workspace, true);
     }
