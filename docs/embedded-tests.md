@@ -433,6 +433,12 @@ This check iterates the properties of type `string` and reports any occurrence o
 
 This check is disabled by default since the effect of the reported errors has a functional impact more than is a technical inconsistency, and because there's a high risk of false positives. 
 
+### Configuration
+
+| Name                     |  Type   | Default Value | Description                                                          |
+|--------------------------|:-------:|:-------------:|----------------------------------------------------------------------|
+| ignore-localhost         | boolean |     true      | If true, only the domains different from `localhost` will be scanned |
+
 ### Dealing with errors
 
 If a reported error is qualified as legit, then the content has to be fixed manually and republished if the error is present in live as well.

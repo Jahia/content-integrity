@@ -2,9 +2,11 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -32,15 +34,23 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULA
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ENABLED + "=false"
 })
-public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck {
+public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
 
     private static final Logger logger = LoggerFactory.getLogger(StaticInternalLinksCheck.class);
 
     private static final int TEXT_EXTRACT_MAX_LENGTH = 200;
     public static final int TEXT_EXTRACT_READABILITY_ZONE_LENGTH = 20;
+    public static final String IGNORE_LOCALHOST = "ignore-localhost";
 
     private final Set<String> domains = new HashSet<>();
     private final Map<String, Collection<String>> ignoredProperties = new HashMap<>();
+
+    private final ContentIntegrityCheckConfiguration configurations;
+
+    public StaticInternalLinksCheck() {
+        configurations = new ContentIntegrityCheckConfigurationImpl();
+        configurations.declareDefaultParameter(IGNORE_LOCALHOST, Boolean.TRUE, ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER, "Ignore localhost when scanning the domains of the sites");
+    }
 
     @Override
     protected void activateInternal(ComponentContext context) {
@@ -51,11 +61,14 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck {
 
     @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        domains.clear();
         try {
             final JCRSessionWrapper systemSession = JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, false);
             JahiaSitesService.getInstance().getSitesNodeList(systemSession).stream()
                     .map(JCRSiteNode::getAllServerNames)
-                    .forEach(domains::addAll);
+                    .flatMap(Collection::stream)
+                    .filter(domain -> !(ignoreLocalhost() && "localhost".equalsIgnoreCase(domain)))
+                    .forEach(domains::add);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
@@ -121,5 +134,14 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck {
         if (text.length() <= TEXT_EXTRACT_MAX_LENGTH) return text;
         final int offset = StringUtils.indexOf(text, domain) - TEXT_EXTRACT_READABILITY_ZONE_LENGTH;
         return StringUtils.abbreviate(text, offset, TEXT_EXTRACT_MAX_LENGTH);
+    }
+
+    @Override
+    public ContentIntegrityCheckConfiguration getConfigurations() {
+        return configurations;
+    }
+
+    private boolean ignoreLocalhost() {
+        return (boolean) getConfigurations().getParameter(IGNORE_LOCALHOST);
     }
 }
