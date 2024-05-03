@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.bin.Jahia;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
@@ -265,6 +266,7 @@ public class Utils {
         testDate.setTimeInMillis(results.getTestDate());
         reportNode.setProperty("integrity:executionDate", testDate);
         reportNode.setProperty("integrity:moduleVersion", getContentIntegrityVersion());
+        reportNode.setProperty("integrity:jahiaVersion", Jahia.VERSION);
         reportNode.setProperty("integrity:executionLog", StringUtils.join(results.getExecutionLog(), "\n"));
         final Map<String, List<ContentIntegrityError>> errorsByType = results.getErrors().stream()
                 .collect(Collectors.groupingBy(ContentIntegrityError::getIntegrityCheckID));
