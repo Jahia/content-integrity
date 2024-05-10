@@ -31,6 +31,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
     private static final Logger logger = LoggerFactory.getLogger(BinaryPropertiesSanityCheck.class);
     private static final String DOWNLOAD_STREAM = "download-stream";
     private static final String ACCEPT_ZERO_BYTE_BINARIES = "accept-zero-byte-binaries";
+    private static final String EXTRA_MSG_ZERO_LENGTH_BINARY = "Warning: the binary length is zero byte. This can be a false positive if an empty file has been uploaded";
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -100,7 +101,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                             .addExtraInfo("property-name", property.getName())
                             .addExtraInfo("property-path", property.getPath(), true);
                     if (size == 0) {
-                        error.setExtraMsg("Warning: the binary length is zero byte. This can be a false positive if an empty file has been uploaded");
+                        error.setExtraMsg(EXTRA_MSG_ZERO_LENGTH_BINARY);
                     }
                     errors.addError(error);
                 }

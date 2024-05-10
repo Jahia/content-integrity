@@ -29,6 +29,9 @@ import static org.jahia.services.usermanager.JahiaGroupManagerService.SITE_PRIVI
 public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(SiteLevelSystemGroupsCheck.class);
+    private static final String EXTRA_MSG_PRIVILEGED_GROUP_NOT_EXIST = String.format("The '%s' group is created at server installation time, at server level, and should never be deleted", PRIVILEGED_GROUPNAME);
+    private static final String EXTRA_MSG_SITE_PRIVILEGED_GROUP_NOT_EXIST = String.format("The '%s' group is created at site creation time, at site level, and should never be deleted", SITE_PRIVILEGED_GROUPNAME);
+    private static final String EXTRA_MSG_SITE_PRIVILEGED_NOT_MEMBER_PRIVILEGED_GROUP = String.format("The '%s' group of each site must be member of the server level group '%s", SITE_PRIVILEGED_GROUPNAME, PRIVILEGED_GROUPNAME);
 
     private JahiaGroupManagerService jgms;
     private boolean missingRootPrivilegedGroupLogged = false;
@@ -56,7 +59,7 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
                 final ContentIntegrityError error = createError(site.getSession().getRootNode(), String.format("The '%s' group does not exist", PRIVILEGED_GROUPNAME))
                         .setErrorType(ErrorType.GROUP_DOES_NOT_EXIST)
                         .addExtraInfo("group-name", PRIVILEGED_GROUPNAME)
-                        .setExtraMsg(String.format("The '%s' group is created at server installation time, at server level, and should never be deleted", PRIVILEGED_GROUPNAME));
+                        .setExtraMsg(EXTRA_MSG_PRIVILEGED_GROUP_NOT_EXIST);
                 errors.addError(error);
                 missingRootPrivilegedGroupLogged = true;
             }
@@ -67,7 +70,7 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
                         .setErrorType(ErrorType.GROUP_DOES_NOT_EXIST)
                         .addExtraInfo("group-name", SITE_PRIVILEGED_GROUPNAME)
                         .addExtraInfo("site-name", site.getDisplayableName(), true)
-                        .setExtraMsg(String.format("The '%s' group is created at site creation time, at site level, and should never be deleted", SITE_PRIVILEGED_GROUPNAME));
+                        .setExtraMsg(EXTRA_MSG_SITE_PRIVILEGED_GROUP_NOT_EXIST);
                 errors.addError(error);
             }
 
@@ -78,7 +81,7 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
                         .addExtraInfo("missing-member", SITE_PRIVILEGED_GROUPNAME, true)
                         .addExtraInfo("group-missing-a-member", PRIVILEGED_GROUPNAME)
                         .addExtraInfo("site-name", site.getDisplayableName(), true)
-                        .setExtraMsg(String.format("The '%s' group of each site must be member of the server level group '%s", SITE_PRIVILEGED_GROUPNAME, PRIVILEGED_GROUPNAME));
+                        .setExtraMsg(EXTRA_MSG_SITE_PRIVILEGED_NOT_MEMBER_PRIVILEGED_GROUP);
                 errors.addError(error);
             }
         } catch (RepositoryException e) {
