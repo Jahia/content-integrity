@@ -65,9 +65,32 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private ExtendedNodeType jntTranslationNt;
     private final Map<String, Boolean> jntTranslationNtParents = new HashMap<>();
 
+    private enum ErrorType {
+        EMPTY_MANDATORY_PROPERTY("Missing mandatory property"),
+        INVALID_VALUE_TYPE("The value does not match the type declared in the property definition"),
+        INVALID_MULTI_VALUE_STATUS("The single/multi value status differs between the value and the definition"),
+        INVALID_VALUE_CONSTRAINT("The value does not match the constraint declared in the property definition"),
+        UNDECLARED_PROPERTY("Undeclared property");
+
+        private final String desc;
+
+        ErrorType(String desc) {
+            this.desc = desc;
+        }
+    }
+
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
         getConfigurations().declareDefaultParameter(CHECK_SITE_LANGS_ONLY_KEY, DEFAULT_CHECK_SITE_LANGS_ONLY_KEY, ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER, "If true, only the translation sub-nodes related to an active language are checked when the node is in a site");
+    }
+
+    @Override
+    public ContentIntegrityCheckConfiguration getConfigurations() {
+        return configurations;
+    }
+
+    private boolean checkSiteLangsOnly() {
+        return (boolean) getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
     }
 
     @Override
@@ -612,28 +635,5 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private abstract static class SupertypeProcessor {
 
         public abstract void execute(JCRNodeWrapper node, ExtendedNodeType extendedNodeType) throws RepositoryException;
-    }
-
-    @Override
-    public ContentIntegrityCheckConfiguration getConfigurations() {
-        return configurations;
-    }
-
-    private boolean checkSiteLangsOnly() {
-        return (boolean) getConfigurations().getParameter(CHECK_SITE_LANGS_ONLY_KEY);
-    }
-
-    private enum ErrorType {
-        EMPTY_MANDATORY_PROPERTY("Missing mandatory property"),
-        INVALID_VALUE_TYPE("The value does not match the type declared in the property definition"),
-        INVALID_MULTI_VALUE_STATUS("The single/multi value status differs between the value and the definition"),
-        INVALID_VALUE_CONSTRAINT("The value does not match the constraint declared in the property definition"),
-        UNDECLARED_PROPERTY("Undeclared property");
-
-        private final String desc;
-
-        ErrorType(String desc) {
-            this.desc = desc;
-        }
     }
 }
