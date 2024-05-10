@@ -256,9 +256,10 @@ The content must fit the definitions at the time it is written. But if the defin
 
 ### Configuration
 
-| Name            |  Type   | Default Value | Description                                                                                                  |
-|-----------------|:-------:|:-------------:|--------------------------------------------------------------------------------------------------------------|
-| site-langs-only | boolean |     false     | If true, only the translation sub-nodes related to an active language are checked when the node is in a site |
+| Name                  |  Type   | Default Value | Description                                                                                                   |
+|-----------------------|:-------:|:-------------:|---------------------------------------------------------------------------------------------------------------|
+| site-langs-only       | boolean |     false     | If true, only the translation sub-nodes related to an active language are checked when the node is in a site  |
+| check-node-validators | boolean |     true      | If false, the node validators are not checked (property constraints are checked no matter this configuration) |
 
 ### Dealing with errors
                                                                  
@@ -298,6 +299,16 @@ Nevertheless, it is something pretty usual during the initial development phase.
 
 If you need to change the type of a property on some production content, you should make the property `hidden` (and not indexed if of type `string`), and declare a new property of the desired type. Then, if you need to recover the content from the former property, you will need to write a script to copy the value (after a conversion if required).  
 The script should be run with the listeners deactivated, and should be run on each workspace.
+
+#### Node validator constraint violation 
+
+`Error code: INVALID_NODE_VALIDATION`
+
+**Description**: A node validator raises a constraint violation when validating the node.
+
+The value of the properties have to be updated to get rid of the validation errors.
+
+**Warning**: Those validators are not limited to validate a single property. A non internationalized property can be validated along with an internationalized one, and as a consequence the result of the validation might differ from one language to another one, even though the value of the non internationalized property remains the same. As a consequence, non internationalized properties are validated for each available language. This will usually lead to duplicated errors. Fixing it once will of course remove all the occurrences of error on the next scan. 
 
 _work in progress_
 
