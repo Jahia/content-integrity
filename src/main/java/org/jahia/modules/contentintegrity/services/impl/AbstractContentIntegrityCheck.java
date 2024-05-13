@@ -290,7 +290,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     /**
      * This method is run once on each check after finishing a scan.
-     * It has the possibility to send a last list of errors, for example if the check is buffering the nodes instead analyzing them one by one.
+     * It has the possibility to send a last list of errors, for example if the check is buffering the nodes instead of analyzing them one by one.
      *
      * @param scanRootNode the root node of the scan
      * @param excludedPaths the paths which are excluded from the scan

@@ -25,6 +25,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
 
     private static final Logger logger = LoggerFactory.getLogger(NodeNameInfoSanityCheck.class);
     private static final String CHECK_FULLPATH = "check-fullpath";
+    private static final String EXTRA_MSG_UNEXPECTED_FULLPATH = "The property is expected to be missing on never published nodes in the default workspace and on UGC nodes in the live workspace";
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -98,7 +99,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
         if (node.hasProperty(Constants.FULLPATH)) {
             errors.addError(createError(node, String.format("Unexpected %s property", Constants.FULLPATH))
                     .setErrorType(ErrorType.UNEXPECTED_FULLPATH)
-                    .setExtraMsg("The property is expected to be missing on never published nodes in the default workspace and on UGC nodes in the live workspace"));
+                    .setExtraMsg(EXTRA_MSG_UNEXPECTED_FULLPATH));
         }
     }
 

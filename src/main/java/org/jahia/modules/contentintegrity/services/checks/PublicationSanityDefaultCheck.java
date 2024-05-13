@@ -33,6 +33,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
 
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
     private static final String DIFFERENT_PATH_ROOT = "different-path-root";
+    private static final String EXTRA_MSG_DIFFERENT_PATH_POTENTIAL_FP = "Warning: this node is the root of the scan, but not the root of the JCR. So the error might be a false positive, if the node is under a node which has been moved, but this move operation has not been published yet. To clarify this, you need to analyze the parent nodes, or redo the scan from a higher level";
 
     private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP, PATH_CONFLICT}
     private final Map<String, Object> inheritedErrors = new HashMap<>();
@@ -99,7 +100,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                         if (!StringUtils.equals(nodePath, ROOT_NODE_PATH) && StringUtils.equals(nodePath, scanRoot)) {
                             inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
                             error.setErrorType(ErrorType.DIFFERENT_PATH_POTENTIAL_FP);
-                            error.setExtraMsg("Warning: this node is the root of the scan, but not the root of the JCR. So the error might be a false positive, if the node is under a node which has been moved, but this move operation has not been published yet. To clarify this, you need to analyze the parent nodes, or redo the scan from a higher level");
+                            error.setExtraMsg(EXTRA_MSG_DIFFERENT_PATH_POTENTIAL_FP);
                         } else {
                             error.setErrorType(ErrorType.DIFFERENT_PATH);
                         }

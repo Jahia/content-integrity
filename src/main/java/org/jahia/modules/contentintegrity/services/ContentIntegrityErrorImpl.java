@@ -198,12 +198,16 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     @Override
     public ContentIntegrityError addExtraInfo(String key, Object value, boolean isErrorSpecific) {
+        return addExtraInfo(key, value, isErrorSpecific, false);
+    }
+
+    private ContentIntegrityError addExtraInfo(String key, Object value, boolean isErrorSpecific, boolean bypassLengthLimit) {
         if (extraInfosKeys == null) extraInfosKeys = new ArrayList<>();
         else if (extraInfosKeys.contains(key))
             throw new IllegalArgumentException(String.format("Key already defined: %s", key));
 
         extraInfosKeys.add(key);
-        final Object storedValue = value instanceof String ? StringUtils.left((String) value, EXTRA_INFO_STRING_VALUE_MAX_LENGTH) : value;
+        final Object storedValue = value instanceof String && !bypassLengthLimit ? StringUtils.left((String) value, EXTRA_INFO_STRING_VALUE_MAX_LENGTH) : value;
         if (isErrorSpecific) {
             if (specificExtraInfos == null) specificExtraInfos = new TreeMap<>();
             specificExtraInfos.put(key, storedValue);
@@ -230,7 +234,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
 
     @Override
     public ContentIntegrityError setExtraMsg(String msg) {
-        return addExtraInfo(EXTRA_MESSAGE_KEY, msg);
+        return addExtraInfo(EXTRA_MESSAGE_KEY, msg, false, true);
     }
 
     private String getFullNodetype() {

@@ -55,6 +55,9 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     private static final Logger logger = LoggerFactory.getLogger(AceSanityCheck.class);
     private static final Pattern CURRENT_SITE_PATTERN = Pattern.compile("^currentSite");
+    private static final String EXTRA_MSG_SOURCE_ACE_NOT_TYPE_GRANT = "External ACE are defined only for the ACE of type GRANT";
+    private static final String EXTRA_MSG_SRC_ACE_WITHOUT_ROLES_PROP = "Impossible to check if the roles defined on the external ACE and the source ACE are consistent, since the property " + J_ROLES + " is missing on the source ACE";
+    private static final String EXTRA_MSG_INVALID_PRINCIPAL = "If the principal exists, check if it is defined at site level, and if does, if this site differs from the current site. Warning: if the principal comes from an external source such as a LDAP, it might be just temporarily missing because of a connectivity issue";
 
     private final Map<String, Role> roles = new HashMap<>();
 
@@ -170,7 +173,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
                             .addExtraInfo("src-ace-path", srcAce.getPath(), true)
                             .addExtraInfo("src-ace-type", srcAceType)
-                            .setExtraMsg("External ACE are defined only for the ACE of type GRANT"));
+                            .setExtraMsg(EXTRA_MSG_SOURCE_ACE_NOT_TYPE_GRANT));
                 }
 
                 if (hasPropRoles) {
@@ -180,7 +183,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 .setErrorType(ErrorType.ROLES_DIFFER_ON_SOURCE_ACE)
                                 .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
                                 .addExtraInfo("src-ace-path", srcAce.getPath(), true)
-                                .setExtraMsg(String.format("Impossible to check if the roles defined on the external ACE and the source ACE are consistent, since the property %s is missing on the source ACE", J_ROLES)));
+                                .setExtraMsg(EXTRA_MSG_SRC_ACE_WITHOUT_ROLES_PROP));
                     } else {
                         final List<String> externalAceRoles = getRoleNames(externalAceNode);
                         if (CollectionUtils.isEmpty(externalAceRoles)) {
@@ -351,7 +354,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     .setErrorType(ErrorType.INVALID_PRINCIPAL)
                     .addExtraInfo("invalid principal", principal)
                     .addExtraInfo("site", siteKey)
-                    .setExtraMsg("If the principal exists, check if it is defined at site level, and if does, if this site differs from the current site. Warning: if the principal comes from an external source such as a LDAP, it might be just temporarily missing because of a connectivity issue"));
+                    .setExtraMsg(EXTRA_MSG_INVALID_PRINCIPAL));
         }
 
         return null;

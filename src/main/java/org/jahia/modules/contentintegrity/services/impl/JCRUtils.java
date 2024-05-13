@@ -186,8 +186,16 @@ public class JCRUtils {
     }
 
     public static JCRSessionWrapper getSystemSession(String workspace, boolean refresh) {
+        return getSystemSession(workspace, null, refresh);
+    }
+
+    public static JCRSessionWrapper getSystemSession(JCRSessionWrapper sessionTemplate, String locale) {
+        return getSystemSession(sessionTemplate.getWorkspace().getName(), locale, true);
+    }
+
+    private static JCRSessionWrapper getSystemSession(String workspace, String locale, boolean refresh) {
         try {
-            final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null);
+            final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, LanguageCodeConverters.languageCodeToLocale(locale), null);
             if (refresh) session.refresh(false);
             return session;
         } catch (RepositoryException e) {
