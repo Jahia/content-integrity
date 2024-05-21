@@ -169,7 +169,10 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     private Void checkNodeValidators(JCRNodeWrapper node, String locale, ContentIntegrityErrorList errors) throws RepositoryException {
-        final JCRNodeWrapper checkedNode = locale == null ? node : JCRUtils.getSystemSession(node.getSession(), locale).getNode(node.getPath());
+        final JCRNodeWrapper checkedNode = locale == null ? node :
+                JCRUtils.runJcrSupplierCallBack(() -> JCRUtils.getSystemSession(node.getSession(), locale).getNode(node.getPath()), null, false);
+        if (checkedNode == null) return null;
+        
         validators.entrySet().stream()
                 .filter(e -> JCRUtils.runJcrCallBack(e.getKey(), checkedNode::isNodeType, Boolean.FALSE))
                 .map(Map.Entry::getValue)
