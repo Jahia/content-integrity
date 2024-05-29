@@ -176,7 +176,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         validators.entrySet().stream()
                 .filter(e -> JCRUtils.runJcrCallBack(e.getKey(), checkedNode::isNodeType, Boolean.FALSE))
                 .map(Map.Entry::getValue)
-                .map(c -> JCRUtils.runJcrSupplierCallBack(() -> this.createValidatorInstance(c, node)))
+                .map(c -> JCRUtils.runJcrSupplierCallBack(() -> this.createValidatorInstance(c, checkedNode)))
                 .filter(validator -> validator instanceof JCRNodeValidator)
                 .map(validator -> {
                     final Set<ConstraintViolation<JCRNodeValidator>> constraintViolations = validatorFactoryBean.validate((JCRNodeValidator) validator, Default.class, DefaultSkipOnImportGroup.class);
@@ -707,7 +707,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 if (translationNode == null) continue;
                 final Node realTranslationNode = getRealNode(translationNode);
                 if (realTranslationNode != null)
-                    translationNodeProcessor.execute(realTranslationNode, LanguageCodeConverters.localeToLanguageTag(locale));
+                    translationNodeProcessor.execute(realTranslationNode, locale.toString());
             }
         } else {
             final NodeIterator translationNodesIterator = node.getI18Ns();
