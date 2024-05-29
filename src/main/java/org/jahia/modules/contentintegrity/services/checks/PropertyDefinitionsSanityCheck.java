@@ -176,7 +176,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         validators.entrySet().stream()
                 .filter(e -> JCRUtils.runJcrCallBack(e.getKey(), checkedNode::isNodeType, Boolean.FALSE))
                 .map(Map.Entry::getValue)
-                .map(c -> JCRUtils.runJcrSupplierCallBack(() -> this.createValidatorInstance(c, node)))
+                .map(c -> JCRUtils.runJcrSupplierCallBack(() -> this.createValidatorInstance(c, checkedNode)))
                 .filter(validator -> validator instanceof JCRNodeValidator)
                 .map(validator -> {
                     final Set<ConstraintViolation<JCRNodeValidator>> constraintViolations = validatorFactoryBean.validate((JCRNodeValidator) validator, Default.class, DefaultSkipOnImportGroup.class);
