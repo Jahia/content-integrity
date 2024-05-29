@@ -707,7 +707,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 if (translationNode == null) continue;
                 final Node realTranslationNode = getRealNode(translationNode);
                 if (realTranslationNode != null)
-                    translationNodeProcessor.execute(realTranslationNode, LanguageCodeConverters.localeToLanguageTag(locale));
+                    translationNodeProcessor.execute(realTranslationNode, locale.toString());
             }
         } else {
             final NodeIterator translationNodesIterator = node.getI18Ns();
