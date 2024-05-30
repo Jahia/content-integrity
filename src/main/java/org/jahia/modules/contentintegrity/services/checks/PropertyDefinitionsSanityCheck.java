@@ -655,7 +655,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         }
 
         customExtraInfos.put("validator-message", constraintViolation.getMessage());
-        customExtraInfos.put("language-use-for-validation", locale);
+        customExtraInfos.put("language-used-for-validation", locale);
         final String extraMessage = errorLocale == null ? NON_I18N_PROP_VALIDATOR_ERROR_XTRA_MSG : null;
         trackError(ErrorType.INVALID_NODE_VALIDATION, propertyName, propertyDefinition, propertyValue, -1, -1, node, errorLocale, customExtraInfos, extraMessage, errors);
     }
