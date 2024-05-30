@@ -1,0 +1,48 @@
+import org.apache.commons.io.IOUtils
+import org.apache.commons.lang3.StringUtils
+import org.jahia.api.Constants
+import org.jahia.api.content.JCRTemplate
+import org.jahia.osgi.BundleUtils
+import org.jahia.services.content.JCRContentUtils
+import org.jahia.services.content.JCRObservationManager
+
+import javax.jcr.ItemNotFoundException
+import javax.jcr.RepositoryException
+
+def MOUNTPOINT = '/sites/systemsite/files/content-integrity'
+def SAVE = false
+
+for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
+    log.info "Traversing workspace ${workspace}"
+    JCRObservationManager.setAllEventListenersDisabled(true)
+    try {
+        BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
+            def file = JCRContentUtils.downloadFileContent(session.getNode("${MOUNTPOINT}/JCRLanguagePropertyCheck-${workspace}.txt"))
+            def reader = new FileReader(file)
+            def count = 0
+            try {
+                IOUtils.readLines(reader).each { String uuid ->
+                    try {
+                        def node = session.getNodeByIdentifier(uuid)
+                        if (node.hasProperty('jcr:language')) {
+                            def language = StringUtils.substringAfterLast(node.getPropertyAsString('jcr:language'), '_')
+                            log.info "#${++count} Change node ${node.path} language ${node.getPropertyAsString('jcr:language')} to ${language}"
+                            node.setProperty('jcr:language', language)
+                        }
+                        if (SAVE) session.save()
+                    } catch (ItemNotFoundException e) {
+                        // Nothing to do
+                    } catch (RepositoryException e) {
+                        log.error("", e)
+                    }
+                }
+            } finally {
+                IOUtils.closeQuietly(reader)
+            }
+        })
+    } finally {
+        JCRObservationManager.setAllEventListenersDisabled(false)
+    }
+}
+
+log.info "<<< END JCRLanguagePropertyCheck"
