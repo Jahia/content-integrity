@@ -1,4 +1,5 @@
 import org.apache.commons.io.IOUtils
+import org.apache.commons.lang.StringUtils
 import org.apache.jackrabbit.core.NodeImpl
 import org.apache.jackrabbit.core.id.NodeId
 import org.jahia.api.Constants
@@ -30,7 +31,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def property = data[2]
                     try {
                         def node = session.getNodeByIdentifier(uuid)
-                        if (locale != null) {
+                        if (StringUtils.isNotBlank(locale)) {
                             node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
                         }
                         if (node.hasProperty(property)) {
