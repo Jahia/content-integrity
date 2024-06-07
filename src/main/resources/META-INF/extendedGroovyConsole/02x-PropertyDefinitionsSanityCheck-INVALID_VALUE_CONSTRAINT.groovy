@@ -1,4 +1,5 @@
 import org.apache.commons.io.IOUtils
+import org.apache.commons.lang.StringUtils
 import org.jahia.api.Constants
 import org.jahia.api.content.JCRTemplate
 import org.jahia.osgi.BundleUtils
@@ -26,7 +27,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def defaultValue = data[3]
                     try {
                         def node = session.getNodeByIdentifier(uuid)
-                        if (locale != null) {
+                        if (StringUtils.isNotBlank(locale)) {
                             node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
                         }
                         log.info "#${++count} Set property ${property} node ${node.path} with value ${defaultValue}"
