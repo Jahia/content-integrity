@@ -9,9 +9,6 @@ import org.jahia.utils.LanguageCodeConverters
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
 
-def MOUNTPOINT = '/sites/systemsite/files/content-integrity'
-def SAVE = false
-
 for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
     JCRObservationManager.setAllEventListenersDisabled(true)
@@ -51,3 +48,11 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
 }
 
 log.info "<<< END PropertyDefinitionsSanityCheck-EMPTY_MANDATORY_PROPERTY"
+
+// Script configurations
+//script.parameters.names=MOUNTPOINT, SAVE
+//script.param.MOUNTPOINT.type=text
+//script.param.MOUNTPOINT.default=/sites/systemsite/files/content-integrity
+//script.param.MOUNTPOINT.label=Input files location
+//script.param.SAVE.default=false
+//script.param.SAVE.label=Save

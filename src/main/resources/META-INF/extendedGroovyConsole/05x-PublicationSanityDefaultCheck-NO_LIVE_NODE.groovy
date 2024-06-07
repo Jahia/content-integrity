@@ -8,9 +8,6 @@ import org.jahia.services.content.JCRObservationManager
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
 
-def MOUNTPOINT = '/sites/systemsite/files/content-integrity'
-def SAVE = false
-
 def workspace = Constants.EDIT_WORKSPACE
 log.info "Traversing workspace ${workspace}"
 try {
@@ -44,3 +41,11 @@ try {
 }
 
 log.info "<<< END PublicationSanityDefaultCheck-NO_LIVE_NODE"
+
+// Script configurations
+//script.parameters.names=MOUNTPOINT, SAVE
+//script.param.MOUNTPOINT.type=text
+//script.param.MOUNTPOINT.default=/sites/systemsite/files/content-integrity
+//script.param.MOUNTPOINT.label=Input files location
+//script.param.SAVE.default=false
+//script.param.SAVE.label=Save

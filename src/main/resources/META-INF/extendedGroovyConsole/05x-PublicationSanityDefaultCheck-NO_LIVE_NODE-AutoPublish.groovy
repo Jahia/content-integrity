@@ -9,9 +9,6 @@ import org.jahia.services.content.JCRPublicationService
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
 
-def MOUNTPOINT = '/sites/systemsite/files/content-integrity'
-def SAVE = false
-
 def publicationService = BundleUtils.getOsgiService(JCRPublicationService.class, null)
 
 def workspace = Constants.EDIT_WORKSPACE
@@ -48,3 +45,11 @@ try {
 }
 
 log.info "<<< END PublicationSanityDefaultCheck-NO_LIVE_NODE-AutoPublish"
+
+// Script configurations
+//script.parameters.names=MOUNTPOINT, SAVE
+//script.param.MOUNTPOINT.type=text
+//script.param.MOUNTPOINT.default=/sites/systemsite/files/content-integrity
+//script.param.MOUNTPOINT.label=Input files location
+//script.param.SAVE.default=false
+//script.param.SAVE.label=Save
