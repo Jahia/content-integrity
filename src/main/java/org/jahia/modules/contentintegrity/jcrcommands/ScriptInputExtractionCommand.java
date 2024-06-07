@@ -248,7 +248,7 @@ public class ScriptInputExtractionCommand implements Action {
         }
 
         try {
-            FileUtils.writeLines(file, StandardCharsets.UTF_8.name(), lines);
+            FileUtils.writeLines(file, StandardCharsets.UTF_8.name(), lines.stream().distinct().collect(Collectors.toList()));
             System.out.println(filename + " saved");
         } catch (IOException e) {
             logger.error("", e);
