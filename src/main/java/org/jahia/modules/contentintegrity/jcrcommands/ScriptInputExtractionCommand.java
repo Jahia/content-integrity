@@ -70,6 +70,8 @@ public class ScriptInputExtractionCommand implements Action {
         invalidValueConstraint(lines, Constants.LIVE_WORKSPACE, targetFolder);
         undeclaredProperties(lines, Constants.EDIT_WORKSPACE, targetFolder);
         undeclaredProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        markedForDeletion(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        markedForDeletion(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
         values.clear();
         return null;
@@ -202,6 +204,17 @@ public class ScriptInputExtractionCommand implements Action {
     private String extractInvalidValueConstraintProperty(String s) {
         // {constraints=[transparent, light, dark], declaring-type=fwk:allowedInCarousel, property-name=bgcolorText}
         return extractEmptyMandatoryProperty(s);
+    }
+
+    private void markedForDeletion(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "MarkForDeletionCheck".equals(l[0]))
+                .filter(l -> workspace.equals(l[3]))
+                .map(l -> l[4])
+                .collect(Collectors.toList());
+        save(txtLines, "MarkForDeletionCheck", null, workspace, targetFolder);
     }
 
     private void unescapeCSV(String[] line) {
