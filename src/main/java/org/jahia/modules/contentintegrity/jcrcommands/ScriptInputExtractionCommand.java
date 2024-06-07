@@ -15,7 +15,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,15 +34,25 @@ public class ScriptInputExtractionCommand implements Action {
     @Argument(required = true)
     private String path;
 
+    private Map<String, String> values = new HashMap<>();
+
     @Override
     public Object execute() throws Exception {
         final File file = new File(path);
         if (!file.exists()) return null;
 
+        final File targetFolder = file.getParentFile();
+        final File valuesFile = new File(targetFolder, "values.txt");
+        if (valuesFile.exists()) {
+            FileUtils.readLines(valuesFile, StandardCharsets.UTF_8).stream()
+                    .filter(StringUtils::isNotBlank)
+                    .map(l -> l.split(";"))
+                    .forEach(l -> values.put(l[0], l[1]));
+        }
+
         final List<String> lines = FileUtils.readLines(file, StandardCharsets.UTF_8);
         //lines.remove(0); // TODO the csv can have no header line
 
-        final File targetFolder = file.getParentFile();
         undeployedModules(lines, Constants.EDIT_WORKSPACE, targetFolder);
         undeployedModules(lines, Constants.LIVE_WORKSPACE, targetFolder);
         undeclaredProperties(lines, Constants.EDIT_WORKSPACE, targetFolder);
@@ -51,7 +64,10 @@ public class ScriptInputExtractionCommand implements Action {
         undeclaredMixins(lines, Constants.LIVE_WORKSPACE, targetFolder);
         undeclaredPrimaryType(lines, Constants.EDIT_WORKSPACE, targetFolder);
         undeclaredPrimaryType(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        emptyMandatoryProperties(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        emptyMandatoryProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
+        values.clear();
         return null;
     }
 
@@ -131,6 +147,31 @@ public class ScriptInputExtractionCommand implements Action {
     private String extractUndeclaredPrimaryType(String s) {
         //  {primary type=fwk:newsListNewsReference}
         return StringUtils.substring(s, "{primary type=".length(), s.length() - 1);
+    }
+
+    private void emptyMandatoryProperties(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[0]))
+                .filter(l -> "EMPTY_MANDATORY_PROPERTY".equals(l[2]))
+                .filter(l -> workspace.equals(l[3]))
+                .map(l -> {
+                    final String defaultValue = values.get(l[11]);
+                    if (StringUtils.isBlank(defaultValue)) {
+                        System.out.println("No default value for " + l[11]);
+                        return null;
+                    }
+                    return l[4] + ";" + l[9] + ";" + extractEmptyMandatoryProperty(l[11]) + ";" + defaultValue;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        save(txtLines, "PropertyDefinitionsSanityCheck", "EMPTY_MANDATORY_PROPERTY", workspace, targetFolder);
+    }
+
+    private String extractEmptyMandatoryProperty(String s) {
+        // {declaring-type=iso:title, property-name=jcr:title}
+        return StringUtils.substring(s, s.indexOf("property-name=") + "property-name=".length(), s.length() - 1);
     }
 
     private void unescapeCSV(String[] line) {
