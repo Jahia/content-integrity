@@ -59,7 +59,7 @@ public class ScriptInputExtractionCommand implements Action {
 
     private String extractUndeclaredPropName(String s) {
         //  {property-name=j:sceneType}
-        return StringUtils.substring(s, 15, s.length() - 1);
+        return StringUtils.substring(s, "{property-name=".length(), s.length() - 1);
     }
 
     private void unescapeCSV(String[] line) {
