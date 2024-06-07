@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Command(scope = "jcr", name = "integrity-extract-txt", description = "Generate the input txt files for the scripts")
 @Service
@@ -53,7 +54,7 @@ public class ScriptInputExtractionCommand implements Action {
                 .filter(l -> workspace.equals(l[3]))
                 .map(l -> l[4] + ";" + l[9] + ";" + extractUndeclaredPropName(l[11]))
                 .collect(Collectors.toList());
-        save(txtLines, workspace, targetFolder);
+        save(txtLines, "PropertyDefinitionsSanityCheck", "UNDECLARED_PROPERTY", workspace, targetFolder);
     }
 
     private String extractUndeclaredPropName(String s) {
@@ -68,9 +69,24 @@ public class ScriptInputExtractionCommand implements Action {
         }
     }
 
-    private void save(List<String> lines, String workspace, File targetFolder) {
-        final String filename = String.format("PropertyDefinitionsSanityCheck-UNDECLARED_PROPERTY-%s.txt", workspace);
+    private void save(List<String> lines, String check, String error, String workspace, File targetFolder) {
+        final String filename = Stream.of(check, error, workspace).filter(StringUtils::isNotBlank).collect(Collectors.joining("-", "", ".txt"));
         final File file = new File(targetFolder, filename);
+
+        if (CollectionUtils.isEmpty(lines)) {
+            if (file.exists()) {
+                if (overrideFiles) {
+                    file.delete();
+                    System.out.println(filename + " not needed, deleted");
+                } else {
+                    System.out.println(filename + " not needed, to be deleted manually");
+                }
+            } else {
+                System.out.println(filename + " not needed");
+            }
+            return;
+        }
+
         if (file.exists() && !overrideFiles) {
             System.out.println(filename + " already exists");
             return;
