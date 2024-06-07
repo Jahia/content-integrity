@@ -57,8 +57,6 @@ public class ScriptInputExtractionCommand implements Action {
 
         undeployedModules(lines, Constants.EDIT_WORKSPACE, targetFolder);
         undeployedModules(lines, Constants.LIVE_WORKSPACE, targetFolder);
-        undeclaredProperties(lines, Constants.EDIT_WORKSPACE, targetFolder);
-        undeclaredProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
         childNodeDefinitions(lines, Constants.EDIT_WORKSPACE, targetFolder);
         childNodeDefinitions(lines, Constants.LIVE_WORKSPACE, targetFolder);
         // ReferencesSanityCheck not a problem for the import
@@ -70,6 +68,8 @@ public class ScriptInputExtractionCommand implements Action {
         emptyMandatoryProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
         invalidValueConstraint(lines, Constants.EDIT_WORKSPACE, targetFolder);
         invalidValueConstraint(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        undeclaredProperties(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        undeclaredProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
         values.clear();
         return null;
