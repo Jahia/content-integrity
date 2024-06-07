@@ -1,2 +1,18 @@
+# Eclipse
+/.classpath
+/.project
+/.settings
+
+# Intellij
 .idea
 *.iml
+*.ipr
+
+# Maven
+target
+
+# Jahia DX Studio
+repository.xml.generated
+
+# Custom
+TODO.md
