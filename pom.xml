@@ -9,7 +9,7 @@
     <groupId>org.jahia.community.modules</groupId>
     <artifactId>jcr-scripts</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>bundle</packaging>
 
     <repositories>
         <repository>
