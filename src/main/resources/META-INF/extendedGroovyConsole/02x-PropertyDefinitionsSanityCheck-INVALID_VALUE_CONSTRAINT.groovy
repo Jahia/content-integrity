@@ -1,6 +1,4 @@
 import org.apache.commons.io.IOUtils
-import org.apache.jackrabbit.core.NodeImpl
-import org.apache.jackrabbit.core.id.NodeId
 import org.jahia.api.Constants
 import org.jahia.api.content.JCRTemplate
 import org.jahia.osgi.BundleUtils
