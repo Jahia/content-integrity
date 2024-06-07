@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Command(scope = "jcr", name = "integrity-extract-txt", description = "Analyse an excel sheet")
+@Command(scope = "jcr", name = "integrity-extract-txt", description = "Generate the input txt files for the scripts")
 @Service
 public class ScriptInputExtractionCommand implements Action {
 
@@ -45,7 +45,6 @@ public class ScriptInputExtractionCommand implements Action {
     }
 
     private void undeclaredProperties(List<String> lines, String workspace, File targetFolder) {
-        final String filename = String.format("PropertyDefinitionsSanityCheck-UNDECLARED_PROPERTY-%s.txt", workspace);
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(this::unescapeCSV)
@@ -54,12 +53,7 @@ public class ScriptInputExtractionCommand implements Action {
                 .filter(l -> workspace.equals(l[3]))
                 .map(l -> l[4] + ";" + l[9] + ";" + extractUndeclaredPropName(l[11]))
                 .collect(Collectors.toList());
-        try {
-            FileUtils.writeLines(new File(targetFolder, filename), StandardCharsets.UTF_8.name(), txtLines);
-        } catch (IOException e) {
-            logger.error("", e);  //TODO: review me, I'm generated
-        }
-
+        save(txtLines, workspace, targetFolder);
     }
 
     private String extractUndeclaredPropName(String s) {
@@ -71,6 +65,22 @@ public class ScriptInputExtractionCommand implements Action {
         for (int i =0; i< line.length; i++) {
             final String s = line[i];
             line[i] = StringUtils.substring(s, 1, s.length() - 1);
+        }
+    }
+
+    private void save(List<String> lines, String workspace, File targetFolder) {
+        final String filename = String.format("PropertyDefinitionsSanityCheck-UNDECLARED_PROPERTY-%s.txt", workspace);
+        final File file = new File(targetFolder, filename);
+        if (file.exists() && !overrideFiles) {
+            System.out.println(filename + " already exists");
+            return;
+        }
+
+        try {
+            FileUtils.writeLines(file, StandardCharsets.UTF_8.name(), lines);
+            System.out.println(filename + " saved");
+        } catch (IOException e) {
+            logger.error("", e);
         }
     }
 }
