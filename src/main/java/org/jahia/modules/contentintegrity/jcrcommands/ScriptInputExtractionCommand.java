@@ -128,7 +128,7 @@ public class ScriptInputExtractionCommand implements Action {
                 .filter(l -> "UndeclaredNodeTypesCheck".equals(l[0]))
                 .filter(l -> "Undeclared mixin type".equals(l[10]))
                 .filter(l -> workspace.equals(l[3]))
-                .map(l -> l[4] + ";" + l[9] + ";" + extractUndeclaredMixin(l[11]))
+                .map(l -> l[4] + ";" + extractUndeclaredMixin(l[11]))
                 .collect(Collectors.toList());
         save(txtLines, "UndeclaredMixinsCheck", null, workspace, targetFolder);
     }
@@ -145,7 +145,7 @@ public class ScriptInputExtractionCommand implements Action {
                 .filter(l -> "UndeclaredNodeTypesCheck".equals(l[0]))
                 .filter(l -> "Undeclared primary type".equals(l[10]))
                 .filter(l -> workspace.equals(l[3]))
-                .map(l -> l[4] + ";" + l[9] + ";" + extractUndeclaredPrimaryType(l[11]))
+                .map(l -> l[4])
                 .collect(Collectors.toList());
         save(txtLines, "UndeclaredPrimaryTypesCheck", null, workspace, targetFolder);
     }
