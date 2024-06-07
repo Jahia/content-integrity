@@ -44,6 +44,8 @@ public class ScriptInputExtractionCommand implements Action {
         undeployedModules(lines, Constants.LIVE_WORKSPACE, targetFolder);
         undeclaredProperties(lines, Constants.EDIT_WORKSPACE, targetFolder);
         undeclaredProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        childNodeDefinitions(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        childNodeDefinitions(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
         return null;
     }
@@ -79,6 +81,17 @@ public class ScriptInputExtractionCommand implements Action {
     private String extractUndeployedModule(String s) {
         //  {module=v8-modules-helper}
         return StringUtils.substring(s, "{module=".length(), s.length() - 1);
+    }
+
+    private void childNodeDefinitions(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "ChildNodeDefinitionsSanityCheck".equals(l[0]))
+                .filter(l -> workspace.equals(l[3]))
+                .map(l -> l[4])
+                .collect(Collectors.toList());
+        save(txtLines, "ChildNodeDefinitionsSanityCheck", null, workspace, targetFolder);
     }
 
     private void unescapeCSV(String[] line) {
