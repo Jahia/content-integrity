@@ -46,6 +46,9 @@ public class ScriptInputExtractionCommand implements Action {
         undeclaredProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
         childNodeDefinitions(lines, Constants.EDIT_WORKSPACE, targetFolder);
         childNodeDefinitions(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        // ReferencesSanityCheck not a problem for the import
+        undeclaredMixins(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        undeclaredMixins(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
         return null;
     }
@@ -92,6 +95,23 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> l[4])
                 .collect(Collectors.toList());
         save(txtLines, "ChildNodeDefinitionsSanityCheck", null, workspace, targetFolder);
+    }
+
+    private void undeclaredMixins(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "UndeclaredNodeTypesCheck".equals(l[0]))
+                .filter(l -> "Undeclared mixin type".equals(l[10]))
+                .filter(l -> workspace.equals(l[3]))
+                .map(l -> l[4] + ";" + l[9] + ";" + extractUndeclaredMixin(l[11]))
+                .collect(Collectors.toList());
+        save(txtLines, "UndeclaredMixinsCheck", null, workspace, targetFolder);
+    }
+
+    private String extractUndeclaredMixin(String s) {
+        //  {mixin type=cpg:header}
+        return StringUtils.substring(s, "{mixin type=".length(), s.length() - 1);
     }
 
     private void unescapeCSV(String[] line) {
