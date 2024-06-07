@@ -31,6 +31,7 @@ try {
                     publicationService.publishByMainId(uuid)
                     log.info "#${++count} Autopublish node ${node.path}"
                 } catch (ItemNotFoundException e) {
+                    log.warn "#${++count} uuid not found: ${uuid}"
                     // Nothing to do
                 } catch (RepositoryException e) {
                     log.error("", e)

@@ -33,6 +33,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         node.setProperty(property, defaultValue)
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
+                        log.warn "#${++count} uuid not found: ${uuid}"
                         // Nothing to do
                     } catch (RepositoryException e) {
                         log.error("", e)

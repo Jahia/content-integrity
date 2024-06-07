@@ -37,6 +37,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                             log.warn "#${++count} [WARN] Property ${property} not found for node ${node.path}"
                         }
                     } catch (ItemNotFoundException e) {
+                        log.warn "#${++count} uuid not found: ${uuid}"
                         // Nothing to do
                     } catch (RepositoryException e) {
                         log.error("", e)

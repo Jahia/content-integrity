@@ -27,6 +27,7 @@ try {
                         log.warn "#${++count} [WARN] Node ${node.path} has not property ${Constants.PUBLISHED}"
                     }
                 } catch (ItemNotFoundException e) {
+                    log.warn "#${++count} uuid not found: ${uuid}"
                     // Nothing to do
                 } catch (RepositoryException e) {
                     log.error("", e)

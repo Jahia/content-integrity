@@ -26,6 +26,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         (node.getParent() as NodeImpl).removeChildNode(NodeId.valueOf(uuid))
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
+                        log.warn "#${++count} uuid not found: ${uuid}"
                         // Nothing to do
                     } catch (RepositoryException e) {
                         log.error("", e)
