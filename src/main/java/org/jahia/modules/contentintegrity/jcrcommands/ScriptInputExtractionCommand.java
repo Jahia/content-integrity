@@ -46,6 +46,8 @@ public class ScriptInputExtractionCommand implements Action {
         if (valuesFile.exists()) {
             FileUtils.readLines(valuesFile, StandardCharsets.UTF_8).stream()
                     .filter(StringUtils::isNotBlank)
+                    .filter(l -> !l.startsWith("#"))
+                    .filter(l -> l.contains(";"))
                     .map(l -> l.split(";"))
                     .forEach(l -> values.put(l[0], l[1]));
         }
@@ -66,6 +68,8 @@ public class ScriptInputExtractionCommand implements Action {
         undeclaredPrimaryType(lines, Constants.LIVE_WORKSPACE, targetFolder);
         emptyMandatoryProperties(lines, Constants.EDIT_WORKSPACE, targetFolder);
         emptyMandatoryProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        invalidValueConstraint(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        invalidValueConstraint(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
         values.clear();
         return null;
@@ -172,6 +176,32 @@ public class ScriptInputExtractionCommand implements Action {
     private String extractEmptyMandatoryProperty(String s) {
         // {declaring-type=iso:title, property-name=jcr:title}
         return StringUtils.substring(s, s.indexOf("property-name=") + "property-name=".length(), s.length() - 1);
+    }
+
+    private void invalidValueConstraint(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[0]))
+                .filter(l -> "INVALID_VALUE_CONSTRAINT".equals(l[2]))
+                .filter(l -> workspace.equals(l[3]))
+                .map(l -> {
+                    final String key = l[11] + l[12];
+                    final String defaultValue = values.get(key);
+                    if (StringUtils.isBlank(defaultValue)) {
+                        System.out.println("No default value for " + key);
+                        return null;
+                    }
+                    return l[4] + ";" + l[9] + ";" + extractInvalidValueConstraintProperty(l[11]) + ";" + defaultValue;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        save(txtLines, "PropertyDefinitionsSanityCheck", "INVALID_VALUE_CONSTRAINT", workspace, targetFolder);
+    }
+
+    private String extractInvalidValueConstraintProperty(String s) {
+        // {constraints=[transparent, light, dark], declaring-type=fwk:allowedInCarousel, property-name=bgcolorText}
+        return extractEmptyMandatoryProperty(s);
     }
 
     private void unescapeCSV(String[] line) {
