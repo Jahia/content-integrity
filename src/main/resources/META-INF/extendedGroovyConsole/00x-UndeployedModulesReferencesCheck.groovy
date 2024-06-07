@@ -13,7 +13,6 @@ import javax.jcr.RepositoryException
 
 def MOUNTPOINT = '/sites/systemsite/files/content-integrity'
 def SAVE = false
-def MODULES_TO_REMOVED = ['v8-modules-helper']
 
 for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
@@ -24,13 +23,17 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
             def reader = new FileReader(file)
             def count = 0
             try {
-                IOUtils.readLines(reader).each { String uuid ->
+                IOUtils.readLines(reader).each { String row ->
+                    def data = row.split(';')
+                    def uuid = data[0]
+                    // TODO fix this when more than one module are identified
+                    def modulesToRemove = Collections.singletonList(data[1]).toArray()
                     try {
                         def siteNode = session.getNodeByIdentifier(uuid)
                         if (siteNode.isNodeType(Constants.JAHIANT_VIRTUALSITE) && siteNode.hasProperty(SitesSettings.INSTALLED_MODULES)) {
                             List<JCRValueWrapper> modules = []
                             siteNode.getProperty(SitesSettings.INSTALLED_MODULES).getValues().each { v ->
-                                if (!MODULES_TO_REMOVED.contains(v.getString())) {
+                                if (!modulesToRemove.contains(v.getString())) {
                                     modules.add(v)
                                 }
                             }

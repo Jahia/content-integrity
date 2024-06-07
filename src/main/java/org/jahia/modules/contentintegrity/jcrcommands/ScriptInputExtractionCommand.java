@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.jcrcommands;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.karaf.shell.api.action.Action;
@@ -39,6 +40,8 @@ public class ScriptInputExtractionCommand implements Action {
         //lines.remove(0); // TODO the csv can have no header line
 
         final File targetFolder = file.getParentFile();
+        undeployedModules(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        undeployedModules(lines, Constants.LIVE_WORKSPACE, targetFolder);
         undeclaredProperties(lines, Constants.EDIT_WORKSPACE, targetFolder);
         undeclaredProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
@@ -60,6 +63,22 @@ public class ScriptInputExtractionCommand implements Action {
     private String extractUndeclaredPropName(String s) {
         //  {property-name=j:sceneType}
         return StringUtils.substring(s, "{property-name=".length(), s.length() - 1);
+    }
+
+    private void undeployedModules(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "UndeployedModulesReferencesCheck".equals(l[0]))
+                .filter(l -> workspace.equals(l[3]))
+                .map(l -> l[4] + ";" + extractUndeployedModule(l[11]))
+                .collect(Collectors.toList());
+        save(txtLines, "UndeployedModulesReferencesCheck", null, workspace, targetFolder);
+    }
+
+    private String extractUndeployedModule(String s) {
+        //  {module=v8-modules-helper}
+        return StringUtils.substring(s, "{module=".length(), s.length() - 1);
     }
 
     private void unescapeCSV(String[] line) {
