@@ -24,7 +24,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def data = row.split(';')
                     def uuid = data[0]
                     // TODO fix this when more than one module are identified
-                    def modulesToRemove = Collections.singletonList(data[1]).toArray()
+                    String[] modulesToRemove = Collections.singletonList(data[1]).toArray(new String[0])
                     try {
                         def siteNode = session.getNodeByIdentifier(uuid)
                         if (siteNode.isNodeType(Constants.JAHIANT_VIRTUALSITE) && siteNode.hasProperty(SitesSettings.INSTALLED_MODULES)) {
