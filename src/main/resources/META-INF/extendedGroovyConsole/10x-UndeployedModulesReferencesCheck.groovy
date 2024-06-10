@@ -24,18 +24,18 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def data = row.split(';')
                     def uuid = data[0]
                     // TODO fix this when more than one module are identified
-                    String[] modulesToRemove = Collections.singletonList(data[1]).toArray(new String[0])
+                    def modulesToRemove = Collections.singletonList(data[1])
                     try {
                         def siteNode = session.getNodeByIdentifier(uuid)
                         if (siteNode.isNodeType(Constants.JAHIANT_VIRTUALSITE) && siteNode.hasProperty(SitesSettings.INSTALLED_MODULES)) {
-                            List<JCRValueWrapper> modules = []
+                            List<String> modules = []
                             siteNode.getProperty(SitesSettings.INSTALLED_MODULES).getValues().each { v ->
                                 if (!modulesToRemove.contains(v.getString())) {
-                                    modules.add(v)
+                                    modules.add(v.getString())
                                 }
                             }
-                            log.info "#${++count} SiteNode ${siteNode} set installed modules ${modules.each { v -> v.getString() }}"
-                            siteNode.setProperty(SitesSettings.INSTALLED_MODULES, modules.toArray(new ValueImpl[0]) as ValueImpl[])
+                            log.info "#${++count} SiteNode ${siteNode} set installed modules ${modules.each { v -> v }}"
+                            siteNode.setProperty(SitesSettings.INSTALLED_MODULES, modules.toArray(new String[0]) as String[])
                             if (SAVE) session.save()
                         }
                     } catch (ItemNotFoundException e) {
