@@ -32,18 +32,17 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         }
                         if (node.hasProperty(property)) {
                             log.info "#${++count} Remove property ${property} for node ${node.path}"
-                            node.getProperty(property).remove()
-                            if (SAVE) {
-                                try {
-                                    session.save()
-                                } catch (ConstraintViolationException cve) {
-                                    log.warn "${StringUtils.repeat(" ", 2)}Failed to save the removal, retrying"
-                                    node.addMixin("jmix:unstructured")
-                                    session.save()
-                                    node.removeMixin("jmix:unstructured")
-                                    session.save()
-                                    log.info "${StringUtils.repeat(" ", 2)}Removed property ${property} for node ${node.path}"
-                                }
+                            try {
+                                node.getProperty(property).remove()
+                                if (SAVE) session.save()
+                            } catch (ConstraintViolationException cve) {
+                                log.warn "${StringUtils.repeat(" ", 2)}Failed to save the removal, retrying"
+                                node.addMixin("jmix:unstructured")
+                                node.getProperty(property).remove()
+                                if (SAVE) session.save()
+                                node.removeMixin("jmix:unstructured")
+                                if (SAVE) session.save()
+                                log.info "${StringUtils.repeat(" ", 2)}Removed property ${property} for node ${node.path}"
                             }
                         } else {
                             log.warn "#${++count} [WARN] Property ${property} not found for node ${node.path}"
