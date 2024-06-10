@@ -28,7 +28,8 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def property = data[2]
                     def defaultValue = data[3]
                     try {
-                        JCRNodeWrapper node = session.getNodeByIdentifier(uuid)
+                        def node = session.getNodeByIdentifier(uuid)
+                        JCRSiteNode site = node.getResolveSite()
                         if (node.path.startsWith("/modules/"))  {
                             log.warn "#${++count} IGNORE: Set property ${property} node ${node.path} with value ${defaultValue}"
                             return null
@@ -37,7 +38,6 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                             node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
                         }
                         if (StringUtils.equals(defaultValue, "[site.home]")) {
-                            JCRSiteNode site = node.getResolveSite()
                             if (site == null) {
                                 log.warn "${StringUtils.repeat(" ", 2)}Impossible to calculate the default value for ${node.path}/${property}"
                                 return null
