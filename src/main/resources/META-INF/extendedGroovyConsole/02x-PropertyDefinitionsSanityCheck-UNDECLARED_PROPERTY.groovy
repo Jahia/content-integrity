@@ -9,6 +9,7 @@ import org.jahia.utils.LanguageCodeConverters
 
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
+import javax.validation.ConstraintViolationException
 
 for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
@@ -32,7 +33,17 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         if (node.hasProperty(property)) {
                             log.info "#${++count} Remove property ${property} for node ${node.path}"
                             node.getProperty(property).remove()
-                            if (SAVE) session.save()
+                            if (SAVE) {
+                                try {
+                                    session.save()
+                                } catch (ConstraintViolationException cve) {
+                                    log.warn "${StringUtils.repeat(" ", 2)}Failed to save the removal, retrying"
+                                    node.addMixin("jmix:unstructured")
+                                    session.save()
+                                    node.removeMixin("jmix:unstructured")
+                                    session.save()
+                                }
+                            }
                         } else {
                             log.warn "#${++count} [WARN] Property ${property} not found for node ${node.path}"
                         }
