@@ -29,6 +29,10 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def defaultValue = data[3]
                     try {
                         JCRNodeWrapper node = session.getNodeByIdentifier(uuid)
+                        if (node.path.startsWith("/modules/"))  {
+                            log.warn "#${++count} IGNORE: Set property ${property} node ${node.path} with value ${defaultValue}"
+                            return null
+                        }
                         if (StringUtils.isNotBlank(locale)) {
                             node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
                         }
