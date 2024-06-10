@@ -4,7 +4,9 @@ import org.jahia.api.Constants
 import org.jahia.api.content.JCRTemplate
 import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRContentUtils
+import org.jahia.services.content.JCRNodeWrapper
 import org.jahia.services.content.JCRObservationManager
+import org.jahia.services.content.decorator.JCRSiteNode
 import org.jahia.utils.LanguageCodeConverters
 
 import javax.jcr.ItemNotFoundException
@@ -26,9 +28,22 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def property = data[2]
                     def defaultValue = data[3]
                     try {
-                        def node = session.getNodeByIdentifier(uuid)
+                        JCRNodeWrapper node = session.getNodeByIdentifier(uuid)
                         if (StringUtils.isNotBlank(locale)) {
                             node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
+                        }
+                        if (StringUtils.equals(defaultValue, "[site.home]")) {
+                            JCRSiteNode site = node.getResolveSite()
+                            if (site == null) {
+                                log.warn "${StringUtils.repeat(" ", 2)}Impossible to calculate the default value for ${node.path}/${property}"
+                                return null
+                            }
+                            JCRNodeWrapper home = site.getHome()
+                            if (home == null) {
+                                log.warn "${StringUtils.repeat(" ", 2)}Impossible to calculate the default value for ${node.path}/${property}"
+                                return null
+                            }
+                            defaultValue = home.identifier
                         }
                         log.info "#${++count} Set property ${property} node ${node.path} with value ${defaultValue}"
                         node.setProperty(property, defaultValue)
