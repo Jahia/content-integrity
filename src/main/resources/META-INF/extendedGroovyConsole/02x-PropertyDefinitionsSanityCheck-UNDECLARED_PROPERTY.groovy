@@ -9,14 +9,19 @@ import org.jahia.utils.LanguageCodeConverters
 
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
-import javax.validation.ConstraintViolationException
+import javax.jcr.nodetype.ConstraintViolationException
 
 for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
     JCRObservationManager.setAllEventListenersDisabled(true)
     try {
         BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-            def file = JCRContentUtils.downloadFileContent(session.getNode("${MOUNTPOINT}/PropertyDefinitionsSanityCheck-UNDECLARED_PROPERTY-${workspace}.txt"))
+            String path = "${MOUNTPOINT}/PropertyDefinitionsSanityCheck-UNDECLARED_PROPERTY-${workspace}.txt"
+            if (!session.nodeExists(path)) {
+                log.info "${path} does not exists"
+                return null
+            }
+            def file = JCRContentUtils.downloadFileContent(session.getNode(path))
             def reader = new FileReader(file)
             def count = 0
             try {

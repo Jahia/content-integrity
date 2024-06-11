@@ -13,7 +13,12 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     JCRObservationManager.setAllEventListenersDisabled(true)
     try {
         BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-            def file = JCRContentUtils.downloadFileContent(session.getNode("${MOUNTPOINT}/LockSanityCheck-DELETION_LOCK_ON_I18N-${workspace}.txt"))
+            String path = "${MOUNTPOINT}/LockSanityCheck-DELETION_LOCK_ON_I18N-${workspace}.txt"
+            if (!session.nodeExists(path)) {
+                log.info "${path} does not exists"
+                return null
+            }
+            def file = JCRContentUtils.downloadFileContent(session.getNode(path))
             def reader = new FileReader(file)
             def count = 0
             try {
