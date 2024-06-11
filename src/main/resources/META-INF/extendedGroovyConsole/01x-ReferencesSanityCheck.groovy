@@ -14,7 +14,12 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     JCRObservationManager.setAllEventListenersDisabled(true)
     try {
         BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-            def file = JCRContentUtils.downloadFileContent(session.getNode("${MOUNTPOINT}/ReferencesSanityCheck-${workspace}.txt"))
+            String path = "${MOUNTPOINT}/ReferencesSanityCheck-${workspace}.txt"
+            if (!session.nodeExists(path)) {
+                log.info "${path} does not exists"
+                return
+            }
+            def file = JCRContentUtils.downloadFileContent(session.getNode(path))
             def reader = new FileReader(file)
             def count = 0
             try {

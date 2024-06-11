@@ -12,7 +12,12 @@ def workspace = Constants.EDIT_WORKSPACE
 log.info "Traversing workspace ${workspace}"
 try {
     BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-        def file = JCRContentUtils.downloadFileContent(session.getNode("${MOUNTPOINT}/PublicationSanityDefaultCheck-NO_LIVE_NODE-${workspace}.txt"))
+        String path = "${MOUNTPOINT}/PublicationSanityDefaultCheck-NO_LIVE_NODE-${workspace}.txt"
+        if (!session.nodeExists(path)) {
+            log.info "${path} does not exists"
+            return null
+        }
+        def file = JCRContentUtils.downloadFileContent(session.getNode(path))
         def reader = new FileReader(file)
         def count = 0
         try {
