@@ -9,7 +9,7 @@ import org.jahia.utils.LanguageCodeConverters
 
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
-import javax.validation.ConstraintViolationException
+import javax.jcr.nodetype.ConstraintViolationException
 
 for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
