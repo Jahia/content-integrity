@@ -95,11 +95,16 @@ public class ScriptInputExtractionCommand implements Action {
     }
 
     private void undeployedModules(List<String> lines, String workspace, File targetFolder) {
+        /*
+        Since the errors are on some autopublished nodes (site), they are reported only for the default workspace.
+        But they need to be fixed in both workspace. As a consequence, we do not filter on the workspace here,
+        so that the txt file is generated for the live workspace based on the errors tracked for the default workspace
+         */
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(this::unescapeCSV)
                 .filter(l -> "UndeployedModulesReferencesCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[3]))
+                //.filter(l -> workspace.equals(l[3]))
                 .map(l -> l[4] + ";" + extractUndeployedModule(l[11]))
                 .collect(Collectors.toList());
         save(txtLines, "UndeployedModulesReferencesCheck", null, workspace, targetFolder);
