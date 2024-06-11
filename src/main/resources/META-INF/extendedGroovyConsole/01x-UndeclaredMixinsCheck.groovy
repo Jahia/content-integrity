@@ -29,7 +29,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     try {
                         def node = session.getNodeByIdentifier(uuid)
                         log.info "#${++count} Remove mixin ${mixin} for node ${node.path}"
-                        node.removeMixin(mixin)
+                        node.getRealNode().removeMixin(mixin)
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
                         log.warn "#${++count} uuid not found: ${uuid}"
