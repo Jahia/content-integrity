@@ -84,14 +84,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             }
         }
 
-        logger.info("Content integrity service started");
+        logger.info("Content integrity service started ({})", Utils.getContentIntegrityVersion());
     }
 
     @Deactivate
     public void stop() throws JahiaException {
         if (errorsCache != null) errorsCache.flush();
 
-        logger.info("Content integrity service stopped");
+        logger.info("Content integrity service stopped ({})", Utils.getContentIntegrityVersion());
     }
 
     @Reference(service = ContentIntegrityCheck.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, unbind = "unregisterIntegrityCheck")
