@@ -66,7 +66,8 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                 if (!StringUtils.equals(node.getIdentifier(), samePathLiveNodeIdentifier)) {
                     final ContentIntegrityError error = createError(node, "Live node with same path but different uuid")
                             .setErrorType(ErrorType.PATH_CONFLICT)
-                            .addExtraInfo("live-node-uuid", samePathLiveNodeIdentifier, true);
+                            .addExtraInfo("live-node-uuid", samePathLiveNodeIdentifier, true)
+                            .addExtraInfo("live-node-primary-type", samePathLiveNode.getPrimaryNodeTypeName());
                     errors = trackError(errors, error);
                 }
             }
