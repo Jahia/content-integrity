@@ -220,7 +220,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     }
 
     protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, String message) {
-        return ContentIntegrityErrorImpl.createError(node, locale == null ? null : LanguageCodeConverters.localeToLanguageTag(locale), message, this);
+        return ContentIntegrityErrorImpl.createError(node, locale == null ? null : locale.toString(), message, this);
     }
 
     protected final ContentIntegrityError createError(JCRNodeWrapper node, String message) {
