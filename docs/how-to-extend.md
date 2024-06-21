@@ -99,7 +99,7 @@ If your class extends `AbstractContentIntegrityCheck`, several factory methods c
 
 In order to get your custom check registered into the content integrity service, you need to use the `@Component` annotation.
 You need to specify as well the java interface that every integrity checks implement and the immediate
-injection of your Component: `@Component(service = ContentIntegrityCheck.class, immediate = true`.
+injection of your Component: `@Component(service = ContentIntegrityCheck.class, immediate = true)`.
 
 **Example:**
 
