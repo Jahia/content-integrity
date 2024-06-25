@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,14 +44,15 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private final String constraintMessage;
     private final String integrityCheckName;
     private final String integrityCheckID;
-    private Object errorType = null;
+    private ContentIntegrityErrorType errorType = null;
     private List<String> extraInfosKeys;
     private Map<String, Object> extraInfos;
     private Map<String, Object> specificExtraInfos;
     private boolean fixed = false;
 
     private ContentIntegrityErrorImpl(String path, String uuid, String primaryType, String mixins, String workspace,
-                                      String locale, String constraintMessage, String integrityCheckName, String integrityCheckID) {
+                                      String locale, ContentIntegrityErrorType errorType, String constraintMessage,
+                                      String integrityCheckName, String integrityCheckID) {
         id = UUID.randomUUID().toString();
         this.path = path;
         site = Optional.ofNullable(getSiteKey(path, true, MODULE_PREFIX::concat)).orElse(NO_SITE);
@@ -59,12 +61,14 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
         this.mixins = mixins;
         this.locale = locale;
         this.workspace = workspace;
+        this.errorType = errorType;
         this.constraintMessage = constraintMessage;
         this.integrityCheckName = integrityCheckName;
         this.integrityCheckID = integrityCheckID;
     }
 
-    public static ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message, ContentIntegrityCheck integrityCheck) {
+    public static ContentIntegrityError createError(JCRNodeWrapper node, String locale, ContentIntegrityErrorType errorType, String message, ContentIntegrityCheck integrityCheck) {
+        final String errorMessage = StringUtils.defaultIfBlank(message, errorType.getDefaultMessage());
         try {
             final NodeType[] mixinNodeTypes = node.getMixinNodeTypes();
             final String mixins;
@@ -76,13 +80,13 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
                 mixins = mixinsBuilder.toString();
             }
             return new ContentIntegrityErrorImpl(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
-                    mixins, node.getSession().getWorkspace().getName(), locale, message,
+                    mixins, node.getSession().getWorkspace().getName(), locale, errorType, errorMessage,
                     integrityCheck.getName(), integrityCheck.getId());
         } catch (RepositoryException e) {
             logger.error("", e);
         }
 
-        return new ContentIntegrityErrorImpl(null, null, null, null, null, locale, message, integrityCheck.getName(), integrityCheck.getId());
+        return new ContentIntegrityErrorImpl(null, null, null, null, null, locale, errorType, errorMessage, integrityCheck.getName(), integrityCheck.getId());
     }
 
     @Override
@@ -219,16 +223,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     }
 
     @Override
-    public ContentIntegrityError setErrorType(Object type) {
-        if (errorType != null)
-            throw new UnsupportedOperationException("Changing the error type afterwards is not permitted");
-        if (type == null) throw new IllegalArgumentException("Setting an error type to null is not permitted");
-        errorType = type;
-        return this;
-    }
-
-    @Override
-    public Object getErrorType() {
+    public ContentIntegrityErrorType getErrorType() {
         return errorType;
     }
 

@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
@@ -41,6 +42,8 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
     private static final int TEXT_EXTRACT_MAX_LENGTH = 200;
     public static final int TEXT_EXTRACT_READABILITY_ZONE_LENGTH = 20;
     public static final String IGNORE_LOCALHOST = "ignore-localhost";
+
+    public static final ContentIntegrityErrorType HARDCODED_DOMAIN = createErrorType("HARDCODED_DOMAIN", "Hardcoded site domain in a String value");
 
     private final Set<String> domains = new HashSet<>();
     private final Map<String, Collection<String>> ignoredProperties = new HashMap<>();
@@ -120,7 +123,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
             final String text = value.getString();
             domains.forEach(domain -> {
                 if (StringUtils.contains(text, domain)) {
-                    errors.addError(createPropertyRelatedError(node, "Hardcoded site domain in a String value")
+                    errors.addError(createPropertyRelatedError(node, HARDCODED_DOMAIN)
                             .addExtraInfo("property-name", propertyName)
                             .addExtraInfo("property-value", getTextExtract(text, domain), true)
                             .addExtraInfo("domain", domain));

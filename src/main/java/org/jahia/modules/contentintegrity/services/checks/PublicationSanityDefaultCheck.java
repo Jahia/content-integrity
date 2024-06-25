@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
@@ -34,8 +35,11 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
     private static final String DIFFERENT_PATH_ROOT = "different-path-root";
     private static final String EXTRA_MSG_DIFFERENT_PATH_POTENTIAL_FP = "Warning: this node is the root of the scan, but not the root of the JCR. So the error might be a false positive, if the node is under a node which has been moved, but this move operation has not been published yet. To clarify this, you need to analyze the parent nodes, or redo the scan from a higher level";
+    public static final ContentIntegrityErrorType NO_LIVE_NODE = createErrorType("NO_LIVE_NODE", "The live node with the same uuid is missing");
+    public static final ContentIntegrityErrorType DIFFERENT_PATH = createErrorType("DIFFERENT_PATH", "Found a published node, with no pending modifications, but the path in live is different");
+    public static final ContentIntegrityErrorType DIFFERENT_PATH_POTENTIAL_FP = createErrorType("DIFFERENT_PATH_POTENTIAL_FP", "Found a published node, with no pending modifications, but the path in live is different");
+    public static final ContentIntegrityErrorType PATH_CONFLICT = createErrorType("PATH_CONFLICT", "Live node with same path but different uuid");
 
-    private enum ErrorType {NO_LIVE_NODE, DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP, PATH_CONFLICT}
     private final Map<String, Object> inheritedErrors = new HashMap<>();
     private String scanRoot = null;
 
@@ -64,8 +68,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
             if (samePathLiveNode != null) {
                 final String samePathLiveNodeIdentifier = samePathLiveNode.getIdentifier();
                 if (!StringUtils.equals(node.getIdentifier(), samePathLiveNodeIdentifier)) {
-                    final ContentIntegrityError error = createError(node, "Live node with same path but different uuid")
-                            .setErrorType(ErrorType.PATH_CONFLICT)
+                    final ContentIntegrityError error = createError(node, PATH_CONFLICT)
                             .addExtraInfo("live-node-uuid", samePathLiveNodeIdentifier, true)
                             .addExtraInfo("live-node-primary-type", samePathLiveNode.getPrimaryNodeTypeName());
                     errors = trackError(errors, error);
@@ -80,8 +83,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                 } catch (ItemNotFoundException infe) {
                     final String msg = String.format("Found a node %s, but no corresponding live node exists",
                             flaggedPublished? "flagged as published" : "auto-published");
-                    final ContentIntegrityError error = createError(node, msg)
-                            .setErrorType(ErrorType.NO_LIVE_NODE);
+                    final ContentIntegrityError error = createError(node, NO_LIVE_NODE, msg);
                     return trackError(errors, error);
                 }
 
@@ -95,16 +97,15 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     // Here we check the pending modifications without considering the translation subnodes. Only a renaming of node can
                     // change its path, what should result in pending modifications on the node itself
                     if (!JCRUtils.hasPendingModifications(node)) {
-                        final String msg = "Found a published node, with no pending modifications, but the path in live is different";
-                        final ContentIntegrityError error = createError(node, msg)
-                                .addExtraInfo("live-node-path", liveNode.getPath(), true);
+                        final ContentIntegrityError error;
                         if (!StringUtils.equals(nodePath, ROOT_NODE_PATH) && StringUtils.equals(nodePath, scanRoot)) {
                             inheritedErrors.put(DIFFERENT_PATH_ROOT, nodePath);
-                            error.setErrorType(ErrorType.DIFFERENT_PATH_POTENTIAL_FP);
+                            error = createError(node, DIFFERENT_PATH_POTENTIAL_FP);
                             error.setExtraMsg(EXTRA_MSG_DIFFERENT_PATH_POTENTIAL_FP);
                         } else {
-                            error.setErrorType(ErrorType.DIFFERENT_PATH);
+                            error = createError(node, DIFFERENT_PATH);
                         }
+                        error.addExtraInfo("live-node-path", liveNode.getPath(), true);
                         errors = trackError(errors, error);
                     }
                 }
@@ -131,17 +132,10 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
 
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
-        final Object errorTypeObject = integrityError.getErrorType();
-        if (!(errorTypeObject instanceof ErrorType)) {
-            logger.error("Unexpected error type: " + errorTypeObject);
-            return false;
-        }
-        final ErrorType errorType = (ErrorType) errorTypeObject;
-        switch (errorType) {
-            case NO_LIVE_NODE:
-                node.getProperty(PUBLISHED).remove();
-                node.getSession().save();
-                return true;
+        if (integrityError.getErrorType().equals(NO_LIVE_NODE)) {
+            node.getProperty(PUBLISHED).remove();
+            node.getSession().save();
+            return true;
         }
         return false;
     }

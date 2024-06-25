@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
@@ -74,27 +75,19 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private static final String FAILED_TO_CALCULATE_VALUE_STR = "<calculation error>";
     private static final String NON_I18N_PROP_VALIDATOR_ERROR_XTRA_MSG = "Non internationalized properties are tested for each available language. In case of constraint violation, the related errors might be duplicated if the validation does not involve internationalized properties";
 
+    public static final ContentIntegrityErrorType EMPTY_MANDATORY_PROPERTY = createErrorType("EMPTY_MANDATORY_PROPERTY", "Missing mandatory property");
+    public static final ContentIntegrityErrorType INVALID_VALUE_TYPE = createErrorType("INVALID_VALUE_TYPE", "The value does not match the type declared in the property definition");
+    public static final ContentIntegrityErrorType INVALID_MULTI_VALUE_STATUS = createErrorType("INVALID_MULTI_VALUE_STATUS", "The single/multi value status differs between the value and the definition");
+    public static final ContentIntegrityErrorType INVALID_VALUE_CONSTRAINT = createErrorType("INVALID_VALUE_CONSTRAINT", "The value does not match the constraint declared in the property definition");
+    public static final ContentIntegrityErrorType INVALID_NODE_VALIDATION = createErrorType("INVALID_NODE_VALIDATION", "A node constraint is not validated");
+    public static final ContentIntegrityErrorType UNDECLARED_PROPERTY = createErrorType("UNDECLARED_PROPERTY", "Undeclared property");
+
     private final ContentIntegrityCheckConfiguration configurations;
 
     private ExtendedNodeType jntTranslationNt;
     private final Map<String, Boolean> jntTranslationNtParents = new HashMap<>();
     private Map<String, Constructor<?>> validators;
     private LocalValidatorFactoryBean validatorFactoryBean;
-
-    private enum ErrorType {
-        EMPTY_MANDATORY_PROPERTY("Missing mandatory property"),
-        INVALID_VALUE_TYPE("The value does not match the type declared in the property definition"),
-        INVALID_MULTI_VALUE_STATUS("The single/multi value status differs between the value and the definition"),
-        INVALID_VALUE_CONSTRAINT("The value does not match the constraint declared in the property definition"),
-        INVALID_NODE_VALIDATION("A node constraint is not validated"),
-        UNDECLARED_PROPERTY("Undeclared property");
-
-        private final String desc;
-
-        ErrorType(String desc) {
-            this.desc = desc;
-        }
-    }
 
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
@@ -172,7 +165,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         final JCRNodeWrapper checkedNode = locale == null ? node :
                 JCRUtils.runJcrSupplierCallBack(() -> JCRUtils.getSystemSession(node.getSession(), locale).getNode(node.getPath()), null, false);
         if (checkedNode == null) return null;
-        
+
         validators.entrySet().stream()
                 .filter(e -> JCRUtils.runJcrCallBack(e.getKey(), checkedNode::isNodeType, Boolean.FALSE))
                 .map(Map.Entry::getValue)
@@ -587,7 +580,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private void trackMissingMandatoryValue(String propertyName, ExtendedPropertyDefinition propertyDefinition,
                                             JCRNodeWrapper node, String locale,
                                             ContentIntegrityErrorList errors) {
-        trackError(ErrorType.EMPTY_MANDATORY_PROPERTY, propertyName, propertyDefinition, null, -1, -1, node, locale, null, errors);
+        trackError(EMPTY_MANDATORY_PROPERTY, propertyName, propertyDefinition, null, -1, -1, node, locale, null, errors);
     }
 
     private void trackInvalidValueConstraint(String propertyName, ExtendedPropertyDefinition propertyDefinition,
@@ -596,26 +589,26 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                                              String[] valueConstraints, ContentIntegrityErrorList errors) {
         final HashMap<String, Object> customExtraInfos = new HashMap<>();
         customExtraInfos.put("constraints", Arrays.toString(valueConstraints));
-        trackError(ErrorType.INVALID_VALUE_CONSTRAINT, propertyName, propertyDefinition, value, valueIdx, -1, node, locale, customExtraInfos, errors);
+        trackError(INVALID_VALUE_CONSTRAINT, propertyName, propertyDefinition, value, valueIdx, -1, node, locale, customExtraInfos, errors);
     }
 
     private void trackInvalidValueType(String propertyName, ExtendedPropertyDefinition propertyDefinition,
                                        int valueType,
                                        JCRNodeWrapper node, String locale,
                                        ContentIntegrityErrorList errors) {
-        trackError(ErrorType.INVALID_VALUE_TYPE, propertyName, propertyDefinition, null, -1, valueType, node, locale, null, errors);
+        trackError(INVALID_VALUE_TYPE, propertyName, propertyDefinition, null, -1, valueType, node, locale, null, errors);
     }
 
     private void trackInvalidMultiValuedStatus(String propertyName, ExtendedPropertyDefinition epd,
                                                JCRNodeWrapper node, String locale,
                                                ContentIntegrityErrorList errors) {
-        trackError(ErrorType.INVALID_MULTI_VALUE_STATUS, propertyName, epd, null, -1, -1, node, locale, null, errors);
+        trackError(INVALID_MULTI_VALUE_STATUS, propertyName, epd, null, -1, -1, node, locale, null, errors);
     }
 
     private void trackUndeclaredProperty(String propertyName,
                                          JCRNodeWrapper node, String locale,
                                          ContentIntegrityErrorList errors) {
-        trackError(ErrorType.UNDECLARED_PROPERTY, propertyName, null, null, -1, -1, node, locale, null, errors);
+        trackError(UNDECLARED_PROPERTY, propertyName, null, null, -1, -1, node, locale, null, errors);
     }
 
     private void trackNodeConstraintViolation(ConstraintViolation<JCRNodeValidator> constraintViolation,
@@ -657,10 +650,10 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         customExtraInfos.put("validator-message", constraintViolation.getMessage());
         customExtraInfos.put("language-used-for-validation", locale);
         final String extraMessage = errorLocale == null ? NON_I18N_PROP_VALIDATOR_ERROR_XTRA_MSG : null;
-        trackError(ErrorType.INVALID_NODE_VALIDATION, propertyName, propertyDefinition, propertyValue, -1, -1, node, errorLocale, customExtraInfos, extraMessage, errors);
+        trackError(INVALID_NODE_VALIDATION, propertyName, propertyDefinition, propertyValue, -1, -1, node, errorLocale, customExtraInfos, extraMessage, errors);
     }
 
-    private void trackError(ErrorType errorType,
+    private void trackError(ContentIntegrityErrorType errorType,
                             String propertyName, ExtendedPropertyDefinition propertyDefinition,
                             String value, int valueIdx, int valueType,
                             JCRNodeWrapper node, String locale,
@@ -668,13 +661,12 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         trackError(errorType, propertyName, propertyDefinition, value, valueIdx, valueType, node, locale, customExtraInfos, null, errors);
     }
 
-    private void trackError(ErrorType errorType,
+    private void trackError(ContentIntegrityErrorType errorType,
                             String propertyName, ExtendedPropertyDefinition propertyDefinition,
                             String value, int valueIdx, int valueType,
                             JCRNodeWrapper node, String locale,
                             Map<String, Object> customExtraInfos, String extraMessage, ContentIntegrityErrorList errors) {
-        final ContentIntegrityError error = createError(node, locale, errorType.desc)
-                .setErrorType(errorType)
+        final ContentIntegrityError error = createError(node, locale, errorType)
                 .addExtraInfo("property-name", propertyName);
         if (propertyDefinition != null) {
             error.addExtraInfo("declaring-type", propertyDefinition.getDeclaringNodeType().getName());

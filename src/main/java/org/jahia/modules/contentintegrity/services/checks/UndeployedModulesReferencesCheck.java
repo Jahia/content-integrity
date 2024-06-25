@@ -5,6 +5,7 @@ import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.osgi.BundleUtils;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(UndeployedModulesReferencesCheck.class);
+    public static final ContentIntegrityErrorType UNDEPLOYED_MODULE_ON_SITE = createErrorType("UNDEPLOYED_MODULE_ON_SITE", "Undeployed module still activated on a site");
 
     private final Collection<String> availableModules = new ArrayList<>();
 
@@ -57,7 +59,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
         site.getInstalledModules().stream()
                 .filter(m -> !availableModules.contains(m))
                 .forEach(undeployedModule ->
-                        errors.addError(createError(node, "Undeployed module still activated on a site")
+                        errors.addError(createError(node, UNDEPLOYED_MODULE_ON_SITE)
                                 .addExtraInfo("module", undeployedModule)));
 
         return errors;

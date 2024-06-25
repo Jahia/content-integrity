@@ -5,6 +5,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
@@ -113,7 +114,7 @@ public class GqlScanResults {
             case "checkName":
                 return error.getIntegrityCheckName();
             case "errorType":
-                return String.valueOf(Optional.ofNullable(error.getErrorType()).orElse(StringUtils.EMPTY));
+                return Optional.ofNullable(error.getErrorType()).map(ContentIntegrityErrorType::getKey).orElse(StringUtils.EMPTY);
             case "workspace":
                 return error.getWorkspace();
             case "site":

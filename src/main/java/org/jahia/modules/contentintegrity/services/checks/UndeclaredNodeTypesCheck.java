@@ -2,6 +2,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
@@ -27,6 +28,8 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PRI
 public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(UndeclaredNodeTypesCheck.class);
+
+    public static final ContentIntegrityErrorType UNDECLARED_NODE_TYPE = createErrorType("UNDECLARED_NODE_TYPE", "Undeclared type");
 
     private final Set<String> existingNodeTypes = new HashSet<>();
     private final Set<String> missingNodeTypes = new HashSet<>();
@@ -91,7 +94,7 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
                     missingTypes.add(type);
                 }
             }
-            errors.addError(createError(node, String.format("Undeclared %s", text))
+            errors.addError(createError(node, UNDECLARED_NODE_TYPE, String.format("Undeclared %s", text))
                     .addExtraInfo(text, type));
         }
     }

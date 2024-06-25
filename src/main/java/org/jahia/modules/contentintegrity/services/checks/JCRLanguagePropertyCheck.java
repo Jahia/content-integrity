@@ -2,6 +2,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
@@ -21,18 +22,19 @@ public class JCRLanguagePropertyCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(JCRLanguagePropertyCheck.class);
 
+    public static final ContentIntegrityErrorType MISSING_JCR_LANGUAGE_PROP = createErrorType("MISSING_JCR_LANGUAGE_PROP", String.format("The %s property is missing", JCR_LANGUAGE));
+    public static final ContentIntegrityErrorType INCONSISTENT_JCR_LANGUAGE_PROP = createErrorType("INCONSISTENT_JCR_LANGUAGE_PROP", String.format("The value of the property %s is inconsistent with the node name", JCR_LANGUAGE));
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         if (logger.isDebugEnabled()) logger.debug(String.format("Checking %s", node));
         try {
             if (!node.hasProperty(JCR_LANGUAGE)) {
-                final String msg = String.format("The %s property is missing", JCR_LANGUAGE);
-                return createSingleError(createError(node, JCRUtils.getTranslationNodeLocaleFromNodeName(node), msg));
+                return createSingleError(createError(node, JCRUtils.getTranslationNodeLocaleFromNodeName(node), MISSING_JCR_LANGUAGE_PROP));
             }
             final String langPropValue = node.getProperty(JCR_LANGUAGE).getString();
             if (!node.getName().equals(Constants.TRANSLATION_NODE_PREFIX.concat(langPropValue))) {
-                final String msg = String.format("The value of the property %s is inconsistent with the node name", JCR_LANGUAGE);
-                return createSingleError(createError(node, JCRUtils.getTranslationNodeLocaleFromNodeName(node), msg)
+                return createSingleError(createError(node, JCRUtils.getTranslationNodeLocaleFromNodeName(node), INCONSISTENT_JCR_LANGUAGE_PROP)
                         .addExtraInfo("jcr-language-prop-value", langPropValue));
             }
         } catch (RepositoryException e) {

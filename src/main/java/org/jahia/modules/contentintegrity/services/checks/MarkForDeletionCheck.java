@@ -2,6 +2,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -20,6 +21,7 @@ import javax.jcr.RepositoryException;
 public class MarkForDeletionCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(MarkForDeletionCheck.class);
+    public static final ContentIntegrityErrorType NO_ROOT_DELETION = createErrorType("NO_ROOT_DELETION", "The node is flagged as deleted, but the root of the deletion can't be found");
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -40,7 +42,7 @@ public class MarkForDeletionCheck extends AbstractContentIntegrityCheck {
                 if (parent.isNodeType("jmix:markedForDeletionRoot")) break;
             }
             if (!isConsistent) {
-                return createSingleError(createError(node, "The node is flagged as deleted, but the root of the deletion can't be found"));
+                return createSingleError(createError(node, NO_ROOT_DELETION));
             }
         } catch (RepositoryException e) {
             logger.error("", e);

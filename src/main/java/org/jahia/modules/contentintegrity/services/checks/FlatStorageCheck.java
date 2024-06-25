@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
@@ -20,6 +21,8 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
 
     private static final Logger logger = LoggerFactory.getLogger(FlatStorageCheck.class);
 
+    public static final ContentIntegrityErrorType TOO_MANY_CHILD_NODES = createErrorType("TOO_MANY_CHILD_NODES", "The node has too many child nodes");
+
     private static final String THRESHOLD_KEY = "threshold";
     private static final int DEFAULT_THRESHOLD = 500;
 
@@ -36,7 +39,7 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
             final long size = node.getNodes().getSize();
             final int threshold = getThreshold();
             if (size > threshold)
-                return createSingleError(createError(node, String.format("The node has over %s children", threshold))
+                return createSingleError(createError(node, TOO_MANY_CHILD_NODES, String.format("The node has over %s children", threshold))
                         .addExtraInfo("children-count", size, true)
                         .addExtraInfo("children-count-range", Utils.getApproximateCount(size, threshold)));
         } catch (RepositoryException e) {

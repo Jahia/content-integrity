@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
@@ -26,6 +27,11 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
     private static final Logger logger = LoggerFactory.getLogger(NodeNameInfoSanityCheck.class);
     private static final String CHECK_FULLPATH = "check-fullpath";
     private static final String EXTRA_MSG_UNEXPECTED_FULLPATH = "The property is expected to be missing on never published nodes in the default workspace and on UGC nodes in the live workspace";
+    public static final ContentIntegrityErrorType MISSING_FULLPATH = createErrorType("MISSING_FULLPATH", "Missing property");
+    public static final ContentIntegrityErrorType UNEXPECTED_FULLPATH = createErrorType("UNEXPECTED_FULLPATH", String.format("Unexpected %s property", Constants.FULLPATH));
+    public static final ContentIntegrityErrorType INVALID_FULLPATH = createErrorType("INVALID_FULLPATH", "Unexpected property value");
+    public static final ContentIntegrityErrorType MISSING_NODENAME = createErrorType("MISSING_NODENAME", "Missing property");
+    public static final ContentIntegrityErrorType INVALID_NODENAME = createErrorType("INVALID_NODENAME", "Unexpected property value");
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -33,8 +39,6 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
         configurations = new ContentIntegrityCheckConfigurationImpl();
         configurations.declareDefaultParameter(CHECK_FULLPATH, Boolean.FALSE, BOOLEAN_PARSER, String.format("If true, the property %s is checked. This property is deprecated, but might be used in your own code. You should enable its check only in this case, and plan a refactoring of your code", Constants.FULLPATH));
     }
-
-    private enum ErrorType {MISSING_FULLPATH, UNEXPECTED_FULLPATH, INVALID_FULLPATH, MISSING_NODENAME, INVALID_NODENAME;}
 
     @Override
     public ContentIntegrityCheckConfiguration getConfigurations() {
@@ -51,7 +55,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
 
         try {
             validateFullPathProperty(node, errors);
-            validateStringProperty(node, Constants.NODENAME, JCRNodeWrapper::getName, errors, ErrorType.MISSING_NODENAME, ErrorType.INVALID_NODENAME);
+            validateStringProperty(node, Constants.NODENAME, JCRNodeWrapper::getName, errors, MISSING_NODENAME, INVALID_NODENAME);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
@@ -76,7 +80,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
                         logger.error("", e);
                         return null; // TODO : this should never happen, but if it does, the resulting behavior in uncontrolled
                     }
-                }, errors, ErrorType.MISSING_FULLPATH, ErrorType.INVALID_FULLPATH);
+                }, errors, MISSING_FULLPATH, INVALID_FULLPATH);
             }
         } else {
             final JCRUtils.UGC_STATE ugcState = JCRUtils.isUGCNode(node);
@@ -97,30 +101,27 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
     private void ensureMissingFullpathProperty(JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
         // TODO : the message should be different for a never published node in default and a UGC node in live
         if (node.hasProperty(Constants.FULLPATH)) {
-            errors.addError(createError(node, String.format("Unexpected %s property", Constants.FULLPATH))
-                    .setErrorType(ErrorType.UNEXPECTED_FULLPATH)
+            errors.addError(createError(node, UNEXPECTED_FULLPATH)
                     .setExtraMsg(EXTRA_MSG_UNEXPECTED_FULLPATH));
         }
     }
 
     private void validateConsistentFullpathProperty (JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
-        validateStringProperty(node, Constants.FULLPATH, JCRNodeWrapper::getPath, errors, ErrorType.MISSING_FULLPATH, ErrorType.INVALID_FULLPATH);
+        validateStringProperty(node, Constants.FULLPATH, JCRNodeWrapper::getPath, errors, MISSING_FULLPATH, INVALID_FULLPATH);
     }
 
     private void validateStringProperty(JCRNodeWrapper node, String propertyName,
                                         Function<JCRNodeWrapper, String> expectedValueGenerator, ContentIntegrityErrorList errors,
-                                        ErrorType missingPropertyErrorType, ErrorType invalidPropertyValueErrorType) throws RepositoryException {
+                                        ContentIntegrityErrorType missingPropertyErrorType, ContentIntegrityErrorType invalidPropertyValueErrorType) throws RepositoryException {
         if (!node.hasProperty(propertyName)) {
-            errors.addError(createError(node, "Missing property")
-                    .setErrorType(missingPropertyErrorType)
+            errors.addError(createError(node, missingPropertyErrorType)
                     .addExtraInfo("property-name", propertyName));
             return;
         }
         final String value = node.getPropertyAsString(propertyName);
         final String expectedValue = expectedValueGenerator.apply(node);
         if (!StringUtils.equals(value, expectedValue)) {
-            errors.addError(createError(node, "Unexpected property value")
-                    .setErrorType(invalidPropertyValueErrorType)
+            errors.addError(createError(node, invalidPropertyValueErrorType)
                     .addExtraInfo("property-name", propertyName)
                     .addExtraInfo("property-value", value, true)
                     .addExtraInfo("expected-property-value", expectedValue, true));

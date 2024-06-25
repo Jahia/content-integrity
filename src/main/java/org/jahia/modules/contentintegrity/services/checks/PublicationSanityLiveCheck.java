@@ -6,6 +6,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
@@ -77,9 +78,14 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             Constants.JCR_MIXINTYPES, Constants.FULLPATH, Constants.NODENAME,
             Constants.J_LOCK_TYPES);
 
-    private final ContentIntegrityCheckConfiguration configurations;
+    public static final ContentIntegrityErrorType NO_DEFAULT_NODE = createErrorType("NO_DEFAULT_NODE", "Found not-UGC node which exists only in live");
+    public static final ContentIntegrityErrorType MISSING_PROP_LIVE = createErrorType("MISSING_PROP_LIVE", "Missing property in live on a published node");
+    public static final ContentIntegrityErrorType MISSING_PROP_DEFAULT = createErrorType("MISSING_PROP_DEFAULT", "Missing property in default on a published node");
+    public static final ContentIntegrityErrorType DIFFERENT_PROP_VAL = createErrorType("DIFFERENT_PROP_VAL", "Different value for a property in default and live on a published node");
+    public static final ContentIntegrityErrorType DIFFERENT_MIXINS = createErrorType("DIFFERENT_MIXINS", "Different mixins on a published node");
+    public static final ContentIntegrityErrorType INCONSISTENT_UGC = createErrorType("INCONSISTENT_UGC", "Missing jmix:originWS property");
 
-    private enum ErrorType {NO_DEFAULT_NODE, MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL, DIFFERENT_MIXINS, INCONSISTENT_UGC}
+    private final ContentIntegrityCheckConfiguration configurations;
 
     public PublicationSanityLiveCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
@@ -112,7 +118,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 return null;
             }
             if (ugcState == JCRUtils.UGC_STATE.INCONSISTENT) {
-                return createSingleError(createError(node, "Missing jmix:originWS property").setErrorType(ErrorType.INCONSISTENT_UGC));
+                return createSingleError(createError(node, INCONSISTENT_UGC));
             }
 
             final JCRNodeWrapper defaultNode;
@@ -191,9 +197,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                     }
                 }
 
-                final String msg = "Found not-UGC node which exists only in live";
-                final ContentIntegrityError error = createError(node, msg)
-                        .setErrorType(ErrorType.NO_DEFAULT_NODE);
+                final ContentIntegrityError error = createError(node, NO_DEFAULT_NODE);
                 return createSingleError(error);
             }
             final ContentIntegrityErrorList errors = createEmptyErrorsList();
@@ -224,14 +228,12 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 final String pName = defaultProperty.getName();
                 if (!liveNode.getRealNode().hasProperty(pName)) {
                     if (!IGNORED_DEFAULT_ONLY_PROPS.contains(pName)) {
-                        errors.addError(createError(liveNode, "Missing property in live on a published node")
-                                .setErrorType(ErrorType.MISSING_PROP_LIVE)
+                        errors.addError(createError(liveNode, MISSING_PROP_LIVE)
                                 .addExtraInfo("property name", pName));
                     }
                 } else if (!NOT_COMPARED_PROPERTIES.contains(pName) &&
                         !JCRUtils.propertyValueEquals(defaultProperty, liveNode.getRealNode().getProperty(pName))) {
-                    errors.addError(createError(liveNode, "Different value for a property in default and live on a published node")
-                            .setErrorType(ErrorType.DIFFERENT_PROP_VAL)
+                    errors.addError(createError(liveNode, DIFFERENT_PROP_VAL)
                             .addExtraInfo("property name", pName));
                 }
             }
@@ -251,8 +253,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                         As a consequence, if this error is raised on a jnt:translation node, this might be a false positive
                         TODO: handle this correctly if the tracking of such property gets fixed in the product
                          */
-                        errors.addError(createError(liveNode, "Missing property in default on a published node")
-                                .setErrorType(ErrorType.MISSING_PROP_DEFAULT)
+                        errors.addError(createError(liveNode, MISSING_PROP_DEFAULT)
                                 .addExtraInfo("property name", pName));
                     }
                 }
@@ -288,8 +289,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                     return;
                 } else {
                     // In this case, there are some additional mixins in default
-                    errors.addError(createError(liveNode, "Different mixins on a published node")
-                            .setErrorType(ErrorType.DIFFERENT_MIXINS)
+                    errors.addError(createError(liveNode, DIFFERENT_MIXINS)
                             .addExtraInfo("default-only-mixins", defaultOnlyMixins));
                 }
                 return;
@@ -311,8 +311,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                     })
                     .collect(Collectors.toCollection(TreeSet::new));
             if (CollectionUtils.isNotEmpty(filteredLiveOnlyMixins) || CollectionUtils.isNotEmpty(defaultOnlyMixins)) {
-                errors.addError(createError(liveNode, "Different mixins on a published node")
-                        .setErrorType(ErrorType.DIFFERENT_MIXINS)
+                errors.addError(createError(liveNode, DIFFERENT_MIXINS)
                         .addExtraInfo("default-only-mixins", defaultOnlyMixins)
                         .addExtraInfo("live-only-mixins", filteredLiveOnlyMixins));
             }
@@ -339,19 +338,11 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
 
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
-        final Object errorTypeObject = integrityError.getErrorType();
-        if (!(errorTypeObject instanceof ErrorType)) {
-            logger.error("Unexpected error type: " + errorTypeObject);
-            return false;
-        }
-        final ErrorType errorType = (ErrorType) errorTypeObject;
-        switch (errorType) {
-            case NO_DEFAULT_NODE:
-                // We assume here that the deletion has not been correctly published. An alternative fix would be to consider
-                // that this node is not correctly flagged as UGC, and so to flag it as such.
-                node.remove();
-                node.getSession().save();
-                return true;
+        if (integrityError.getErrorType().equals(NO_DEFAULT_NODE)) {// We assume here that the deletion has not been correctly published. An alternative fix would be to consider
+            // that this node is not correctly flagged as UGC, and so to flag it as such.
+            node.remove();
+            node.getSession().save();
+            return true;
         }
         return false;
     }

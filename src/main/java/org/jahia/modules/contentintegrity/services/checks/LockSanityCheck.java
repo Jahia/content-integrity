@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -29,7 +30,9 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(LockSanityCheck.class);
 
-    private enum ErrorType {INCONSISTENT_LOCK, DELETION_LOCK_ON_I18N}
+    public static final ContentIntegrityErrorType INCONSISTENT_LOCK = createErrorType("INCONSISTENT_LOCK", "Missing properties on a locked node");
+    public static final ContentIntegrityErrorType DELETION_LOCK_ON_I18N = createErrorType("DELETION_LOCK_ON_I18N", "Deletion lock remaining on a translation node");
+
     private final HashSet<String> lockRelatedProperties = new HashSet<>();
 
     @Override
@@ -57,9 +60,8 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
             }
         }
         if (missingProps != null && !missingProps.isEmpty()) {
-            final ContentIntegrityError error = createError(node, "Missing properties on a locked node")
-                    .addExtraInfo("missing-properties", missingProps)
-                    .setErrorType(ErrorType.INCONSISTENT_LOCK);
+            final ContentIntegrityError error = createError(node, INCONSISTENT_LOCK)
+                    .addExtraInfo("missing-properties", missingProps);
             errors.addError(error);
         }
 
@@ -83,8 +85,7 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
             if (!isLockedForDeletion) return;
 
             if (!node.getParent().isNodeType(Constants.JAHIAMIX_MARKED_FOR_DELETION)) {
-                errors.addError(createError(node, "Deletion lock remaining on a translation node")
-                        .setErrorType(ErrorType.DELETION_LOCK_ON_I18N));
+                errors.addError(createError(node, DELETION_LOCK_ON_I18N));
             }
 
         } catch (RepositoryException e) {

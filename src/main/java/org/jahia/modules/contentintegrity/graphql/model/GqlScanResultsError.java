@@ -5,6 +5,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +42,7 @@ public class GqlScanResultsError {
 
     @GraphQLField
     public String getErrorType() {
-        return String.valueOf(Optional.ofNullable(error.getErrorType()).orElse(StringUtils.EMPTY));
+        return Optional.ofNullable(error.getErrorType()).map(ContentIntegrityErrorType::getKey).orElse(StringUtils.EMPTY);
     }
 
     @GraphQLField
