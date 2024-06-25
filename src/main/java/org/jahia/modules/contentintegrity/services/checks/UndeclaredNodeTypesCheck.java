@@ -29,7 +29,7 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(UndeclaredNodeTypesCheck.class);
 
-    public static final ContentIntegrityErrorType UNDECLARED_NODE_TYPE = createErrorType("UNDECLARED_NODE_TYPE", "Undeclared type");
+    public static final ContentIntegrityErrorType UNDECLARED_NODE_TYPE = createErrorType("UNDECLARED_NODE_TYPE", "Undeclared type", true);
 
     private final Set<String> existingNodeTypes = new HashSet<>();
     private final Set<String> missingNodeTypes = new HashSet<>();

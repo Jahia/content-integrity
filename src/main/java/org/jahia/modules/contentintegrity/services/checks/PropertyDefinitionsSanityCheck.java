@@ -75,12 +75,12 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private static final String FAILED_TO_CALCULATE_VALUE_STR = "<calculation error>";
     private static final String NON_I18N_PROP_VALIDATOR_ERROR_XTRA_MSG = "Non internationalized properties are tested for each available language. In case of constraint violation, the related errors might be duplicated if the validation does not involve internationalized properties";
 
-    public static final ContentIntegrityErrorType EMPTY_MANDATORY_PROPERTY = createErrorType("EMPTY_MANDATORY_PROPERTY", "Missing mandatory property");
-    public static final ContentIntegrityErrorType INVALID_VALUE_TYPE = createErrorType("INVALID_VALUE_TYPE", "The value does not match the type declared in the property definition");
-    public static final ContentIntegrityErrorType INVALID_MULTI_VALUE_STATUS = createErrorType("INVALID_MULTI_VALUE_STATUS", "The single/multi value status differs between the value and the definition");
-    public static final ContentIntegrityErrorType INVALID_VALUE_CONSTRAINT = createErrorType("INVALID_VALUE_CONSTRAINT", "The value does not match the constraint declared in the property definition");
-    public static final ContentIntegrityErrorType INVALID_NODE_VALIDATION = createErrorType("INVALID_NODE_VALIDATION", "A node constraint is not validated");
-    public static final ContentIntegrityErrorType UNDECLARED_PROPERTY = createErrorType("UNDECLARED_PROPERTY", "Undeclared property");
+    public static final ContentIntegrityErrorType EMPTY_MANDATORY_PROPERTY = createErrorType("EMPTY_MANDATORY_PROPERTY", "Missing mandatory property", true);
+    public static final ContentIntegrityErrorType INVALID_VALUE_TYPE = createErrorType("INVALID_VALUE_TYPE", "The value does not match the type declared in the property definition", true);
+    public static final ContentIntegrityErrorType INVALID_MULTI_VALUE_STATUS = createErrorType("INVALID_MULTI_VALUE_STATUS", "The single/multi value status differs between the value and the definition", true);
+    public static final ContentIntegrityErrorType INVALID_VALUE_CONSTRAINT = createErrorType("INVALID_VALUE_CONSTRAINT", "The value does not match the constraint declared in the property definition", true);
+    public static final ContentIntegrityErrorType INVALID_NODE_VALIDATION = createErrorType("INVALID_NODE_VALIDATION", "A node constraint is not validated", true);
+    public static final ContentIntegrityErrorType UNDECLARED_PROPERTY = createErrorType("UNDECLARED_PROPERTY", "Undeclared property", true);
 
     private final ContentIntegrityCheckConfiguration configurations;
 

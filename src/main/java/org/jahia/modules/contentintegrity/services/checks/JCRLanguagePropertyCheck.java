@@ -22,8 +22,8 @@ public class JCRLanguagePropertyCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(JCRLanguagePropertyCheck.class);
 
-    public static final ContentIntegrityErrorType MISSING_JCR_LANGUAGE_PROP = createErrorType("MISSING_JCR_LANGUAGE_PROP", String.format("The %s property is missing", JCR_LANGUAGE));
-    public static final ContentIntegrityErrorType INCONSISTENT_JCR_LANGUAGE_PROP = createErrorType("INCONSISTENT_JCR_LANGUAGE_PROP", String.format("The value of the property %s is inconsistent with the node name", JCR_LANGUAGE));
+    public static final ContentIntegrityErrorType MISSING_JCR_LANGUAGE_PROP = createErrorType("MISSING_JCR_LANGUAGE_PROP", String.format("The %s property is missing", JCR_LANGUAGE), true);
+    public static final ContentIntegrityErrorType INCONSISTENT_JCR_LANGUAGE_PROP = createErrorType("INCONSISTENT_JCR_LANGUAGE_PROP", String.format("The value of the property %s is inconsistent with the node name", JCR_LANGUAGE), true);
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {

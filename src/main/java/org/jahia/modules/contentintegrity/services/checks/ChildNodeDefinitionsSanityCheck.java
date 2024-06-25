@@ -26,7 +26,7 @@ public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityChe
     private static final Logger logger = LoggerFactory.getLogger(ChildNodeDefinitionsSanityCheck.class);
 
     public static final ContentIntegrityErrorType NOT_ALLOWED_BY_PARENT_DEF = createErrorType("NOT_ALLOWED_BY_PARENT_DEF",
-            "The node is not allowed as a child node of its current parent node");
+            "The node is not allowed as a child node of its current parent node", true);
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {

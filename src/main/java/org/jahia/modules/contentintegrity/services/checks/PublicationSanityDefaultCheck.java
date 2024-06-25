@@ -36,9 +36,9 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     private static final String DIFFERENT_PATH_ROOT = "different-path-root";
     private static final String EXTRA_MSG_DIFFERENT_PATH_POTENTIAL_FP = "Warning: this node is the root of the scan, but not the root of the JCR. So the error might be a false positive, if the node is under a node which has been moved, but this move operation has not been published yet. To clarify this, you need to analyze the parent nodes, or redo the scan from a higher level";
     public static final ContentIntegrityErrorType NO_LIVE_NODE = createErrorType("NO_LIVE_NODE", "The live node with the same uuid is missing");
-    public static final ContentIntegrityErrorType DIFFERENT_PATH = createErrorType("DIFFERENT_PATH", "Found a published node, with no pending modifications, but the path in live is different");
-    public static final ContentIntegrityErrorType DIFFERENT_PATH_POTENTIAL_FP = createErrorType("DIFFERENT_PATH_POTENTIAL_FP", "Found a published node, with no pending modifications, but the path in live is different");
-    public static final ContentIntegrityErrorType PATH_CONFLICT = createErrorType("PATH_CONFLICT", "Live node with same path but different uuid");
+    public static final ContentIntegrityErrorType DIFFERENT_PATH = createErrorType("DIFFERENT_PATH", "Found a published node, with no pending modifications, but the path in live is different", true);
+    public static final ContentIntegrityErrorType DIFFERENT_PATH_POTENTIAL_FP = createErrorType("DIFFERENT_PATH_POTENTIAL_FP", "Found a published node, with no pending modifications, but the path in live is different", true);
+    public static final ContentIntegrityErrorType PATH_CONFLICT = createErrorType("PATH_CONFLICT", "Live node with same path but different uuid", true);
 
     private final Map<String, Object> inheritedErrors = new HashMap<>();
     private String scanRoot = null;

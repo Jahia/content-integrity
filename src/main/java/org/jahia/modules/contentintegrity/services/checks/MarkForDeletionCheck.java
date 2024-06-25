@@ -21,7 +21,7 @@ import javax.jcr.RepositoryException;
 public class MarkForDeletionCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(MarkForDeletionCheck.class);
-    public static final ContentIntegrityErrorType NO_ROOT_DELETION = createErrorType("NO_ROOT_DELETION", "The node is flagged as deleted, but the root of the deletion can't be found");
+    public static final ContentIntegrityErrorType NO_ROOT_DELETION = createErrorType("NO_ROOT_DELETION", "The node is flagged as deleted, but the root of the deletion can't be found", true);
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {

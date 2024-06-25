@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(UndeployedModulesReferencesCheck.class);
-    public static final ContentIntegrityErrorType UNDEPLOYED_MODULE_ON_SITE = createErrorType("UNDEPLOYED_MODULE_ON_SITE", "Undeployed module still activated on a site");
+    public static final ContentIntegrityErrorType UNDEPLOYED_MODULE_ON_SITE = createErrorType("UNDEPLOYED_MODULE_ON_SITE", "Undeployed module still activated on a site", true);
 
     private final Collection<String> availableModules = new ArrayList<>();
 
