@@ -328,6 +328,7 @@ public class Utils {
 
     public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {
         if (CollectionUtils.isEmpty(results)) return null;
+        if (results.size() == 1) return results.iterator().next();
 
         final ContentIntegrityService contentIntegrityService = Utils.getContentIntegrityService();
         final Long testDate = results.stream()
@@ -341,7 +342,7 @@ public class Utils {
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-        final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).flatMap(List::stream).collect(Collectors.toList());;
+        final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).flatMap(List::stream).collect(Collectors.toList());
 
         final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
         contentIntegrityService.storeErrorsInCache(mergedResults);
