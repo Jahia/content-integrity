@@ -6,6 +6,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
@@ -395,5 +396,25 @@ public class Utils {
     public static String getContentIntegrityVersion() {
         final Bundle bundle = FrameworkUtil.getBundle(Utils.class);
         return String.format("%s %s", bundle.getSymbolicName(), bundle.getHeaders().get(Constants.MANIFEST_HEADER_CONTENT_INTEGRITY_VERSION));
+    }
+
+    public static void validateImportCompatibility(List<ContentIntegrityError> errors, Logger logger, ExternalLogger... externalLoggers) {
+        final boolean isImportCompatible = errors.stream()
+                .filter(e -> !e.isFixed())
+                .map(ContentIntegrityError::getErrorType)
+                .noneMatch(ContentIntegrityErrorType::isBlockingImport);
+        if (isImportCompatible) {
+            log("The scanned tree is compatible with the XML import", logger, externalLoggers);
+            return;
+        }
+        log("The scanned tree is incompatible with the XML import", LOG_LEVEL.WARN, logger, externalLoggers);
+        log(StringUtils.repeat(" ", 3) + "The following sites contain incompatibilities:", LOG_LEVEL.WARN, logger, externalLoggers);
+        final String tab = StringUtils.repeat(" ", 6);
+        errors.stream()
+                .filter(e -> !e.isFixed())
+                .filter(e -> e.getErrorType().isBlockingImport())
+                .map(ContentIntegrityError::getSite)
+                .collect(Collectors.groupingBy(site -> site, Collectors.counting()))
+                .forEach((site, count) -> log(String.format("%s%s: %s errors", tab, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
     }
 }

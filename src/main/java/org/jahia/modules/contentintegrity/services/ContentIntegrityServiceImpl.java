@@ -205,7 +205,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final List<ExternalLogger> externalLoggers = new ArrayList<>();
                 externalLoggers.add(summaryLogger);
                 if (externalLogger.includeSummary()) externalLoggers.add(externalLogger);
-                printChecksDuration(testDuration, activeChecks, externalLoggers.toArray(new ExternalLogger[0]));
+                final ExternalLogger[] externalLoggersArray = externalLoggers.toArray(new ExternalLogger[0]);
+                printChecksDuration(testDuration, activeChecks, externalLoggersArray);
+                Utils.validateImportCompatibility(errors, logger, externalLoggersArray);
                 final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors, summary);
                 storeErrorsInCache(results);
                 return results;
