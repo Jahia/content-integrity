@@ -48,6 +48,6 @@ public class ContentIntegrityErrorTypeImpl implements ContentIntegrityErrorType 
 
     @Override
     public String toString() {
-        return key;
+        return getKey();
     }
 }

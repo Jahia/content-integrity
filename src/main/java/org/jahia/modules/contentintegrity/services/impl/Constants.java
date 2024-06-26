@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.services.impl;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +12,8 @@ public class Constants extends org.jahia.api.Constants {
     public static final String SPACE = " ";
     public static final String UNDERSCORE = "_";
     public static final String SLASH = "/";
+    public static final String TAB_LVL_2 = StringUtils.repeat(SPACE, 6);
+    public static final String TAB_LVL_1 = StringUtils.repeat(SPACE, 3);
 
     public static final char JCR_PATH_SEPARATOR_CHAR = SLASH.charAt(0);
     public static final String JCR_PATH_SEPARATOR = SLASH;

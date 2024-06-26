@@ -45,6 +45,8 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PAT
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_SITE_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
 
 public class Utils {
 
@@ -278,11 +280,11 @@ public class Utils {
                     e.getValue().stream()
                             .collect(Collectors.groupingBy(ContentIntegrityError::getConstraintMessage))
                             .forEach((key, value) -> {
-                                lines.add(String.format("%s%s : %d", StringUtils.repeat(SPACE, 4), key, value.size()));
+                                lines.add(String.format("%s%s : %d", TAB_LVL_1, key, value.size()));
                                 if (multipleWorkspacesScanned) {
                                     value.stream()
                                             .collect(Collectors.groupingBy(ContentIntegrityError::getWorkspace))
-                                            .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", StringUtils.repeat(SPACE, 8), msg, errors.size())));
+                                            .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", TAB_LVL_2, msg, errors.size())));
                                 }
                             });
                     return lines;
@@ -408,13 +410,12 @@ public class Utils {
             return;
         }
         log("The scanned tree is incompatible with the XML import", LOG_LEVEL.WARN, logger, externalLoggers);
-        log(StringUtils.repeat(" ", 3) + "The following sites contain incompatibilities:", LOG_LEVEL.WARN, logger, externalLoggers);
-        final String tab = StringUtils.repeat(" ", 6);
+        log(TAB_LVL_1 + "The following sites contain incompatibilities:", LOG_LEVEL.WARN, logger, externalLoggers);
         errors.stream()
                 .filter(e -> !e.isFixed())
                 .filter(e -> e.getErrorType().isBlockingImport())
                 .map(ContentIntegrityError::getSite)
                 .collect(Collectors.groupingBy(site -> site, Collectors.counting()))
-                .forEach((site, count) -> log(String.format("%s%s: %s errors", tab, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
+                .forEach((site, count) -> log(String.format("%s%s: %s errors", TAB_LVL_2, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
     }
 }
