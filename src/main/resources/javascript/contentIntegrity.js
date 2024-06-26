@@ -337,6 +337,7 @@ const ErrorFilterConfigItem = (filter) => {
 
     const params = {
         key: filter.key,
+        label: model.errorsDisplay.columns.filter((col) => col.key === filter.key)[0].label,
         values: model.errorsDisplay.filters.possibleValues.filter((col) => col.name === filter.key)[0].values
     }
     return template(params);
