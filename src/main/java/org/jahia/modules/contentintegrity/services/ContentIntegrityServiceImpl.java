@@ -47,6 +47,8 @@ import java.util.stream.Collectors;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NODE_PATH;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
 
 @Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
         Constants.SERVICE_PID + "=org.jahia.modules.contentintegrity.service",
@@ -250,14 +252,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     private void printChecksDuration(long totalDuration, List<ContentIntegrityCheck> activeChecks, ExternalLogger... externalLoggers) {
         final long totalChecksDuration = activeChecks.stream().map(ContentIntegrityCheck::getOwnTime).reduce(0L, Long::sum);
-        Utils.log(String.format("   Calculation of the size of the tree: %s", getDurationOutput(nbNodesToScanCalculationDuration, totalDuration)), logger, externalLoggers);
-        Utils.log(String.format("   Scan of the tree: %s", getDurationOutput(ownTime, totalDuration)), logger, externalLoggers);
+        Utils.log(String.format("%sCalculation of the size of the tree: %s", TAB_LVL_1, getDurationOutput(nbNodesToScanCalculationDuration, totalDuration)), logger, externalLoggers);
+        Utils.log(String.format("%sScan of the tree: %s", TAB_LVL_1, getDurationOutput(ownTime, totalDuration)), logger, externalLoggers);
         final List<ContentIntegrityCheck> sortedChecks = activeChecks.stream().sorted((o1, o2) -> (int) (o2.getOwnTime() - o1.getOwnTime())).collect(Collectors.toList());
         final long durationRest = totalDuration - nbNodesToScanCalculationDuration - ownTime - totalChecksDuration;
-        Utils.log(String.format("   Other: %s", getDurationOutput(durationRest, totalDuration)), logger, externalLoggers);
-        Utils.log(String.format("   Integrity checks: %s", getDurationOutput(totalChecksDuration, totalDuration)), logger, externalLoggers);
+        Utils.log(String.format("%sOther: %s", TAB_LVL_1, getDurationOutput(durationRest, totalDuration)), logger, externalLoggers);
+        Utils.log(String.format("%sIntegrity checks: %s", TAB_LVL_1, getDurationOutput(totalChecksDuration, totalDuration)), logger, externalLoggers);
         for (ContentIntegrityCheck integrityCheck : sortedChecks) {
-            Utils.log(String.format("      %s: %s", integrityCheck.getName(), getDurationOutput(integrityCheck.getOwnTime(), totalChecksDuration)), logger, externalLoggers);
+            Utils.log(String.format("%s%s: %s", TAB_LVL_2, integrityCheck.getName(), getDurationOutput(integrityCheck.getOwnTime(), totalChecksDuration)), logger, externalLoggers);
         }
     }
 
@@ -559,7 +561,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         final List<String> lines = new ArrayList<>(nbChecks + 1);
         logAndAppend(String.format("Integrity checks (%d):", nbChecks), lines);
         for (ContentIntegrityCheck integrityCheck : integrityChecks)
-            logAndAppend(String.format("   %s", simpleOutput ? integrityCheck : integrityCheck.toFullString()), lines);
+            logAndAppend(String.format("%s%s", TAB_LVL_1, simpleOutput ? integrityCheck : integrityCheck.toFullString()), lines);
         return lines;
     }
 
