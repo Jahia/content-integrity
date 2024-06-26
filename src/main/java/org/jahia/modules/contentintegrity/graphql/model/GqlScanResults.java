@@ -125,6 +125,8 @@ public class GqlScanResults {
                 return error.getLocale();
             case "message":
                 return error.getConstraintMessage();
+            case "importError":
+                return Optional.ofNullable(error.getErrorType()).map(ContentIntegrityErrorType::isBlockingImport).orElse(Boolean.FALSE).toString();
             default:
                 return StringUtils.EMPTY;
         }

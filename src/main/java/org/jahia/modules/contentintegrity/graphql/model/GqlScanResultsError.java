@@ -98,4 +98,9 @@ public class GqlScanResultsError {
         if (MapUtils.isEmpty(infos)) return StringUtils.EMPTY;
         return infos.toString();
     }
+
+    @GraphQLField
+    public Boolean getImportError() {
+        return Optional.ofNullable(error.getErrorType()).map(ContentIntegrityErrorType::isBlockingImport).orElse(Boolean.FALSE);
+    }
 }
