@@ -418,4 +418,18 @@ public class Utils {
                 .collect(Collectors.groupingBy(site -> site, Collectors.counting()))
                 .forEach((site, count) -> log(String.format("%s%s: %s errors", TAB_LVL_2, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
     }
+
+    @Deprecated
+    public static void detectLegacyErrorTypes(List<ContentIntegrityError> errors, Logger logger, ExternalLogger... externalLoggers) {
+        final List<String> checksUsingLegacyAPI = errors.stream()
+                .filter(e -> e.getErrorType() instanceof ContentIntegrityErrorTypeImplLegacy)
+                .map(ContentIntegrityError::getIntegrityCheckName)
+                .distinct()
+                .collect(Collectors.toList());
+        if (checksUsingLegacyAPI.isEmpty()) return;
+        log("Some checks are using a deprecated API for the error types. Please refactor them before this API is dropped", LOG_LEVEL.WARN, logger, externalLoggers);
+        checksUsingLegacyAPI.stream()
+                .map(TAB_LVL_1::concat)
+                .forEach(msg -> log(msg, LOG_LEVEL.WARN, logger, externalLoggers));
+    }
 }

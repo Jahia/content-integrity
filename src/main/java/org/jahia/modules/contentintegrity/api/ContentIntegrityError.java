@@ -64,6 +64,9 @@ public interface ContentIntegrityError {
      */
     ContentIntegrityError addExtraInfo(String key, Object value, boolean isErrorSpecific);
 
+    @Deprecated
+    ContentIntegrityError setErrorType(Object type);
+
     ContentIntegrityErrorType getErrorType();
 
     /**

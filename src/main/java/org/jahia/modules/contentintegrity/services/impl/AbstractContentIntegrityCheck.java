@@ -11,6 +11,8 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorImpl;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorListImpl;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorTypeImpl;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorTypeImplLegacy;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
@@ -23,6 +25,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -247,6 +250,24 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, ContentIntegrityErrorType errorType, String message) {
         return createError(node, Optional.ofNullable(locale).map(Locale::toString).orElse(null), errorType, message);
+    }
+
+    @Deprecated
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, String message) {
+        return createError(node, (String) null, message);
+    }
+
+    @Deprecated
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message) {
+        String key = StringUtils.defaultIfBlank(JCRContentUtils.generateNodeName(message, message.length()), "undefined");
+        key = Patterns.DASH.matcher(key).replaceAll(Patterns.UNDERSCORE.pattern());
+        key = StringUtils.upperCase(key);
+        return createError(node, locale, new ContentIntegrityErrorTypeImplLegacy(key), message);
+    }
+
+    @Deprecated
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, String message) {
+        return createError(node, locale.toString(), message);
     }
 
     /**
