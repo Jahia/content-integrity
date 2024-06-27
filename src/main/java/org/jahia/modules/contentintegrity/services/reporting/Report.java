@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services.reporting;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 
 import java.io.IOException;
@@ -13,11 +14,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public abstract class Report {
 
-    private static final List<String> DEFAULT_COLUMN_ITEMS = Collections.unmodifiableList(Arrays.asList("Check ID", "Fixed", "Error type", "Workspace", "Node identifier", "Node path", "Site", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information", "Specific extra information"));
+    private static final List<String> DEFAULT_COLUMN_ITEMS = Collections.unmodifiableList(Arrays.asList("Check ID", "Fixed", "Error type", "Impact on XML import", "Workspace", "Node identifier", "Node path", "Site", "Node primary type", "Node mixins", "Locale", "Error message", "Extra information", "Specific extra information"));
 
     abstract public void write(OutputStream stream, List<ContentIntegrityError> errors) throws IOException;
 
@@ -47,6 +49,7 @@ public abstract class Report {
         accumulator.accept(Objects.toString(error.getIntegrityCheckID()));
         accumulator.accept(Objects.toString(error.isFixed()));
         accumulator.accept(Objects.toString(error.getErrorType()));
+        accumulator.accept(Optional.ofNullable(error.getErrorType()).map(ContentIntegrityErrorType::isBlockingImport).orElse(Boolean.FALSE).toString());
         accumulator.accept(error.getWorkspace());
         accumulator.accept(error.getUuid());
         accumulator.accept(error.getPath());
