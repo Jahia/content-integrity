@@ -39,6 +39,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     public static final ContentIntegrityErrorType DIFFERENT_PATH = createErrorType("DIFFERENT_PATH", "Found a published node, with no pending modifications, but the path in live is different", true);
     public static final ContentIntegrityErrorType DIFFERENT_PATH_POTENTIAL_FP = createErrorType("DIFFERENT_PATH_POTENTIAL_FP", "Found a published node, with no pending modifications, but the path in live is different", true);
     public static final ContentIntegrityErrorType PATH_CONFLICT = createErrorType("PATH_CONFLICT", "Live node with same path but different uuid", true);
+    public static final ContentIntegrityErrorType DIFFERENT_PT = createErrorType("DIFFERENT_PT", "Live node with same uuid but different primary type", true);
 
     private final Map<String, Object> inheritedErrors = new HashMap<>();
     private String scanRoot = null;
@@ -85,6 +86,13 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                             flaggedPublished? "flagged as published" : "auto-published");
                     final ContentIntegrityError error = createError(node, NO_LIVE_NODE, msg);
                     return trackError(errors, error);
+                }
+
+                final String liveNodePT = liveNode.getPrimaryNodeTypeName();
+                if (!StringUtils.equals(node.getPrimaryNodeTypeName(), liveNodePT)) {
+                    final ContentIntegrityError error = createError(node, DIFFERENT_PT)
+                            .addExtraInfo("live-node-primary-type", liveNodePT);
+                    errors = trackError(errors, error);
                 }
 
                 /*
