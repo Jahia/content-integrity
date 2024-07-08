@@ -1,5 +1,7 @@
 import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
+import org.apache.jackrabbit.core.NodeImpl
+import org.apache.jackrabbit.core.id.PropertyId
 import org.jahia.api.Constants
 import org.jahia.api.content.JCRTemplate
 import org.jahia.osgi.BundleUtils
@@ -9,13 +11,13 @@ import org.jahia.utils.LanguageCodeConverters
 
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
-import javax.jcr.nodetype.ConstraintViolationException
 
 for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
     JCRObservationManager.setAllEventListenersDisabled(true)
     try {
         BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
+            def jcrSession = session.getProviderSession(session.getNode('/').getProvider())
             String path = "${MOUNTPOINT}/PropertyDefinitionsSanityCheck-UNDECLARED_PROPERTY-${workspace}.txt"
             if (!session.nodeExists(path)) {
                 log.info "${path} does not exists"
@@ -35,20 +37,11 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         if (StringUtils.isNotBlank(locale)) {
                             node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
                         }
-                        if (node.hasProperty(property)) {
-                            log.info "#${++count} Remove property ${property} for node ${node.path}"
-                            try {
-                                node.getProperty(property).remove()
-                                if (SAVE) session.save()
-                            } catch (ConstraintViolationException cve) {
-                                log.warn "${StringUtils.repeat(" ", 2)}Failed to save the removal, retrying"
-                                node.addMixin("jmix:unstructured")
-                                node.getProperty(property).remove()
-                                if (SAVE) session.save()
-                                node.removeMixin("jmix:unstructured")
-                                if (SAVE) session.save()
-                                log.info "${StringUtils.repeat(" ", 2)}Removed property ${property} for node ${node.path}"
-                            }
+                        def realNode = jcrSession.getNode(node.getPath())
+                        if (realNode.hasProperty(property)) {
+                            log.info "#${++count} Remove property ${property} for node ${realNode.path}"
+                            (realNode as NodeImpl).removeChildProperty(((PropertyId) realNode.getProperty(property).id).name)
+                            if (SAVE) session.save()
                         } else {
                             log.warn "#${++count} [WARN] Property ${property} not found for node ${node.path}"
                         }
