@@ -83,8 +83,8 @@ public class ScriptInputExtractionCommand implements Action {
                 .peek(this::unescapeCSV)
                 .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[0]))
                 .filter(l -> "UNDECLARED_PROPERTY".equals(l[2]))
-                .filter(l -> workspace.equals(l[3]))
-                .map(l -> l[4] + ";" + l[9] + ";" + extractUndeclaredPropName(l[11]))
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5] + ";" + l[10] + ";" + extractUndeclaredPropName(l[12]))
                 .collect(Collectors.toList());
         save(txtLines, "PropertyDefinitionsSanityCheck", "UNDECLARED_PROPERTY", workspace, targetFolder);
     }
@@ -104,8 +104,8 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> l.split(";"))
                 .peek(this::unescapeCSV)
                 .filter(l -> "UndeployedModulesReferencesCheck".equals(l[0]))
-                //.filter(l -> workspace.equals(l[3]))
-                .map(l -> l[4] + ";" + extractUndeployedModule(l[11]))
+                //.filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5] + ";" + extractUndeployedModule(l[12]))
                 .collect(Collectors.toList());
         save(txtLines, "UndeployedModulesReferencesCheck", null, workspace, targetFolder);
     }
@@ -120,8 +120,8 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> l.split(";"))
                 .peek(this::unescapeCSV)
                 .filter(l -> "ChildNodeDefinitionsSanityCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[3]))
-                .map(l -> l[4])
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5])
                 .collect(Collectors.toList());
         save(txtLines, "ChildNodeDefinitionsSanityCheck", null, workspace, targetFolder);
     }
@@ -131,9 +131,9 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> l.split(";"))
                 .peek(this::unescapeCSV)
                 .filter(l -> "UndeclaredNodeTypesCheck".equals(l[0]))
-                .filter(l -> "Undeclared mixin type".equals(l[10]))
-                .filter(l -> workspace.equals(l[3]))
-                .map(l -> l[4] + ";" + extractUndeclaredMixin(l[11]))
+                .filter(l -> "Undeclared mixin type".equals(l[11]))
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5] + ";" + extractUndeclaredMixin(l[12]))
                 .collect(Collectors.toList());
         save(txtLines, "UndeclaredMixinsCheck", null, workspace, targetFolder);
     }
@@ -148,9 +148,9 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> l.split(";"))
                 .peek(this::unescapeCSV)
                 .filter(l -> "UndeclaredNodeTypesCheck".equals(l[0]))
-                .filter(l -> "Undeclared primary type".equals(l[10]))
-                .filter(l -> workspace.equals(l[3]))
-                .map(l -> l[4])
+                .filter(l -> "Undeclared primary type".equals(l[11]))
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5])
                 .collect(Collectors.toList());
         save(txtLines, "UndeclaredPrimaryTypesCheck", null, workspace, targetFolder);
     }
@@ -166,14 +166,14 @@ public class ScriptInputExtractionCommand implements Action {
                 .peek(this::unescapeCSV)
                 .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[0]))
                 .filter(l -> "EMPTY_MANDATORY_PROPERTY".equals(l[2]))
-                .filter(l -> workspace.equals(l[3]))
+                .filter(l -> workspace.equals(l[4]))
                 .map(l -> {
-                    final String defaultValue = values.get(l[11]);
+                    final String defaultValue = values.get(l[12]);
                     if (StringUtils.isBlank(defaultValue)) {
-                        System.out.println("No default value for " + l[11]);
+                        System.out.println("No default value for " + l[12]);
                         return null;
                     }
-                    return l[4] + ";" + l[9] + ";" + extractEmptyMandatoryProperty(l[11]) + ";" + defaultValue;
+                    return l[5] + ";" + l[10] + ";" + extractEmptyMandatoryProperty(l[12]) + ";" + defaultValue;
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -191,15 +191,15 @@ public class ScriptInputExtractionCommand implements Action {
                 .peek(this::unescapeCSV)
                 .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[0]))
                 .filter(l -> "INVALID_VALUE_CONSTRAINT".equals(l[2]))
-                .filter(l -> workspace.equals(l[3]))
+                .filter(l -> workspace.equals(l[4]))
                 .map(l -> {
-                    final String key = l[11] + l[12];
+                    final String key = l[12] + l[13];
                     final String defaultValue = values.get(key);
                     if (StringUtils.isBlank(defaultValue)) {
                         System.out.println("No default value for " + key);
                         return null;
                     }
-                    return l[4] + ";" + l[9] + ";" + extractInvalidValueConstraintProperty(l[11]) + ";" + defaultValue;
+                    return l[5] + ";" + l[10] + ";" + extractInvalidValueConstraintProperty(l[12]) + ";" + defaultValue;
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -216,8 +216,8 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> l.split(";"))
                 .peek(this::unescapeCSV)
                 .filter(l -> "MarkForDeletionCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[3]))
-                .map(l -> l[4])
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5])
                 .collect(Collectors.toList());
         save(txtLines, "MarkForDeletionCheck", null, workspace, targetFolder);
     }
