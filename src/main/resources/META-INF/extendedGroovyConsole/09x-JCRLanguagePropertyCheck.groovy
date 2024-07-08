@@ -27,7 +27,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     try {
                         def node = session.getNodeByIdentifier(uuid)
                         if (node.hasProperty('jcr:language')) {
-                            def language = StringUtils.substringAfterLast(node.getPropertyAsString('jcr:language'), '_')
+                            def language = StringUtils.substringAfterLast(node.name, '_')
                             log.info "#${++count} Change node ${node.path} language ${node.getPropertyAsString('jcr:language')} to ${language}"
                             node.setProperty('jcr:language', language)
                         }

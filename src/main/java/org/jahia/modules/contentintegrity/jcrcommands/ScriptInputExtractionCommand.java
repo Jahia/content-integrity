@@ -72,6 +72,8 @@ public class ScriptInputExtractionCommand implements Action {
         undeclaredProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
         markedForDeletion(lines, Constants.EDIT_WORKSPACE, targetFolder);
         markedForDeletion(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        jcrLanguageProperty(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        jcrLanguageProperty(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
         values.clear();
         return null;
@@ -220,6 +222,17 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> l[5])
                 .collect(Collectors.toList());
         save(txtLines, "MarkForDeletionCheck", null, workspace, targetFolder);
+    }
+
+    private void jcrLanguageProperty(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "JCRLanguagePropertyCheck".equals(l[0]))
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5])
+                .collect(Collectors.toList());
+        save(txtLines, "JCRLanguagePropertyCheck", null, workspace, targetFolder);
     }
 
     private void unescapeCSV(String[] line) {
