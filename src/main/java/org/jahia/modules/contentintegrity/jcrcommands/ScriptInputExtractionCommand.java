@@ -55,11 +55,8 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> lines = FileUtils.readLines(file, StandardCharsets.UTF_8);
         //lines.remove(0); // TODO the csv can have no header line
 
-        undeployedModules(lines, Constants.EDIT_WORKSPACE, targetFolder);
-        undeployedModules(lines, Constants.LIVE_WORKSPACE, targetFolder);
         childNodeDefinitions(lines, Constants.EDIT_WORKSPACE, targetFolder);
         childNodeDefinitions(lines, Constants.LIVE_WORKSPACE, targetFolder);
-        // ReferencesSanityCheck not a problem for the import
         undeclaredMixins(lines, Constants.EDIT_WORKSPACE, targetFolder);
         undeclaredMixins(lines, Constants.LIVE_WORKSPACE, targetFolder);
         undeclaredPrimaryType(lines, Constants.EDIT_WORKSPACE, targetFolder);
@@ -74,6 +71,11 @@ public class ScriptInputExtractionCommand implements Action {
         markedForDeletion(lines, Constants.LIVE_WORKSPACE, targetFolder);
         jcrLanguageProperty(lines, Constants.EDIT_WORKSPACE, targetFolder);
         jcrLanguageProperty(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        pathConflict(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        pathConflict(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        undeployedModules(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        undeployedModules(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        // ReferencesSanityCheck not a problem for the import
 
         values.clear();
         return null;
@@ -235,8 +237,20 @@ public class ScriptInputExtractionCommand implements Action {
         save(txtLines, "JCRLanguagePropertyCheck", null, workspace, targetFolder);
     }
 
+    private void pathConflict(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "PublicationSanityDefaultCheck".equals(l[0]))
+                .filter(l -> "PATH_CONFLICT".equals(l[2]))
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5])
+                .collect(Collectors.toList());
+        save(txtLines, "PublicationSanityDefaultCheck-PATH_CONFLICT", null, workspace, targetFolder);
+    }
+
     private void unescapeCSV(String[] line) {
-        for (int i =0; i< line.length; i++) {
+        for (int i = 0; i < line.length; i++) {
             final String s = line[i];
             line[i] = StringUtils.substring(s, 1, s.length() - 1);
         }
