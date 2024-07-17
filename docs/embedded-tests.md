@@ -10,6 +10,7 @@
   * [LockSanityCheck](#locksanitycheck)
   * [MarkForDeletionCheck](#markfordeletioncheck)
   * [NodeNameInfoSanityCheck](#nodenameinfosanitycheck)
+  * [PagesSanityCheck](#pagessanitycheck)
   * [PropertyDefinitionsSanityCheck](#propertydefinitionssanitycheck)
   * [PublicationSanityDefaultCheck](#publicationsanitydefaultcheck)
   * [PublicationSanityLiveCheck](#publicationsanitylivecheck)
@@ -247,6 +248,19 @@ On UGC nodes, the property needs to be added using a script.
 In the `default` workspace, renaming the node and then renaming it back to its current name should be sufficient to fix the error.
 Then, the node needs to be republished to propagate the fix to the `live`, if relevant.
 On UGC nodes, the property needs to be modified using a script.
+
+## PagesSanityCheck
+
+### Dealing with errors
+
+#### Missing template
+
+`Error code: MISSING_TEMPLATE`
+
+**Description**: a page is using a template which can't be resolved from the various modules enabled on the site.
+
+If the template is implemented in a module which is mistakenly missing, then installing this module back will fix the error.  
+Otherwise, the page has to be edited to select another template. Note: the new template might use some different areas, and those related to the former template might need to be renamed or deleted.
 
 ## PropertyDefinitionsSanityCheck
 
