@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -415,7 +416,7 @@ public class Utils {
                 .filter(e -> !e.isFixed())
                 .filter(e -> e.getErrorType().isBlockingImport())
                 .map(ContentIntegrityError::getSite)
-                .collect(Collectors.groupingBy(site -> site, Collectors.counting()))
+                .collect(Collectors.groupingBy(site -> site, TreeMap::new, Collectors.counting()))
                 .forEach((site, count) -> log(String.format("%s%s: %s errors", TAB_LVL_2, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
     }
 
