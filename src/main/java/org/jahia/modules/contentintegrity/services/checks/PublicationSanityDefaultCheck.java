@@ -69,9 +69,11 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
             if (samePathLiveNode != null) {
                 final String samePathLiveNodeIdentifier = samePathLiveNode.getIdentifier();
                 if (!StringUtils.equals(node.getIdentifier(), samePathLiveNodeIdentifier)) {
+                    final String editNodeWithLiveNodeUUID = JCRUtils.runJcrCallBack(samePathLiveNodeIdentifier, id -> node.getSession().getNodeByIdentifier(id).getPath(), null, false);
                     final ContentIntegrityError error = createError(node, PATH_CONFLICT)
                             .addExtraInfo("live-node-uuid", samePathLiveNodeIdentifier, true)
-                            .addExtraInfo("live-node-primary-type", samePathLiveNode.getPrimaryNodeTypeName());
+                            .addExtraInfo("live-node-primary-type", samePathLiveNode.getPrimaryNodeTypeName())
+                            .addExtraInfo("conflicted-edit-node", StringUtils.defaultIfBlank(editNodeWithLiveNodeUUID, "none"), true);
                     errors = trackError(errors, error);
                 }
             }
