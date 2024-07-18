@@ -8,12 +8,12 @@ public class ContentIntegrityErrorTypeImpl implements ContentIntegrityErrorType 
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityErrorTypeImpl.class);
 
-    private String key;
-    private boolean isBlockingImport;
+    private final String key;
+    private final boolean isBlockingImport;
     private String defaultMessage;
 
     public ContentIntegrityErrorTypeImpl(String key) {
-        new ContentIntegrityErrorTypeImpl(key, false);
+        this(key, false);
     }
 
     public ContentIntegrityErrorTypeImpl(String key, boolean isBlockingImport) {
