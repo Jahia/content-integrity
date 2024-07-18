@@ -92,7 +92,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     @Override
     public JSONObject toJSON() {
         try {
-            return (new JSONObject()).put("errorType", integrityCheckName).put("workspace", workspace).put("path", path)
+            return (new JSONObject()).put("checkName", integrityCheckName).put("errorType", errorType.getKey()).put("workspace", workspace).put("path", path)
                     .put("uuid", uuid).put("nt", getFullNodetype()).put("locale", Optional.ofNullable(locale).orElse(StringUtils.EMPTY))
                     .put("message", constraintMessage).put("fixed", fixed);
         } catch (JSONException e) {
