@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import java.util.function.Function;
 
+import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
@@ -69,7 +70,8 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
         if (JCRUtils.isInDefaultWorkspace(node)) {
             if (JCRUtils.isNeverPublished(node)) {
                 ensureMissingFullpathProperty(node, errors);
-            } else if (!JCRUtils.hasPendingModifications(node)) {
+            } else if (node.isNodeType(JAHIAMIX_LASTPUBLISHED) && !JCRUtils.hasPendingModifications(node)) {
+                // TODO what if a parent node has been renamed but not yet published?
                 validateConsistentFullpathProperty(node, errors);
             } else {
                 // In this case, we expect the property to hold the path of the node in live, since it was the path the last time the node was published
