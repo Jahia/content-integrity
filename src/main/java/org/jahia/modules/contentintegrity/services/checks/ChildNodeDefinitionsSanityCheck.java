@@ -47,7 +47,7 @@ public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityChe
                     .collect(Collectors.toList()));
             final String name = node.getName();
             if (types.stream().noneMatch(type -> isChildAllowed(parent, name, type)))
-                return createSingleError(createError(node, NOT_ALLOWED_BY_PARENT_DEF));
+                return createSingleError(createError(node, NOT_ALLOWED_BY_PARENT_DEF).addExtraInfo("parent-node-type", parent.getPrimaryNodeTypeName()));
         } catch (RepositoryException re) {
             logger.error("Impossible to validate " + node.getPath(), re);
         }
