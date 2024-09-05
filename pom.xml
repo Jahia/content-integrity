@@ -62,11 +62,22 @@
         dependency to serverSettings because we override the declaration of system-health in the admin navigation,
         required to load the label from the resources bundle of this module
         -->
+        <jahia.plugin.version>6.9</jahia.plugin.version>
         <jahia-depends>default,graphql-dxm-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-module-signature>MC0CFQCJzuTQMz8wf3b7bKnIKjFJkKK0DQIUI5+U9hBRKZzePtM/rON3Guxrp7c=</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
+        <!--
+        TODO remove when compiling against Jahia 8.1+
+        Jahia 8.0 provides graphql-java-annotations:6.1
+        Jahia 8.1 provides graphql-java-annotations:7.2.1
+        Jahia 8.2 provides graphql-java-annotations:9.1.0 and graphql-dxm-provider:3.0.0
+        As a consequence, we need to override the generated import-package to work with both versions
+        -->
+        <import-package>graphql.annotations.annotationTypes;version="[6.1,99)",
+            org.jahia.modules.graphql.provider.dxm;version="[2.3,4)"
+        </import-package>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl,
             org.jahia.modules.contentintegrity.taglib</export-package>
@@ -116,18 +127,6 @@
                     <instructions>
                         <Karaf-Commands>*</Karaf-Commands>
                         <_dsannotations>*</_dsannotations>
-                        <!--
-                        TODO remove when compiling against Jahia 8.1+
-                        Jahia 8.0 provides graphql-java-annotations:6.1
-                        Jahia 8.1 provides graphql-java-annotations:7.2.1
-                        Jahia 8.2 provides graphql-java-annotations:9.1.0
-                        As a consequence, we need to override the generated import-package to work with both versions
-                        -->
-                        <Import-Package>
-                            graphql.annotations.annotationTypes;version="[6.1,10)",
-                            ${jahia.plugin.projectPackageImport},
-                            *
-                        </Import-Package>
                         <Content-Integrity-Version>${project.version}</Content-Integrity-Version>
                     </instructions>
                 </configuration>
