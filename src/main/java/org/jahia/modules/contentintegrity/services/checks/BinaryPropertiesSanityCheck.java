@@ -6,6 +6,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
@@ -32,6 +33,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
     private static final String DOWNLOAD_STREAM = "download-stream";
     private static final String ACCEPT_ZERO_BYTE_BINARIES = "accept-zero-byte-binaries";
     private static final String EXTRA_MSG_ZERO_LENGTH_BINARY = "Warning: the binary length is zero byte. This can be a false positive if an empty file has been uploaded";
+    public static final ContentIntegrityErrorType INVALID_BINARY = createErrorType("INVALID_BINARY", "Invalid binary property");
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -97,7 +99,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                 if (!isValid) {
                     final String locale = node.isNodeType(Constants.JAHIANT_TRANSLATION) ?
                             JCRUtils.getTranslationNodeLocale(node) : null;
-                    final ContentIntegrityError error = createError(node, locale, "Invalid binary property")
+                    final ContentIntegrityError error = createError(node, locale, INVALID_BINARY)
                             .addExtraInfo("property-name", property.getName())
                             .addExtraInfo("property-path", property.getPath(), true);
                     if (size == 0) {

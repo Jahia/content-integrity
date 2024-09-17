@@ -126,22 +126,21 @@ public class GqlIntegrityScan {
                     if (contentIntegrityResults != null)
                         results.add(contentIntegrityResults.setExecutionID(id));
                 }
-                if (uploadResults) {
-                    final ContentIntegrityResults mergedResults = Utils.mergeResults(results);
-                    if (mergedResults == null || CollectionUtils.isEmpty(mergedResults.getErrors())) {
-                        console.logLine(NO_ERROR_FOUND);
-                    } else {
-                        final int nbErrors = mergedResults.getErrors().size();
-                        final String details = workspaces.size() == 1 ?
-                                StringUtils.EMPTY :
-                                results.stream()
-                                        .map(r -> r.getWorkspace() + " : " + r.getErrors().size())
-                                        .collect(Collectors.joining(" , ", " [", "]"));
+                final ContentIntegrityResults mergedResults = Utils.mergeResults(results);
+                if (mergedResults == null || CollectionUtils.isEmpty(mergedResults.getErrors())) {
+                    console.logLine(NO_ERROR_FOUND);
+                } else {
+                    final int nbErrors = mergedResults.getErrors().size();
+                    final String details = workspaces.size() == 1 ?
+                            StringUtils.EMPTY :
+                            results.stream()
+                                    .map(r -> r.getWorkspace() + " : " + r.getErrors().size())
+                                    .collect(Collectors.joining(" , ", " [", "]"));
 
-                        console.logLine(String.format("%d error%s found%s", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s", details));
+                    console.logLine(String.format("%d error%s found%s", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s", details));
 
-                        if (Utils.writeDumpInTheJCR(mergedResults, false, console))
-                            executionReports.put(id, mergedResults.getReports());
+                    if (uploadResults && Utils.writeDumpInTheJCR(mergedResults, false, console)) {
+                        executionReports.put(id, mergedResults.getReports());
                     }
                 }
                 executionStatus.put(id, Status.FINISHED);

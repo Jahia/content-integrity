@@ -119,7 +119,7 @@ public class JCRCommandSupport {
                 final JSONObject json = error.toJSON();
                 row.addContent(errorID,
                         fixed ? "X" : "",
-                        json.get("errorType"),
+                        json.get("checkName"),
                         json.get("workspace"),
                         //json.get("path"),
                         json.get("uuid"),

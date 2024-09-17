@@ -50,7 +50,8 @@
                     {key: "nodeMixins", label: "Mixins", display: false},
                     {key: "locale", label: "Locale", display: false, filterable: true},
                     {key: "message", label: "Message", filterable: true},
-                    {key: "extraInfosString", label: "Extra info", display: false}
+                    {key: "extraInfosString", label: "Extra info", display: false},
+                    {key: "importError", label: "Impact on XML import", display: false, filterable: true}
                 ],
                 filters: {
                     noFilter: "--- ALL ---"

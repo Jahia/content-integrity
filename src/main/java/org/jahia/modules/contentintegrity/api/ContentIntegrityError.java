@@ -64,9 +64,10 @@ public interface ContentIntegrityError {
      */
     ContentIntegrityError addExtraInfo(String key, Object value, boolean isErrorSpecific);
 
+    @Deprecated
     ContentIntegrityError setErrorType(Object type);
 
-    Object getErrorType();
+    ContentIntegrityErrorType getErrorType();
 
     /**
      * Defines a message to help understanding the error. This message is not embedded in the report.

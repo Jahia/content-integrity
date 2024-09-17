@@ -6,6 +6,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
@@ -36,6 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,6 +46,8 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PAT
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_SITE_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
 
 public class Utils {
 
@@ -277,11 +281,11 @@ public class Utils {
                     e.getValue().stream()
                             .collect(Collectors.groupingBy(ContentIntegrityError::getConstraintMessage))
                             .forEach((key, value) -> {
-                                lines.add(String.format("%s%s : %d", StringUtils.repeat(SPACE, 4), key, value.size()));
+                                lines.add(String.format("%s%s : %d", TAB_LVL_1, key, value.size()));
                                 if (multipleWorkspacesScanned) {
                                     value.stream()
                                             .collect(Collectors.groupingBy(ContentIntegrityError::getWorkspace))
-                                            .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", StringUtils.repeat(SPACE, 8), msg, errors.size())));
+                                            .forEach((msg, errors) -> lines.add(String.format("%s%s : %d", TAB_LVL_2, msg, errors.size())));
                                 }
                             });
                     return lines;
@@ -328,6 +332,7 @@ public class Utils {
 
     public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {
         if (CollectionUtils.isEmpty(results)) return null;
+        if (results.size() == 1) return results.iterator().next();
 
         final ContentIntegrityService contentIntegrityService = Utils.getContentIntegrityService();
         final Long testDate = results.stream()
@@ -341,7 +346,7 @@ public class Utils {
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-        final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).flatMap(List::stream).collect(Collectors.toList());;
+        final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).flatMap(List::stream).collect(Collectors.toList());
 
         final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
         contentIntegrityService.storeErrorsInCache(mergedResults);
@@ -394,5 +399,38 @@ public class Utils {
     public static String getContentIntegrityVersion() {
         final Bundle bundle = FrameworkUtil.getBundle(Utils.class);
         return String.format("%s %s", bundle.getSymbolicName(), bundle.getHeaders().get(Constants.MANIFEST_HEADER_CONTENT_INTEGRITY_VERSION));
+    }
+
+    public static void validateImportCompatibility(List<ContentIntegrityError> errors, Logger logger, ExternalLogger... externalLoggers) {
+        final boolean isImportCompatible = errors.stream()
+                .filter(e -> !e.isFixed())
+                .map(ContentIntegrityError::getErrorType)
+                .noneMatch(ContentIntegrityErrorType::isBlockingImport);
+        if (isImportCompatible) {
+            log("The scanned tree is compatible with the XML import", logger, externalLoggers);
+            return;
+        }
+        log("The scanned tree is incompatible with the XML import", LOG_LEVEL.WARN, logger, externalLoggers);
+        log(TAB_LVL_1 + "The following sites contain incompatibilities:", LOG_LEVEL.WARN, logger, externalLoggers);
+        errors.stream()
+                .filter(e -> !e.isFixed())
+                .filter(e -> e.getErrorType().isBlockingImport())
+                .map(ContentIntegrityError::getSite)
+                .collect(Collectors.groupingBy(site -> site, TreeMap::new, Collectors.counting()))
+                .forEach((site, count) -> log(String.format("%s%s: %s errors", TAB_LVL_2, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
+    }
+
+    @Deprecated
+    public static void detectLegacyErrorTypes(List<ContentIntegrityError> errors, Logger logger, ExternalLogger... externalLoggers) {
+        final List<String> checksUsingLegacyAPI = errors.stream()
+                .filter(e -> e.getErrorType() instanceof ContentIntegrityErrorTypeImplLegacy)
+                .map(ContentIntegrityError::getIntegrityCheckName)
+                .distinct()
+                .collect(Collectors.toList());
+        if (checksUsingLegacyAPI.isEmpty()) return;
+        log("Some checks are using a deprecated API for the error types. Please refactor them before this API is dropped", LOG_LEVEL.WARN, logger, externalLoggers);
+        checksUsingLegacyAPI.stream()
+                .map(TAB_LVL_1::concat)
+                .forEach(msg -> log(msg, LOG_LEVEL.WARN, logger, externalLoggers));
     }
 }

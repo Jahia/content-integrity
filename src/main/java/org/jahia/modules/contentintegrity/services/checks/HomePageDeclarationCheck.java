@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
@@ -29,7 +30,10 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
 
     private static final Logger logger = LoggerFactory.getLogger(HomePageDeclarationCheck.class);
 
-    private enum ErrorType {NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME, FALLBACK_ON_NAME_WRONG_TYPE}
+    public static final ContentIntegrityErrorType NO_HOME = createErrorType("NO_HOME", String.format("The site has no page flagged as home and no one is named '%s'", HOME_PAGE_FALLBACK_NAME));
+    public static final ContentIntegrityErrorType MULTIPLE_HOMES = createErrorType("MULTIPLE_HOMES", "The site has several pages flagged as home");
+    public static final ContentIntegrityErrorType FALLBACK_ON_NAME = createErrorType("FALLBACK_ON_NAME", String.format("The site has no page flagged as home, but one is named '%s'", HOME_PAGE_FALLBACK_NAME));
+    public static final ContentIntegrityErrorType FALLBACK_ON_NAME_WRONG_TYPE = createErrorType("FALLBACK_ON_NAME_WRONG_TYPE", String.format("The site has no page flagged as home. It has a sub-node named '%s', but this node is not of type %s", HOME_PAGE_FALLBACK_NAME, JAHIANT_PAGE));
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -43,30 +47,22 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
             }
             if (flaggedAsHomeCount != 1) {
                 if (flaggedAsHomeCount > 1) {
-                    return createSingleError(createError(node, "The site has several pages flagged as home")
-                            .setErrorType(ErrorType.MULTIPLE_HOMES)
+                    return createSingleError(createError(node, MULTIPLE_HOMES)
                             .addExtraInfo("nb-pages-flagged", flaggedAsHomeCount));
                 } else if (node.hasNode(HOME_PAGE_FALLBACK_NAME)) {
                     final JCRNodeWrapper homeNode = node.getNode(HOME_PAGE_FALLBACK_NAME);
                     if (homeNode.isNodeType(JAHIANT_PAGE)) {
                         if (JCRUtils.isInLiveWorkspace(node))
                             return null; // Let's consider it is not an error, if fixed in default, then it will get fixed in live after publishing
-                        final String msg = String.format("The site has no page flagged as home, but one is named '%s'", HOME_PAGE_FALLBACK_NAME);
-                        return createSingleError(createError(node, msg)
-                                .setErrorType(ErrorType.FALLBACK_ON_NAME));
+                        return createSingleError(createError(node, FALLBACK_ON_NAME));
                     } else {
-                        final String msg = String.format("The site has no page flagged as home. It has a sub-node named '%s', but this node is not of type %s",
-                                HOME_PAGE_FALLBACK_NAME, JAHIANT_PAGE);
-                        return createSingleError(createError(node, msg)
-                                .setErrorType(ErrorType.FALLBACK_ON_NAME_WRONG_TYPE)
+                        return createSingleError(createError(node, FALLBACK_ON_NAME_WRONG_TYPE)
                                 .addExtraInfo("home-node-type", homeNode.getPrimaryNodeTypeName()));
                     }
                 } else {
                     if (JCRUtils.isInLiveWorkspace(node))
                         return null; // Not an error, the home page has maybe not yet been published
-                    final String msg = String.format("The site has no page flagged as home and no one is named '%s'", HOME_PAGE_FALLBACK_NAME);
-                    return createSingleError(createError(node, msg)
-                            .setErrorType(ErrorType.NO_HOME));
+                    return createSingleError(createError(node, NO_HOME));
                 }
             }
         } catch (RepositoryException e) {
@@ -77,83 +73,77 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
 
     @Override
     public boolean fixError(JCRNodeWrapper site, ContentIntegrityError integrityError) throws RepositoryException {
-        final Object errorTypeObject = integrityError.getErrorType();
-        if (!(errorTypeObject instanceof ErrorType)) {
-            logger.error("Unexpected error type: " + errorTypeObject);
-            return false;
-        }
-        final ErrorType errorType = (ErrorType) errorTypeObject;
         final JCRNodeIteratorWrapper iterator;
-        switch (errorType) {
-            case NO_HOME:
+        final ContentIntegrityErrorType errorType = integrityError.getErrorType();
+        if (errorType.equals(NO_HOME)) {
+            iterator = site.getNodes();
+            while (iterator.hasNext()) {
+                final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
+                if (child.isNodeType(JAHIANT_PAGE)) {
+                    child.setProperty(HOME_PAGE_FLAG, true);
+                    child.getSession().save();
+                    return true;
+                }
+            }
+            return false;
+        } else if (errorType.equals(MULTIPLE_HOMES)) {
+            if (JCRUtils.isInDefaultWorkspace(site)) {
+                JCRNodeWrapper home = null;
+                if (site.hasNode(HOME_PAGE_FALLBACK_NAME)) {
+                    home = site.getNode(HOME_PAGE_FALLBACK_NAME);
+                    if (!(home.hasProperty(HOME_PAGE_FLAG) && home.getProperty(HOME_PAGE_FLAG).getBoolean())) {
+                        home = null; // means it was actually not this one
+                    }
+                }
                 iterator = site.getNodes();
                 while (iterator.hasNext()) {
                     final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
-                    if (child.isNodeType(JAHIANT_PAGE)) {
-                        child.setProperty(HOME_PAGE_FLAG, true);
-                        child.getSession().save();
-                        return true;
-                    }
-                }
-                return false;
-            case MULTIPLE_HOMES:
-                if (JCRUtils.isInDefaultWorkspace(site)) {
-                    JCRNodeWrapper home = null;
-                    if (site.hasNode(HOME_PAGE_FALLBACK_NAME)) {
-                        home = site.getNode(HOME_PAGE_FALLBACK_NAME);
-                        if (!(home.hasProperty(HOME_PAGE_FLAG) && home.getProperty(HOME_PAGE_FLAG).getBoolean())) {
-                            home = null; // means it was actually not this one
-                        }
-                    }
-                    iterator = site.getNodes();
-                    while (iterator.hasNext()) {
-                        final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
-                        if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
-                            if (home == null) home = child;
-                            else
-                                child.getProperty(HOME_PAGE_FLAG).remove();
-                        }
-                    }
-                    return true;
-                } else {
-                    final JCRSessionWrapper session_default = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);
-                    JCRNodeWrapper home_default = null;
-                    final JCRNodeWrapper site_default = session_default.getNode(site.getPath());
-                    for (JCRNodeWrapper child : site_default.getNodes()) {
-                        if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
-                            if (home_default == null) home_default = child;
-                            else {
-                                logger.error("Impossible to fix the error in live. It needs to be fixed in default first."); // multiple home in default
-                                return false;
-                            }
-                        }
-                    }
-                    if (home_default == null) {
-                        logger.error("Impossible to fix the error in live. It needs to be fixed in default first.");
-                        return false; // no home in default
-                    }
-                    JCRNodeWrapper home = null;
-                    try {
-                        home = site.getSession().getNodeByIdentifier(home_default.getIdentifier());
-                    } catch (ItemNotFoundException infe) {
-                        // home not yet published
-                    }
-                    iterator = site.getNodes();
-                    while (iterator.hasNext()) {
-                        final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
-                        if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
-                            if (home != null && home.getIdentifier().equals(child.getIdentifier())) continue;
+                    if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
+                        if (home == null) home = child;
+                        else
                             child.getProperty(HOME_PAGE_FLAG).remove();
+                    }
+                }
+                return true;
+            } else {
+                final JCRSessionWrapper session_default = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);
+                JCRNodeWrapper home_default = null;
+                final JCRNodeWrapper site_default = session_default.getNode(site.getPath());
+                for (JCRNodeWrapper child : site_default.getNodes()) {
+                    if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
+                        if (home_default == null) home_default = child;
+                        else {
+                            logger.error("Impossible to fix the error in live. It needs to be fixed in default first."); // multiple home in default
+                            return false;
                         }
                     }
-                    site.getSession().save();
-                    return true;
                 }
-            case FALLBACK_ON_NAME:
-                final JCRNodeWrapper home = site.getNode(HOME_PAGE_FALLBACK_NAME);
-                home.setProperty(HOME_PAGE_FLAG, true);
-                home.getSession().save();
+                if (home_default == null) {
+                    logger.error("Impossible to fix the error in live. It needs to be fixed in default first.");
+                    return false; // no home in default
+                }
+                JCRNodeWrapper home = null;
+                try {
+                    home = site.getSession().getNodeByIdentifier(home_default.getIdentifier());
+                } catch (ItemNotFoundException infe) {
+                    // home not yet published
+                }
+                iterator = site.getNodes();
+                while (iterator.hasNext()) {
+                    final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
+                    if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
+                        if (home != null && home.getIdentifier().equals(child.getIdentifier())) continue;
+                        child.getProperty(HOME_PAGE_FLAG).remove();
+                    }
+                }
+                site.getSession().save();
                 return true;
+            }
+        } else if (errorType.equals(FALLBACK_ON_NAME)) {
+            final JCRNodeWrapper home = site.getNode(HOME_PAGE_FALLBACK_NAME);
+            home.setProperty(HOME_PAGE_FLAG, true);
+            home.getSession().save();
+            return true;
         }
         return false;
     }

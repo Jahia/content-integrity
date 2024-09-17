@@ -2,6 +2,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -24,6 +25,9 @@ public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityChe
 
     private static final Logger logger = LoggerFactory.getLogger(ChildNodeDefinitionsSanityCheck.class);
 
+    public static final ContentIntegrityErrorType NOT_ALLOWED_BY_PARENT_DEF = createErrorType("NOT_ALLOWED_BY_PARENT_DEF",
+            "The node is not allowed as a child node of its current parent node", true);
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
@@ -43,7 +47,7 @@ public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityChe
                     .collect(Collectors.toList()));
             final String name = node.getName();
             if (types.stream().noneMatch(type -> isChildAllowed(parent, name, type)))
-                return createSingleError(createError(node, "The node is not allowed as a child node of its current parent node"));
+                return createSingleError(createError(node, NOT_ALLOWED_BY_PARENT_DEF).addExtraInfo("parent-node-type", parent.getPrimaryNodeTypeName()));
         } catch (RepositoryException re) {
             logger.error("Impossible to validate " + node.getPath(), re);
         }

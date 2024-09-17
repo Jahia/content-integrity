@@ -153,7 +153,7 @@ public class JCRUtils {
         if (!isInDefaultWorkspace(node))
             throw new IllegalArgumentException("The publication status can be tested only in the default workspace");
 
-        return nodeExists(node.getIdentifier(), getSystemSession(LIVE_WORKSPACE));
+        return !nodeExists(node.getIdentifier(), getSystemSession(LIVE_WORKSPACE));
     }
 
     private static boolean isInWorkspace(Node node, String workspace) {

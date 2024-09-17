@@ -8,6 +8,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
@@ -35,6 +36,8 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
         ContentIntegrityCheck.IsConfigurable {
 
     private static final Logger logger = LoggerFactory.getLogger(VersionHistoryCheck.class);
+
+    public static final ContentIntegrityErrorType TOO_MANY_VERSIONS = createErrorType("TOO_MANY_VERSIONS", "The node has too many versions");
 
     private static final String THRESHOLD_KEY = "threshold";
     private static final int defaultThreshold = 100;
@@ -78,7 +81,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
             final int numVersions = history.getNumVersions();
             final int threshold = getThreshold();
             if (numVersions > threshold)
-                return createSingleError(createError(node, String.format("The node has over %s versions", threshold))
+                return createSingleError(createError(node, TOO_MANY_VERSIONS, String.format("The node has over %s versions", threshold))
                         .addExtraInfo("versions-count", numVersions, true)
                         .addExtraInfo("versions-count-range", Utils.getApproximateCount(numVersions, threshold)));
         } catch (RepositoryException e) {

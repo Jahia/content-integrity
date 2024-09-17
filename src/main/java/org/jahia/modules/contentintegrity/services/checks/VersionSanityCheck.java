@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
@@ -34,6 +35,10 @@ public class VersionSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(VersionSanityCheck.class);
 
+    public static final ContentIntegrityErrorType ORPHAN_IN_SUBTREE = createErrorType("ORPHAN_IN_SUBTREE", "Orphaned version histories found in the subtree");
+    public static final ContentIntegrityErrorType ORPHANED_HISTORY = createErrorType("ORPHANED_HISTORY", "Orphaned version history");
+    public static final ContentIntegrityErrorType HISTORY_WITHOUT_NODE_ID = createErrorType("HISTORY_WITHOUT_NODE_ID", "Version history without versioned node ID");
+
     private long versionHistoriesCount = 0L;
     private long orphanVersionHistoriesCount = 0L;
     private long versionNodesCount = 0L;
@@ -50,7 +55,7 @@ public class VersionSanityCheck extends AbstractContentIntegrityCheck {
     @Override
     protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         if (orphanVersionHistoriesCount > 0) {
-            return createSingleError(createError(scanRootNode, "Orphaned version histories found in the subtree")
+            return createSingleError(createError(scanRootNode, ORPHAN_IN_SUBTREE)
                     .addExtraInfo("version-histories-count", versionHistoriesCount)
                     .addExtraInfo("orphaned-version-histories-count", orphanVersionHistoriesCount)
                     .addExtraInfo("orphaned-version-histories-ratio", String.format("%.2f%%", 100F * orphanVersionHistoriesCount / versionHistoriesCount))
@@ -71,13 +76,13 @@ public class VersionSanityCheck extends AbstractContentIntegrityCheck {
         versionNodesCount += nbVersions;
         final String uuid = node.getPropertyAsString(JCR_VERSIONABLEUUID);
         if (StringUtils.isBlank(uuid)) {
-            return createSingleError(createError(node, "Version history without versioned node ID"));
+            return createSingleError(createError(node, HISTORY_WITHOUT_NODE_ID));
         }
 
         if (JCRUtils.runJcrCallBack(node, VersionSanityCheck::isOrphanedHistory)) {
             orphanVersionHistoriesCount++;
             orphanedVersionNodesCount += nbVersions;
-            return createSingleError(createError(node, "Orphaned version history").addExtraInfo("nb-version-nodes", nbVersions, true));
+            return createSingleError(createError(node, ORPHANED_HISTORY).addExtraInfo("nb-version-nodes", nbVersions, true));
         }
 
         return null;

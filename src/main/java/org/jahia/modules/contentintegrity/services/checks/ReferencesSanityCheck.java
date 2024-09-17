@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
@@ -35,6 +36,9 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
     private static final String VALIDATE_REFS = "validate-refs";
     private static final String VALIDATE_BACK_REFS = "validate-back-refs";
     private static final String VALIDATE_VERSION_HISTORY = "validate-version-history";
+    public static final ContentIntegrityErrorType INVALID_BACK_REF = createErrorType("INVALID_BACK_REF", "Missing referencing node");
+    public static final ContentIntegrityErrorType BROKEN_REF = createErrorType("BROKEN_REF", "Broken reference");
+    public static final ContentIntegrityErrorType BROKEN_REF_TO_VN = createErrorType("BROKEN_REF_TO_VN", "Broken reference to a virtual node");
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -49,8 +53,6 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
     public ContentIntegrityCheckConfiguration getConfigurations() {
         return configurations;
     }
-
-    private enum ErrorType {INVALID_BACK_REF, BROKEN_REF, BROKEN_REF_TO_VN}
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -111,13 +113,11 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
                     final String uuid = value.getString();
                     if (JCRUtils.nodeExists(uuid, checkedNode.getSession())) return null;
                     if (JCRUtils.isVirtualNodeIdentifier(uuid)) {
-                        return createSingleError(createPropertyRelatedError(checkedNode, "Broken reference to a virtual node")
-                                .setErrorType(ErrorType.BROKEN_REF_TO_VN)
+                        return createSingleError(createPropertyRelatedError(checkedNode, BROKEN_REF_TO_VN)
                                 .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Property::getName, CALCULATION_ERROR))
                                 .addExtraInfo("missing-uuid", uuid, true));
                     }
-                    return createSingleError(createPropertyRelatedError(checkedNode, "Broken reference")
-                            .setErrorType(ErrorType.BROKEN_REF)
+                    return createSingleError(createPropertyRelatedError(checkedNode, BROKEN_REF)
                             .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Property::getName, CALCULATION_ERROR))
                             .addExtraInfo("missing-uuid", uuid, true));
                 });
@@ -149,8 +149,7 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
                 property.getSession().getNodeByIdentifier(referencingNodeID);
             } catch (RepositoryException e) {
                 if (errors == null) errors = createEmptyErrorsList();
-                errors.addError(createError(checkedNode, "Missing referencing node")
-                        .setErrorType(ErrorType.INVALID_BACK_REF)
+                errors.addError(createError(checkedNode, INVALID_BACK_REF)
                         .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Item::getName, CALCULATION_ERROR))
                         .addExtraInfo("referencing-node-path", JCRUtils.runJcrSupplierCallBack(() -> property.getParent().getPath(), CALCULATION_ERROR), true));
             }

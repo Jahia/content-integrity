@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -25,6 +26,8 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(TemplatesIndexationCheck.class);
 
+    public static final ContentIntegrityErrorType NOT_INDEXED_TEMPLATE = createErrorType("NOT_INDEXED_TEMPLATE", "The template is not correctly indexed");
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper template) {
         // Example: /modules/templates-system/9.0.0/templates/base/home
@@ -36,7 +39,7 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
         }
         final int modulePathLength = parts[0].length() + parts[1].length() + parts[2].length() + 3;
         final String modulePath = templatePath.substring(0, modulePathLength);
-        
+
         final String query = String.format("select * from [jnt:template] where isdescendantnode('%s') and name()='%s'",
                 JCRContentUtils.sqlEncode(modulePath), JCRContentUtils.sqlEncode(template.getName()));
         final QueryWrapper q;
@@ -48,7 +51,7 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
                     return null; // The template is correctly indexed
             }
 
-            return createSingleError(createError(template, "The template is not correctly indexed"));
+            return createSingleError(createError(template, NOT_INDEXED_TEMPLATE));
         } catch (RepositoryException e) {
             logger.error("Error when running the query " + query, e);
         }

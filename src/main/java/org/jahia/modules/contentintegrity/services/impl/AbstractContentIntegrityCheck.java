@@ -7,8 +7,12 @@ import org.jahia.commons.Version;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorImpl;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorListImpl;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorTypeImpl;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorTypeImplLegacy;
+import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
@@ -21,6 +25,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -215,32 +220,70 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         ownTime += time;
     }
 
-    protected final ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message) {
-        return ContentIntegrityErrorImpl.createError(node, locale, message, this);
+    protected static ContentIntegrityErrorType createErrorType(String key, String defaultMessage) {
+        return new ContentIntegrityErrorTypeImpl(key).setDefaultMessage(defaultMessage);
     }
 
-    protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, String message) {
-        return ContentIntegrityErrorImpl.createError(node, locale == null ? null : LanguageCodeConverters.localeToLanguageTag(locale), message, this);
+    protected static ContentIntegrityErrorType createErrorType(String key, String defaultMessage, boolean isBlockingImport) {
+        return new ContentIntegrityErrorTypeImpl(key, isBlockingImport).setDefaultMessage(defaultMessage);
     }
 
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, ContentIntegrityErrorType errorType) {
+        return createError(node, (String) null, errorType);
+    }
+
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, ContentIntegrityErrorType errorType, String message) {
+        return createError(node, (String) null, errorType, message);
+    }
+
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, String locale, ContentIntegrityErrorType errorType) {
+        return createError(node, locale, errorType, null);
+    }
+
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, String locale, ContentIntegrityErrorType errorType, String message) {
+        return ContentIntegrityErrorImpl.createError(node, locale, errorType, message, this);
+    }
+
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, ContentIntegrityErrorType errorType) {
+        return createError(node, locale, errorType, null);
+    }
+
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, ContentIntegrityErrorType errorType, String message) {
+        return createError(node, Optional.ofNullable(locale).map(Locale::toString).orElse(null), errorType, message);
+    }
+
+    @Deprecated
     protected final ContentIntegrityError createError(JCRNodeWrapper node, String message) {
-        return ContentIntegrityErrorImpl.createError(node, null, message, this);
+        return createError(node, (String) null, message);
+    }
+
+    @Deprecated
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message) {
+        String key = StringUtils.defaultIfBlank(JCRContentUtils.generateNodeName(message, message.length()), "undefined");
+        key = Patterns.DASH.matcher(key).replaceAll(Patterns.UNDERSCORE.pattern());
+        key = StringUtils.upperCase(key);
+        return createError(node, locale, new ContentIntegrityErrorTypeImplLegacy(key), message);
+    }
+
+    @Deprecated
+    protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, String message) {
+        return createError(node, locale.toString(), message);
     }
 
     /**
      * Creates an error related to a property.
      * If the node is a translation node, the error will be linked to the parent node, and the locale will be calculated from the translation node.
-     * Otherwise, the effect is the same as with {@link #createError(JCRNodeWrapper, String) createError}
+     * Otherwise, the effect is the same as with {@link #createError(JCRNodeWrapper, ContentIntegrityErrorType) createError}
      *
-     * @param node    the node which holds the property
-     * @param message the error message
+     * @param node      the node which holds the property
+     * @param errorType the error type
      * @return an error object
      */
-    protected final ContentIntegrityError createPropertyRelatedError(JCRNodeWrapper node, String message) {
+    protected final ContentIntegrityError createPropertyRelatedError(JCRNodeWrapper node, ContentIntegrityErrorType errorType) {
         return JCRUtils.runJcrSupplierCallBack(() -> {
             if (node.isNodeType(Constants.JAHIANT_TRANSLATION))
-                return ContentIntegrityErrorImpl.createError(node.getParent(), JCRUtils.getTranslationNodeLocale(node), message, this);
-            return createError(node, message);
+                return createError(node.getParent(), JCRUtils.getTranslationNodeLocale(node), errorType);
+            return createError(node, errorType);
         });
     }
 
