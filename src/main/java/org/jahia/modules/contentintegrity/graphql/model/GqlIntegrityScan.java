@@ -94,7 +94,7 @@ public class GqlIntegrityScan {
                           @GraphQLName("excludedPaths") List<String> excludedPaths,
                           @GraphQLName("skipMountPoints") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean skipMountPoints,
                           @GraphQLName("checksToRun") List<String> checksToRun,
-                          @GraphQLName("uploadResults") boolean uploadResults) {
+                          @GraphQLName("uploadResults") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean uploadResults) {
         id = generateExecutionID();
         executionStatus.put(id, Status.RUNNING);
         final List<String> output = new ArrayList<>();
