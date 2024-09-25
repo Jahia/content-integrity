@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,17 +32,31 @@ public class ScriptInputExtractionCommand implements Action {
     @Option(name = "-o")
     private boolean overrideFiles;
 
-    @Argument(required = true)
+    @Argument(required = true, description = "CSV file or directory containing it")
     private String path;
 
     private Map<String, String> values = new HashMap<>();
 
     @Override
     public Object execute() throws Exception {
-        final File file = new File(path);
-        if (!file.exists()) return null;
+        final File paramFile = new File(path);
+        if (!paramFile.exists()) return null;
 
-        final File targetFolder = file.getParentFile();
+        final File csvFile;
+        final File targetFolder;
+        if (paramFile.isDirectory()) {
+            targetFolder = paramFile;
+            final List<File> fileList = FileUtils.listFiles(targetFolder, Collections.singletonList("csv").toArray(new String[0]), false).stream().collect(Collectors.toList());
+            if (fileList.size() != 1) {
+                System.out.println("Unable to identify the csv file in the specified folder");
+                return null;
+            }
+            csvFile = fileList.get(0);
+        } else {
+            csvFile = paramFile;
+            targetFolder = paramFile.getParentFile();
+        }
+
         final File valuesFile = new File(targetFolder, "values.txt");
         if (valuesFile.exists()) {
             FileUtils.readLines(valuesFile, StandardCharsets.UTF_8).stream()
@@ -52,7 +67,7 @@ public class ScriptInputExtractionCommand implements Action {
                     .forEach(l -> values.put(l[0], l[1]));
         }
 
-        final List<String> lines = FileUtils.readLines(file, StandardCharsets.UTF_8);
+        final List<String> lines = FileUtils.readLines(csvFile, StandardCharsets.UTF_8);
         //lines.remove(0); // TODO the csv can have no header line
 
         undeployedModules(lines, Constants.EDIT_WORKSPACE, targetFolder);
