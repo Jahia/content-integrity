@@ -1,6 +1,6 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.Node;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -73,6 +74,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public static final ContentIntegrityErrorType INVALID_EXTERNAL_PERMISSIONS = createErrorType("INVALID_EXTERNAL_PERMISSIONS", "External ACE defined for external permissions which are not declared by the role");
     public static final ContentIntegrityErrorType MISSING_EXTERNAL_ACE = createErrorType("MISSING_EXTERNAL_ACE", "ACE with a missing external ACE");
     public static final ContentIntegrityErrorType ACE_NON_GRANT_WITH_EXTERNAL_ACE = createErrorType("ACE_NON_GRANT_WITH_EXTERNAL_ACE", "ACE of type different from GRANT with an external ACE");
+    public static final ContentIntegrityErrorType DUPLICATED_REF_SRC_ACE = createErrorType("DUPLICATED_REF_SRC_ACE", "External ACE with multiple references to the same source ACE");
     public static final ContentIntegrityErrorType NO_ROLES_PROP = createErrorType("NO_ROLES_PROP", "Missing property " + J_ROLES);
     public static final ContentIntegrityErrorType INVALID_ROLES_PROP = createErrorType("INVALID_ROLES_PROP", "Invalid " + J_ROLES + " property");
     public static final ContentIntegrityErrorType ROLES_DIFFER_ON_SOURCE_ACE = createErrorType("ROLES_DIFFER_ON_SOURCE_ACE", "Roles differ between the external ACE and the source ACE");
@@ -161,6 +163,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             if (values.length == 0) {
                 errors.addError(createError(externalAceNode, EMPTY_SOURCE_ACE_PROP));
             }
+            final List<String> srcAceUuids = new ArrayList<>();
             for (JCRValueWrapper value : values) {
                 JCRNodeWrapper srcAce = null;
                 try {
@@ -180,6 +183,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
                 final String srcAceType;
                 final String srcAceIdentifier = srcAce.getIdentifier();
+                srcAceUuids.add(srcAceIdentifier);
                 if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals(Constants.ACE_TYPE_GRANT, srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
                     errors.addError(createError(externalAceNode, SOURCE_ACE_NOT_TYPE_GRANT)
                             .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
@@ -251,6 +255,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     }
                 }
             }
+            CollectionUtils.getCardinalityMap(srcAceUuids).entrySet().stream()
+                    .filter(entry -> entry.getValue() > 1)
+                    .map(entry -> createError(externalAceNode, DUPLICATED_REF_SRC_ACE)
+                            .addExtraInfo("ace-uuid", entry.getKey(), true)
+                            .addExtraInfo("duplicate-count", entry.getValue()))
+                    .forEach(errors::addError);
         }
 
         return errors;
