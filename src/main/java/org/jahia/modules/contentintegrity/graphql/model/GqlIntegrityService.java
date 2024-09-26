@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -96,6 +97,7 @@ public class GqlIntegrityService {
         final ContentIntegrityService integrityService = Utils.getContentIntegrityService();
         return integrityService.getTestIDs().stream()
                 .map(integrityService::getTestResults)
+                .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(ContentIntegrityResults::getTestDate))
                 .map(ContentIntegrityResults::getID)
                 .collect(Collectors.toList());
