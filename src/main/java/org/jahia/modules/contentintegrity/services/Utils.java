@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
@@ -16,6 +17,7 @@ import org.jahia.modules.contentintegrity.services.reporting.ExcelReport;
 import org.jahia.modules.contentintegrity.services.reporting.Report;
 import org.jahia.modules.contentintegrity.services.reporting.ReportWriter;
 import org.jahia.osgi.BundleUtils;
+import org.jahia.services.content.JCRAutoSplitUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
 import org.osgi.framework.Bundle;
@@ -173,9 +175,12 @@ public class Utils {
                 final JCRNodeWrapper outputDir;
                 try {
                     final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
-                    outputDir = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER)
-                            .addNode(resultsSignature, Constants.JAHIANT_FOLDER);
+                    final JCRNodeWrapper reportsFolder = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER);
+                    final String splitConfig = FastDateFormat.getInstance("'constant,'yyyy';constant,'MM").format(results.getTestDate());
+                    outputDir = JCRAutoSplitUtils.addNodeWithAutoSplitting(reportsFolder, resultsSignature, Constants.JAHIANT_FOLDER, splitConfig, Constants.JAHIANT_FOLDER, null);
                     outputDir.addMixin(Constants.JAHIAMIX_NOLIVE);
+                    outputDir.getParent().addMixin(Constants.JAHIAMIX_NOLIVE);
+                    outputDir.getParent().getParent().addMixin(Constants.JAHIAMIX_NOLIVE);
                     writeReportMetadata(outputDir, results);
                 } catch (RepositoryException re) {
                     logger.error("Impossible to retrieve the reports folder", re);
