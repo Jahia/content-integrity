@@ -83,7 +83,8 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
             if (numVersions > threshold)
                 return createSingleError(createError(node, TOO_MANY_VERSIONS, String.format("The node has over %s versions", threshold))
                         .addExtraInfo("versions-count", numVersions, true)
-                        .addExtraInfo("versions-count-range", Utils.getApproximateCount(numVersions, threshold)));
+                        .addExtraInfo("versions-count-range", Utils.getApproximateCount(numVersions, threshold))
+                        .addExtraInfo("auto-publish", node.isNodeType(Constants.JMIX_AUTO_PUBLISH)));
         } catch (RepositoryException e) {
             logger.error(String.format("Error while checking the version history of the node %s", identifier), e);
         }
