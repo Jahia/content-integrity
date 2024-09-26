@@ -43,7 +43,7 @@ All the nodes under the specified one will be scanned, unless some subtrees are 
 
 The scan can be run on a single workspace, or on both.
 
-Virtual nodes (e.g. exposed by an EDP connector) can be excluded from the scan. This is useful when processing those nodes involve a lot of connections to an 3rd party system, with an important impact on the duration of the scan.
+Virtual nodes (e.g. exposed by an EDP connector) can be excluded from the scan. This is useful when processing those nodes involves a lot of connections to a 3rd party system, with an important impact on the duration of the scan.
 
 When running a scan, the related logs are displayed in the UI. The scan is run in background, and leaving the screen will have no impact on its execution. When the scan is over, the results can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`), or viewed in the UI, in the tab `Results`.
 
