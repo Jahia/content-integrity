@@ -1,4 +1,5 @@
 import org.apache.commons.io.IOUtils
+import org.apache.commons.lang.StringUtils
 import org.jahia.api.Constants
 import org.jahia.api.content.JCRTemplate
 import org.jahia.osgi.BundleUtils
@@ -30,7 +31,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def property = data[2]
                     try {
                         def node = session.getNodeByIdentifier(uuid)
-                        if (locale != null) {
+                        if (StringUtils.isNotBlank(locale)) {
                             node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
                         }
                         if (node.hasProperty(property)) {
@@ -41,7 +42,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                             log.warn "#${++count} [WARN] Property ${property} not found for node ${node.path}"
                         }
                     } catch (ItemNotFoundException e) {
-                        // Nothing to do
+                        log.warn "#${++count} uuid not found: ${uuid}"
                     } catch (RepositoryException e) {
                         log.error("", e)
                     }
