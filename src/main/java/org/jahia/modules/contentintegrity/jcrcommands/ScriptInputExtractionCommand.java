@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,17 +32,31 @@ public class ScriptInputExtractionCommand implements Action {
     @Option(name = "-o")
     private boolean overrideFiles;
 
-    @Argument(required = true)
+    @Argument(required = true, description = "CSV file or directory containing it")
     private String path;
 
     private Map<String, String> values = new HashMap<>();
 
     @Override
     public Object execute() throws Exception {
-        final File file = new File(path);
-        if (!file.exists()) return null;
+        final File paramFile = new File(path);
+        if (!paramFile.exists()) return null;
 
-        final File targetFolder = file.getParentFile();
+        final File csvFile;
+        final File targetFolder;
+        if (paramFile.isDirectory()) {
+            targetFolder = paramFile;
+            final List<File> fileList = FileUtils.listFiles(targetFolder, Collections.singletonList("csv").toArray(new String[0]), false).stream().collect(Collectors.toList());
+            if (fileList.size() != 1) {
+                System.out.println("Unable to identify the csv file in the specified folder");
+                return null;
+            }
+            csvFile = fileList.get(0);
+        } else {
+            csvFile = paramFile;
+            targetFolder = paramFile.getParentFile();
+        }
+
         final File valuesFile = new File(targetFolder, "values.txt");
         if (valuesFile.exists()) {
             FileUtils.readLines(valuesFile, StandardCharsets.UTF_8).stream()
@@ -52,11 +67,14 @@ public class ScriptInputExtractionCommand implements Action {
                     .forEach(l -> values.put(l[0], l[1]));
         }
 
-        final List<String> lines = FileUtils.readLines(file, StandardCharsets.UTF_8);
+        final List<String> lines = FileUtils.readLines(csvFile, StandardCharsets.UTF_8);
         //lines.remove(0); // TODO the csv can have no header line
 
+        undeployedModules(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        undeployedModules(lines, Constants.LIVE_WORKSPACE, targetFolder);
         childNodeDefinitions(lines, Constants.EDIT_WORKSPACE, targetFolder);
         childNodeDefinitions(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        // ReferencesSanityCheck not a problem for the import
         undeclaredMixins(lines, Constants.EDIT_WORKSPACE, targetFolder);
         undeclaredMixins(lines, Constants.LIVE_WORKSPACE, targetFolder);
         undeclaredPrimaryType(lines, Constants.EDIT_WORKSPACE, targetFolder);
@@ -69,13 +87,7 @@ public class ScriptInputExtractionCommand implements Action {
         undeclaredProperties(lines, Constants.LIVE_WORKSPACE, targetFolder);
         markedForDeletion(lines, Constants.EDIT_WORKSPACE, targetFolder);
         markedForDeletion(lines, Constants.LIVE_WORKSPACE, targetFolder);
-        jcrLanguageProperty(lines, Constants.EDIT_WORKSPACE, targetFolder);
-        jcrLanguageProperty(lines, Constants.LIVE_WORKSPACE, targetFolder);
-        pathConflict(lines, Constants.EDIT_WORKSPACE, targetFolder);
-        pathConflict(lines, Constants.LIVE_WORKSPACE, targetFolder);
-        undeployedModules(lines, Constants.EDIT_WORKSPACE, targetFolder);
-        undeployedModules(lines, Constants.LIVE_WORKSPACE, targetFolder);
-        // ReferencesSanityCheck not a problem for the import
+        missingDefaultNode(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
         values.clear();
         return null;
@@ -226,31 +238,20 @@ public class ScriptInputExtractionCommand implements Action {
         save(txtLines, "MarkForDeletionCheck", null, workspace, targetFolder);
     }
 
-    private void jcrLanguageProperty(List<String> lines, String workspace, File targetFolder) {
+    private void missingDefaultNode(List<String> lines, String workspace, File targetFolder) {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(this::unescapeCSV)
-                .filter(l -> "JCRLanguagePropertyCheck".equals(l[0]))
+                .filter(l -> "PublicationSanityLiveCheck".equals(l[0]))
+                .filter(l -> "NO_DEFAULT_NODE".equals(l[2]))
                 .filter(l -> workspace.equals(l[4]))
                 .map(l -> l[5])
                 .collect(Collectors.toList());
-        save(txtLines, "JCRLanguagePropertyCheck", null, workspace, targetFolder);
-    }
-
-    private void pathConflict(List<String> lines, String workspace, File targetFolder) {
-        final List<String> txtLines = lines.stream()
-                .map(l -> l.split(";"))
-                .peek(this::unescapeCSV)
-                .filter(l -> "PublicationSanityDefaultCheck".equals(l[0]))
-                .filter(l -> "PATH_CONFLICT".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
-                .collect(Collectors.toList());
-        save(txtLines, "PublicationSanityDefaultCheck-PATH_CONFLICT", null, workspace, targetFolder);
+        save(txtLines, "PublicationSanityLiveCheck", "NO_DEFAULT_NODE", workspace, targetFolder);
     }
 
     private void unescapeCSV(String[] line) {
-        for (int i = 0; i < line.length; i++) {
+        for (int i =0; i< line.length; i++) {
             final String s = line[i];
             line[i] = StringUtils.substring(s, 1, s.length() - 1);
         }
