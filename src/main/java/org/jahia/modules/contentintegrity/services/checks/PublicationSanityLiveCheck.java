@@ -78,7 +78,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             Constants.JCR_MIXINTYPES, Constants.FULLPATH, Constants.NODENAME,
             Constants.J_LOCK_TYPES);
 
-    public static final ContentIntegrityErrorType NO_DEFAULT_NODE = createErrorType("NO_DEFAULT_NODE", "Found not-UGC node which exists only in live");
+    public static final ContentIntegrityErrorType NO_DEFAULT_NODE = createErrorType("NO_DEFAULT_NODE", "Found not-UGC node which exists only in live", true);
     public static final ContentIntegrityErrorType MISSING_PROP_LIVE = createErrorType("MISSING_PROP_LIVE", "Missing property in live on a published node");
     public static final ContentIntegrityErrorType MISSING_PROP_DEFAULT = createErrorType("MISSING_PROP_DEFAULT", "Missing property in default on a published node");
     public static final ContentIntegrityErrorType DIFFERENT_PROP_VAL = createErrorType("DIFFERENT_PROP_VAL", "Different value for a property in default and live on a published node");
