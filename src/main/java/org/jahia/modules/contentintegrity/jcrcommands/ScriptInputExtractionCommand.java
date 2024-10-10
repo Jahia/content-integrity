@@ -26,7 +26,6 @@ import java.util.stream.Stream;
 @Command(scope = "jcr", name = "integrity-extract-txt", description = "Generate the input txt files for the scripts")
 @Service
 public class ScriptInputExtractionCommand implements Action {
-
     private static final Logger logger = LoggerFactory.getLogger(ScriptInputExtractionCommand.class);
 
     @Option(name = "-o")
@@ -35,12 +34,14 @@ public class ScriptInputExtractionCommand implements Action {
     @Argument(required = true, description = "CSV file or directory containing it")
     private String path;
 
-    private Map<String, String> values = new HashMap<>();
+    private final Map<String, String> values = new HashMap<>();
 
     @Override
     public Object execute() throws Exception {
+        logger.info("<<< Start content-integrity data extraction...");
+
         final File paramFile = new File(path);
-        if (!paramFile.exists()) return null;
+        if (!paramFile.exists()) return endScript();
 
         final File csvFile;
         final File targetFolder;
@@ -48,8 +49,8 @@ public class ScriptInputExtractionCommand implements Action {
             targetFolder = paramFile;
             final List<File> fileList = FileUtils.listFiles(targetFolder, Collections.singletonList("csv").toArray(new String[0]), false).stream().collect(Collectors.toList());
             if (fileList.size() != 1) {
-                System.out.println("Unable to identify the csv file in the specified folder");
-                return null;
+                logger.error("Unable to identify the csv file in the specified folder");
+                return endScript();
             }
             csvFile = fileList.get(0);
         } else {
@@ -88,8 +89,17 @@ public class ScriptInputExtractionCommand implements Action {
         markedForDeletion(lines, Constants.EDIT_WORKSPACE, targetFolder);
         markedForDeletion(lines, Constants.LIVE_WORKSPACE, targetFolder);
         missingDefaultNode(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        jcrLanguageProperty(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        jcrLanguageProperty(lines, Constants.LIVE_WORKSPACE, targetFolder);
+        pathConflict(lines, Constants.EDIT_WORKSPACE, targetFolder);
+        pathConflict(lines, Constants.LIVE_WORKSPACE, targetFolder);
 
         values.clear();
+        return endScript();
+    }
+
+    private Void endScript() {
+        logger.info("<<< ...end content-integrity data extraction.");
         return null;
     }
 
@@ -186,7 +196,7 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> {
                     final String defaultValue = values.get(l[12]);
                     if (StringUtils.isBlank(defaultValue)) {
-                        System.out.println("No default value for " + l[12]);
+                        logger.warn("No default value for {}", l[12]);
                         return null;
                     }
                     return l[5] + ";" + l[10] + ";" + extractEmptyMandatoryProperty(l[12]) + ";" + defaultValue;
@@ -212,7 +222,7 @@ public class ScriptInputExtractionCommand implements Action {
                     final String key = l[12] + l[13];
                     final String defaultValue = values.get(key);
                     if (StringUtils.isBlank(defaultValue)) {
-                        System.out.println("No default value for " + key);
+                        logger.warn("No default value for {}", key);
                         return null;
                     }
                     return l[5] + ";" + l[10] + ";" + extractInvalidValueConstraintProperty(l[12]) + ";" + defaultValue;
@@ -250,8 +260,31 @@ public class ScriptInputExtractionCommand implements Action {
         save(txtLines, "PublicationSanityLiveCheck", "NO_DEFAULT_NODE", workspace, targetFolder);
     }
 
+    private void jcrLanguageProperty(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "JCRLanguagePropertyCheck".equals(l[0]))
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5])
+                .collect(Collectors.toList());
+        save(txtLines, "JCRLanguagePropertyCheck", null, workspace, targetFolder);
+    }
+
+    private void pathConflict(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(this::unescapeCSV)
+                .filter(l -> "PublicationSanityDefaultCheck".equals(l[0]))
+                .filter(l -> "PATH_CONFLICT".equals(l[2]))
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5])
+                .collect(Collectors.toList());
+        save(txtLines, "PublicationSanityDefaultCheck-PATH_CONFLICT", null, workspace, targetFolder);
+    }
+
     private void unescapeCSV(String[] line) {
-        for (int i =0; i< line.length; i++) {
+        for (int i = 0; i < line.length; i++) {
             final String s = line[i];
             line[i] = StringUtils.substring(s, 1, s.length() - 1);
         }
@@ -264,25 +297,25 @@ public class ScriptInputExtractionCommand implements Action {
         if (CollectionUtils.isEmpty(lines)) {
             if (file.exists()) {
                 if (overrideFiles) {
-                    file.delete();
-                    System.out.println(filename + " not needed, deleted");
+                    FileUtils.deleteQuietly(file);
+                    logger.warn("{} not needed, deleted", filename);
                 } else {
-                    System.out.println(filename + " not needed, to be deleted manually");
+                    logger.warn("{} not needed, to be deleted manually", filename);
                 }
             } else {
-                System.out.println(filename + " not needed");
+                logger.warn("{} not needed", filename);
             }
             return;
         }
 
         if (file.exists() && !overrideFiles) {
-            System.out.println(filename + " already exists");
+            logger.warn("{} already exists", filename);
             return;
         }
 
         try {
             FileUtils.writeLines(file, StandardCharsets.UTF_8.name(), lines.stream().distinct().collect(Collectors.toList()));
-            System.out.println(filename + " saved");
+            logger.info("{} saved", filename);
         } catch (IOException e) {
             logger.error("", e);
         }
