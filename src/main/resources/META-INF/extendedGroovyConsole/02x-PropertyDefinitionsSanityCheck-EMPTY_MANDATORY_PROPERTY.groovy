@@ -27,6 +27,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
             def count = 0
             try {
                 IOUtils.readLines(reader).each { String row ->
+                    ++count
                     def data = row.split(';')
                     def uuid = data[0]
                     def locale = data[1]
@@ -36,7 +37,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         def node = session.getNodeByIdentifier(uuid)
                         JCRSiteNode site = node.getResolveSite()
                         if (node.path.startsWith("/modules/"))  {
-                            log.warn "#${++count} IGNORE: Set property ${property} node ${node.path} with value ${defaultValue}"
+                            log.warn "#${count} [WARN] [IGNORE]: Set property ${property} node ${node.path} with value ${defaultValue}"
                             return null
                         }
                         if (StringUtils.isNotBlank(locale)) {
@@ -44,24 +45,24 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         }
                         if (StringUtils.equals(defaultValue, "[site.home]")) {
                             if (site == null) {
-                                log.warn "${StringUtils.repeat(" ", 2)}Impossible to calculate the default value for ${node.path}/${property}"
+                                log.warn "#${count} [WARN] ${StringUtils.repeat(" ", 2)}Impossible to calculate the default value for ${node.path}/${property}"
                                 return null
                             }
                             JCRNodeWrapper home = site.getHome()
                             if (home == null) {
-                                log.warn "${StringUtils.repeat(" ", 2)}Impossible to calculate the default value for ${node.path}/${property}"
+                                log.warn "#${count} [WARN] ${StringUtils.repeat(" ", 2)}Impossible to calculate the default value for ${node.path}/${property}"
                                 return null
                             }
                             defaultValue = home.identifier
                         }
-                        log.info "#${++count} Set property ${property} node ${node.path} with value ${defaultValue}"
+                        log.info "#${count} Set property ${property} node ${node.path} with value ${defaultValue}"
                         node.setProperty(property, defaultValue)
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
-                        log.warn "#${++count} uuid not found: ${uuid}"
+                        log.warn "#${count} [WARN] uuid not found: ${uuid}"
                         // Nothing to do
                     } catch (RepositoryException e) {
-                        log.error("", e)
+                        log.error "#${count} [ERROR]", e
                     }
                 }
             } finally {

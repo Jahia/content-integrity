@@ -26,6 +26,7 @@ try {
         def count = 0
         try {
             IOUtils.readLines(reader).each { String uuid ->
+                ++count
                 try {
                     def node = session.getNodeByIdentifier(uuid)
                     if (node.hasProperty(Constants.PUBLISHED)) {
@@ -34,12 +35,12 @@ try {
                     node.setProperty(Constants.JCR_LASTMODIFIEDBY, 'root')
                     if (SAVE) session.save()
                     publicationService.publishByMainId(uuid)
-                    log.info "#${++count} Autopublish node ${node.path}"
+                    log.info "#${count} Autopublish node ${node.path}"
                 } catch (ItemNotFoundException e) {
-                    log.warn "#${++count} uuid not found: ${uuid}"
+                    log.warn "#${count} [WARN] uuid not found: ${uuid}"
                     // Nothing to do
                 } catch (RepositoryException e) {
-                    log.error("", e)
+                    log.error "#${count} [ERROR]", e
                 }
             }
         } finally {

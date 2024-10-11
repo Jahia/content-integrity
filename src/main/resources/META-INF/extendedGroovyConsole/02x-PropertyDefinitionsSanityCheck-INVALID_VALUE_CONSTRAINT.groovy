@@ -25,6 +25,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
             def count = 0
             try {
                 IOUtils.readLines(reader).each { String row ->
+                    ++count
                     def data = row.split(';')
                     def uuid = data[0]
                     def locale = data[1]
@@ -35,14 +36,14 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         if (StringUtils.isNotBlank(locale)) {
                             node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
                         }
-                        log.info "#${++count} Set property ${property} node ${node.path} with value ${defaultValue}"
+                        log.info "#${count} Set property ${property} node ${node.path} with value ${defaultValue}"
                         node.setProperty(property, defaultValue)
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
-                        log.warn "#${++count} uuid not found: ${uuid}"
+                        log.warn "#${count} [WARN] uuid not found: ${uuid}"
                         // Nothing to do
                     } catch (RepositoryException e) {
-                        log.error("", e)
+                        log.error "#${count} [ERROR]", e
                     }
                 }
             } finally {

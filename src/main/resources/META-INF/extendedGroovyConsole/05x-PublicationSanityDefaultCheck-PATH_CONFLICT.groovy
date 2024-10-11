@@ -50,6 +50,7 @@ try {
         def count = 0
         try {
             IOUtils.readLines(reader).each { String uuid ->
+                ++count
                 try {
                     def node = session.getNodeByIdentifier(uuid)
                     String nodeIdentifier = getNodeInLive(node.path)
@@ -57,22 +58,22 @@ try {
                         try {
                             // check node in default workspace
                             session.getNodeByIdentifier(nodeIdentifier)
-                            log.warn "#${++count} Node ${node.path} already found in live workspace with another uuid, publish it to update it in live workspace"
+                            log.warn "#${count} [WARN] Node ${node.path} already found in live workspace with another uuid, publish it to update it in live workspace"
                             if (SAVE) jcrPublicationService.publishByMainId(nodeIdentifier)
                         } catch (ItemNotFoundException e) {
-                            log.info "#${++count} Delete node ${node.path} in live workspace and republish it"
+                            log.info "#${count} [WARN] Delete node ${node.path} in live workspace and republish it"
                             deleteNodeInLive(node.path)
                             node.setProperty(Constants.PUBLISHED, false)
                             if (SAVE) jcrPublicationService.publishByMainId(node.identifier)
                         }
                     } else {
-                        log.warn "#${++count} Node ${node.path} not found in live workspace"
+                        log.warn "#${count} [WARN] Node ${node.path} not found in live workspace"
                     }
                 } catch (ItemNotFoundException e) {
-                    log.warn "#${++count} uuid not found: ${uuid}"
+                    log.warn "#${count} [WARN] uuid not found: ${uuid}"
                     // Nothing to do
                 } catch (RepositoryException e) {
-                    log.error("", e)
+                    log.error "#${count} [ERROR]", e
                 }
             }
         } finally {

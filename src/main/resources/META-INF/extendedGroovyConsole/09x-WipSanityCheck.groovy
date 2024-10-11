@@ -23,20 +23,21 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
             def count = 0
             try {
                 IOUtils.readLines(reader).each { String uuid ->
+                    ++count
                     try {
                         def node = session.getNodeByIdentifier(uuid)
                         if (node.hasProperty('j:workInProgressLanguages')) {
-                            log.info "#${++count} Reset WIP for node ${node.path}"
+                            log.info "#${count} Reset WIP for node ${node.path}"
                             node.getProperty('j:workInProgressLanguages').remove()
                         } else {
-                            log.info "#${++count} [WARN] WIP not found for node ${node.path}"
+                            log.info "#${count} [WARN] WIP not found for node ${node.path}"
                         }
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
-                        log.warn "#${++count} uuid not found: ${uuid}"
+                        log.warn "#${count} [WARN] uuid not found: ${uuid}"
                         // Nothing to do
                     } catch (RepositoryException e) {
-                        log.error("", e)
+                        log.error "#${count} [ERROR]", e
                     }
                 }
             } finally {

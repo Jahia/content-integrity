@@ -1,13 +1,13 @@
 import org.apache.commons.io.IOUtils
 import org.jahia.api.Constants
 import org.jahia.api.content.JCRTemplate
+import org.jahia.api.usermanager.JahiaUserManagerService
 import org.jahia.osgi.BundleUtils
-import org.jahia.registries.ServicesRegistry
 import org.jahia.services.content.JCRContentUtils
+import org.jahia.services.content.JCRPublicationService
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.services.content.decorator.JCRUserNode
 import org.jahia.services.usermanager.JahiaUser
-import org.jahia.services.usermanager.JahiaUserManagerService
 
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
@@ -26,35 +26,36 @@ BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAs
     def count = 0
     try {
         IOUtils.readLines(reader).each { String uuid ->
+            ++count
             try {
                 def node = session.getNodeByIdentifier(uuid)
                 uuids.add(uuid)
-                log.info "#${++count} Restore node ${node.path}"
+                log.info "#${count} Restore node ${node.path}"
             } catch (ItemNotFoundException e) {
-                log.warn "#${++count} uuid not found: ${uuid}"
+                log.warn "#${count} [WARN] uuid not found: ${uuid}"
                 // Nothing to do
             } catch (RepositoryException e) {
-                log.error("", e)
+                log.error "#${count} [ERROR]", e
             }
         }
     } finally {
         IOUtils.closeQuietly(reader)
     }
     if (SAVE && uuids.size() > 0) {
-        JahiaUser realUser = JCRSessionFactory.getInstance().getCurrentUser()
+        def jcrSessionFactory = BundleUtils.getOsgiService(JCRSessionFactory.class, null)
+        JahiaUser realUser = jcrSessionFactory.getCurrentUser()
         boolean changeUser = realUser == null || !realUser.isRoot()
         if (changeUser) {
-            JCRUserNode rootUser = JahiaUserManagerService.getInstance().lookupRootUser()
-            JCRSessionFactory.getInstance().setCurrentUser(rootUser.getJahiaUser())
+            JCRUserNode rootUser = BundleUtils.getOsgiService(JahiaUserManagerService.class, null).lookupRootUser()
+            jcrSessionFactory.setCurrentUser(rootUser.getJahiaUser())
         }
 
         try {
             log.info "Recreating ${uuids.size()} nodes"
-            ServicesRegistry.getInstance().getJCRPublicationService().publish(uuids, Constants.LIVE_WORKSPACE, Constants.EDIT_WORKSPACE, false, null)
-
+            BundleUtils.getOsgiService(JCRPublicationService.class, null).publish(uuids, Constants.LIVE_WORKSPACE, Constants.EDIT_WORKSPACE, false, null)
         } finally {
             if (changeUser) {
-                JCRSessionFactory.getInstance().setCurrentUser(realUser)
+                jcrSessionFactory.setCurrentUser(realUser)
             }
         }
     }

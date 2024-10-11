@@ -26,6 +26,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
             def count = 0
             try {
                 IOUtils.readLines(reader).each { String row ->
+                    ++count
                     def data = row.split(';')
                     def uuid = data[0]
                     // TODO fix this when more than one module are identified
@@ -39,15 +40,15 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                                     modules.add(v.getString())
                                 }
                             }
-                            log.info "#${++count} SiteNode ${siteNode} set installed modules ${modules.each { v -> v }}"
+                            log.info "#${count} SiteNode ${siteNode} set installed modules ${modules.each { v -> v }}"
                             siteNode.setProperty(SitesSettings.INSTALLED_MODULES, modules.toArray(new String[0]) as String[])
                             if (SAVE) session.save()
                         }
                     } catch (ItemNotFoundException e) {
-                        log.warn "#${++count} uuid not found: ${uuid}"
+                        log.warn "#${count} [WARN] uuid not found: ${uuid}"
                         // Nothing to do
                     } catch (RepositoryException e) {
-                        log.error("", e)
+                        log.error "#${count} [ERROR]", e
                     }
                 }
             } finally {

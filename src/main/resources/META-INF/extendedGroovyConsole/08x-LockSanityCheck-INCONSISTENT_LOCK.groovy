@@ -23,6 +23,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
             def count = 0
             try {
                 IOUtils.readLines(reader).each { String uuid ->
+                    ++count
                     try {
                         def node = session.getNodeByIdentifier(uuid)
                         node.lock(true, false)
@@ -31,10 +32,10 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         if (node.hasProperty('j:locktoken')) node.getProperty('j:locktoken').remove()
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
-                        log.warn "#${++count} uuid not found: ${uuid}"
+                        log.warn "#${count} [WARN] uuid not found: ${uuid}"
                         // Nothing to do
                     } catch (RepositoryException e) {
-                        log.error("", e)
+                        log.error "#${count} [ERROR]", e
                     }
                 }
             } finally {

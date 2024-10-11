@@ -22,20 +22,21 @@ try {
         def count = 0
         try {
             IOUtils.readLines(reader).each { String uuid ->
+                ++count
                 try {
                     def node = session.getNodeByIdentifier(uuid)
                     if (node.hasProperty(Constants.PUBLISHED)) {
-                        log.info "#${++count} Unset property ${Constants.PUBLISHED} for node ${node.path}"
+                        log.info "#${count} Unset property ${Constants.PUBLISHED} for node ${node.path}"
                         node.getProperty(Constants.PUBLISHED).remove()
                         if (SAVE) node.saveSession()
                     } else {
-                        log.warn "#${++count} [WARN] Node ${node.path} has not property ${Constants.PUBLISHED}"
+                        log.warn "#${count} [WARN] Node ${node.path} has not property ${Constants.PUBLISHED}"
                     }
                 } catch (ItemNotFoundException e) {
-                    log.warn "#${++count} uuid not found: ${uuid}"
+                    log.warn "#${count} [WARN] uuid not found: ${uuid}"
                     // Nothing to do
                 } catch (RepositoryException e) {
-                    log.error("", e)
+                    log.error "#${count} [ERROR]", e
                 }
             }
         } finally {
