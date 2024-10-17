@@ -5,7 +5,7 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>8.1.5.0</version>
+        <version>8.1.2.3</version>
     </parent>
     <groupId>org.jahia.community.modules</groupId>
     <artifactId>jcr-scripts</artifactId>

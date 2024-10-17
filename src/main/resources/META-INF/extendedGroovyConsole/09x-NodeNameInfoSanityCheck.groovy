@@ -16,7 +16,7 @@ def fix = { String property, Function<JCRNodeWrapper, String> getProperty ->
         JCRObservationManager.setAllEventListenersDisabled(true)
         try {
             BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-                String path = "${MOUNTPOINT}/InfoSanityCheck-${workspace}.txt"
+                String path = "${MOUNTPOINT}/NodeNameInfoSanityCheck-${workspace}.txt"
                 if (!session.nodeExists(path)) {
                     log.info "${path} does not exists"
                     return null
@@ -52,7 +52,7 @@ def fix = { String property, Function<JCRNodeWrapper, String> getProperty ->
 fix(Constants.NODENAME, { node -> node.name })
 fix(Constants.FULLPATH, { node -> node.path })
 
-log.info "<<< END InfoSanityCheck"
+log.info "<<< END NodeNameInfoSanityCheck"
 
 // Script configurations
 //script.parameters.names=MOUNTPOINT, SAVE

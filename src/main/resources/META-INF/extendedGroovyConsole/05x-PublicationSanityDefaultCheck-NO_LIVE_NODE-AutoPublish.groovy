@@ -16,7 +16,7 @@ log.info "Traversing workspace ${workspace}"
 JCRObservationManager.setAllEventListenersDisabled(true)
 try {
     BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-        String path = "${MOUNTPOINT}/PublicationSanityDefaultCheck-NO_LIVE_NODE-AutoPublish-${workspace}.txt"
+        String path = "${MOUNTPOINT}/PublicationSanityDefaultCheck-NO_LIVE_NODE_AUTO_PUBLISH-${workspace}.txt"
         if (!session.nodeExists(path)) {
             log.info "${path} does not exists"
             return null
@@ -51,7 +51,7 @@ try {
     JCRObservationManager.setAllEventListenersDisabled(false)
 }
 
-log.info "<<< END PublicationSanityDefaultCheck-NO_LIVE_NODE-AutoPublish"
+log.info "<<< END PublicationSanityDefaultCheck-NO_LIVE_NODE_AUTO_PUBLISH"
 
 // Script configurations
 //script.parameters.names=MOUNTPOINT, SAVE

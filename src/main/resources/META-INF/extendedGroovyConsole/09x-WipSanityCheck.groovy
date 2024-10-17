@@ -29,6 +29,9 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         if (node.hasProperty('j:workInProgressLanguages')) {
                             log.info "#${count} Reset WIP for node ${node.path}"
                             node.getProperty('j:workInProgressLanguages').remove()
+                        } else if (node.hasProperty('j:workInProgress')) {
+                            log.info "#${count} Reset WIP for node ${node.path}"
+                            node.getProperty('j:workInProgress').remove()
                         } else {
                             log.info "#${count} [WARN] WIP not found for node ${node.path}"
                         }
