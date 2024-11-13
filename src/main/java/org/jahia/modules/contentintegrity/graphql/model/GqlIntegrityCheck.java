@@ -77,7 +77,8 @@ public class GqlIntegrityCheck {
         return new GqlIntegrityCheckConfiguration(name,
                 configurations.getDescription(name),
                 configurations.getParameterDefaultValue(name),
-                configurations.getParameter(name)
+                configurations.getParameter(name),
+                configurations.getRank(name)
                 );
     }
 

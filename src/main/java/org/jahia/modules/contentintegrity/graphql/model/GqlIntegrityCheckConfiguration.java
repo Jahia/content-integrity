@@ -17,13 +17,15 @@ public class GqlIntegrityCheckConfiguration {
     private final Object defaultValue;
     private final Object value;
     private final String type;
+    private final int rank;
 
-    public GqlIntegrityCheckConfiguration(String name, String description, Object defaultValue, Object value) {
+    public GqlIntegrityCheckConfiguration(String name, String description, Object defaultValue, Object value, int rank) {
         this.name = name;
         this.description = description;
         this.defaultValue = defaultValue;
         this.value = value;
         this.type = defaultValue.getClass().getSimpleName().toLowerCase();
+        this.rank = rank;
     }
 
     @GraphQLField
@@ -49,5 +51,10 @@ public class GqlIntegrityCheckConfiguration {
     @GraphQLField
     public String getType() {
         return type;
+    }
+
+    @GraphQLField
+    public int getRank() {
+        return rank;
     }
 }

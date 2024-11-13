@@ -106,7 +106,7 @@ function getCheckConfsQuery(checkID, reset) {
             "    check:integrityCheckById(id: $id) {" +
             resetQuery +
             "      configurations {" +
-            "        name value type description" +
+            "        name value type description rank" +
             "      }" +
             "    }" +
             "  }" +
@@ -237,7 +237,7 @@ const ConfigPanelItem = ({id, name, configurations}) => {
     let out = `<div id="configurationPanel" integrityCheckID="${id}"><span class="panelTitle">${name}</span>`;
     if (configurations !== null && configurations !== undefined) {
         out += `<div class="configurationPanelInput">`
-        out += configurations.map(ConfigItem).join('')
+        out += configurations.sort((a, b) => a.rank - b.rank).map(ConfigItem).join('')
         out += `</div>`;
     }
     out += `</div>`;
