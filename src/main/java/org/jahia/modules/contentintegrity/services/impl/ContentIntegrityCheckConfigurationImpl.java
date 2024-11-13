@@ -70,8 +70,10 @@ public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityC
 
     @Override
     public String getDescription(String name) {
-        if (!defaultParameters.containsKey(name)) return null;
-        return defaultParameters.get(name).getDescription();
+        return Optional.of(defaultParameters)
+                .map(params -> params.get(name))
+                .map(DefaultConfiguration::getDescription)
+                .orElse(null);
     }
 
     @Override
