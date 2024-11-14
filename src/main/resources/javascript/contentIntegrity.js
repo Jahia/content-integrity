@@ -248,6 +248,9 @@ const ConfigItem = ({name, type, value, description}) => {
     const params = { name: name, value: value, description: description }
     let out = `<span class="inputLabel">${name}:</span>`
     switch (type) {
+        case "string":
+            out += StringConfigItem(params)
+            break
         case "integer":
             out += IntegerConfigItem(params)
             break
@@ -261,6 +264,8 @@ const ConfigItem = ({name, type, value, description}) => {
     out += `<span class="configDesc">${description}</span>`
     return out
 }
+
+const StringConfigItem = ({name, value}) => `<input type="text" name="${name}" value="${value}" />`
 
 const IntegerConfigItem = ({name, value}) => `<input type="text" name="${name}" value="${value}" />`
 
