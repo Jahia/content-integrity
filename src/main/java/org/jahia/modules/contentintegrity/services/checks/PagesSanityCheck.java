@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.jahia.api.Constants.JAHIANT_VIRTUALSITE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_VIRTUALSITE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=jmix:hasTemplateNode," + JAHIANT_VIRTUALSITE

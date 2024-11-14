@@ -14,7 +14,6 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorTypeImpl
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorTypeImplLegacy;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.utils.LanguageCodeConverters;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
@@ -25,7 +24,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;

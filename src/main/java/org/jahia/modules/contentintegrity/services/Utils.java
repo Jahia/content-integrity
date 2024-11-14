@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_SITE_PATH_PREFIX;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
 
