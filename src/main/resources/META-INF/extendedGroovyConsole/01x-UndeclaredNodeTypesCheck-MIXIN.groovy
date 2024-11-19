@@ -13,7 +13,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     JCRObservationManager.setAllEventListenersDisabled(true)
     try {
         BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-            String path = "${MOUNTPOINT}/UndeclaredMixinsCheck-${workspace}.txt"
+            String path = "${MOUNTPOINT}/UndeclaredNodeTypesCheck-MIXIN-${workspace}.txt"
             if (!session.nodeExists(path)) {
                 log.info "${path} does not exists"
                 return null
@@ -48,7 +48,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     }
 }
 
-log.info "<<< END UndeclaredMixinsCheck"
+log.info "<<< END UndeclaredNodeTypesCheck-MIXIN"
 
 // Script configurations
 //script.parameters.names=MOUNTPOINT, SAVE

@@ -4,8 +4,6 @@ import org.jahia.api.content.JCRTemplate
 import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRContentUtils
 import org.jahia.services.content.JCRObservationManager
-import org.jahia.services.content.JCRValueWrapper
-import org.jahia.services.content.nodetypes.ValueImpl
 import org.jahia.services.sites.SitesSettings
 
 import javax.jcr.ItemNotFoundException

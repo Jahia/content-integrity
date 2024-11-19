@@ -15,7 +15,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     JCRObservationManager.setAllEventListenersDisabled(true)
     try {
         BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-            String path = "${MOUNTPOINT}/UndeclaredPrimaryTypesCheck-${workspace}.txt"
+            String path = "${MOUNTPOINT}/UndeclaredNodeTypesCheck-PRIMARY_TYPE-${workspace}.txt"
             if (!session.nodeExists(path)) {
                 log.info "${path} does not exists"
                 return null
@@ -47,7 +47,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     }
 }
 
-log.info "<<< END UndeclaredPrimaryTypesCheck"
+log.info "<<< END UndeclaredNodeTypesCheck-PRIMARY_TYPE"
 
 // Script configurations
 //script.parameters.names=MOUNTPOINT, SAVE
