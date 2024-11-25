@@ -29,6 +29,11 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         log.info "#${count} Repair LockSanityCheck-DELETION_LOCK_ON_I18N for node ${node.path}"
                         node.markForDeletion('LockSanityCheck-DELETION_LOCK_ON_I18N')
                         node.unmarkForDeletion()
+                        if (node.hasProperty('j:lockTypes')) node.getProperty('j:lockTypes').remove()
+                        if (node.hasProperty('j:locktoken')) node.getProperty('j:locktoken').remove()
+                        if (node.hasProperty('j:deletionMessage')) node.getProperty('j:deletionMessage').remove()
+                        if (node.hasProperty('j:deletionDate')) node.getProperty('j:deletionDate').remove()
+                        if (node.hasProperty('j:deletionDate')) node.getProperty('j:deletionDate').remove()
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
                         log.warn "#${count} [WARN] uuid not found: ${uuid}"
