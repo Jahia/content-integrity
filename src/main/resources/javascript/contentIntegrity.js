@@ -106,7 +106,7 @@ function getCheckConfsQuery(checkID, reset) {
             "    check:integrityCheckById(id: $id) {" +
             resetQuery +
             "      configurations {" +
-            "        name value type description" +
+            "        name value type description rank" +
             "      }" +
             "    }" +
             "  }" +
@@ -237,7 +237,7 @@ const ConfigPanelItem = ({id, name, configurations}) => {
     let out = `<div id="configurationPanel" integrityCheckID="${id}"><span class="panelTitle">${name}</span>`;
     if (configurations !== null && configurations !== undefined) {
         out += `<div class="configurationPanelInput">`
-        out += configurations.map(ConfigItem).join('')
+        out += configurations.sort((a, b) => a.rank - b.rank).map(ConfigItem).join('')
         out += `</div>`;
     }
     out += `</div>`;
@@ -248,6 +248,9 @@ const ConfigItem = ({name, type, value, description}) => {
     const params = { name: name, value: value, description: description }
     let out = `<span class="inputLabel">${name}:</span>`
     switch (type) {
+        case "string":
+            out += StringConfigItem(params)
+            break
         case "integer":
             out += IntegerConfigItem(params)
             break
@@ -261,6 +264,8 @@ const ConfigItem = ({name, type, value, description}) => {
     out += `<span class="configDesc">${description}</span>`
     return out
 }
+
+const StringConfigItem = ({name, value}) => `<input type="text" name="${name}" value="${value}" />`
 
 const IntegerConfigItem = ({name, value}) => `<input type="text" name="${name}" value="${value}" />`
 

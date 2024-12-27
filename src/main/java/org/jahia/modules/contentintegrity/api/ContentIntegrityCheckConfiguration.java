@@ -15,4 +15,6 @@ public interface ContentIntegrityCheckConfiguration {
     Object getParameterDefaultValue(String name) throws IllegalArgumentException;
 
     String getDescription(String name);
+
+    int getRank(String name);
 }

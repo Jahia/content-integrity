@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static org.jahia.api.Constants.JAHIAMIX_LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_LASTPUBLISHED;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_DELETED_CHILDREN;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_LIVE_PROPERTIES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LIVE_PROPERTIES;

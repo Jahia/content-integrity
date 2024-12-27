@@ -24,6 +24,7 @@
   * [VersionHistoryCheck](#versionhistorycheck)
   * [VersionsSanityCheck](#versionsanitycheck)
   * [WipSanityCheck](#wipsanitycheck)
+  * [WorkspaceSpecificDefinitionsCheck](#workspacespecificdefinitionscheck)
 * [How to extend it](how-to-extend.md#summary)
 * [Groovy scripts](groovy-scripts.md#summary)
 * [Release notes](release-notes.md#summary)
@@ -560,3 +561,6 @@ As a consequence, the data model of the technical information stored on the node
 
 If some properties related to the legacy model are identified on some nodes, you should write a script to clean them up. Those properties are completely ignored after the refactoring, so deleting them will have no functional impact.
 
+## WorkspaceSpecificDefinitionsCheck
+
+_work in progress_

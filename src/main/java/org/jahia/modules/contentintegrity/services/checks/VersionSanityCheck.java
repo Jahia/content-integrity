@@ -19,10 +19,10 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.Collection;
 
-import static org.jahia.api.Constants.JCR_FROZENNODE;
-import static org.jahia.api.Constants.JCR_FROZENUUID;
-import static org.jahia.api.Constants.JCR_VERSIONABLEUUID;
-import static org.jahia.api.Constants.NT_VERSION;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_FROZENNODE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_FROZENUUID;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_VERSIONABLEUUID;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.NT_VERSION;
 
 /*
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
