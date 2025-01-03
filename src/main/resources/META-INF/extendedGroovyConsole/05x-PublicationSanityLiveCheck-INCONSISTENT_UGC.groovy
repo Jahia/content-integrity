@@ -8,12 +8,12 @@ import org.jahia.services.content.JCRObservationManager
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
 
-for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
+for (def workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
     JCRObservationManager.setAllEventListenersDisabled(true)
     try {
         BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
-            String path = "${MOUNTPOINT}/LockSanityCheck-DELETION_LOCK_ON_I18N-${workspace}.txt"
+            String path = "${MOUNTPOINT}/PublicationSanityLiveCheck-INCONSISTENT_UGC-${workspace}.txt"
             if (!session.nodeExists(path)) {
                 log.info "${path} does not exists"
                 return null
@@ -26,17 +26,9 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     ++count
                     try {
                         def node = session.getNodeByIdentifier(uuid)
-                        log.info "#${count} Repair LockSanityCheck-DELETION_LOCK_ON_I18N for node ${node.path}"
-                        node.markForDeletion('LockSanityCheck-DELETION_LOCK_ON_I18N')
-                        node.unmarkForDeletion()
-                        if (node.hasProperty('jcr:lockIsDeep')) node.getProperty('jcr:lockIsDeep').remove()
-                        if (node.hasProperty('jcr:lockOwner')) node.getProperty('jcr:lockOwner').remove()
-                        if (node.hasProperty('j:lockTypes')) node.getProperty('j:lockTypes').remove()
-                        if (node.hasProperty('j:locktoken')) node.getProperty('j:locktoken').remove()
-                        if (node.hasProperty('j:deletionMessage')) node.getProperty('j:deletionMessage').remove()
-                        if (node.hasProperty('j:deletionDate')) node.getProperty('j:deletionDate').remove()
-                        if (node.hasProperty('j:deletionUser')) node.getProperty('j:deletionUser').remove()
-                        if (SAVE) session.save()
+                        log.info "#${count} Set origin for node ${node.path}"
+                        node.setProperty(Constants.ORIGIN_WORKSPACE, Constants.EDIT_WORKSPACE)
+                        if (SAVE) node.saveSession()
                     } catch (ItemNotFoundException e) {
                         log.warn "#${count} [WARN] uuid not found: ${uuid}"
                         // Nothing to do
@@ -53,7 +45,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     }
 }
 
-log.info "<<< END LockSanityCheck-DELETION_LOCK_ON_I18N"
+log.info "<<< END PublicationSanityLiveCheck-INCONSISTENT_UGC"
 
 // Script configurations
 //script.parameters.names=MOUNTPOINT, SAVE

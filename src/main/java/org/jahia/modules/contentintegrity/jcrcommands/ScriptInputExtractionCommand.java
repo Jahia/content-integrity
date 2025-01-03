@@ -81,6 +81,7 @@ public class ScriptInputExtractionCommand implements Action {
             propertyDefinitionsSanityCheckUndeclaredProperty(lines, workspace, targetFolder);
             markForDeletionCheck(lines, workspace, targetFolder);
             publicationSanityLiveCheckMissingDefaultNode(lines, workspace, targetFolder);
+            publicationSanityLiveCheckInconsistentUgc(lines, workspace, targetFolder);
             jcrLanguagePropertyCheck(lines, workspace, targetFolder);
             publicationSanityDefaultCheckPathConflict(lines, workspace, targetFolder);
 
@@ -250,6 +251,18 @@ public class ScriptInputExtractionCommand implements Action {
                 .map(l -> l[5])
                 .collect(Collectors.toList());
         save(txtLines, "PublicationSanityLiveCheck", "NO_DEFAULT_NODE", workspace, targetFolder);
+    }
+
+    private void publicationSanityLiveCheckInconsistentUgc(List<String> lines, String workspace, File targetFolder) {
+        final List<String> txtLines = lines.stream()
+                .map(l -> l.split(";"))
+                .peek(ScriptInputExtractionCommand::unescapeCSV)
+                .filter(l -> "PublicationSanityLiveCheck".equals(l[0]))
+                .filter(l -> "INCONSISTENT_UGC".equals(l[2]))
+                .filter(l -> workspace.equals(l[4]))
+                .map(l -> l[5])
+                .collect(Collectors.toList());
+        save(txtLines, "PublicationSanityLiveCheck", "INCONSISTENT_UGC", workspace, targetFolder);
     }
 
     private void jcrLanguagePropertyCheck(List<String> lines, String workspace, File targetFolder) {

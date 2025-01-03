@@ -26,13 +26,22 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     ++count
                     try {
                         def node = session.getNodeByIdentifier(uuid)
-                        node.lock(true, false)
-                        node.unlock()
+                        log.info "#${count} Repair LockSanityCheck-INCONSISTENT_LOCK for node ${node.path}"
+                        try {
+                            node.lock(true, false)
+                        } catch (Exception e2) {
+                        }
+                        try {
+                            node.unlock()
+                        } catch (Exception e2) {
+                        }
+                        if (node.hasProperty('jcr:lockIsDeep')) node.getProperty('jcr:lockIsDeep').remove()
+                        if (node.hasProperty('jcr:lockOwner')) node.getProperty('jcr:lockOwner').remove()
                         if (node.hasProperty('j:lockTypes')) node.getProperty('j:lockTypes').remove()
                         if (node.hasProperty('j:locktoken')) node.getProperty('j:locktoken').remove()
                         if (node.hasProperty('j:deletionMessage')) node.getProperty('j:deletionMessage').remove()
                         if (node.hasProperty('j:deletionDate')) node.getProperty('j:deletionDate').remove()
-                        if (node.hasProperty('j:deletionDate')) node.getProperty('j:deletionDate').remove()
+                        if (node.hasProperty('j:deletionUser')) node.getProperty('j:deletionUser').remove()
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
                         log.warn "#${count} [WARN] uuid not found: ${uuid}"
