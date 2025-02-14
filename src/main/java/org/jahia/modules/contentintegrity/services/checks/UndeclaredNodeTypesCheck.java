@@ -1,5 +1,8 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.apache.commons.lang.StringUtils;
+import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.data.templates.ModuleState;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
@@ -8,6 +11,8 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.jahia.services.content.nodetypes.NodeTypeRegistry;
+import org.jahia.utils.Patterns;
+import org.osgi.framework.Bundle;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -82,15 +88,13 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
             if (existingTypes.contains(type)) continue;
 
             if (!missingTypes.contains(type)) {
-                try {
-                    final ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(type);
-                    if (nodeType.isMixin() == isMixin) {
-                        existingTypes.add(type);
-                        continue;
-                    } else {
-                        missingTypes.add(type);
-                    }
-                } catch (NoSuchNodeTypeException e) {
+                final ExtendedNodeType nodeType = getNodeType(type);
+                if (nodeType == null) {
+                    missingTypes.add(type);
+                } else if (nodeType.isMixin() == isMixin) {
+                    existingTypes.add(type);
+                    continue;
+                } else {
                     missingTypes.add(type);
                 }
             }
@@ -99,5 +103,28 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
         }
     }
 
+    private ExtendedNodeType getNodeType(String type) {
+        try {
+            final ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(type);
+            final JahiaTemplatesPackage templatePackage = nodeType.getTemplatePackage();
 
+            // the node type is not declared by a module, let's assume that the node type registry is always consistent with the code definitions
+            if (templatePackage == null) return nodeType;
+
+            // The node type is declared by a stopped module or is not declared by the started version of the module
+            if (templatePackage.getState().getState() != ModuleState.State.STARTED) return null;
+
+            final boolean isDeclared = Optional.ofNullable(templatePackage.getBundle())
+                    .map(Bundle::getHeaders)
+                    .map(d -> d.get("Provide-Capability"))
+                    .map(capabilities -> StringUtils.substringBetween(capabilities, "com.jahia.services.content;nodetypes:List<String>=\"", "\""))
+                    .map(Patterns.COMMA::splitAsStream)
+                    .map(declaredTypes -> declaredTypes.anyMatch(type::equals))
+                    .orElse(false);
+
+            return isDeclared ? nodeType : null;
+        } catch (NoSuchNodeTypeException e) {
+            return null;
+        }
+    }
 }
