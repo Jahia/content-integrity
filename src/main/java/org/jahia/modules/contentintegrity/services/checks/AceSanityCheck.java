@@ -82,8 +82,13 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     private final Map<String, Role> roles = new HashMap<>();
 
+    private void reset() {
+        roles.clear();
+    }
+
     @Override
     public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        reset();
         final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);
         try {
             processRole(defaultSession.getNode("/roles"), null, true);
@@ -94,9 +99,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private void processRole(JCRNodeWrapper roleNode, String parentRole, boolean isRootFolder) throws RepositoryException {
-        String roleName = null;
         if (!isRootFolder) {
-            final Role role = new Role(roleNode.getName(), roleNode.getIdentifier());
+            final Role role = new Role(roleNode);
             if (parentRole != null) {
                 roles.get(parentRole).getExternalPermissions().forEach(role::addExternalPermission);
             }
@@ -107,17 +111,16 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 }
                 role.addExternalPermission(extPerm.getName(), extPerm.getPropertyAsString(EXTERNAL_PERMISSIONS_PATH));
             }
-            roleName = role.getName();
-            roles.put(roleName, role);
+            roles.put(role.getName(), role);
         }
         for (JCRNodeWrapper jcrNodeWrapper : JCRContentUtils.getChildrenOfType(roleNode, Constants.JAHIANT_ROLE)) {
-            processRole(jcrNodeWrapper, roleName, false);
+            processRole(jcrNodeWrapper, isRootFolder ? null : roleNode.getName(), false);
         }
     }
 
     @Override
     public ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        roles.clear();
+        reset();
         return null;
     }
 
@@ -433,21 +436,15 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private static class Role {
-        String name;
-        String uuid;
-        Map<String, String> externalPermissions = new HashMap<>();
+        private final String name;
+        private final Map<String, String> externalPermissions = new HashMap<>();
 
-        public Role(String name, String uuid) {
-            this.name = name;
-            this.uuid = uuid;
+        public Role(JCRNodeWrapper roleNode) throws RepositoryException {
+            name = roleNode.getName();
         }
 
         public String getName() {
             return name;
-        }
-
-        public String getUuid() {
-            return uuid;
         }
 
         public Map<String, String> getExternalPermissions() {
