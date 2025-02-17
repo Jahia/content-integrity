@@ -478,17 +478,33 @@ If you suspect that the issue is not related to a module deployment error, then 
 
 ## UndeclaredNodeTypesCheck
 
-Each node has a primary type, and can have been added some mixin types. If a type assigned to a node can't be loaded, then you might encounter some issues when manipulating the node. 
+Each node has a primary type, and can have been added some mixin types. If a type assigned to a node can't be loaded, then you might encounter some issues when manipulating the node.
 
 ### Dealing with errors
 
-First, check the reason why some node types / mixin types are missing. The module which define them might be missing or not correctly installed. In such case, you need to restore the module in a correct state to fix the issue.
+`Error code: UNDECLARED_NODE_TYPE`
 
-Otherwise, if the missing types have been decommissioned, then no node should refer to them anymore. 
+**Description**: the node type is missing from the JCR.
+
+First, check the reason why some node types / mixin types are missing. The module which defines them might be missing or not correctly installed. In such case, you need to restore the module in a correct state to fix the issue.
+
+Otherwise, if the missing types have been decommissioned, then no node should refer to them anymore.
 
 **Primary type**: you will probably need to delete every related node. If you need to recover some data from the properties of the node, you will need to write a script to copy the values to a new node, of another type. It is not possible to change the primary type of a node. You might need to introduce back the removed node type definition for the good execution of the script, and then remove it forever.
 
-**Mixin type**: you can remove the mixin from the nodes. If a few nodes are impacted, you can do it from the JCR browser. Otherwise, you will need to write a script. If the mixin used to define some properties, then you should clean them from the node as well. In such case, writing a script will be the best option. You might need to introduce back the removed mixin type definition for the good execution of the script, and then remove it forever. 
+**Mixin type**: you can remove the mixin from the nodes. If a few nodes are impacted, you can do it from the JCR browser. Otherwise, you will need to write a script. If the mixin used to define some properties, then you should clean them from the node as well. In such case, writing a script will be the best option. You might need to introduce back the removed mixin type definition for the good execution of the script, and then remove it forever.
+
+`Error code: GHOST_NODE_TYPE`
+
+**Description**: the node is still declared in the JCR, but is missing from the definitions file of the module which is supposed to declare it.
+
+If the type has actually been deleted, in addition to the cleanup to be done on the JCR nodes (see `Error code: UNDECLARED_NODE_TYPE`), the type has to be purged from the `NodeTypeRegistry`. This can be achieved manually in the tools, using the "Definitions browser" (warning: this deletes the related nodes as well).
+
+If the type has been moved from a module to another one, but is still bound to the first one, then the type has to be purged from the `NodeTypeRegistry`, and the second module has to be reinstalled to redeclare the type, but bound to the correct module. In this case, the related nodes are likely to be preserved. As a consequence, prefer using a Groovy script to undeclare the node type from the `NodeTypeRegistry`:
+
+```
+NodeTypeRegistry.getInstance().unregisterNodeType("mynt:movedType");
+```
 
 ## UndeployedModulesReferencesCheck
 
