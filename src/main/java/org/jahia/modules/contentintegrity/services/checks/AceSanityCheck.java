@@ -126,23 +126,25 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
+        final ContentIntegrityErrorList errors = createEmptyErrorsList();
         try {
-            if (node.isNodeType(JNT_EXTERNAL_ACE)) {
-                return checkExternalAce(node);
+            final boolean isExternalAce = node.isNodeType(JNT_EXTERNAL_ACE);
+            checkPrincipalOnAce(node, errors);
+            checkAceNodeName(node, isExternalAce, errors);
+
+            if (isExternalAce) {
+                checkExternalAce(node, errors);
+            } else {
+                checkRegularAce(node, errors);
             }
-            return checkRegularAce(node);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
 
-        return null;
+        return errors;
     }
 
-    private ContentIntegrityErrorList checkExternalAce(JCRNodeWrapper externalAceNode) throws RepositoryException {
-        final ContentIntegrityErrorList errors = createEmptyErrorsList();
-        errors.addAll(checkPrincipalOnAce(externalAceNode));
-        errors.addAll(checkAceNodeName(externalAceNode, true));
-
+    private void checkExternalAce(JCRNodeWrapper externalAceNode, ContentIntegrityErrorList errors) throws RepositoryException {
         final String aceType;
         if (!externalAceNode.hasProperty(J_ACE_TYPE)) {
             errors.addError(createError(externalAceNode, NO_ACE_TYPE_PROP, "External ACE without property ".concat(J_ACE_TYPE)));
@@ -265,8 +267,6 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             .addExtraInfo("duplicate-count", entry.getValue()))
                     .forEach(errors::addError);
         }
-
-        return errors;
     }
 
     private List<String> getRoleNames(JCRNodeWrapper ace) throws RepositoryException {
@@ -280,11 +280,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }).filter(Objects::nonNull).sorted().collect(Collectors.toList());
     }
 
-    private ContentIntegrityErrorList checkRegularAce(JCRNodeWrapper aceNode) throws RepositoryException {
-        final ContentIntegrityErrorList errors = createEmptyErrorsList();
-        errors.addAll(checkPrincipalOnAce(aceNode));
-        errors.addAll(checkAceNodeName(aceNode, false));
-
+    private void checkRegularAce(JCRNodeWrapper aceNode, ContentIntegrityErrorList errors) throws RepositoryException {
         final boolean isGrantAce;
         final String aceType;
         if (!aceNode.hasProperty(J_ACE_TYPE)) {
@@ -346,14 +342,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 }
             }
         }
-
-        return errors;
     }
 
-    private ContentIntegrityErrorList checkPrincipalOnAce(JCRNodeWrapper node) throws RepositoryException {
-
+    private void checkPrincipalOnAce(JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
         if (!node.hasProperty(J_PRINCIPAL)) {
-            return createSingleError(createError(node, NO_PRINCIPAL));
+            errors.addError(createError(node, NO_PRINCIPAL));
+            return;
         }
 
         final String principal = node.getProperty(J_PRINCIPAL).getString();
@@ -361,13 +355,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final String siteKey = site == null ? null : site.getSiteKey();
         final JCRNodeWrapper principalNode = getPrincipal(siteKey, principal);
         if (principalNode == null) {
-            return createSingleError(createError(node, INVALID_PRINCIPAL)
+            errors.addError(createError(node, INVALID_PRINCIPAL)
                     .addExtraInfo("invalid principal", principal)
                     .addExtraInfo("site", siteKey)
                     .setExtraMsg(EXTRA_MSG_INVALID_PRINCIPAL));
         }
-
-        return null;
     }
 
     private JCRNodeWrapper getPrincipal(String site, String principal) {
@@ -385,7 +377,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         return p;
     }
 
-    private ContentIntegrityErrorList checkAceNodeName(JCRNodeWrapper ace, boolean isExternal) {
+    private void checkAceNodeName(JCRNodeWrapper ace, boolean isExternal, ContentIntegrityErrorList errors) {
         final String expectedNodeName;
 
         if (isExternal) {
@@ -403,10 +395,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     .toString();
         }
 
-        if (StringUtils.equals(ace.getName(), expectedNodeName)) return null;
-        return createSingleError(
-                createError(ace, INVALID_NODENAME)
+        if (!StringUtils.equals(ace.getName(), expectedNodeName)) {
+            errors.addError(createError(ace, INVALID_NODENAME)
                         .addExtraInfo("expected-nodename", expectedNodeName, true));
+    }
     }
 
     @Override
