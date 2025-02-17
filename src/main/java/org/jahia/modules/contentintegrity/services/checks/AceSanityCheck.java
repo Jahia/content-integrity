@@ -131,6 +131,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             final boolean isExternalAce = node.isNodeType(JNT_EXTERNAL_ACE);
             checkPrincipalOnAce(node, errors);
             checkAceNodeName(node, isExternalAce, errors);
+            checkRolesProp(node, isExternalAce, errors);
 
             if (isExternalAce) {
                 checkExternalAce(node, errors);
@@ -153,14 +154,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     .addExtraInfo("defined-ace-type", aceType));
         }
 
-        boolean hasPropSourceAce = true, hasPropRoles = true;
+        boolean hasPropSourceAce = true;
         if (!externalAceNode.hasProperty(J_SOURCE_ACE)) {
             hasPropSourceAce = false;
             errors.addError(createError(externalAceNode, NO_SOURCE_ACE_PROP));
-        }
-        if (!externalAceNode.hasProperty(J_ROLES)) {
-            hasPropRoles = false;
-            errors.addError(createError(externalAceNode, NO_ROLES_PROP, "External ACE without property j:roles"));
         }
 
         if (hasPropSourceAce) {
@@ -197,7 +194,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             .setExtraMsg(EXTRA_MSG_SOURCE_ACE_NOT_TYPE_GRANT));
                 }
 
-                if (hasPropRoles) {
+                if (externalAceNode.hasProperty(J_ROLES)) {
                     if (!srcAce.hasProperty(J_ROLES)) {
                         errors.addError(createError(externalAceNode, ROLES_DIFFER_ON_SOURCE_ACE, String.format("Missing %s property on the source ACE", J_ROLES))
                                 .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
@@ -292,11 +289,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             isGrantAce = StringUtils.equals(aceType, Constants.ACE_TYPE_GRANT);
         }
 
-        if (!aceNode.hasProperty(J_ROLES)) {
-            errors.addError(createError(aceNode, NO_ROLES_PROP, "ACE without property ".concat(J_ROLES)));
-        } else {
-            for (JCRValueWrapper roleRef : aceNode.getProperty(J_ROLES).getValues()) {
-                final String roleName = roleRef.getString();
+        if (aceNode.hasProperty(J_ROLES)) {
+            for (String roleName : getRoleNames(aceNode)) {
                 if (!roles.containsKey(roleName)) {
                     errors.addError(createError(aceNode, ROLE_DOESNT_EXIST, "ACE with a role that doesn't exist")
                             .addExtraInfo("role", roleName));
@@ -399,6 +393,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             errors.addError(createError(ace, INVALID_NODENAME)
                         .addExtraInfo("expected-nodename", expectedNodeName, true));
     }
+    }
+
+    private void checkRolesProp(JCRNodeWrapper node, boolean isExternal, ContentIntegrityErrorList errors) throws RepositoryException {
+        if (!node.hasProperty(J_ROLES)) {
+            errors.addError(createError(node, NO_ROLES_PROP, String.format("%sExternal ACE without property j:roles", isExternal ? "External ACE" : "ACE")));
+        }
     }
 
     @Override
