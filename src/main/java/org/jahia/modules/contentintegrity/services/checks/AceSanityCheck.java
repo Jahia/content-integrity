@@ -39,9 +39,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ACE_TYPE_GRANT;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ACL;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_ACE_NODENAME_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_PERMISSIONS_PATH;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_ROLE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_ACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_PERMISSIONS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ACE_TYPE;
@@ -127,7 +132,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             }
             roles.put(role.getName(), role);
         }
-        for (JCRNodeWrapper jcrNodeWrapper : JCRContentUtils.getChildrenOfType(roleNode, Constants.JAHIANT_ROLE)) {
+        for (JCRNodeWrapper jcrNodeWrapper : JCRContentUtils.getChildrenOfType(roleNode, JAHIANT_ROLE)) {
             processRole(jcrNodeWrapper, isRootFolder ? null : roleNode.getName(), false);
         }
     }
@@ -163,7 +168,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final String aceType;
         if (!externalAceNode.hasProperty(J_ACE_TYPE)) {
             errors.addError(createError(externalAceNode, NO_ACE_TYPE_PROP, "External ACE without property ".concat(J_ACE_TYPE)));
-        } else if (!StringUtils.equals(Constants.ACE_TYPE_GRANT, aceType = externalAceNode.getPropertyAsString(J_ACE_TYPE))) {
+        } else if (!StringUtils.equals(ACE_TYPE_GRANT, aceType = externalAceNode.getPropertyAsString(J_ACE_TYPE))) {
             errors.addError(createError(externalAceNode, INVALID_ACE_TYPE_PROP)
                     .addExtraInfo("defined-ace-type", aceType));
         }
@@ -200,7 +205,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 final String srcAceType;
                 final String srcAceIdentifier = srcAce.getIdentifier();
                 srcAceUuids.add(srcAceIdentifier);
-                if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals(Constants.ACE_TYPE_GRANT, srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
+                if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals(ACE_TYPE_GRANT, srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
                     errors.addError(createError(externalAceNode, SOURCE_ACE_NOT_TYPE_GRANT)
                             .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
                             .addExtraInfo("src-ace-path", srcAce.getPath(), true)
@@ -245,10 +250,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 } else {
                                     expectedPath.append(externalAcePathPattern);
                                 }
-                                if (expectedPath.charAt(expectedPath.length() - 1) != Constants.JCR_PATH_SEPARATOR_CHAR) {
-                                    expectedPath.append(Constants.JCR_PATH_SEPARATOR_CHAR);
+                                if (expectedPath.charAt(expectedPath.length() - 1) != JCR_PATH_SEPARATOR_CHAR) {
+                                    expectedPath.append(JCR_PATH_SEPARATOR_CHAR);
                                 }
-                                expectedPath.append(Constants.ACL).append(JCR_PATH_SEPARATOR).append(externalAceNode.getName());
+                                expectedPath.append(ACL).append(JCR_PATH_SEPARATOR).append(externalAceNode.getName());
                                 if (!StringUtils.equals(expectedPath.toString(), externalAceNode.getPath())) {
                                     errors.addError(createError(externalAceNode, INVALID_EXTERNAL_ACE_PATH)
                                             .addExtraInfo("ace-uuid", srcAceIdentifier, true)
@@ -300,7 +305,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             errors.addError(createError(aceNode, NO_ACE_TYPE_PROP, "ACE without property ".concat(J_ACE_TYPE)));
         } else {
             aceType = aceNode.getPropertyAsString(J_ACE_TYPE);
-            isGrantAce = StringUtils.equals(aceType, Constants.ACE_TYPE_GRANT);
+            isGrantAce = StringUtils.equals(aceType, ACE_TYPE_GRANT);
         }
 
         if (aceNode.hasProperty(J_ROLES)) {
@@ -388,7 +393,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final String expectedNodeName;
 
         if (isExternal) {
-            expectedNodeName = new StringBuilder(Constants.EXTERNAL_ACE_NODENAME_PREFIX)
+            expectedNodeName = new StringBuilder(EXTERNAL_ACE_NODENAME_PREFIX)
                     .append(ace.getPropertyAsString(J_ROLES))
                     .append(UNDERSCORE)
                     .append(ace.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME))
@@ -443,7 +448,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     @Override
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
-        if (!Constants.EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
+        if (!EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
 
         final JCRNodeWrapper node = ace.getParent().getParent();
         ContentIntegrityErrorType errorType = error.getErrorType();
