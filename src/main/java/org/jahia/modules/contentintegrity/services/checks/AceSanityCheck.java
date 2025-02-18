@@ -9,11 +9,13 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUserManagerService;
@@ -28,9 +30,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,11 +47,13 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXT
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ACE_TYPE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_EXTERNAL_PERMISSIONS_NAME;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINCIPAL;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRIVILEGED_ACCESS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_SOURCE_ACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SLASH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.UNDERSCORE;
+import static org.jahia.services.usermanager.JahiaGroupManagerService.SITE_PRIVILEGED_GROUPNAME;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_ACE
@@ -79,11 +85,16 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public static final ContentIntegrityErrorType INVALID_ROLES_PROP = createErrorType("INVALID_ROLES_PROP", "Invalid " + J_ROLES + " property");
     public static final ContentIntegrityErrorType ROLES_DIFFER_ON_SOURCE_ACE = createErrorType("ROLES_DIFFER_ON_SOURCE_ACE", "Roles differ between the external ACE and the source ACE");
     public static final ContentIntegrityErrorType ROLE_DOESNT_EXIST = createErrorType("ROLE_DOESNT_EXIST", "Reference to a role which does not exist");
+    public static final ContentIntegrityErrorType MISSING_SITE_PRIVILEGED_GRP_MEMBER = createErrorType("MISSING_SITE_PRIVILEGED_GRP_MEMBER", "Missing member in the site privileged group");
 
     private final Map<String, Role> roles = new HashMap<>();
+    private final Set<String> privilegedAccessRoles = new HashSet<>();
+    private JahiaGroupManagerService groupService;
+    private JahiaUserManagerService userService;
 
     private void reset() {
         roles.clear();
+        privilegedAccessRoles.clear();
     }
 
     @Override
@@ -96,6 +107,9 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             logger.error("Error while loading the available roles", e);
             setScanDurationDisabled(true);
         }
+        roles.values().stream().filter(Role::isPrivileged).map(Role::getName).forEach(privilegedAccessRoles::add);
+        if (groupService == null) groupService = ServicesRegistry.getInstance().getJahiaGroupManagerService();
+        if (userService == null) userService = ServicesRegistry.getInstance().getJahiaUserManagerService();
     }
 
     private void processRole(JCRNodeWrapper roleNode, String parentRole, boolean isRootFolder) throws RepositoryException {
@@ -360,9 +374,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         JCRNodeWrapper p = null;
         final String principalName = principal.substring(2);
         if (principal.startsWith("u:")) {
-            p = JahiaUserManagerService.getInstance().lookupUser(principalName, site);
+            p = userService.lookupUser(principalName, site);
         } else if (principal.startsWith("g:")) {
-            final JahiaGroupManagerService groupService = JahiaGroupManagerService.getInstance();
             p = groupService.lookupGroup(site, principalName);
             if (p == null) {
                 p = groupService.lookupGroup(null, principalName);
@@ -398,6 +411,33 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private void checkRolesProp(JCRNodeWrapper node, boolean isExternal, ContentIntegrityErrorList errors) throws RepositoryException {
         if (!node.hasProperty(J_ROLES)) {
             errors.addError(createError(node, NO_ROLES_PROP, String.format("%sExternal ACE without property j:roles", isExternal ? "External ACE" : "ACE")));
+            return;
+        }
+
+        if (node.hasProperty(J_PRINCIPAL)) {
+            final String principal = node.getProperty(J_PRINCIPAL).getString();
+            JCRSiteNode site = null;
+            JCRGroupNode sitePrivGroup = null;
+            for (String role : getRoleNames(node)) {
+                if (privilegedAccessRoles.contains(role)) {
+                    if (site == null) site = node.getResolveSite();
+                    if (site == null) {
+                        logger.error("Impossible to calculate the site for {}", node);
+                        break;
+                    }
+
+                    if (sitePrivGroup == null)
+                        sitePrivGroup = groupService.lookupGroup(site.getSiteKey(), SITE_PRIVILEGED_GROUPNAME, site.getSession());
+                    if (sitePrivGroup != null) {
+                        if (!sitePrivGroup.isMember(getPrincipal(site.getSiteKey(), principal))) {
+                            errors.addError(createError(node, MISSING_SITE_PRIVILEGED_GRP_MEMBER)
+                                    .addExtraInfo("site-privileged-grp", sitePrivGroup.getCanonicalPath())
+                                    .addExtraInfo("principal", principal, true)
+                                    .addExtraInfo("role", role));
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -430,9 +470,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private static class Role {
         private final String name;
         private final Map<String, String> externalPermissions = new HashMap<>();
+        private final boolean privileged;
 
         public Role(JCRNodeWrapper roleNode) throws RepositoryException {
             name = roleNode.getName();
+            privileged = roleNode.hasProperty(J_PRIVILEGED_ACCESS) && roleNode.getProperty(J_PRIVILEGED_ACCESS).getBoolean();
         }
 
         public String getName() {
@@ -445,6 +487,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
         public void addExternalPermission(String name, String path) {
             externalPermissions.put(name, path);
+        }
+
+        public boolean isPrivileged() {
+            return privileged;
         }
     }
 }
