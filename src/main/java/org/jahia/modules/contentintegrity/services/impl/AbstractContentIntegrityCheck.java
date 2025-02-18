@@ -306,10 +306,14 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         }
     }
 
+    protected void reset() {
+    }
+
     @Override
     public final void initializeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         fatalErrorCount = 0;
         setScanDurationDisabled(false);
+        reset();
         initializeIntegrityTestInternal(scanRootNode, excludedPaths);
     }
 
@@ -321,6 +325,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     @Override
     public final ContentIntegrityErrorList finalizeIntegrityTest(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         final ContentIntegrityErrorList errorList = finalizeIntegrityTestInternal(scanRootNode, excludedPaths);
+        reset();
         // TODO the next lines are useless. scanDurationDisabled can be set to true for other reasons. And it is set to false in initializeIntegrityTest() in any case.
         if (!scanDurationDisabled && fatalErrorCount > 0) {
             logger.info(String.format("Enabling back the integrity check which was disabled after too many errors: %s", getName()));

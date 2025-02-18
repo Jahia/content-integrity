@@ -108,6 +108,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     @Override
+    protected void reset() {
+        jntTranslationNt = null;
+        jntTranslationNtParents.clear();
+        validators = null;
+        validatorFactoryBean = null;
+    }
+
+    @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         try {
             jntTranslationNt = NodeTypeRegistry.getInstance().getNodeType(JAHIANT_TRANSLATION);
@@ -115,20 +123,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             logger.error(String.format("Impossible to load the definition of %s", JAHIANT_TRANSLATION), e);
             setScanDurationDisabled(true);
         }
-        jntTranslationNtParents.clear();
 
         validators = JCRSessionFactory.getInstance().getDefaultProvider().getValidators();
         validatorFactoryBean = JCRSessionFactory.getInstance().getValidatorFactoryBean();
-    }
-
-    @Override
-    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
-        jntTranslationNt = null;
-        jntTranslationNtParents.clear();
-        validators = null;
-        validatorFactoryBean = null;
-
-        return null;
     }
 
     @Override

@@ -46,7 +46,7 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
     private final Map<String, Boolean> missingMixins = new HashMap<>();
 
     @Override
-    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+    protected void reset() {
         existingNodeTypes.clear();
         existingMixins.clear();
         missingNodeTypes.clear();

@@ -97,14 +97,14 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private JahiaGroupManagerService groupService;
     private JahiaUserManagerService userService;
 
-    private void reset() {
+    @Override
+    protected void reset() {
         roles.clear();
         privilegedAccessRoles.clear();
     }
 
     @Override
     public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        reset();
         final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);
         try {
             processRole(defaultSession.getNode("/roles"), null, true);
@@ -135,12 +135,6 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         for (JCRNodeWrapper jcrNodeWrapper : JCRContentUtils.getChildrenOfType(roleNode, JAHIANT_ROLE)) {
             processRole(jcrNodeWrapper, isRootFolder ? null : roleNode.getName(), false);
         }
-    }
-
-    @Override
-    public ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        reset();
-        return null;
     }
 
     @Override
@@ -409,8 +403,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
         if (!StringUtils.equals(ace.getName(), expectedNodeName)) {
             errors.addError(createError(ace, INVALID_NODENAME)
-                        .addExtraInfo("expected-nodename", expectedNodeName, true));
-    }
+                    .addExtraInfo("expected-nodename", expectedNodeName, true));
+        }
     }
 
     private void checkRolesProp(JCRNodeWrapper node, boolean isExternal, ContentIntegrityErrorList errors) throws RepositoryException {

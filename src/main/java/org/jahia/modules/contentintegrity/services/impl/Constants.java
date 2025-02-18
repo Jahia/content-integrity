@@ -46,6 +46,7 @@ public class Constants extends org.jahia.api.Constants {
     public static final String ACE_TYPE_GRANT = "GRANT";
     public static final String GUEST_USER_KEY = "u:guest";
     public static final String ROLE_OWNER = "owner";
+    public static final String J_PRIVILEGED_ACCESS = "j:privilegedAccess";
 
     public static final String HOME_PAGE_FLAG = "j:isHomePage";
     public static final String HOME_PAGE_FALLBACK_NAME = "home";

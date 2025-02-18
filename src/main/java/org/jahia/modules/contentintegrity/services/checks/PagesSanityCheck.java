@@ -66,14 +66,8 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck {
     }
 
     @Override
-    protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+    protected void reset() {
         clearCaches();
-    }
-
-    @Override
-    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
-        clearCaches();
-        return null;
     }
 
     private boolean isTemplateValid(String templateName, JCRNodeWrapper node) {

@@ -63,8 +63,12 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
     }
 
     @Override
-    protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+    protected void reset() {
         domains.clear();
+    }
+
+    @Override
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         try {
             final JCRSessionWrapper systemSession = JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, false);
             JahiaSitesService.getInstance().getSitesNodeList(systemSession).stream()

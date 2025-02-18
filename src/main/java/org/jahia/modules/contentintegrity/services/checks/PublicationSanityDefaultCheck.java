@@ -45,15 +45,14 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     private String scanRoot = null;
 
     @Override
-    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        scanRoot = node.getPath();
+    protected void reset() {
+        inheritedErrors.clear();
+        scanRoot = null;
     }
 
     @Override
-    public ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        inheritedErrors.clear();
-        scanRoot = null;
-        return null;
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        scanRoot = node.getPath();
     }
 
     @Override
