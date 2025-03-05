@@ -146,7 +146,7 @@ function getScanResults(filters) {
             "            errors(offset: $offset, pageSize: $size) {" +
             fields.join(" ") +
             "            }" +
-            "            possibleValues(names: [" + filteredColumns.map((name) => `"${name}"`).join(",") + "]) {name values {name count}}" +
+            "            possibleValues(names: [" + filteredColumns.map((name) => `"${name}"`).join(",") + "], withErrorsOnly: false) {name values {name count}}" +
             "        }" +
             "    }" +
             "}",
@@ -354,8 +354,8 @@ const ErrorFilterConfigSelectItem = ({key, label, values}) => {
     const current = model.errorsDisplay.filters.active[key]
     if (current !== undefined && !values.map((v) => v.name).includes(current)) values.push({name: current, count: 0})
     return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => {
-        const itemLabel = val.count < 0 ? val.name : `${val.name} (${val.count})`;
-        return HtmlOptionItem(val.name, val.name === current, itemLabel);
+        const itemLabel = val.count < 0 || (current !== undefined && current !== constants.resultsPanel.filters.noFilter) ? val.name : `${val.name} (${val.count})`;
+        return HtmlOptionItem(val.name, val.name === current, itemLabel, val.count === 0 ? "font-style:italic" : undefined);
     })}</select>`;
 }
 
@@ -447,7 +447,7 @@ const TypedTableHeaderRowItem = (isHeader, ...cells) => {
     return `<tr><${cellType}>${s}</${cellType}></tr>`;
 }
 
-const HtmlOptionItem = (value, selected, label) =>  `<option value="${value}"${selected === true ? ` selected="selected"` : ""}>${label === undefined ? value : label}</option>`
+const HtmlOptionItem = (value, selected, label, styles) =>  `<option value="${value}"${selected === true ? ` selected="selected"` : ""}${styles !== undefined ? ` style="${styles}"` : ""}>${escape(label === undefined ? value : label)}</option>`
 
 const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
 

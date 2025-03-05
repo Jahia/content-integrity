@@ -29,6 +29,8 @@ public class GqlScanResultsColumnValue implements Comparable<GqlScanResultsColum
 
     @Override
     public int compareTo(@NotNull GqlScanResultsColumnValue o) {
+        if (count <= 0 && o.count > 0) return 1;
+        if (o.count <= 0 && count > 0) return -1;
         return getName().compareTo(o.getName());
     }
 }

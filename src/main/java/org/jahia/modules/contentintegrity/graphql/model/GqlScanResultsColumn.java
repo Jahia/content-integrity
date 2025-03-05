@@ -25,7 +25,7 @@ public class GqlScanResultsColumn {
         this.name = name;
         this.values = values.entrySet().stream()
                 .map(v -> new GqlScanResultsColumnValue(v.getKey(), v.getValue()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     @GraphQLField
