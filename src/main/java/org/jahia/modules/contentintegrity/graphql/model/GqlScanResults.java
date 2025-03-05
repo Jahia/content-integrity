@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class GqlScanResults {
@@ -100,12 +101,16 @@ public class GqlScanResults {
     }
 
     @GraphQLField
-    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols) {
-        final Map<String, Set<String>> values = cols.stream().collect(Collectors.toMap(name -> name, name -> new HashSet<>()));
-        errors.forEach(error -> cols.forEach(col -> values.get(col).add(Optional.ofNullable(getColumnValue(error, col)).orElse(StringUtils.EMPTY))));
+    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols, @GraphQLName("withErrorsOnly") boolean withErrorsOnly) {
+        final Map<String, Map<String, Long>> columnsData = cols.stream()
+                .collect(Collectors.toMap(Function.identity(),
+                        name -> errors.stream()
+                                .map(error -> Optional.ofNullable(getColumnValue(error, name)).orElse(StringUtils.EMPTY))
+                                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                ));
 
-        return values.entrySet().stream()
-                .map(e -> new GqlScanResultsColumn(e.getKey(), e.getValue()))
+        return columnsData.entrySet().stream()
+                .map(column -> new GqlScanResultsColumn(column.getKey(), column.getValue()))
                 .collect(Collectors.toList());
     }
 

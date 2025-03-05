@@ -1,4 +1,5 @@
 const RUNNING = "running";
+const identity = (x) => x;
 let logsLoader;
 const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
 const model = {
@@ -145,7 +146,7 @@ function getScanResults(filters) {
             "            errors(offset: $offset, pageSize: $size) {" +
             fields.join(" ") +
             "            }" +
-            "            possibleValues(names: [" + filteredColumns.map((name) => `"${name}"`).join(",") + "]) {name values}" +
+            "            possibleValues(names: [" + filteredColumns.map((name) => `"${name}"`).join(",") + "]) {name values {name count}}" +
             "        }" +
             "    }" +
             "}",
@@ -343,15 +344,18 @@ const ErrorFilterConfigItem = (filter) => {
     const params = {
         key: filter.key,
         label: model.errorsDisplay.columns.filter((col) => col.key === filter.key)[0].label,
-        values: model.errorsDisplay.filters.possibleValues.filter((col) => col.name === filter.key)[0].values
+        values: model.errorsDisplay.filters.possibleValues.filter((col) => col.name === filter.key)[0].values.map(identity)
     }
     return template(params);
 }
 
 const ErrorFilterConfigSelectItem = ({key, label, values}) => {
-    values.unshift(constants.resultsPanel.filters.noFilter)
+    values.unshift({name: constants.resultsPanel.filters.noFilter, count: -1})
     const current = model.errorsDisplay.filters.active[key]
-    return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => HtmlOptionItem(val, val === current))}</select>`;
+    return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => {
+        const itemLabel = val.count < 0 ? val.name : `${val.name} (${val.count})`;
+        return HtmlOptionItem(val.name, val.name === current, itemLabel);
+    })}</select>`;
 }
 
 const ErrorsPagerItem = _ => {
