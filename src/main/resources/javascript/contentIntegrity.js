@@ -178,7 +178,7 @@ function getErrorDetails(id) {
             "            error:errorById(id: $id) {" +
             "                checkName workspace locale" +
             "                nodePath nodeId nodePrimaryType nodeMixins" +
-            "                message errorType" +
+            "                message errorType site" +
             "                extraInfos { label value } " +
             "            }" +
             "        }" +
@@ -441,6 +441,7 @@ const ErrorDetailsItem = (error) => {
     let out = "<table>"
     out += TableRowItem("Check name", escape(error.checkName))
     out += TableRowItem("Workspace", escape(error.workspace))
+    out += TableRowItem("Site", escape(error.site))
     out += TableRowItem("Locale", escape(error.locale))
     out += TableRowItem("Path", JcrBrowserLinkItem(error.nodePath, error.nodeId, error.workspace))
     out += TableRowItem("UUID", JcrBrowserLinkItem(error.nodeId, error.nodeId, error.workspace))
