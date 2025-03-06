@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -556,12 +557,12 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         if (StringUtils.isNotBlank(testDate)) {
             return (ContentIntegrityResults) errorsCache.get(testDate).getObjectValue();
         }
-        final TreeMap<Long, String> testDates = keys.stream().collect(Collectors.toMap(k -> ((ContentIntegrityResults) errorsCache.get(k).getObjectValue()).getTestDate(), k -> k, throwingMerger(), TreeMap::new));
+        final TreeMap<Long, String> testDates = keys.stream().collect(Collectors.toMap(k -> ((ContentIntegrityResults) errorsCache.get(k).getObjectValue()).getTestDate(), Function.identity(), throwingMerger(), TreeMap::new));
         return (ContentIntegrityResults) errorsCache.get(testDates.lastEntry().getValue()).getObjectValue();
     }
 
     private static <T> BinaryOperator<T> throwingMerger() {
-        return (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); };
+        return (u, v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); };
     }
 
     @Override
