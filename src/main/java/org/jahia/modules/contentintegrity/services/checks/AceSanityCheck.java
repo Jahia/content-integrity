@@ -3,11 +3,14 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRContentUtils;
@@ -17,6 +20,7 @@ import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.sites.JahiaSitesService;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.osgi.service.component.annotations.Component;
@@ -34,11 +38,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.jahia.modules.contentintegrity.services.Utils.getSiteKey;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.ACE_TYPE_GRANT;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.ACL;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
@@ -64,6 +70,7 @@ import static org.jahia.services.usermanager.JahiaGroupManagerService.SITE_PRIVI
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_ACE
 })
 public class AceSanityCheck extends AbstractContentIntegrityCheck implements
+        ContentIntegrityCheck.IsConfigurable,
         ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(AceSanityCheck.class);
@@ -71,6 +78,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private static final String EXTRA_MSG_SOURCE_ACE_NOT_TYPE_GRANT = "External ACE are defined only for the ACE of type GRANT";
     private static final String EXTRA_MSG_SRC_ACE_WITHOUT_ROLES_PROP = "Impossible to check if the roles defined on the external ACE and the source ACE are consistent, since the property " + J_ROLES + " is missing on the source ACE";
     private static final String EXTRA_MSG_INVALID_PRINCIPAL = "If the principal exists, check if it is defined at site level, and if does, if this site differs from the current site. Warning: if the principal comes from an external source such as a LDAP, it might be just temporarily missing because of a connectivity issue";
+    private static final String ACE_COUNT_THRESHOLD_KEY = "ace-count-threshold";
+    private static final int ACE_COUNT_THRESHOLD_DEFAULT = 1000;
 
     public static final ContentIntegrityErrorType NO_PRINCIPAL = createErrorType("NO_PRINCIPAL", "ACE without principal");
     public static final ContentIntegrityErrorType INVALID_PRINCIPAL = createErrorType("INVALID_PRINCIPAL", "ACE with an invalid principal");
@@ -91,16 +100,34 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public static final ContentIntegrityErrorType ROLES_DIFFER_ON_SOURCE_ACE = createErrorType("ROLES_DIFFER_ON_SOURCE_ACE", "Roles differ between the external ACE and the source ACE");
     public static final ContentIntegrityErrorType ROLE_DOESNT_EXIST = createErrorType("ROLE_DOESNT_EXIST", "Reference to a role which does not exist");
     public static final ContentIntegrityErrorType MISSING_SITE_PRIVILEGED_GRP_MEMBER = createErrorType("MISSING_SITE_PRIVILEGED_GRP_MEMBER", "Missing member in the site privileged group");
+    public static final ContentIntegrityErrorType TOO_MANY_ACE = createErrorType("TOO_MANY_ACE", "Too many ACE nodes");
 
+    private final ContentIntegrityCheckConfiguration configurations;
     private final Map<String, Role> roles = new HashMap<>();
     private final Set<String> privilegedAccessRoles = new HashSet<>();
+    private final Map<String, Long> aceBySite = new HashMap<>();
     private JahiaGroupManagerService groupService;
     private JahiaUserManagerService userService;
+
+    public AceSanityCheck() {
+        configurations = new ContentIntegrityCheckConfigurationImpl();
+        getConfigurations().declareDefaultParameter(ACE_COUNT_THRESHOLD_KEY, ACE_COUNT_THRESHOLD_DEFAULT, ContentIntegrityCheckConfigurationImpl.INTEGER_PARSER, "Number of ACE nodes for a single site beyond which an error is raised");
+    }
+
+    @Override
+    public ContentIntegrityCheckConfiguration getConfigurations() {
+        return configurations;
+    }
+
+    private int getAceCountThreshold() {
+        return (int) getConfigurations().getParameter(ACE_COUNT_THRESHOLD_KEY);
+    }
 
     @Override
     protected void reset() {
         roles.clear();
         privilegedAccessRoles.clear();
+        aceBySite.clear();
     }
 
     @Override
@@ -115,6 +142,21 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         roles.values().stream().filter(Role::isPrivileged).map(Role::getName).forEach(privilegedAccessRoles::add);
         if (groupService == null) groupService = ServicesRegistry.getInstance().getJahiaGroupManagerService();
         if (userService == null) userService = ServicesRegistry.getInstance().getJahiaUserManagerService();
+    }
+
+    @Override
+    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        return aceBySite.entrySet().stream()
+                .filter(e -> e.getValue() >= getAceCountThreshold())
+                .map(e -> {
+                    final JCRNodeWrapper node = Optional.ofNullable(e.getKey())
+                            .map(siteKey -> JCRUtils.runJcrSupplierCallBack((JCRUtils.JcrSupplierCallBack<JCRNodeWrapper>) () -> JahiaSitesService.getInstance().getSiteByKey(siteKey, scanRootNode.getSession())))
+                            .orElse(JCRUtils.runJcrSupplierCallBack(() -> scanRootNode.getSession().getNode("/")));
+                    return createError(node, TOO_MANY_ACE)
+                            .addExtraInfo("ace-count", e.getValue(), true)
+                            .addExtraInfo("ace-count-range", Utils.getApproximateCount(e.getValue(), getAceCountThreshold()));
+                })
+                .collect(this::createEmptyErrorsList, ContentIntegrityErrorList::addError, Utils::mergeErrorLists);
     }
 
     private void processRole(JCRNodeWrapper roleNode, String parentRole, boolean isRootFolder) throws RepositoryException {
@@ -154,6 +196,9 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         } catch (RepositoryException e) {
             logger.error("", e);
         }
+
+        final String siteKey = getSiteKey(node.getPath());
+        aceBySite.put(siteKey, Optional.ofNullable(aceBySite.get(siteKey)).map(count -> count + 1).orElse(1L));
 
         return errors;
     }
