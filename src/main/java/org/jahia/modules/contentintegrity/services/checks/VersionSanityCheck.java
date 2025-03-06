@@ -45,7 +45,7 @@ public class VersionSanityCheck extends AbstractContentIntegrityCheck {
     private long orphanedVersionNodesCount = 0L;
 
     @Override
-    protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+    protected void reset() {
         versionHistoriesCount = 0L;
         orphanVersionHistoriesCount = 0L;
         versionNodesCount = 0L;

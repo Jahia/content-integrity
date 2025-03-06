@@ -41,8 +41,12 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
     private boolean missingRootPrivilegedGroupLogged = false;
 
     @Override
-    public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+    protected void reset() {
         missingRootPrivilegedGroupLogged = false;
+    }
+
+    @Override
+    public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         if (jgms == null)
             jgms = ServicesRegistry.getInstance().getJahiaGroupManagerService();
     }

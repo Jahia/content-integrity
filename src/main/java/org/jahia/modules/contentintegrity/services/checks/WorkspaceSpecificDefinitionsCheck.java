@@ -76,6 +76,13 @@ public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityC
     }
 
     @Override
+    protected void reset() {
+        types.clear();
+        properties.clear();
+        propertyWithValues.clear();
+    }
+
+    @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         final String confNameTypes, confNameProps, confNamePropsVals;
         final String workspace = JCRUtils.runJcrSupplierCallBack(() -> scanRootNode.getSession().getWorkspace().getName(), Constants.CALCULATION_ERROR);
@@ -114,14 +121,6 @@ public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityC
                 .forEach(propertyWithValues::add);
 
         if (types.isEmpty() && properties.isEmpty() && propertyWithValues.isEmpty()) setScanDurationDisabled(true);
-    }
-
-    @Override
-    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
-        types.clear();
-        properties.clear();
-        propertyWithValues.clear();
-        return null;
     }
 
     @Override

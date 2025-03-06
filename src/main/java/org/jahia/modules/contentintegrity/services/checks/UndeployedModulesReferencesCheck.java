@@ -38,18 +38,16 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
     private final Collection<String> availableModules = new ArrayList<>();
 
     @Override
-    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+    protected void reset() {
         availableModules.clear();
+    }
+
+    @Override
+    protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
         jahiaTemplateManagerService.getAvailableTemplatePackages().stream()
                 .map(JahiaTemplatesPackage::getId)
                 .collect(Collectors.toCollection(() -> availableModules));
-    }
-
-    @Override
-    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        availableModules.clear();
-        return null;
     }
 
     @Override

@@ -1,4 +1,21 @@
 const RUNNING = "running";
+const identity = (x) => x;
+const escape = (s) => {
+    if (s === undefined || s === null) return s
+    return s.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+const unescape = (s) => {
+    if (s === undefined || s === null) return s
+    return s.replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+};
 let logsLoader;
 const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
 const model = {
@@ -145,7 +162,7 @@ function getScanResults(filters) {
             "            errors(offset: $offset, pageSize: $size) {" +
             fields.join(" ") +
             "            }" +
-            "            possibleValues(names: [" + filteredColumns.map((name) => `"${name}"`).join(",") + "]) {name values}" +
+            "            possibleValues(names: [" + filteredColumns.map((name) => `"${name}"`).join(",") + "], withErrorsOnly: false) {name values {name count}}" +
             "        }" +
             "    }" +
             "}",
@@ -161,7 +178,7 @@ function getErrorDetails(id) {
             "            error:errorById(id: $id) {" +
             "                checkName workspace locale" +
             "                nodePath nodeId nodePrimaryType nodeMixins" +
-            "                message errorType" +
+            "                message errorType site" +
             "                extraInfos { label value } " +
             "            }" +
             "        }" +
@@ -305,7 +322,7 @@ const ScanResultsSelectorItem = (ids) => {
 const ErrorItem = (error, columns) => {
     const cells = columns.map(({key, jcrBrowserLink}) => {
         if (jcrBrowserLink === true) return JcrBrowserLinkItem(error[key], error.nodeId, error.workspace)
-        return error[key]
+        return escape(error[key])
     })
     return TableRowItem(...cells, `<img src="${constants.url.module}/img/help.png" title="Error details" alt="details" class="errorDetails" error-id="${error.id}" />`)
 }
@@ -343,15 +360,19 @@ const ErrorFilterConfigItem = (filter) => {
     const params = {
         key: filter.key,
         label: model.errorsDisplay.columns.filter((col) => col.key === filter.key)[0].label,
-        values: model.errorsDisplay.filters.possibleValues.filter((col) => col.name === filter.key)[0].values
+        values: model.errorsDisplay.filters.possibleValues.filter((col) => col.name === filter.key)[0].values.map(identity)
     }
     return template(params);
 }
 
 const ErrorFilterConfigSelectItem = ({key, label, values}) => {
-    values.unshift(constants.resultsPanel.filters.noFilter)
+    values.unshift({name: constants.resultsPanel.filters.noFilter, count: -1})
     const current = model.errorsDisplay.filters.active[key]
-    return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => HtmlOptionItem(val, val === current))}</select>`;
+    if (current !== undefined && !values.map((v) => v.name).includes(current)) values.push({name: current, count: 0})
+    return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => {
+        const itemLabel = val.count < 0 || (current !== undefined && current !== constants.resultsPanel.filters.noFilter) ? val.name : `${val.name} (${val.count})`;
+        return HtmlOptionItem(val.name, val.name === current, itemLabel, val.count === 0 ? "font-style:italic" : undefined);
+    })}</select>`;
 }
 
 const ErrorsPagerItem = _ => {
@@ -418,16 +439,17 @@ const ErrorPagerNumberOfErrorsItem = _ => {
 
 const ErrorDetailsItem = (error) => {
     let out = "<table>"
-    out += TableRowItem("Check name", error.checkName)
-    out += TableRowItem("Workspace", error.workspace)
-    out += TableRowItem("Locale", error.locale)
+    out += TableRowItem("Check name", escape(error.checkName))
+    out += TableRowItem("Workspace", escape(error.workspace))
+    out += TableRowItem("Site", escape(error.site))
+    out += TableRowItem("Locale", escape(error.locale))
     out += TableRowItem("Path", JcrBrowserLinkItem(error.nodePath, error.nodeId, error.workspace))
     out += TableRowItem("UUID", JcrBrowserLinkItem(error.nodeId, error.nodeId, error.workspace))
-    out += TableRowItem("Node type", error.nodePrimaryType)
-    out += TableRowItem("Mixin types", error.nodeMixins)
-    out += TableRowItem("Message", error.message)
-    out += TableRowItem("Error type", error.errorType)
-    error.extraInfos.forEach((info) => out += TableRowItem(info.label, info.value))
+    out += TableRowItem("Node type", escape(error.nodePrimaryType))
+    out += TableRowItem("Mixin types", escape(error.nodeMixins))
+    out += TableRowItem("Message", escape(error.message))
+    out += TableRowItem("Error type", escape(error.errorType))
+    error.extraInfos.forEach((info) => out += TableRowItem(info.label, escape(info.value)))
     out += "</table>"
     return out
 }
@@ -442,13 +464,13 @@ const TypedTableHeaderRowItem = (isHeader, ...cells) => {
     return `<tr><${cellType}>${s}</${cellType}></tr>`;
 }
 
-const HtmlOptionItem = (value, selected, label) =>  `<option value="${value}"${selected === true ? ` selected="selected"` : ""}>${label === undefined ? value : label}</option>`
+const HtmlOptionItem = (value, selected, label, styles) =>  `<option value="${value}"${selected === true ? ` selected="selected"` : ""}${styles !== undefined ? ` style="${styles}"` : ""}>${escape(label === undefined ? value : label)}</option>`
 
 const ExcludedPathItem = ({path}) => `<span class="excludedPath" path="${path}">${path}</span>`
 
 const JcrBrowserLinkItem = (name, uuid, workspace) => {
     if (model.toolsToken === undefined) return name
-    return `<a href="${constants.url.context}/modules/tools/jcrBrowser.jsp?workspace=${workspace}&uuid=${uuid}&toolAccessToken=${model.toolsToken.token}" target="_blank">${name}</a>`;
+    return `<a href="${constants.url.context}/modules/tools/jcrBrowser.jsp?workspace=${workspace}&uuid=${uuid}&toolAccessToken=${model.toolsToken.token}" target="_blank">${escape(name)}</a>`;
 }
 
 function renderConfigurations(data) {
@@ -522,7 +544,7 @@ function renderLogs(executionID) {
         const isScrolledToEnd = currentScroll + logsElement.clientHeight === logsElement.scrollHeight
         logs.html("")
         jQuery.each(data.integrity.scan.logs, function () {
-            logs.append(this+"\n")
+            logs.append(escape(this)+"\n")
         })
         const scrollTarget = isScrolledToEnd ? logsElement.scrollHeight : currentScroll
         logs.scrollTop(scrollTarget)

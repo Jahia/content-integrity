@@ -16,8 +16,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class GqlScanResults {
@@ -26,14 +28,16 @@ public class GqlScanResults {
 
     private static final int MAX_PAGE_SIZE = 100;
 
-    private final List<ContentIntegrityError> errors;
+    private final List<ContentIntegrityError> filteredErrors;
+    private final List<ContentIntegrityError> allErrors;
     private final int errorCount, totalErrorCount;
     private final List<GqlScanReportFile> reports;
 
     public GqlScanResults(String id, Collection<String> filters) {
         final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
         if (all == null) {
-            errors = null;
+            allErrors = null;
+            filteredErrors = null;
             errorCount = 0;
             totalErrorCount = 0;
             reports = new ArrayList<>();
@@ -41,20 +45,21 @@ public class GqlScanResults {
             return;
         }
 
+        allErrors = all.getErrors();
         if (CollectionUtils.isEmpty(filters)) {
-            errors = all.getErrors();
+            filteredErrors = allErrors;
         } else {
             final Map<String, String> filtersMap = filters.stream()
                     .map(f -> StringUtils.split(f, ";", 2))
                     .filter(f -> f.length == 2)
                     .collect(Collectors.toMap(f -> f[0], f -> f[1]));
-            errors = all.getErrors().stream()
+            filteredErrors = allErrors.stream()
                     .filter(error ->
                             filtersMap.entrySet().stream().allMatch(filter -> columnValueMatches(error, filter.getKey(), filter.getValue()))
                     )
                     .collect(Collectors.toList());
         }
-        errorCount = errors.size();
+        errorCount = filteredErrors.size();
         totalErrorCount = all.getErrors().size();
         reports = all.getReports().stream()
                 .map(GqlScanReportFile::new)
@@ -62,7 +67,7 @@ public class GqlScanResults {
     }
 
     public boolean isValid() {
-        return errors != null;
+        return filteredErrors != null;
     }
 
     @GraphQLField
@@ -74,7 +79,7 @@ public class GqlScanResults {
     public Collection<GqlScanResultsError> getErrors(@GraphQLName("offset") int offset, @GraphQLName("pageSize") int pageSize) {
         if (offset < 0 || offset >= getErrorCount() || pageSize < 1) return CollectionUtils.emptyCollection();
 
-        return errors.stream()
+        return filteredErrors.stream()
                 .skip(offset)
                 .limit(Math.min(pageSize, MAX_PAGE_SIZE))
                 .map(GqlScanResultsError::new)
@@ -93,19 +98,36 @@ public class GqlScanResults {
 
     @GraphQLField
     public GqlScanResultsError getErrorById(@GraphQLName("id") String id) {
-        return errors.stream()
+        return filteredErrors.stream()
                 .filter(e -> StringUtils.equals(e.getErrorID(), id))
                 .map(GqlScanResultsError::new)
                 .findFirst().orElse(null);
     }
 
     @GraphQLField
-    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols) {
-        final Map<String, Set<String>> values = cols.stream().collect(Collectors.toMap(name -> name, name -> new HashSet<>()));
-        errors.forEach(error -> cols.forEach(col -> values.get(col).add(Optional.ofNullable(getColumnValue(error, col)).orElse(StringUtils.EMPTY))));
+    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols, @GraphQLName("withErrorsOnly") boolean withErrorsOnly) {
+        final Map<String, Map<String, Long>> columnsData = cols.stream()
+                .collect(Collectors.toMap(Function.identity(),
+                        name -> {
+                            final Map<String, Long> result = filteredErrors.stream()
+                                    .map(error -> getColumnValue(error, name))
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
-        return values.entrySet().stream()
-                .map(e -> new GqlScanResultsColumn(e.getKey(), e.getValue()))
+                            if (withErrorsOnly) return result;
+
+                            allErrors.stream()
+                                    .map(error -> getColumnValue(error, name))
+                                    .filter(Objects::nonNull)
+                                    .distinct()
+                                    .filter(val -> !result.containsKey(val))
+                                    .forEach(val -> result.put(val, 0L));
+                            return result;
+                        }
+                ));
+
+        return columnsData.entrySet().stream()
+                .map(column -> new GqlScanResultsColumn(column.getKey(), column.getValue()))
                 .collect(Collectors.toList());
     }
 

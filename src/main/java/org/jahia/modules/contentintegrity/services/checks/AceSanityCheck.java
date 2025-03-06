@@ -3,18 +3,24 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
+import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.sites.JahiaSitesService;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.osgi.service.component.annotations.Component;
@@ -28,31 +34,43 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.jahia.modules.contentintegrity.services.Utils.getSiteKey;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ACE_TYPE_GRANT;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ACL;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_ACE_NODENAME_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_PERMISSIONS_PATH;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_ROLE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_ACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_PERMISSIONS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ACE_TYPE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_EXTERNAL_PERMISSIONS_NAME;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINCIPAL;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRIVILEGED_ACCESS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_SOURCE_ACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SLASH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.UNDERSCORE;
+import static org.jahia.services.usermanager.JahiaGroupManagerService.SITE_PRIVILEGED_GROUPNAME;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_ACE
 })
 public class AceSanityCheck extends AbstractContentIntegrityCheck implements
+        ContentIntegrityCheck.IsConfigurable,
         ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(AceSanityCheck.class);
@@ -60,6 +78,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private static final String EXTRA_MSG_SOURCE_ACE_NOT_TYPE_GRANT = "External ACE are defined only for the ACE of type GRANT";
     private static final String EXTRA_MSG_SRC_ACE_WITHOUT_ROLES_PROP = "Impossible to check if the roles defined on the external ACE and the source ACE are consistent, since the property " + J_ROLES + " is missing on the source ACE";
     private static final String EXTRA_MSG_INVALID_PRINCIPAL = "If the principal exists, check if it is defined at site level, and if does, if this site differs from the current site. Warning: if the principal comes from an external source such as a LDAP, it might be just temporarily missing because of a connectivity issue";
+    private static final String ACE_COUNT_THRESHOLD_KEY = "ace-count-threshold";
+    private static final int ACE_COUNT_THRESHOLD_DEFAULT = 1000;
 
     public static final ContentIntegrityErrorType NO_PRINCIPAL = createErrorType("NO_PRINCIPAL", "ACE without principal");
     public static final ContentIntegrityErrorType INVALID_PRINCIPAL = createErrorType("INVALID_PRINCIPAL", "ACE with an invalid principal");
@@ -79,8 +99,36 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public static final ContentIntegrityErrorType INVALID_ROLES_PROP = createErrorType("INVALID_ROLES_PROP", "Invalid " + J_ROLES + " property");
     public static final ContentIntegrityErrorType ROLES_DIFFER_ON_SOURCE_ACE = createErrorType("ROLES_DIFFER_ON_SOURCE_ACE", "Roles differ between the external ACE and the source ACE");
     public static final ContentIntegrityErrorType ROLE_DOESNT_EXIST = createErrorType("ROLE_DOESNT_EXIST", "Reference to a role which does not exist");
+    public static final ContentIntegrityErrorType MISSING_SITE_PRIVILEGED_GRP_MEMBER = createErrorType("MISSING_SITE_PRIVILEGED_GRP_MEMBER", "Missing member in the site privileged group");
+    public static final ContentIntegrityErrorType TOO_MANY_ACE = createErrorType("TOO_MANY_ACE", "Too many ACE nodes");
 
+    private final ContentIntegrityCheckConfiguration configurations;
     private final Map<String, Role> roles = new HashMap<>();
+    private final Set<String> privilegedAccessRoles = new HashSet<>();
+    private final Map<String, Long> aceBySite = new HashMap<>();
+    private JahiaGroupManagerService groupService;
+    private JahiaUserManagerService userService;
+
+    public AceSanityCheck() {
+        configurations = new ContentIntegrityCheckConfigurationImpl();
+        getConfigurations().declareDefaultParameter(ACE_COUNT_THRESHOLD_KEY, ACE_COUNT_THRESHOLD_DEFAULT, ContentIntegrityCheckConfigurationImpl.INTEGER_PARSER, "Number of ACE nodes for a single site beyond which an error is raised");
+    }
+
+    @Override
+    public ContentIntegrityCheckConfiguration getConfigurations() {
+        return configurations;
+    }
+
+    private int getAceCountThreshold() {
+        return (int) getConfigurations().getParameter(ACE_COUNT_THRESHOLD_KEY);
+    }
+
+    @Override
+    protected void reset() {
+        roles.clear();
+        privilegedAccessRoles.clear();
+        aceBySite.clear();
+    }
 
     @Override
     public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
@@ -91,12 +139,29 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             logger.error("Error while loading the available roles", e);
             setScanDurationDisabled(true);
         }
+        roles.values().stream().filter(Role::isPrivileged).map(Role::getName).forEach(privilegedAccessRoles::add);
+        if (groupService == null) groupService = ServicesRegistry.getInstance().getJahiaGroupManagerService();
+        if (userService == null) userService = ServicesRegistry.getInstance().getJahiaUserManagerService();
+    }
+
+    @Override
+    protected ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
+        return aceBySite.entrySet().stream()
+                .filter(e -> e.getValue() >= getAceCountThreshold())
+                .map(e -> {
+                    final JCRNodeWrapper node = Optional.ofNullable(e.getKey())
+                            .map(siteKey -> JCRUtils.runJcrSupplierCallBack((JCRUtils.JcrSupplierCallBack<JCRNodeWrapper>) () -> JahiaSitesService.getInstance().getSiteByKey(siteKey, scanRootNode.getSession())))
+                            .orElse(JCRUtils.runJcrSupplierCallBack(() -> scanRootNode.getSession().getNode("/")));
+                    return createError(node, TOO_MANY_ACE)
+                            .addExtraInfo("ace-count", e.getValue(), true)
+                            .addExtraInfo("ace-count-range", Utils.getApproximateCount(e.getValue(), getAceCountThreshold()));
+                })
+                .collect(this::createEmptyErrorsList, ContentIntegrityErrorList::addError, Utils::mergeErrorLists);
     }
 
     private void processRole(JCRNodeWrapper roleNode, String parentRole, boolean isRootFolder) throws RepositoryException {
-        String roleName = null;
         if (!isRootFolder) {
-            final Role role = new Role(roleNode.getName(), roleNode.getIdentifier());
+            final Role role = new Role(roleNode);
             if (parentRole != null) {
                 roles.get(parentRole).getExternalPermissions().forEach(role::addExternalPermission);
             }
@@ -107,55 +172,50 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 }
                 role.addExternalPermission(extPerm.getName(), extPerm.getPropertyAsString(EXTERNAL_PERMISSIONS_PATH));
             }
-            roleName = role.getName();
-            roles.put(roleName, role);
+            roles.put(role.getName(), role);
         }
-        for (JCRNodeWrapper jcrNodeWrapper : JCRContentUtils.getChildrenOfType(roleNode, Constants.JAHIANT_ROLE)) {
-            processRole(jcrNodeWrapper, roleName, false);
+        for (JCRNodeWrapper jcrNodeWrapper : JCRContentUtils.getChildrenOfType(roleNode, JAHIANT_ROLE)) {
+            processRole(jcrNodeWrapper, isRootFolder ? null : roleNode.getName(), false);
         }
-    }
-
-    @Override
-    public ContentIntegrityErrorList finalizeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        roles.clear();
-        return null;
     }
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
+        final ContentIntegrityErrorList errors = createEmptyErrorsList();
         try {
-            if (node.isNodeType(JNT_EXTERNAL_ACE)) {
-                return checkExternalAce(node);
+            final boolean isExternalAce = node.isNodeType(JNT_EXTERNAL_ACE);
+            checkPrincipalOnAce(node, errors);
+            checkAceNodeName(node, isExternalAce, errors);
+            checkRolesProp(node, isExternalAce, errors);
+
+            if (isExternalAce) {
+                checkExternalAce(node, errors);
+            } else {
+                checkRegularAce(node, errors);
             }
-            return checkRegularAce(node);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
 
-        return null;
+        final String siteKey = getSiteKey(node.getPath());
+        aceBySite.put(siteKey, Optional.ofNullable(aceBySite.get(siteKey)).map(count -> count + 1).orElse(1L));
+
+        return errors;
     }
 
-    private ContentIntegrityErrorList checkExternalAce(JCRNodeWrapper externalAceNode) throws RepositoryException {
-        final ContentIntegrityErrorList errors = createEmptyErrorsList();
-        errors.addAll(checkPrincipalOnAce(externalAceNode));
-        errors.addAll(checkAceNodeName(externalAceNode, true));
-
+    private void checkExternalAce(JCRNodeWrapper externalAceNode, ContentIntegrityErrorList errors) throws RepositoryException {
         final String aceType;
         if (!externalAceNode.hasProperty(J_ACE_TYPE)) {
             errors.addError(createError(externalAceNode, NO_ACE_TYPE_PROP, "External ACE without property ".concat(J_ACE_TYPE)));
-        } else if (!StringUtils.equals(Constants.ACE_TYPE_GRANT, aceType = externalAceNode.getPropertyAsString(J_ACE_TYPE))) {
+        } else if (!StringUtils.equals(ACE_TYPE_GRANT, aceType = externalAceNode.getPropertyAsString(J_ACE_TYPE))) {
             errors.addError(createError(externalAceNode, INVALID_ACE_TYPE_PROP)
                     .addExtraInfo("defined-ace-type", aceType));
         }
 
-        boolean hasPropSourceAce = true, hasPropRoles = true;
+        boolean hasPropSourceAce = true;
         if (!externalAceNode.hasProperty(J_SOURCE_ACE)) {
             hasPropSourceAce = false;
             errors.addError(createError(externalAceNode, NO_SOURCE_ACE_PROP));
-        }
-        if (!externalAceNode.hasProperty(J_ROLES)) {
-            hasPropRoles = false;
-            errors.addError(createError(externalAceNode, NO_ROLES_PROP, "External ACE without property j:roles"));
         }
 
         if (hasPropSourceAce) {
@@ -184,7 +244,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 final String srcAceType;
                 final String srcAceIdentifier = srcAce.getIdentifier();
                 srcAceUuids.add(srcAceIdentifier);
-                if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals(Constants.ACE_TYPE_GRANT, srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
+                if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals(ACE_TYPE_GRANT, srcAceType = srcAce.getPropertyAsString(J_ACE_TYPE))) {
                     errors.addError(createError(externalAceNode, SOURCE_ACE_NOT_TYPE_GRANT)
                             .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
                             .addExtraInfo("src-ace-path", srcAce.getPath(), true)
@@ -192,7 +252,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             .setExtraMsg(EXTRA_MSG_SOURCE_ACE_NOT_TYPE_GRANT));
                 }
 
-                if (hasPropRoles) {
+                if (externalAceNode.hasProperty(J_ROLES)) {
                     if (!srcAce.hasProperty(J_ROLES)) {
                         errors.addError(createError(externalAceNode, ROLES_DIFFER_ON_SOURCE_ACE, String.format("Missing %s property on the source ACE", J_ROLES))
                                 .addExtraInfo("src-ace-uuid", srcAceIdentifier, true)
@@ -229,10 +289,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 } else {
                                     expectedPath.append(externalAcePathPattern);
                                 }
-                                if (expectedPath.charAt(expectedPath.length() - 1) != Constants.JCR_PATH_SEPARATOR_CHAR) {
-                                    expectedPath.append(Constants.JCR_PATH_SEPARATOR_CHAR);
+                                if (expectedPath.charAt(expectedPath.length() - 1) != JCR_PATH_SEPARATOR_CHAR) {
+                                    expectedPath.append(JCR_PATH_SEPARATOR_CHAR);
                                 }
-                                expectedPath.append(Constants.ACL).append(JCR_PATH_SEPARATOR).append(externalAceNode.getName());
+                                expectedPath.append(ACL).append(JCR_PATH_SEPARATOR).append(externalAceNode.getName());
                                 if (!StringUtils.equals(expectedPath.toString(), externalAceNode.getPath())) {
                                     errors.addError(createError(externalAceNode, INVALID_EXTERNAL_ACE_PATH)
                                             .addExtraInfo("ace-uuid", srcAceIdentifier, true)
@@ -262,8 +322,6 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                             .addExtraInfo("duplicate-count", entry.getValue()))
                     .forEach(errors::addError);
         }
-
-        return errors;
     }
 
     private List<String> getRoleNames(JCRNodeWrapper ace) throws RepositoryException {
@@ -277,11 +335,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }).filter(Objects::nonNull).sorted().collect(Collectors.toList());
     }
 
-    private ContentIntegrityErrorList checkRegularAce(JCRNodeWrapper aceNode) throws RepositoryException {
-        final ContentIntegrityErrorList errors = createEmptyErrorsList();
-        errors.addAll(checkPrincipalOnAce(aceNode));
-        errors.addAll(checkAceNodeName(aceNode, false));
-
+    private void checkRegularAce(JCRNodeWrapper aceNode, ContentIntegrityErrorList errors) throws RepositoryException {
         final boolean isGrantAce;
         final String aceType;
         if (!aceNode.hasProperty(J_ACE_TYPE)) {
@@ -290,14 +344,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             errors.addError(createError(aceNode, NO_ACE_TYPE_PROP, "ACE without property ".concat(J_ACE_TYPE)));
         } else {
             aceType = aceNode.getPropertyAsString(J_ACE_TYPE);
-            isGrantAce = StringUtils.equals(aceType, Constants.ACE_TYPE_GRANT);
+            isGrantAce = StringUtils.equals(aceType, ACE_TYPE_GRANT);
         }
 
-        if (!aceNode.hasProperty(J_ROLES)) {
-            errors.addError(createError(aceNode, NO_ROLES_PROP, "ACE without property ".concat(J_ROLES)));
-        } else {
-            for (JCRValueWrapper roleRef : aceNode.getProperty(J_ROLES).getValues()) {
-                final String roleName = roleRef.getString();
+        if (aceNode.hasProperty(J_ROLES)) {
+            for (String roleName : getRoleNames(aceNode)) {
                 if (!roles.containsKey(roleName)) {
                     errors.addError(createError(aceNode, ROLE_DOESNT_EXIST, "ACE with a role that doesn't exist")
                             .addExtraInfo("role", roleName));
@@ -343,14 +394,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 }
             }
         }
-
-        return errors;
     }
 
-    private ContentIntegrityErrorList checkPrincipalOnAce(JCRNodeWrapper node) throws RepositoryException {
-
+    private void checkPrincipalOnAce(JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
         if (!node.hasProperty(J_PRINCIPAL)) {
-            return createSingleError(createError(node, NO_PRINCIPAL));
+            errors.addError(createError(node, NO_PRINCIPAL));
+            return;
         }
 
         final String principal = node.getProperty(J_PRINCIPAL).getString();
@@ -358,22 +407,19 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final String siteKey = site == null ? null : site.getSiteKey();
         final JCRNodeWrapper principalNode = getPrincipal(siteKey, principal);
         if (principalNode == null) {
-            return createSingleError(createError(node, INVALID_PRINCIPAL)
+            errors.addError(createError(node, INVALID_PRINCIPAL)
                     .addExtraInfo("invalid principal", principal)
                     .addExtraInfo("site", siteKey)
                     .setExtraMsg(EXTRA_MSG_INVALID_PRINCIPAL));
         }
-
-        return null;
     }
 
     private JCRNodeWrapper getPrincipal(String site, String principal) {
         JCRNodeWrapper p = null;
         final String principalName = principal.substring(2);
         if (principal.startsWith("u:")) {
-            p = JahiaUserManagerService.getInstance().lookupUser(principalName, site);
+            p = userService.lookupUser(principalName, site);
         } else if (principal.startsWith("g:")) {
-            final JahiaGroupManagerService groupService = JahiaGroupManagerService.getInstance();
             p = groupService.lookupGroup(site, principalName);
             if (p == null) {
                 p = groupService.lookupGroup(null, principalName);
@@ -382,11 +428,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         return p;
     }
 
-    private ContentIntegrityErrorList checkAceNodeName(JCRNodeWrapper ace, boolean isExternal) {
+    private void checkAceNodeName(JCRNodeWrapper ace, boolean isExternal, ContentIntegrityErrorList errors) {
         final String expectedNodeName;
 
         if (isExternal) {
-            expectedNodeName = new StringBuilder(Constants.EXTERNAL_ACE_NODENAME_PREFIX)
+            expectedNodeName = new StringBuilder(EXTERNAL_ACE_NODENAME_PREFIX)
                     .append(ace.getPropertyAsString(J_ROLES))
                     .append(UNDERSCORE)
                     .append(ace.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME))
@@ -400,15 +446,48 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     .toString();
         }
 
-        if (StringUtils.equals(ace.getName(), expectedNodeName)) return null;
-        return createSingleError(
-                createError(ace, INVALID_NODENAME)
-                        .addExtraInfo("expected-nodename", expectedNodeName, true));
+        if (!StringUtils.equals(ace.getName(), expectedNodeName)) {
+            errors.addError(createError(ace, INVALID_NODENAME)
+                    .addExtraInfo("expected-nodename", expectedNodeName, true));
+        }
+    }
+
+    private void checkRolesProp(JCRNodeWrapper node, boolean isExternal, ContentIntegrityErrorList errors) throws RepositoryException {
+        if (!node.hasProperty(J_ROLES)) {
+            errors.addError(createError(node, NO_ROLES_PROP, String.format("%sExternal ACE without property j:roles", isExternal ? "External ACE" : "ACE")));
+            return;
+        }
+
+        if (node.hasProperty(J_PRINCIPAL)) {
+            final String principal = node.getProperty(J_PRINCIPAL).getString();
+            JCRSiteNode site = null;
+            JCRGroupNode sitePrivGroup = null;
+            for (String role : getRoleNames(node)) {
+                if (privilegedAccessRoles.contains(role)) {
+                    if (site == null) site = node.getResolveSite();
+                    if (site == null) {
+                        logger.error("Impossible to calculate the site for {}", node);
+                        break;
+                    }
+
+                    if (sitePrivGroup == null)
+                        sitePrivGroup = groupService.lookupGroup(site.getSiteKey(), SITE_PRIVILEGED_GROUPNAME, site.getSession());
+                    if (sitePrivGroup != null) {
+                        if (!sitePrivGroup.isMember(getPrincipal(site.getSiteKey(), principal))) {
+                            errors.addError(createError(node, MISSING_SITE_PRIVILEGED_GRP_MEMBER)
+                                    .addExtraInfo("site-privileged-grp", sitePrivGroup.getCanonicalPath())
+                                    .addExtraInfo("principal", principal, true)
+                                    .addExtraInfo("role", role));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
-        if (!Constants.EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
+        if (!EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
 
         final JCRNodeWrapper node = ace.getParent().getParent();
         ContentIntegrityErrorType errorType = error.getErrorType();
@@ -433,21 +512,17 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private static class Role {
-        String name;
-        String uuid;
-        Map<String, String> externalPermissions = new HashMap<>();
+        private final String name;
+        private final Map<String, String> externalPermissions = new HashMap<>();
+        private final boolean privileged;
 
-        public Role(String name, String uuid) {
-            this.name = name;
-            this.uuid = uuid;
+        public Role(JCRNodeWrapper roleNode) throws RepositoryException {
+            name = roleNode.getName();
+            privileged = roleNode.hasProperty(J_PRIVILEGED_ACCESS) && roleNode.getProperty(J_PRIVILEGED_ACCESS).getBoolean();
         }
 
         public String getName() {
             return name;
-        }
-
-        public String getUuid() {
-            return uuid;
         }
 
         public Map<String, String> getExternalPermissions() {
@@ -456,6 +531,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
         public void addExternalPermission(String name, String path) {
             externalPermissions.put(name, path);
+        }
+
+        public boolean isPrivileged() {
+            return privileged;
         }
     }
 }

@@ -7,6 +7,7 @@ window.jahia.uiExtender.registry.add('callback', 'content-integrity', {
             targets: ['administration-server-systemHealth:999'],
             label: 'content-integrity:label.settings.title',
             isSelectable: true,
+            requiredPermission: 'adminContentIntegrity',
             iframeUrl: window.contextJsParameters.contextPath + '/cms/adminframe/default/$lang/settings.content-integrity.html'
         });
     }
