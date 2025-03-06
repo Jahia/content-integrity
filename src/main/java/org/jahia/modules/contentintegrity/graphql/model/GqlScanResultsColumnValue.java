@@ -1,7 +1,6 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
 import graphql.annotations.annotationTypes.GraphQLField;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +27,7 @@ public class GqlScanResultsColumnValue implements Comparable<GqlScanResultsColum
     }
 
     @Override
-    public int compareTo(@NotNull GqlScanResultsColumnValue o) {
+    public int compareTo(GqlScanResultsColumnValue o) {
         if (count <= 0 && o.count > 0) return 1;
         if (o.count <= 0 && count > 0) return -1;
         return getName().compareTo(o.getName());
