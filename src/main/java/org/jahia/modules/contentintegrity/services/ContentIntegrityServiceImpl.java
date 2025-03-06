@@ -4,6 +4,7 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.bin.Jahia;
 import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.exceptions.JahiaException;
@@ -11,6 +12,7 @@ import org.jahia.exceptions.JahiaInitializationException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
@@ -61,6 +63,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private static final long NODES_COUNT_LOG_INTERVAL = 10000L;
     private static final long SESSION_REFRESH_INTERVAL = 10000L;
     private static final String INTERRUPT_PROP_NAME = "modules.contentIntegrity.interrupt";
+    private static final ContentIntegrityErrorType FRAMEWORK_ERROR = new ContentIntegrityErrorTypeImpl("FRAMEWORK_ERROR").setDefaultMessage("Execution error");
 
     private final List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
     private Cache errorsCache;
@@ -352,6 +355,17 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     handleResult(checkResult, node, fixErrors, integrityCheck, errors, externalLogger);
                 } catch (Throwable t) {
                     logFatalError(node, t, integrityCheck, externalLogger);
+                    try {
+                        final ContentIntegrityError error = ContentIntegrityErrorImpl.createError(node, null, FRAMEWORK_ERROR, null, null);
+                        error.addExtraInfo("error-type", t.getClass().getSimpleName());
+                        error.addExtraInfo("error-message", t.getMessage());
+                        error.addExtraInfo("error-date", FastDateFormat.getInstance("yyyy_MM_dd-HH_mm_ss_SSS").format(System.currentTimeMillis()), true);
+                        error.addExtraInfo("executed-check", integrityCheck.getName());
+                        error.addExtraInfo("executed-method", beforeChildren ? "checkIntegrityBeforeChildren" : "checkIntegrityAfterChildren");
+                        errors.add(error);
+                    } catch (Throwable t2) {
+                        Utils.log("Failed to track a framework error", Utils.LOG_LEVEL.ERROR, logger, t2, externalLogger);
+                    }
                 }
             } else if (logger.isDebugEnabled())
                 logger.debug(String.format("Skipping %s on %s (%s its children) as conditions are not matched", integrityCheck.getClass().getName(), node, beforeChildren ? "before" : "after"));

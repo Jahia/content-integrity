@@ -31,6 +31,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private static final String EXTRA_MESSAGE_KEY = "extra-message";
     private static final String MODULE_PREFIX = "module ";
     private static final String NO_SITE = "<no site> ";
+    private static final String NO_INTEGRITY_CHECK = "Framework";
     private static final int EXTRA_INFO_STRING_VALUE_MAX_LENGTH = 100;
 
     private final String id;
@@ -81,7 +82,8 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
             }
             return new ContentIntegrityErrorImpl(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
                     mixins, node.getSession().getWorkspace().getName(), locale, errorType, errorMessage,
-                    integrityCheck.getName(), integrityCheck.getId());
+                    Optional.ofNullable(integrityCheck).map(ContentIntegrityCheck::getName).orElse(NO_INTEGRITY_CHECK),
+                    Optional.ofNullable(integrityCheck).map(ContentIntegrityCheck::getId).orElse(NO_INTEGRITY_CHECK));
         } catch (RepositoryException e) {
             logger.error("", e);
         }
