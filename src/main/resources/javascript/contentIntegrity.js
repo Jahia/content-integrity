@@ -1,7 +1,7 @@
 const RUNNING = "running";
 const identity = (x) => x;
 const escape = (s) => {
-    if (s === undefined || s === null) return s
+    if (s === undefined || s === null || typeof s !== "string") return s
     return s.replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -9,7 +9,7 @@ const escape = (s) => {
         .replace(/'/g, '&#39;');
 };
 const unescape = (s) => {
-    if (s === undefined || s === null) return s
+    if (s === undefined || s === null || typeof s !== "string") return s
     return s.replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
