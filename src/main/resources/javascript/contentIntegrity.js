@@ -543,9 +543,7 @@ function renderLogs(executionID) {
         const currentScroll = logsElement.scrollTop
         const isScrolledToEnd = currentScroll + logsElement.clientHeight === logsElement.scrollHeight
         logs.html("")
-        jQuery.each(data.integrity.scan.logs, function () {
-            logs.append(escape(this)+"\n")
-        })
+        data.integrity.scan.logs.forEach(line => logs.append(escape(line) + "\n"))
         const scrollTarget = isScrolledToEnd ? logsElement.scrollHeight : currentScroll
         logs.scrollTop(scrollTarget)
         if (data.integrity.scan.status === RUNNING) {
