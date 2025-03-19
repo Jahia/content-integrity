@@ -370,7 +370,7 @@ const ErrorFilterConfigSelectItem = ({key, label, values}) => {
     const current = model.errorsDisplay.filters.active[key]
     if (current !== undefined && !values.map((v) => v.name).includes(current)) values.push({name: current, count: 0})
     return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => {
-        const itemLabel = val.count < 0 || (current !== undefined && current !== constants.resultsPanel.filters.noFilter) ? val.name : `${val.name} (${val.count})`;
+        const itemLabel = val.count < 0 ? val.name : `${val.name} (${val.count})`;
         return HtmlOptionItem(val.name, val.name === current, itemLabel, val.count === 0 ? "font-style:italic" : undefined);
     })}</select>`;
 }

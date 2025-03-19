@@ -13,12 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,6 +30,7 @@ public class GqlScanResults {
     private final List<ContentIntegrityError> filteredErrors;
     private final List<ContentIntegrityError> allErrors;
     private final int errorCount, totalErrorCount;
+    private final Collection<String> currentFilters;
     private final List<GqlScanReportFile> reports;
 
     public GqlScanResults(String id, Collection<String> filters) {
@@ -40,29 +40,35 @@ public class GqlScanResults {
             filteredErrors = null;
             errorCount = 0;
             totalErrorCount = 0;
+            currentFilters = null;
             reports = new ArrayList<>();
 
             return;
         }
 
+        currentFilters = filters;
         allErrors = all.getErrors();
-        if (CollectionUtils.isEmpty(filters)) {
-            filteredErrors = allErrors;
-        } else {
-            final Map<String, String> filtersMap = filters.stream()
-                    .map(f -> StringUtils.split(f, ";", 2))
-                    .filter(f -> f.length == 2)
-                    .collect(Collectors.toMap(f -> f[0], f -> f[1]));
-            filteredErrors = allErrors.stream()
-                    .filter(error ->
-                            filtersMap.entrySet().stream().allMatch(filter -> columnValueMatches(error, filter.getKey(), filter.getValue()))
-                    )
-                    .collect(Collectors.toList());
-        }
+        filteredErrors = getFilteredErrors(null);
         errorCount = filteredErrors.size();
         totalErrorCount = all.getErrors().size();
         reports = all.getReports().stream()
                 .map(GqlScanReportFile::new)
+                .collect(Collectors.toList());
+    }
+
+    private List<ContentIntegrityError> getFilteredErrors(Collection<String> ignoredFilters) {
+        if (CollectionUtils.isEmpty(currentFilters)) return allErrors;
+
+        final Map<String, String> filtersMap = currentFilters.stream()
+                .map(f -> StringUtils.split(f, ";", 2))
+                .filter(f -> f.length == 2)
+                .filter(f -> ignoredFilters == null || !ignoredFilters.contains(f[0]))
+                .collect(Collectors.toMap(f -> f[0], f -> f[1]));
+
+        return allErrors.stream()
+                .filter(error ->
+                        filtersMap.entrySet().stream().allMatch(filter -> columnValueMatches(error, filter.getKey(), filter.getValue()))
+                )
                 .collect(Collectors.toList());
     }
 
@@ -109,7 +115,8 @@ public class GqlScanResults {
         final Map<String, Map<String, Long>> columnsData = cols.stream()
                 .collect(Collectors.toMap(Function.identity(),
                         name -> {
-                            final Map<String, Long> result = filteredErrors.stream()
+                            final List<ContentIntegrityError> errorsWithOtherFilters = getFilteredErrors(Collections.singleton(name));
+                            final Map<String, Long> result = errorsWithOtherFilters.stream()
                                     .map(error -> getColumnValue(error, name))
                                     .filter(Objects::nonNull)
                                     .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
