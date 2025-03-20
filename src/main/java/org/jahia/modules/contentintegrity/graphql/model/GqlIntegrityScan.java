@@ -39,6 +39,7 @@ public class GqlIntegrityScan {
     private static final Map<String, Status> executionStatus = new LinkedHashMap<>();
     private static final Map<String, List<String>> executionLog = new HashMap<>();
     private static final Map<String, List<ContentIntegrityReport>> executionReports = new HashMap<>();
+    private static final Map<String, String> scanResults = new HashMap<>();
     private static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
     private static final int LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE = 100;
     private static final int LOGS_LIMIT_CLIENT_SIDE_END_SIZE = 500;
@@ -130,6 +131,7 @@ public class GqlIntegrityScan {
                 if (mergedResults == null || CollectionUtils.isEmpty(mergedResults.getErrors())) {
                     console.logLine(NO_ERROR_FOUND);
                 } else {
+                    scanResults.put(id, mergedResults.getID());
                     final int nbErrors = mergedResults.getErrors().size();
                     final String details = workspaces.size() == 1 ?
                             StringUtils.EMPTY :
@@ -189,6 +191,12 @@ public class GqlIntegrityScan {
         return executionReports.get(id).stream()
                 .map(GqlScanReportFile::new)
                 .collect(Collectors.toList());
+    }
+
+    @GraphQLField
+    @GraphQLName("resultsID")
+    public String getResultsIdentifier() {
+        return scanResults.get(id);
     }
 
     @GraphQLField

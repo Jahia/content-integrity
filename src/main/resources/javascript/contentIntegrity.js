@@ -22,6 +22,7 @@ const model = {
     excludedPaths: [],
     errorsDisplay: {
         resultsID: undefined,
+        lastScanResultsID: undefined,
         totalErrorCount: 0,
         errorCount: 0,
         offset: 0,
@@ -62,7 +63,7 @@ function getLogsQuery(executionID) {
         query: "query ($id : String!) {" +
             "    integrity:contentIntegrity {" +
             "        scan:integrityScan (id: $id) {" +
-            "            id status logs" +
+            "            id status resultsID logs" +
             "            reports {name location uri extension}" +
             "        }" +
             "    }" +
@@ -551,6 +552,7 @@ function renderLogs(executionID) {
         } else {
             STOP_PULLING_LOGS();
             showStopButton(false);
+            model.errorsDisplay.lastScanResultsID = data.integrity.scan.resultsID
             const reports = data.integrity.scan.reports
             if (reports != null) {
                 const out = ReportFileListItem(reports)
@@ -642,7 +644,15 @@ function activateResultsPanel() {
     gqlCall(getScanResultsList(), (data) => {
         let needRefresh = false
         const ids = data.integrity.scanResults
-        if (!ids.includes(model.errorsDisplay.resultsID)) {
+        if (model.errorsDisplay.lastScanResultsID !== undefined) {
+            if (ids.includes(model.errorsDisplay.lastScanResultsID)) {
+                model.errorsDisplay.resultsID = model.errorsDisplay.lastScanResultsID
+                needRefresh = true
+                console.debug("Switching to the latest scan results", model.errorsDisplay.resultsID)
+            }
+            model.errorsDisplay.lastScanResultsID = undefined
+        }
+        if (!needRefresh && !ids.includes(model.errorsDisplay.resultsID)) {
             model.errorsDisplay.resultsID = ids.find(_ => true)
             needRefresh = true
         }
