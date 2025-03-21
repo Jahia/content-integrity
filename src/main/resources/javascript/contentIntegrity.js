@@ -1,7 +1,7 @@
 const RUNNING = "running";
 const identity = (x) => x;
 const escape = (s) => {
-    if (s === undefined || s === null) return s
+    if (s === undefined || s === null || typeof s !== "string") return s
     return s.replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -9,7 +9,7 @@ const escape = (s) => {
         .replace(/'/g, '&#39;');
 };
 const unescape = (s) => {
-    if (s === undefined || s === null) return s
+    if (s === undefined || s === null || typeof s !== "string") return s
     return s.replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
@@ -22,6 +22,7 @@ const model = {
     excludedPaths: [],
     errorsDisplay: {
         resultsID: undefined,
+        lastScanResultsID: undefined,
         totalErrorCount: 0,
         errorCount: 0,
         offset: 0,
@@ -62,7 +63,7 @@ function getLogsQuery(executionID) {
         query: "query ($id : String!) {" +
             "    integrity:contentIntegrity {" +
             "        scan:integrityScan (id: $id) {" +
-            "            id status logs" +
+            "            id status resultsID logs" +
             "            reports {name location uri extension}" +
             "        }" +
             "    }" +
@@ -370,7 +371,7 @@ const ErrorFilterConfigSelectItem = ({key, label, values}) => {
     const current = model.errorsDisplay.filters.active[key]
     if (current !== undefined && !values.map((v) => v.name).includes(current)) values.push({name: current, count: 0})
     return `<label for="">${label === undefined ? key : label}</label><select id="col-filter-${key}" filter="${key}" class="columnFilter">${values.map((val) => {
-        const itemLabel = val.count < 0 || (current !== undefined && current !== constants.resultsPanel.filters.noFilter) ? val.name : `${val.name} (${val.count})`;
+        const itemLabel = val.count < 0 ? val.name : `${val.name} (${val.count})`;
         return HtmlOptionItem(val.name, val.name === current, itemLabel, val.count === 0 ? "font-style:italic" : undefined);
     })}</select>`;
 }
@@ -543,9 +544,7 @@ function renderLogs(executionID) {
         const currentScroll = logsElement.scrollTop
         const isScrolledToEnd = currentScroll + logsElement.clientHeight === logsElement.scrollHeight
         logs.html("")
-        jQuery.each(data.integrity.scan.logs, function () {
-            logs.append(escape(this)+"\n")
-        })
+        data.integrity.scan.logs.forEach(line => logs.append(escape(line) + "\n"))
         const scrollTarget = isScrolledToEnd ? logsElement.scrollHeight : currentScroll
         logs.scrollTop(scrollTarget)
         if (data.integrity.scan.status === RUNNING) {
@@ -553,6 +552,7 @@ function renderLogs(executionID) {
         } else {
             STOP_PULLING_LOGS();
             showStopButton(false);
+            model.errorsDisplay.lastScanResultsID = data.integrity.scan.resultsID
             const reports = data.integrity.scan.reports
             if (reports != null) {
                 const out = ReportFileListItem(reports)
@@ -644,7 +644,15 @@ function activateResultsPanel() {
     gqlCall(getScanResultsList(), (data) => {
         let needRefresh = false
         const ids = data.integrity.scanResults
-        if (!ids.includes(model.errorsDisplay.resultsID)) {
+        if (model.errorsDisplay.lastScanResultsID !== undefined) {
+            if (ids.includes(model.errorsDisplay.lastScanResultsID)) {
+                model.errorsDisplay.resultsID = model.errorsDisplay.lastScanResultsID
+                needRefresh = true
+                console.debug("Switching to the latest scan results", model.errorsDisplay.resultsID)
+            }
+            model.errorsDisplay.lastScanResultsID = undefined
+        }
+        if (!needRefresh && !ids.includes(model.errorsDisplay.resultsID)) {
             model.errorsDisplay.resultsID = ids.find(_ => true)
             needRefresh = true
         }

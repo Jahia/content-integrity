@@ -381,7 +381,7 @@ public class Utils {
 
     public static String getSiteKey(String path, boolean considerModulesAsSites, Function<String,String> moduleKeyRewriter) {
         if (considerModulesAsSites && StringUtils.startsWith(path, NODE_UNDER_MODULES_PATH_PREFIX))
-            return Optional.ofNullable(moduleKeyRewriter).orElseGet(() -> key -> key).apply(StringUtils.split(path, JCR_PATH_SEPARATOR_CHAR)[1]);
+            return Optional.ofNullable(moduleKeyRewriter).orElseGet(Function::identity).apply(StringUtils.split(path, JCR_PATH_SEPARATOR_CHAR)[1]);
 
         return StringUtils.startsWith(path, NODE_UNDER_SITE_PATH_PREFIX) ?
                 StringUtils.split(path, JCR_PATH_SEPARATOR_CHAR)[1] : null;
@@ -420,7 +420,7 @@ public class Utils {
                 .filter(e -> !e.isFixed())
                 .filter(e -> e.getErrorType().isBlockingImport())
                 .map(ContentIntegrityError::getSite)
-                .collect(Collectors.groupingBy(site -> site, TreeMap::new, Collectors.counting()))
+                .collect(Collectors.groupingBy(Function.identity(), TreeMap::new, Collectors.counting()))
                 .forEach((site, count) -> log(String.format("%s%s: %s errors", TAB_LVL_2, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
     }
 

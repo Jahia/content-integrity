@@ -250,6 +250,19 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return createError(node, Optional.ofNullable(locale).map(Locale::toString).orElse(null), errorType, message);
     }
 
+    protected final ContentIntegrityError createFrameworkError(JCRNodeWrapper node, Throwable t) {
+        return createFrameworkError(node, null, t);
+    }
+
+    protected final ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String message, Throwable t) {
+        return createFrameworkError(node, null, message, t);
+    }
+
+    protected final ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String locale, String message, Throwable t) {
+        logger.error(StringUtils.trimToEmpty(message), t);
+        return ContentIntegrityErrorImpl.createFrameworkError(node, locale, message, t, this);
+    }
+
     @Deprecated
     protected final ContentIntegrityError createError(JCRNodeWrapper node, String message) {
         return createError(node, (String) null, message);

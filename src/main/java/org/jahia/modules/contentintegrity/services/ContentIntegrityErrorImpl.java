@@ -2,6 +2,7 @@ package org.jahia.modules.contentintegrity.services;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
@@ -32,6 +33,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private static final String MODULE_PREFIX = "module ";
     private static final String NO_SITE = "<no site> ";
     private static final String NO_INTEGRITY_CHECK = "Framework";
+    private static final ContentIntegrityErrorType FRAMEWORK_ERROR = new ContentIntegrityErrorTypeImpl("FRAMEWORK_ERROR").setDefaultMessage("Execution error");
     private static final int EXTRA_INFO_STRING_VALUE_MAX_LENGTH = 100;
 
     private final String id;
@@ -69,6 +71,19 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     }
 
     public static ContentIntegrityError createError(JCRNodeWrapper node, String locale, ContentIntegrityErrorType errorType, String message, ContentIntegrityCheck integrityCheck) {
+        return createError(node, locale, errorType, message, integrityCheck.getName(), integrityCheck.getId());
+    }
+
+    public static ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String locale, String message, Throwable t, ContentIntegrityCheck integrityCheck) {
+        final ContentIntegrityError error = createError(node, locale, FRAMEWORK_ERROR, message, NO_INTEGRITY_CHECK, NO_INTEGRITY_CHECK);
+        error.addExtraInfo("java-error-type", t.getClass().getSimpleName());
+        error.addExtraInfo("java-error-message", t.getMessage());
+        error.addExtraInfo("java-error-date", FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss,SSS").format(System.currentTimeMillis()), true);
+        error.addExtraInfo("executed-check", integrityCheck.getName());
+        return error;
+    }
+
+    private static ContentIntegrityError createError(JCRNodeWrapper node, String locale, ContentIntegrityErrorType errorType, String message, String integrityCheckName, String integrityCheckID) {
         final String errorMessage = StringUtils.defaultIfBlank(message, errorType.getDefaultMessage());
         try {
             final NodeType[] mixinNodeTypes = node.getMixinNodeTypes();
@@ -82,13 +97,12 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
             }
             return new ContentIntegrityErrorImpl(node.getPath(), node.getIdentifier(), node.getPrimaryNodeType().getName(),
                     mixins, node.getSession().getWorkspace().getName(), locale, errorType, errorMessage,
-                    Optional.ofNullable(integrityCheck).map(ContentIntegrityCheck::getName).orElse(NO_INTEGRITY_CHECK),
-                    Optional.ofNullable(integrityCheck).map(ContentIntegrityCheck::getId).orElse(NO_INTEGRITY_CHECK));
+                    integrityCheckName, integrityCheckID);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
 
-        return new ContentIntegrityErrorImpl(null, null, null, null, null, locale, errorType, errorMessage, integrityCheck.getName(), integrityCheck.getId());
+        return new ContentIntegrityErrorImpl(null, null, null, null, null, locale, errorType, errorMessage, integrityCheckName, integrityCheckID);
     }
 
     @Override
