@@ -16,6 +16,7 @@ const unescape = (s) => {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'");
 };
+const toIdSelector = (id) => '#' + id
 let logsLoader;
 const STOP_PULLING_LOGS = _ => clearInterval(logsLoader);
 const model = {
@@ -485,8 +486,8 @@ function renderConfigurations(data) {
             documentation: this.documentation
         }
     })
-    jQuery('#'+constants.scanPanel.configurationsArea.id).html(conf.map(IntegrityCheckItem).join(''));
-    jQuery('#'+constants.scanPanel.configurationPanel.id).dialog({
+    jQuery(toIdSelector(constants.scanPanel.configurationsArea.id)).html(conf.map(IntegrityCheckItem).join(''));
+    jQuery(toIdSelector(constants.scanPanel.configurationPanel.id)).dialog({
         autoOpen: false,
         resizable: false,
         height: "auto",
@@ -494,7 +495,7 @@ function renderConfigurations(data) {
         modal: true,
         buttons: {
             "Save": function () {
-                const panel = jQuery("#"+constants.scanPanel.configurationPanel.itemKey);
+                const panel = jQuery(toIdSelector(constants.scanPanel.configurationPanel.itemKey));
                 const confs = panel.find("input").map(function() {
                     return ({
                         name: this.name,
@@ -505,7 +506,7 @@ function renderConfigurations(data) {
                 jQuery(this).dialog("close");
             },
             "Reset to default values": function () {
-                const panel = jQuery("#"+constants.scanPanel.configurationPanel.itemKey);
+                const panel = jQuery(toIdSelector(constants.scanPanel.configurationPanel.itemKey));
                 gqlCall(getResetCheckConfsQuery(panel.attr("integrityCheckID")), (data) => {
                     jQuery(this).dialog("close");
                 })
@@ -518,7 +519,7 @@ function renderConfigurations(data) {
     });
     jQuery('.configureLink').on("click", function () {
         const id = jQuery(this).attr("checkID")
-        const popup = jQuery("#"+constants.scanPanel.configurationPanel.id)
+        const popup = jQuery(toIdSelector(constants.scanPanel.configurationPanel.id))
         gqlCall(getLoadCheckConfsQuery(id), (data) => {
             popup.html(ConfigPanelItem({id: id, name: id, configurations: data.integrity.check.configurations}))
             popup.dialog("open")
@@ -536,10 +537,10 @@ function selectAllChecks(value) {
 }
 
 function renderLogs(executionID) {
-    const reportFileDiv = jQuery("#"+constants.scanPanel.reportFilesPanel.id)
+    const reportFileDiv = jQuery(toIdSelector(constants.scanPanel.reportFilesPanel.id))
     reportFileDiv.hide()
     gqlCall(getLogsQuery(executionID), (data) => {
-        const logs = jQuery("#"+constants.scanPanel.logsPanel.id)
+        const logs = jQuery(toIdSelector(constants.scanPanel.logsPanel.id))
         const logsElement = logs[0]
         const currentScroll = logsElement.scrollTop
         const isScrolledToEnd = currentScroll + logsElement.clientHeight === logsElement.scrollHeight
@@ -580,19 +581,19 @@ function wireToRunningScan() {
 
 function showStopButton(visible, executionID) {
     if (visible) {
-        jQuery("#"+constants.scanPanel.runScanButton.id).attr("disabled", "disabled");
-        jQuery("#"+constants.scanPanel.stopScanButton.id).click(function () {
+        jQuery(toIdSelector(constants.scanPanel.runScanButton.id)).attr("disabled", "disabled");
+        jQuery(toIdSelector(constants.scanPanel.stopScanButton.id)).click(function () {
             gqlCall(getStopScanQuery(executionID), _ => showStopButton(false))
         }).show();
     }
     else {
-        jQuery("#"+constants.scanPanel.runScanButton.id).removeAttr("disabled");
-        jQuery("#"+constants.scanPanel.stopScanButton.id).hide();
+        jQuery(toIdSelector(constants.scanPanel.runScanButton.id)).removeAttr("disabled");
+        jQuery(toIdSelector(constants.scanPanel.stopScanButton.id)).hide();
     }
 }
 
 function addExcludedPath() {
-    const input = jQuery("#"+constants.scanPanel.excludedPaths.newValueID);
+    const input = jQuery(toIdSelector(constants.scanPanel.excludedPaths.newValueID));
     input.focus()
     const path = input.val().trim()
     if (path.length === 0) return
@@ -609,9 +610,9 @@ function removeExcludedPath(path) {
 }
 
 function renderExcludedPaths() {
-    const input = jQuery("#"+constants.scanPanel.excludedPaths.newValueID);
+    const input = jQuery(toIdSelector(constants.scanPanel.excludedPaths.newValueID));
     input.val("")
-    const wrapper = jQuery("#"+constants.scanPanel.excludedPaths.currentValuesID)
+    const wrapper = jQuery(toIdSelector(constants.scanPanel.excludedPaths.currentValuesID))
     wrapper.html("")
     model.excludedPaths.forEach(path => wrapper.append(ExcludedPathItem({path: path})))
     jQuery(".excludedPath").click(function (){removeExcludedPath(jQuery(this).attr("path"))})
@@ -619,7 +620,7 @@ function renderExcludedPaths() {
 
 function displayPanel(id) {
     jQuery(".mainPanel").hide()
-    jQuery("#" + id + "-panel").show()
+    jQuery(toIdSelector(id + "-panel")).show()
     refreshOnActivation(id)
     jQuery(".tabs .tabLink").removeClass("selected")
     jQuery(".tabs .tabLink[tabrole=" + id + "]").addClass("selected")
@@ -656,8 +657,8 @@ function activateResultsPanel() {
             model.errorsDisplay.resultsID = ids.find(_ => true)
             needRefresh = true
         }
-        jQuery("#" + constants.resultsPanel.resultsSelector.wrapper).html(ScanResultsSelectorItem(ids))
-        jQuery("#" + constants.resultsPanel.resultsSelector.select).change(function () {
+        jQuery(toIdSelector(constants.resultsPanel.resultsSelector.wrapper)).html(ScanResultsSelectorItem(ids))
+        jQuery(toIdSelector(constants.resultsPanel.resultsSelector.select)).change(function () {
             model.errorsDisplay.resultsID = jQuery(this).val()
             displayScanResults()
         })
@@ -668,7 +669,7 @@ function activateResultsPanel() {
 function displayScanResults(offset, pageSize) {
     refreshToolsTokenCall()
 
-    const out = jQuery("#"+constants.resultsPanel.resultsArea.id)
+    const out = jQuery(toIdSelector(constants.resultsPanel.resultsArea.id))
     out.html("")
     if (model.errorsDisplay.resultsID === undefined) return
 
@@ -724,7 +725,7 @@ function displayErrorDetails(id) {
             alert("Unknown error")
             return
         }
-        const popup = jQuery("#"+constants.resultsPanel.errorDetailsPanel.id)
+        const popup = jQuery(toIdSelector(constants.resultsPanel.errorDetailsPanel.id))
         popup.html(ErrorDetailsItem(error)).dialog("open")
     })
 }
@@ -732,7 +733,7 @@ function displayErrorDetails(id) {
 function initResultsScreen() {
     model.errorsDisplay.columns = constants.resultsPanel.columns.filter(({key}) => key !== undefined)
 
-    jQuery("#"+constants.resultsPanel.errorDetailsPanel.id).dialog({
+    jQuery(toIdSelector(constants.resultsPanel.errorDetailsPanel.id)).dialog({
         autoOpen: false,
         resizable: false,
         height: "auto",
@@ -750,16 +751,16 @@ function initResultsScreen() {
 jQuery(document).ready(function () {
     displayPanel(constants.scanPanel.key)
     loadConfigurations();
-    jQuery("#"+constants.scanPanel.excludedPaths.newValueID).keypress(function (event){
+    jQuery(toIdSelector(constants.scanPanel.excludedPaths.newValueID)).keypress(function (event){
         // 13: <enter>
         if (event.which === 13) {
-            jQuery("#"+constants.scanPanel.excludedPaths.addButtonID).click()
+            jQuery(toIdSelector(constants.scanPanel.excludedPaths.addButtonID)).click()
         }
     })
-    jQuery("#"+constants.scanPanel.excludedPaths.addButtonID).click(function () {
+    jQuery(toIdSelector(constants.scanPanel.excludedPaths.addButtonID)).click(function () {
         addExcludedPath()
     })
-    jQuery("#"+constants.scanPanel.runScanButton).click(function () {
+    jQuery(toIdSelector(constants.scanPanel.runScanButton)).click(function () {
         const rootPath = jQuery("#rootNode").val();
         const workspace = jQuery("#workspace").val();
         const skipMP = !jQuery("#includeVirtualNodes").is(":checked")
