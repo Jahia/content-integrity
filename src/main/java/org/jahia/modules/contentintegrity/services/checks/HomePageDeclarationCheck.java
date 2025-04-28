@@ -17,6 +17,9 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FALLBACK_NAME;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FLAG;
@@ -38,16 +41,18 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
-            int flaggedAsHomeCount = 0;
+            final Collection<String> pages = new ArrayList<>();
             final JCRNodeIteratorWrapper iterator = node.getNodes();
             while (iterator.hasNext()) {
                 final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
                 if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean())
-                    flaggedAsHomeCount++;
+                    pages.add(child.getName());
             }
+            final int flaggedAsHomeCount = pages.size();
             if (flaggedAsHomeCount != 1) {
                 if (flaggedAsHomeCount > 1) {
                     return createSingleError(createError(node, MULTIPLE_HOMES)
+                            .addExtraInfo("pages-flagged", String.join(" , ", pages))
                             .addExtraInfo("nb-pages-flagged", flaggedAsHomeCount));
                 } else if (node.hasNode(HOME_PAGE_FALLBACK_NAME)) {
                     final JCRNodeWrapper homeNode = node.getNode(HOME_PAGE_FALLBACK_NAME);
