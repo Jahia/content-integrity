@@ -760,7 +760,7 @@ jQuery(document).ready(function () {
     jQuery(toIdSelector(constants.scanPanel.excludedPaths.addButtonID)).click(function () {
         addExcludedPath()
     })
-    jQuery(toIdSelector(constants.scanPanel.runScanButton)).click(function () {
+    jQuery(toIdSelector(constants.scanPanel.runScanButton.id)).click(function () {
         const rootPath = jQuery("#rootNode").val();
         const workspace = jQuery("#workspace").val();
         const skipMP = !jQuery("#includeVirtualNodes").is(":checked")
