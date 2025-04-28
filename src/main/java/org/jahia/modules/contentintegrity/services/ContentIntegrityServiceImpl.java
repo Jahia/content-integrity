@@ -106,12 +106,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
         integrityCheck.setId(generateCheckID(integrityCheck));
         integrityChecks.add(integrityCheck);
-        Collections.sort(integrityChecks, new Comparator<ContentIntegrityCheck>() {
-            @Override
-            public int compare(ContentIntegrityCheck o1, ContentIntegrityCheck o2) {
-                return (int) (o1.getPriority() - o2.getPriority());
-            }
-        });
+        integrityChecks.sort((o1, o2) -> (int) (o1.getPriority() - o2.getPriority()));
 
         logger.info(String.format("Registered %s in the contentIntegrity service, number of checks: %s, service: %s, CL: %s", integrityCheck, integrityChecks.size(), this, this.getClass().getClassLoader()));
     }

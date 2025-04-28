@@ -103,12 +103,7 @@ public class GqlIntegrityScan {
         executionStatus.put(id, Status.RUNNING);
         final List<String> output = new ArrayList<>();
         executionLog.put(id, output);
-        final GqlExternalLogger console = new GqlExternalLogger() {
-            @Override
-            public void logLine(String e) {
-                output.add(WordUtils.abbreviate(e, 200, 250, ABBREVIATED_LINE_SUFFIX));
-            }
-        };
+        final GqlExternalLogger console = e -> output.add(WordUtils.abbreviate(e, 200, 250, ABBREVIATED_LINE_SUFFIX));
 
         if (CollectionUtils.isEmpty(checksToRun)) {
             output.add(NO_CHECK_SELECTED);
@@ -223,7 +218,7 @@ public class GqlIntegrityScan {
         return UUID.randomUUID().toString();
     }
 
-    private abstract interface GqlExternalLogger extends ExternalLogger {
+    private interface GqlExternalLogger extends ExternalLogger {
         @Override
         default boolean includeSummary() {
             return true;
