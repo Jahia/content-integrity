@@ -538,7 +538,7 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
         @Override
         public boolean matches(JCRNodeWrapper node) {
-            final String path = node.getPath();
+            final String path = node.getCanonicalPath();
             return path.equals(treePath) || path.startsWith(treePathPlusSlash); // TODO review path.equals(treePath) , shouldn't this be another condition? (toString() to adapt if changed)
         }
 
