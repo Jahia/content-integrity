@@ -17,16 +17,60 @@
 <%--@elvariable id="renderContext" type="org.jahia.services.render.RenderContext"--%>
 <%--@elvariable id="currentResource" type="org.jahia.services.render.Resource"--%>
 <%--@elvariable id="url" type="org.jahia.services.render.URLGenerator"--%>
+<c:set var="scanPanelKey" value="scan" />
+<c:set var="resultsPanelKey" value="results" />
+<c:set var="resultsDetailsAreaID" value="resultsDetails" />
+<c:set var="configurationAreaID" value="configurations" />
+<c:set var="configurationPanelID" value="configurationPanelWrapper" />
+<c:set var="errorDetailsPanelID" value="errorDetailsPanelWrapper" />
+<c:set var="logsPanelID" value="logs" />
+<c:set var="reportFilesPanelID" value="reportFiles" />
+<c:set var="runScanButtonID" value="runScan" />
+<c:set var="stopScanButtonID" value="stopScan" />
+<c:set var="excludedPathsNewValueID" value="pathToExclude" />
+<c:set var="excludedPathsAddButtonID" value="addExcludedPath" />
+<c:set var="excludedPathsCurrentValuesID" value="excludedPaths" />
 
 <template:addResources type="javascript" resources="jquery.js,jquery-ui.min.js,contentIntegrity.js"/>
 <template:addResources type="css" resources="contentIntegrity.css,jquery-ui.smoothness.css"/>
 <template:addResources>
     <script type="text/javascript">
         const constants = {
+            scanPanel: {
+                key: "${scanPanelKey}",
+                configurationsArea: {
+                    id: "${configurationAreaID}"
+                },
+                configurationPanel: {
+                    id: "${configurationPanelID}",
+                    itemKey: "configurationPanel"
+                },
+                logsPanel: {
+                    id: "${logsPanelID}"
+                },
+                reportFilesPanel : {
+                    id: "${reportFilesPanelID}"
+                },
+                runScanButton: {
+                    id: "${runScanButtonID}"
+                },
+                stopScanButton: {
+                    id: "${stopScanButtonID}"
+                },
+                excludedPaths: {
+                    newValueID: "${excludedPathsNewValueID}",
+                    addButtonID: "${excludedPathsAddButtonID}",
+                    currentValuesID: "${excludedPathsCurrentValuesID}"
+                }
+            },
             resultsPanel: {
+                key: "${resultsPanelKey}",
                 resultsSelector: {
                     wrapper: "resultsSelector",
                     select: "resultList",
+                },
+                resultsArea: {
+                    id: "${resultsDetailsAreaID}"
                 },
                 pager: {
                     allowedPageSizes: [5, 10, 20, 50, 100],
@@ -55,6 +99,9 @@
                 ],
                 filters: {
                     noFilter: "--- ALL ---"
+                },
+                errorDetailsPanel: {
+                    id: "${errorDetailsPanelID}"
                 }
             },
             url: {
@@ -71,13 +118,13 @@
 <p><fmt:message key="label.contentIntegrity.description"/></p>
 
 <div class="tabs">
-    <span class="tabLink" tabrole="scan">Scan</span>
-    <span class="tabLink" tabrole="results">Results</span>
+    <span class="tabLink" tabrole="${scanPanelKey}">Scan</span>
+    <span class="tabLink" tabrole="${resultsPanelKey}">Results</span>
 </div>
 
 <div id="scan-panel" class="mainPanel">
 <fieldset class="configWrapper">
-    <div id="configurations"></div>
+    <div id="${configurationAreaID}"></div>
     <div>
         <a href="#" onclick="selectAllChecks(true)">select all</a> / <a href="#" onclick="selectAllChecks(false)">unselect all</a>
     </div>
@@ -89,11 +136,11 @@
         <td><input id="rootNode" type="text" value="/"/></td>
     </tr>
     <tr>
-        <td><label for="pathToExclude">Excluded paths:</label></td>
+        <td><label for="${excludedPathsNewValueID}">Excluded paths:</label></td>
         <td>
-            <input id="pathToExclude" type="text" value=""/>
-            <button id="addExcludedPath">Add</button>
-            <div id="excludedPaths"></div>
+            <input id="${excludedPathsNewValueID}" type="text" value=""/>
+            <button id="${excludedPathsAddButtonID}">Add</button>
+            <div id="${excludedPathsCurrentValuesID}"></div>
         </td>
     </tr>
     <tr>
@@ -112,17 +159,17 @@
     </tr>
 </table>
 <div>
-    <input id="runScan" type="button" value="Run an integrity check"/>
-    <input id="stopScan" type="button" value="Stop"/>
+    <input id="${runScanButtonID}" type="button" value="Run an integrity check"/>
+    <input id="${stopScanButtonID}" type="button" value="Stop"/>
     <div>
-        <pre id="logs"></pre>
+        <pre id="${logsPanelID}"></pre>
     </div>
-    <div id="reportFile" style="display: none"></div>
+    <div id="${reportFilesPanelID}" style="display: none"></div>
 </div>
-<div id="configurationPanelWrapper" style="display: none"></div>
+<div id="${configurationPanelID}" style="display: none"></div>
 </div>
 <div id="results-panel" class="mainPanel">
     <div id="resultsSelector"></div>
-    <div id="resultsDetails"></div>
+    <div id="${resultsDetailsAreaID}"></div>
 </div>
-<div id="errorDetailsPanelWrapper" style="display: none"></div>
+<div id="${errorDetailsPanelID}" style="display: none"></div>
