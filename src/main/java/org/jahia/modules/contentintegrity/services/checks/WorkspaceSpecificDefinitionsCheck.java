@@ -21,12 +21,10 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.jahia.api.Constants.WORKINPROGRESS_STATUS_DISABLED;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_MARKED_FOR_DELETION;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_LANGUAGES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_DISABLED;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
 public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {

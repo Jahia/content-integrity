@@ -33,7 +33,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
     private static final String DOWNLOAD_STREAM = "download-stream";
     private static final String ACCEPT_ZERO_BYTE_BINARIES = "accept-zero-byte-binaries";
     private static final String EXTRA_MSG_ZERO_LENGTH_BINARY = "Warning: the binary length is zero byte. This can be a false positive if an empty file has been uploaded";
-    public static final ContentIntegrityErrorType INVALID_BINARY = createErrorType("INVALID_BINARY", "Invalid binary property");
+    private static final ContentIntegrityErrorType INVALID_BINARY = createErrorType("INVALID_BINARY", "Invalid binary property");
 
     private final ContentIntegrityCheckConfiguration configurations;
 
