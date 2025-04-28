@@ -9,6 +9,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.WordUtils;
+import org.jahia.bin.filters.jcr.JcrSessionFilter;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.graphql.util.GqlUtils;
@@ -17,6 +18,8 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.usermanager.JahiaUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,9 +116,11 @@ public class GqlIntegrityScan {
             return id;
         }
 
+        final JahiaUser currentUser = JCRSessionFactory.getInstance().getCurrentUser();
         Executors.newSingleThreadExecutor().execute(() -> {
             Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
 
+            JCRSessionFactory.getInstance().setCurrentUser(currentUser);
             final ContentIntegrityService service = getService();
             final List<String> checksToExecute = Utils.getChecksToExecute(service, checksToRun, null, console);
             final List<String> workspaces = workspace.getWorkspaces();
@@ -150,6 +155,8 @@ public class GqlIntegrityScan {
                 logger.error("", cee);
                 output.add(cee.getMessage());
                 executionStatus.put(id, Status.FAILED);
+            } finally {
+                JcrSessionFilter.endRequest();
             }
 
         });
