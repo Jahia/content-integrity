@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NodeType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -75,11 +76,17 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     }
 
     public static ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String locale, String message, Throwable t, ContentIntegrityCheck integrityCheck) {
+        final String integrityCheckClass = integrityCheck.getClass().getName();
+        final Optional<String> outstandingLine = Arrays.stream(t.getStackTrace())
+                .filter(elt -> elt.getClassName().startsWith(integrityCheckClass))
+                .findFirst()
+                .map(elt -> String.format("%s.%s(%s:%s)", elt.getClassName(), elt.getMethodName(), elt.getFileName(), elt.getLineNumber()));
         final ContentIntegrityError error = createError(node, locale, FRAMEWORK_ERROR, message, NO_INTEGRITY_CHECK, NO_INTEGRITY_CHECK);
         error.addExtraInfo("java-error-type", t.getClass().getSimpleName());
         error.addExtraInfo("java-error-message", t.getMessage());
         error.addExtraInfo("java-error-date", FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss,SSS").format(System.currentTimeMillis()), true);
         error.addExtraInfo("executed-check", integrityCheck.getName());
+        outstandingLine.ifPresent(s -> ((ContentIntegrityErrorImpl) error).addExtraInfo("executed-check-line", s, false, true));
         return error;
     }
 
