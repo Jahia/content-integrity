@@ -75,7 +75,8 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
         return createError(node, locale, errorType, message, integrityCheck.getName(), integrityCheck.getId());
     }
 
-    public static ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String locale, String message, Throwable t, ContentIntegrityCheck integrityCheck) {
+    public static ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String locale, String message, Throwable throwable, ContentIntegrityCheck integrityCheck) {
+        final Throwable t = Optional.ofNullable(throwable).orElse(new RuntimeException());
         final String integrityCheckClass = integrityCheck.getClass().getName();
         final Optional<String> outstandingLine = Arrays.stream(t.getStackTrace())
                 .filter(elt -> elt.getClassName().startsWith(integrityCheckClass))

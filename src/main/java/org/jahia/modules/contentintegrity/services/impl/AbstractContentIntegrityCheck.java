@@ -254,6 +254,10 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         return createFrameworkError(node, null, t);
     }
 
+    protected final ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String message) {
+        return createFrameworkError(node, message, null);
+    }
+
     protected final ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String message, Throwable t) {
         return createFrameworkError(node, null, message, t);
     }
