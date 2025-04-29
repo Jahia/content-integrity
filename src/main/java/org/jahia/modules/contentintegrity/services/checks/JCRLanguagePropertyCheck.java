@@ -27,7 +27,6 @@ public class JCRLanguagePropertyCheck extends AbstractContentIntegrityCheck {
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
-        if (logger.isDebugEnabled()) logger.debug(String.format("Checking %s", node));
         try {
             if (!node.hasProperty(JCR_LANGUAGE)) {
                 return createSingleError(createError(node, JCRUtils.getTranslationNodeLocaleFromNodeName(node), MISSING_JCR_LANGUAGE_PROP)
