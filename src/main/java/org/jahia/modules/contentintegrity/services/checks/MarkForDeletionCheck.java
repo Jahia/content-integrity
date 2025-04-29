@@ -45,7 +45,7 @@ public class MarkForDeletionCheck extends AbstractContentIntegrityCheck {
                 return createSingleError(createError(node, NO_ROOT_DELETION));
             }
         } catch (RepositoryException e) {
-            logger.error("", e);
+            return createSingleError(createFrameworkError(node, e));
         }
         return null;
     }

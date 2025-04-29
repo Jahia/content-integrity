@@ -107,9 +107,7 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck {
             }
             return errors;
         } catch (RepositoryException e) {
-            logger.error("", e);
+            return createSingleError(createFrameworkError(node, e));
         }
-
-        return null;
     }
 }

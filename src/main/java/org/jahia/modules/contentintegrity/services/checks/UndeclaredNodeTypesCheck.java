@@ -61,23 +61,23 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
         try {
             if (node.hasProperty(JCR_MIXINTYPES)) {
                 final String[] types = Arrays.stream(node.getProperty(JCR_MIXINTYPES).getValues())
-                        .map(getStringValue())
+                        .map(getStringValue(errors, node))
                         .filter(Objects::nonNull)
                         .toArray(String[]::new);
                 checkNodeType(node, errors, existingMixins, missingMixins, "mixin type", true, types);
             }
         } catch (RepositoryException re) {
-            logger.error("Impossible to read the mixins of the node " + node, re);
+            errors.addError(createFrameworkError(node, "Impossible to read the mixins of the node " + node, re));
         }
         return errors;
     }
 
-    private Function<JCRValueWrapper, String> getStringValue() {
+    private Function<JCRValueWrapper, String> getStringValue(ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
         return jcrValueWrapper -> {
             try {
                 return jcrValueWrapper.getString();
             } catch (RepositoryException e) {
-                logger.error("", e);
+                errors.addError(createFrameworkError(checkedNode, e));
                 return null;
             }
         };

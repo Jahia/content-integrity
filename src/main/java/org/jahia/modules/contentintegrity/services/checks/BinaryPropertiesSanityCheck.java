@@ -109,7 +109,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
                 }
             }
         } catch (RepositoryException e) {
-            logger.error("Impossible to check the node " + node.getPath(), e);
+            errors.addError(createFrameworkError(node, "Impossible to check the node " + node.getPath(), e));
         }
         return errors;
     }

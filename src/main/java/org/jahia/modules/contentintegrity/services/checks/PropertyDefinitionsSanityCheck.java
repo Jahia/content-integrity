@@ -150,9 +150,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     checkNodeValidators(node, locale, errors);
                     nodeHasBeenChecked.set(true);
                 }
-            });
+            }, errors, node);
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(node, e));
         }
         if (!nodeHasBeenChecked.get()) JCRUtils.runJcrSupplierCallBack(() -> checkNodeValidators(node, null, errors));
     }
@@ -165,7 +165,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         validators.entrySet().stream()
                 .filter(e -> JCRUtils.runJcrCallBack(e.getKey(), checkedNode::isNodeType, Boolean.FALSE))
                 .map(Map.Entry::getValue)
-                .map(c -> JCRUtils.runJcrSupplierCallBack(() -> this.createValidatorInstance(c, checkedNode)))
+                .map(c -> JCRUtils.runJcrSupplierCallBack(() -> this.createValidatorInstance(c, checkedNode, errors)))
                 .filter(validator -> validator instanceof JCRNodeValidator)
                 .map(validator -> {
                     final Set<ConstraintViolation<JCRNodeValidator>> constraintViolations = validatorFactoryBean.validate((JCRNodeValidator) validator, Default.class, DefaultSkipOnImportGroup.class);
@@ -179,11 +179,11 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         return null;
     }
 
-    private Object createValidatorInstance(Constructor<?> constructor, JCRNodeWrapper node) {
+    private Object createValidatorInstance(Constructor<?> constructor, JCRNodeWrapper node, ContentIntegrityErrorList errors) {
         try {
             return constructor.newInstance(node);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(node, e));
             return null;
         }
     }
@@ -195,7 +195,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             public void execute(JCRNodeWrapper node, ExtendedNodeType extendedNodeType) throws RepositoryException {
                 checkMandatoryPropertiesForType(node, extendedNodeType, checkedProperties, errors);
             }
-        });
+        }, errors, node);
     }
 
     private void checkMandatoryPropertiesForType(JCRNodeWrapper node, ExtendedNodeType nodeType, Map<String, String> checkedProperties, ContentIntegrityErrorList errors) throws RepositoryException {
@@ -220,9 +220,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     public void execute(Node translationNode, String locale) throws RepositoryException {
                         checkMandatoryProperty(node, translationNode, propertyDefinitionName, propertyDefinition, locale, errors);
                     }
-                });
+                }, errors, node);
             } else {
-                final Node realNode = getRealNode(node);
+                final Node realNode = getRealNode(node, errors, node);
                 if (realNode != null)
                     checkMandatoryProperty(node, realNode, propertyDefinitionName, propertyDefinition, null, errors);
             }
@@ -283,10 +283,10 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private void checkExistingProperties(JCRNodeWrapper node, ContentIntegrityErrorList errors) {
         final Map<String, ExtendedPropertyDefinition> namedPropertyDefinitions = new HashMap<>();
         final Map<Integer, ExtendedPropertyDefinition> unstructuredPropertyDefinitions = new HashMap<>();
-        loadPropertyDefinitions(node, namedPropertyDefinitions, unstructuredPropertyDefinitions);
+        loadPropertyDefinitions(node, namedPropertyDefinitions, unstructuredPropertyDefinitions, errors);
 
         try {
-            final Node realNode = getRealNode(node);
+            final Node realNode = getRealNode(node, errors, node);
             if (realNode == null)
                 return;
 
@@ -294,18 +294,19 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             doOnTranslationNodes(node, new TranslationNodeProcessor() {
                 @Override
                 public void execute(Node translationNode, String locale) throws RepositoryException {
-                    loadPropertyDefinitions(node.getSession().getNodeByUUID(translationNode.getIdentifier()), namedPropertyDefinitions, null);
+                    loadPropertyDefinitions(node.getSession().getNodeByUUID(translationNode.getIdentifier()), namedPropertyDefinitions, null, errors);
                     checkExistingPropertiesInternal(translationNode, locale, node, namedPropertyDefinitions, unstructuredPropertyDefinitions, errors);
                 }
-            });
+            }, errors, node);
         } catch (RepositoryException e) {
-            logger.error("Error while checking the existing properties on the node " + node.getPath(), e);
+            errors.addError(createFrameworkError(node, "Error while checking the existing properties on the node " + node.getPath(), e));
         }
     }
 
     private void loadPropertyDefinitions(JCRNodeWrapper node,
                                          Map<String, ExtendedPropertyDefinition> namedPropertyDefinitions,
-                                         Map<Integer, ExtendedPropertyDefinition> unstructuredPropertyDefinitions) {
+                                         Map<Integer, ExtendedPropertyDefinition> unstructuredPropertyDefinitions,
+                                         ContentIntegrityErrorList errors) {
 
         doOnSupertypes(node, true, new SupertypeProcessor() {
             @Override
@@ -318,7 +319,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                     }
                 }
             }
-        });
+        }, errors, node);
     }
 
     private void checkExistingPropertiesInternal(Node node, String locale, JCRNodeWrapper jahiaNode,
@@ -381,10 +382,10 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                         isUndeclared = namedPropertyDefinitions.get(pName).isInternationalized() != isI18n;
                     }
                 } else if (propertyDefinition != null && StringUtils.equals(propertyDefinition.getName(), Constants.PROPERTY_DEFINITION_NAME_WILDCARD)) {
-                    isUndeclared = unstructuredPropertyDefinitions.keySet().stream().noneMatch(k -> areExtendedPropertyTypesCompliant(getExtendedPropertyType(property, isI18n), k));
+                    isUndeclared = unstructuredPropertyDefinitions.keySet().stream().noneMatch(k -> areExtendedPropertyTypesCompliant(getExtendedPropertyType(property, isI18n, errors, jahiaNode), k));
                 } else if (propertyDefinition != null) {
                     isUndeclared = false;
-                    logger.error(String.format("The property %s is declared at Jackrabbit level, but not at Jahia level", property.getPath()));
+                    errors.addError(createFrameworkError(jahiaNode, String.format("The property %s is declared at Jackrabbit level, but not at Jahia level", property.getPath())));
                 } else {
                     isUndeclared = true;
                 }
@@ -396,15 +397,15 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             }
 
             // from here, the property is declared
-            final ExtendedPropertyDefinition epd = getExtendedPropertyDefinition(propertyDefinition, property, isI18n, namedPropertyDefinitions, unstructuredPropertyDefinitions);
+            final ExtendedPropertyDefinition epd = getExtendedPropertyDefinition(propertyDefinition, property, isI18n, namedPropertyDefinitions, unstructuredPropertyDefinitions, errors, jahiaNode);
             if (epd == null) {
-                logger.error(String.format("Impossible to load the property definition for the property %s on the node %s", pName, jahiaNode.getPath()));
+                errors.addError(createFrameworkError(jahiaNode, String.format("Impossible to load the property definition for the property %s on the node %s", pName, jahiaNode.getPath())));
                 continue;
             }
 
             if (isPropertyEmpty(property)) continue;
 
-            final int propertyXType = getExtendedPropertyType(property, isI18n);
+            final int propertyXType = getExtendedPropertyType(property, isI18n, errors, jahiaNode);
             final int definitionXType = getExtendedPropertyType(epd);
             if (propertyXType != definitionXType) {
                 if (multiValuedStatusDiffer(propertyXType, definitionXType)) {
@@ -442,12 +443,12 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                                JCRNodeWrapper jahiaNode, String locale,
                                ContentIntegrityErrorList errors) throws RepositoryException {
         if (isValueEmpty(value)) return;
-        if (!constraintIsValid(value, epd)) {
-            trackInvalidValueConstraint(pName, epd, getPrintableValue(value), valueIdx, jahiaNode, locale, epd.getValueConstraints(), errors);
+        if (!constraintIsValid(value, epd, errors, jahiaNode)) {
+            trackInvalidValueConstraint(pName, epd, getPrintableValue(value, errors, jahiaNode), valueIdx, jahiaNode, locale, epd.getValueConstraints(), errors);
         }
     }
 
-    private boolean constraintIsValid(Value value, ExtendedPropertyDefinition propertyDefinition) {
+    private boolean constraintIsValid(Value value, ExtendedPropertyDefinition propertyDefinition, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
         final ValueConstraint[] constraints = propertyDefinition.getValueConstraintObjects();
         if (constraints == null || constraints.length == 0) {
             // no constraints to check
@@ -460,7 +461,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 return true;
             } catch (ConstraintViolationException ignored) {
             } catch (RepositoryException e) {
-                logger.error("", e);
+                errors.addError(createFrameworkError(checkedNode, e));
             }
         }
 
@@ -483,13 +484,13 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         return PropertyType.UNDEFINED;
     }
 
-    private int getExtendedPropertyType(Property property, boolean isI18n) {
+    private int getExtendedPropertyType(Property property, boolean isI18n, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
         boolean isMultiple = false;
         try {
             isMultiple = property.isMultiple();
             return getExtendedPropertyType(getValueType(property), isI18n, isMultiple);
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(checkedNode, e));
             return getExtendedPropertyType(0, isI18n, isMultiple);
         }
     }
@@ -529,7 +530,8 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private ExtendedPropertyDefinition getExtendedPropertyDefinition(PropertyDefinition propertyDefinition,
                                                                      Property property, boolean isI18n,
                                                                      Map<String, ExtendedPropertyDefinition> namedPropertyDefinitions,
-                                                                     Map<Integer, ExtendedPropertyDefinition> unstructuredPropertyDefinitions) throws RepositoryException {
+                                                                     Map<Integer, ExtendedPropertyDefinition> unstructuredPropertyDefinitions,
+                                                                     ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) throws RepositoryException {
         if (propertyDefinition == null) return namedPropertyDefinitions.get(property.getName());
 
         final String propertyDefinitionName = propertyDefinition.getName();
@@ -539,24 +541,24 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 if (epd != null && epd.isInternationalized()) return epd;
             }
             final List<Integer> compliantDefinitions = unstructuredPropertyDefinitions.keySet().stream()
-                    .filter(k -> areExtendedPropertyTypesCompliant(getExtendedPropertyType(property, isI18n), k))
+                    .filter(k -> areExtendedPropertyTypesCompliant(getExtendedPropertyType(property, isI18n, errors, checkedNode), k))
                     .collect(Collectors.toList());
             if (CollectionUtils.isEmpty(compliantDefinitions)) return null;
             if (compliantDefinitions.size() == 1) return unstructuredPropertyDefinitions.get(compliantDefinitions.get(0));
-            logger.error("Several unstructured definitions are available for the property " + property.getPath());
+            errors.addError(createFrameworkError(checkedNode, "Several unstructured definitions are available for the property " + property.getPath()));
             return null;
         } else {
             return namedPropertyDefinitions.get(propertyDefinitionName);
         }
     }
 
-    private Node getRealNode(Node node) {
+    private Node getRealNode(Node node, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
         if (node instanceof JCRNodeWrapper) {
             if (((JCRNodeWrapper) node).getRealNode() instanceof ExternalNodeImpl) {
                 try {
                     return ((ExternalNodeImpl) ((JCRNodeWrapper) node).getRealNode()).getExtensionNode(false);
                 } catch (RepositoryException e) {
-                    logger.error("", e);
+                    errors.addError(createFrameworkError(checkedNode, e));
                     return null;
                 }
             } else {
@@ -626,14 +628,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         final String errorLocale;
         if (StringUtils.isNotBlank(propertyName)) {
             final String finalPropertyName = propertyName;
-            propertyValue = JCRUtils.runJcrSupplierCallBack(() -> getPrintableValue(node.getProperty(finalPropertyName).getValue()));
+            propertyValue = JCRUtils.runJcrSupplierCallBack(() -> getPrintableValue(node.getProperty(finalPropertyName).getValue(), errors, node));
             try {
                 propertyDefinition = node.getApplicablePropertyDefinition(propertyName);
                 if (propertyDefinition == null) {
                     propertyDefinition = node.getApplicablePropertyDefinition(propertyName.replaceFirst("_", ":"));
                 }
             } catch (RepositoryException e) {
-                logger.error("", e);
+                errors.addError(createFrameworkError(node, e));
                 propertyDefinition = null;
             }
             errorLocale = propertyDefinition != null && propertyDefinition.isInternationalized() ? locale : null;
@@ -685,7 +687,8 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         errors.addError(error);
     }
 
-    private void doOnTranslationNodes(JCRNodeWrapper node, TranslationNodeProcessor translationNodeProcessor) throws RepositoryException {
+    private void doOnTranslationNodes(JCRNodeWrapper node, TranslationNodeProcessor translationNodeProcessor,
+                                      ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) throws RepositoryException {
         if (checkSiteLangsOnly() && Utils.getSiteKey(node.getPath()) != null) {
             final JCRSiteNode site = node.getResolveSite();
             final List<Locale> locales = node.getSession().getWorkspace().getName().equals(Constants.EDIT_WORKSPACE) ?
@@ -693,7 +696,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             for (Locale locale : locales) {
                 final Node translationNode = JCRUtils.getI18N(node, locale);
                 if (translationNode == null) continue;
-                final Node realTranslationNode = getRealNode(translationNode);
+                final Node realTranslationNode = getRealNode(translationNode, errors, checkedNode);
                 if (realTranslationNode != null)
                     translationNodeProcessor.execute(realTranslationNode, locale.toString());
             }
@@ -701,12 +704,12 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             final NodeIterator translationNodesIterator = node.getI18Ns();
             while (translationNodesIterator.hasNext()) {
                 final Node translationNode = translationNodesIterator.nextNode();
-                final Node realTranslationNode = getRealNode(translationNode);
+                final Node realTranslationNode = getRealNode(translationNode, errors, checkedNode);
                 if (realTranslationNode == null)
                     continue;
                 final String locale = JCRUtils.getTranslationNodeLocale(translationNode);
                 if (StringUtils.isBlank(locale)) {
-                    logger.error(String.format("Skipping a translation node since its language is invalid: %s", translationNode.getIdentifier()));
+                    errors.addError(createFrameworkError(checkedNode, String.format("Skipping a translation node since its language is invalid: %s", translationNode.getIdentifier())));
                     continue;
                 }
                 translationNodeProcessor.execute(realTranslationNode, locale);
@@ -719,18 +722,19 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         public abstract void execute(Node translationNode, String locale) throws RepositoryException;
     }
 
-    private void doOnSupertypes(JCRNodeWrapper node, SupertypeProcessor supertypeProcessor) {
-        doOnSupertypes(node, false, supertypeProcessor);
+    private void doOnSupertypes(JCRNodeWrapper node, SupertypeProcessor supertypeProcessor, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
+        doOnSupertypes(node, false, supertypeProcessor, errors, checkedNode);
     }
 
-    private void doOnSupertypes(JCRNodeWrapper node, boolean reverseOrder, SupertypeProcessor supertypeProcessor) {
+    private void doOnSupertypes(JCRNodeWrapper node, boolean reverseOrder, SupertypeProcessor supertypeProcessor,
+                                ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
         final ExtendedNodeType primaryNodeType;
         final ExtendedNodeType[] mixinNodeTypes;
         try {
             primaryNodeType = node.getPrimaryNodeType();
             mixinNodeTypes = node.getMixinNodeTypes();
         } catch (RepositoryException e) {
-            logger.error("Impossible to load the types of the node", e);
+            errors.addError(createFrameworkError(checkedNode, "Impossible to load the types of the node", e));
             return;
         }
 
@@ -743,7 +747,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         try {
             identifier = node.getIdentifier();
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(checkedNode, e));
         }
 
         try {
@@ -751,7 +755,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 supertypeProcessor.execute(node, superType);
             }
         } catch (RepositoryException e) {
-            logger.error("Error while checking the node " + identifier, e);
+            errors.addError(createFrameworkError(checkedNode, "Error while checking the node " + identifier, e));
         }
     }
 
@@ -760,11 +764,11 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         public abstract void execute(JCRNodeWrapper node, ExtendedNodeType extendedNodeType) throws RepositoryException;
     }
 
-    private String getPrintableValue(Value value) {
+    private String getPrintableValue(Value value, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
         try {
             return value.getType() == PropertyType.BINARY ? BINARY_VALUE_STR : value.getString();
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(checkedNode, e));
             return FAILED_TO_CALCULATE_VALUE_STR;
         }
     }

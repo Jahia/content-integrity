@@ -34,8 +34,7 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
         final String templatePath = template.getPath();
         final String[] parts = StringUtils.split(templatePath, JCR_PATH_SEPARATOR, 4);
         if (parts.length != 4) {
-            logger.error(String.format("Unexpected template path: %s", templatePath));
-            return null;
+            return createSingleError(createFrameworkError(template, String.format("Unexpected template path: %s", templatePath)));
         }
         final int modulePathLength = parts[0].length() + parts[1].length() + parts[2].length() + 3;
         final String modulePath = templatePath.substring(0, modulePathLength);
@@ -53,9 +52,8 @@ public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
 
             return createSingleError(createError(template, NOT_INDEXED_TEMPLATE));
         } catch (RepositoryException e) {
-            logger.error("Error when running the query " + query, e);
+            return createSingleError(createFrameworkError(template, "Error when running the query " + query, e));
         }
-        return null;
     }
 }
 

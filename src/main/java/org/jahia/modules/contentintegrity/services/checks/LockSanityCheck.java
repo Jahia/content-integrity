@@ -56,7 +56,7 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
                     missingProps.add(property);
                 }
             } catch (RepositoryException e) {
-                logger.error("", e);
+                errors.addError(createFrameworkError(node, e));
             }
         }
         if (missingProps != null && !missingProps.isEmpty()) {
@@ -89,7 +89,7 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
             }
 
         } catch (RepositoryException e) {
-            logger.error(String.format("Error while checking the node %s", node.getPath()), e);
+            errors.addError(createFrameworkError(node, String.format("Error while checking the node %s", node.getPath()), e));
         }
     }
 }

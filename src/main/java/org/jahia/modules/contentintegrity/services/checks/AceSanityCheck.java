@@ -194,7 +194,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 checkRegularAce(node, errors);
             }
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(node, e));
         }
 
         final String siteKey = getSiteKey(node.getPath());
@@ -259,14 +259,14 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                 .addExtraInfo("src-ace-path", srcAce.getPath(), true)
                                 .setExtraMsg(EXTRA_MSG_SRC_ACE_WITHOUT_ROLES_PROP));
                     } else {
-                        final List<String> externalAceRoles = getRoleNames(externalAceNode);
+                        final List<String> externalAceRoles = getRoleNames(externalAceNode, errors, externalAceNode);
                         if (CollectionUtils.isEmpty(externalAceRoles)) {
                             errors.addError(createError(externalAceNode, INVALID_ROLES_PROP, String.format("The property %s has no value", J_ROLES)));
                         } else if (externalAceRoles.size() > 1) {
                             errors.addError(createError(externalAceNode, INVALID_ROLES_PROP, String.format("Unexpected number of roles in the property %s", J_ROLES))
                                     .addExtraInfo(J_ROLES, externalAceRoles));
                         } else {
-                            final List<String> srcAceRoles = getRoleNames(srcAce);
+                            final List<String> srcAceRoles = getRoleNames(srcAce, errors, externalAceNode);
                             final String role = externalAceRoles.get(0);
 
                             final Map<String, String> roleExternalPermissions;
@@ -324,12 +324,16 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }
     }
 
-    private List<String> getRoleNames(JCRNodeWrapper ace) throws RepositoryException {
+    private List<String> getRoleNames(JCRNodeWrapper ace, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) throws RepositoryException {
         return Arrays.stream(ace.getProperty(J_ROLES).getValues()).map(jcrValueWrapper -> {
             try {
                 return jcrValueWrapper.getString();
             } catch (RepositoryException e) {
-                logger.error("", e);
+                if (errors != null) {
+                    errors.addError(createFrameworkError(checkedNode, e));
+                } else {
+                    logger.error("", e);
+                }
                 return null;
             }
         }).filter(Objects::nonNull).sorted().collect(Collectors.toList());
@@ -348,7 +352,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }
 
         if (aceNode.hasProperty(J_ROLES)) {
-            for (String roleName : getRoleNames(aceNode)) {
+            for (String roleName : getRoleNames(aceNode, errors, aceNode)) {
                 if (!roles.containsKey(roleName)) {
                     errors.addError(createError(aceNode, ROLE_DOESNT_EXIST, "ACE with a role that doesn't exist")
                             .addExtraInfo("role", roleName));
@@ -382,7 +386,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 if (extAce.isNodeType(JNT_EXTERNAL_ACE)) {
                     if (roles == null) {
                         if (aceNode.hasProperty(J_ROLES)) {
-                            roles = String.join(SPACE, getRoleNames(aceNode));
+                            roles = String.join(SPACE, getRoleNames(aceNode, errors, aceNode));
                         } else {
                             roles = StringUtils.EMPTY;
                         }
@@ -462,11 +466,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             final String principal = node.getProperty(J_PRINCIPAL).getString();
             JCRSiteNode site = null;
             JCRGroupNode sitePrivGroup = null;
-            for (String role : getRoleNames(node)) {
+            for (String role : getRoleNames(node, errors, node)) {
                 if (privilegedAccessRoles.contains(role)) {
                     if (site == null) site = node.getResolveSite();
                     if (site == null) {
-                        logger.error("Impossible to calculate the site for {}", node);
+                        errors.addError(createFrameworkError(node, "Impossible to calculate the site for " + node.getCanonicalPath()));
                         break;
                     }
 

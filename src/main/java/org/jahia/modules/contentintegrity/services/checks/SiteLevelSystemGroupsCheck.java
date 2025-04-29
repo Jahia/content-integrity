@@ -54,8 +54,7 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         if (!(node instanceof JCRSiteNode)) {
-            logger.error(String.format("Unexpected non site node: %s", node.getPath()));
-            return null;
+            return createSingleError(createFrameworkError(node, String.format("Unexpected non site node: %s", node.getPath())));
         }
         final JCRSiteNode site = (JCRSiteNode) node;
         final JCRGroupNode privGroup;
@@ -90,7 +89,7 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
                 errors.addError(error);
             }
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(site, e));
         }
 
         return  errors;

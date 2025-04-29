@@ -58,8 +58,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
         try {
             identifier = node.getIdentifier();
         } catch (RepositoryException e) {
-            logger.error("Impossible to calculate the node identifier", e);
-            return null;
+            return createSingleError(createFrameworkError(node, "Impossible to calculate the node identifier", e));
         }
 
         // skip the node if it can have been checked while scanning the default workspace
@@ -74,9 +73,9 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
             try {
                 history = vm.getVersionHistoryOfNode(NodeId.valueOf(identifier));
             } catch (ItemNotFoundException infe) {
-                logger.error(infe.getMessage());
+                final ContentIntegrityErrorList errors = createSingleError(createFrameworkError(node, infe));
                 if (logger.isDebugEnabled()) logger.debug("Impossible to load the version history for the node " + node.getPath(), infe);
-                return null;
+                return errors;
             }
             final int numVersions = history.getNumVersions();
             final int threshold = getThreshold();
@@ -86,7 +85,7 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
                         .addExtraInfo("versions-count-range", Utils.getApproximateCount(numVersions, threshold))
                         .addExtraInfo("auto-publish", node.isNodeType(Constants.JMIX_AUTO_PUBLISH)));
         } catch (RepositoryException e) {
-            logger.error(String.format("Error while checking the version history of the node %s", identifier), e);
+            return createSingleError(createFrameworkError(node, String.format("Error while checking the version history of the node %s", identifier), e));
         }
 
         return null;

@@ -49,8 +49,9 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck {
             templateName = getTemplateName(node, TEMPLATE_NAME);
         }
 
-        if (!isTemplateValid(templateName, node)) {
-            return createSingleError(createError(node, MISSING_TEMPLATE)
+        final ContentIntegrityErrorList errors = createEmptyErrorsList();
+        if (!isTemplateValid(templateName, node, errors)) {
+            return errors.addError(createError(node, MISSING_TEMPLATE)
                     .addExtraInfo("template-name", templateName));
         }
 
@@ -70,7 +71,7 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck {
         clearCaches();
     }
 
-    private boolean isTemplateValid(String templateName, JCRNodeWrapper node) {
+    private boolean isTemplateValid(String templateName, JCRNodeWrapper node, ContentIntegrityErrorList errors) {
         if (templates.contains(templateName)) return true;
         if (missingTemplates.contains(templateName)) return false;
 
@@ -82,7 +83,7 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck {
                 return true;
             }
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(node, e));
         }
         missingTemplates.add(templateName);
         return false;

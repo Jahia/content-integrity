@@ -40,7 +40,7 @@ public class JCRLanguagePropertyCheck extends AbstractContentIntegrityCheck {
                         .addExtraInfo("jcr-language-prop-value", langPropValue));
             }
         } catch (RepositoryException e) {
-            logger.error("", e);
+            return createSingleError(createFrameworkError(node, e));
         }
         return null;
     }

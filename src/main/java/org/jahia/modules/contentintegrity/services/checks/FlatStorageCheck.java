@@ -43,7 +43,7 @@ public class FlatStorageCheck extends AbstractContentIntegrityCheck implements C
                         .addExtraInfo("children-count", size, true)
                         .addExtraInfo("children-count-range", Utils.getApproximateCount(size, threshold)));
         } catch (RepositoryException e) {
-            logger.error("", e);
+            return createSingleError(createFrameworkError(node, e));
         }
         return null;
     }

@@ -88,8 +88,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
         try {
             properties = node.getProperties();
         } catch (RepositoryException e) {
-            logger.error("", e);
-            return null;
+            return createSingleError(createFrameworkError(node, e));
         }
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         while (properties.hasNext()) {
@@ -102,7 +101,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
                     checkValue(property.getValue(), errors, node, property);
                 }
             } catch (RepositoryException e) {
-                logger.error("", e);
+                errors.addError(createFrameworkError(node, e));
             }
         }
         return errors;
@@ -120,7 +119,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
             if (ignoredProperties.containsKey(pt) && ignoredProperties.get(pt).contains(tmpPropName))
                 return;
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(node, e));
         }
         propertyName = StringUtils.defaultString(tmpPropName, CALCULATION_ERROR);
         try {
@@ -134,7 +133,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
                 }
             });
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(node, e));
         }
     }
 

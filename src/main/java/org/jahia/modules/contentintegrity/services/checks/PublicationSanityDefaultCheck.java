@@ -120,7 +120,8 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                 }
             }
         } catch (RepositoryException e) {
-            logger.error("", e);
+            if (errors == null) errors = createEmptyErrorsList();
+            errors.addError(createFrameworkError(node, e));
         }
 
         return errors;

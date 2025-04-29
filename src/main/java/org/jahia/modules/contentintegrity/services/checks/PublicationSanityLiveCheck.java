@@ -204,8 +204,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             deepComparePublishedNodes(defaultNode, node, errors);
             return errors;
         } catch (RepositoryException e) {
-            logger.error("", e);
-            return null;
+            return createSingleError(createFrameworkError(node, e));
         }
     }
 
@@ -244,7 +243,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 final String pName = liveProperty.getName();
                 if (!IGNORED_LIVE_ONLY_PROPS.contains(pName) && !defaultNode.getRealNode().hasProperty(pName)) {
                     if (ugcProperties == null) {
-                        ugcProperties = getUgcProperties(liveNode);
+                        ugcProperties = getUgcProperties(liveNode, errors);
                     }
                     if (ugcProperties == null || !ugcProperties.contains(pName)) {
                         /*
@@ -262,15 +261,15 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             compareMixins(defaultNode, liveNode, errors);
 
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(liveNode, e));
         }
     }
 
-    private Set<String> getUgcProperties(JCRNodeWrapper liveNode) throws RepositoryException {
+    private Set<String> getUgcProperties(JCRNodeWrapper liveNode, ContentIntegrityErrorList errors) throws RepositoryException {
         if (!liveNode.hasProperty(J_LIVE_PROPERTIES)) return null;
 
         return Arrays.stream(liveNode.getProperty(J_LIVE_PROPERTIES).getValues())
-                .map(this::getStringValue)
+                .map(v -> getStringValue(v, errors, liveNode))
                 .filter(Objects::nonNull)
                 .filter(v -> !StringUtils.startsWith(v, LIVE_MIXINS_DECLARATION_PREFIX))
                 .collect(Collectors.toSet());
@@ -298,7 +297,7 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             Set<String> ugcMixins = null;
             if (liveNode.isNodeType(JMIX_LIVE_PROPERTIES) && liveNode.hasProperty(J_LIVE_PROPERTIES)) {
                 ugcMixins = Arrays.stream(liveNode.getProperty(J_LIVE_PROPERTIES).getValues())
-                        .map(this::getStringValue)
+                        .map(v -> getStringValue(v, errors, liveNode))
                         .filter(v -> StringUtils.startsWith(v, LIVE_MIXINS_DECLARATION_PREFIX))
                         .map(v -> StringUtils.substring(v, LIVE_MIXINS_DECLARATION_PREFIX.length()))
                         .collect(Collectors.toSet());
@@ -316,15 +315,15 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                         .addExtraInfo("live-only-mixins", filteredLiveOnlyMixins));
             }
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(liveNode, e));
         }
     }
 
-    private String getStringValue(Value v) {
+    private String getStringValue(Value v, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
         try {
             return v.getString();
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(checkedNode, e));
             return null;
         }
     }

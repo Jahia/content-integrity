@@ -77,7 +77,8 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
                 definition = property.getDefinition();
                 property.getType();
             } catch (RepositoryException e) {
-                logger.error(String.format("Skipping %s as its definition is inconsistent", JCRUtils.runJcrCallBack(property, Item::getPath, CALCULATION_ERROR)), e);
+                if (errors == null) errors = createEmptyErrorsList();
+                errors.addError(createFrameworkError(node, String.format("Skipping %s as its definition is inconsistent", JCRUtils.runJcrCallBack(property, Item::getPath, CALCULATION_ERROR)), e));
                 continue;
             }
             if (!((Boolean) getConfigurations().getParameter(VALIDATE_VERSION_HISTORY)) && StringUtils.equals(definition.getDeclaringNodeType().getName(), MIX_VERSIONABLE)) {

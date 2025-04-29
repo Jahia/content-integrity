@@ -71,7 +71,7 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                 }
             }
         } catch (RepositoryException e) {
-            logger.error("", e);
+            return createSingleError(createFrameworkError(node, e));
         }
         return null;
     }

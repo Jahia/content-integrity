@@ -46,28 +46,29 @@ public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityChe
                     .map(ExtendedNodeType::getName)
                     .collect(Collectors.toList()));
             final String name = node.getName();
-            if (types.stream().noneMatch(type -> isChildAllowed(parent, name, type)))
-                return createSingleError(createError(node, NOT_ALLOWED_BY_PARENT_DEF).addExtraInfo("parent-node-type", parent.getPrimaryNodeTypeName()));
+            final ContentIntegrityErrorList errors = createEmptyErrorsList();
+            if (types.stream().noneMatch(type -> isChildAllowed(parent, name, type, errors, node)))
+                return errors.addError(createError(node, NOT_ALLOWED_BY_PARENT_DEF).addExtraInfo("parent-node-type", parent.getPrimaryNodeTypeName()));
         } catch (RepositoryException re) {
-            logger.error("Impossible to validate " + node.getPath(), re);
+            return createSingleError(createFrameworkError(node, "Impossible to validate " + node.getPath(), re));
         }
 
         return null;
     }
 
-    private boolean isChildAllowed(JCRNodeWrapper parent, String name, String type) {
+    private boolean isChildAllowed(JCRNodeWrapper parent, String name, String type, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) {
         try {
             parent.getApplicableChildNodeDefinition(name, type);
         } catch (ConstraintViolationException cve) {
             return false;
         } catch (RepositoryException e) {
-            logger.error(String.format("Error while checking if %s accepts a child of type %s named %s",
-                    parent.getPath(), type, name), e);
+            errors.addError(createFrameworkError(checkedNode, String.format("Error while checking if %s accepts a child of type %s named %s",
+                    parent.getPath(), type, name), e));
         }
 
         /*
         If there's a RepositoryException of another type than ConstraintViolationException,
-        let's return true, so that no ContentIntegrityError is created
+        let's return true, so that no ContentIntegrityError is created with an error type related to the current check
          */
         return true;
     }

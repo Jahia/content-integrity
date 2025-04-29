@@ -58,7 +58,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
             validateFullPathProperty(node, errors);
             validateStringProperty(node, Constants.NODENAME, JCRNodeWrapper::getName, errors, MISSING_NODENAME, INVALID_NODENAME);
         } catch (RepositoryException e) {
-            logger.error("", e);
+            errors.addError(createFrameworkError(node, e));
         }
 
         return errors;
@@ -79,7 +79,7 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
                     try {
                         return JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE).getNodeByUUID(defaultNode.getIdentifier()).getPath();
                     } catch (RepositoryException e) {
-                        logger.error("", e);
+                        errors.addError(createFrameworkError(node, e));
                         return null; // TODO : this should never happen, but if it does, the resulting behavior in uncontrolled
                     }
                 }, errors, MISSING_FULLPATH, INVALID_FULLPATH);
