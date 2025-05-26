@@ -39,7 +39,7 @@ def deleteNodeInLive = { String path ->
 def workspace = Constants.EDIT_WORKSPACE
 log.info "Traversing workspace ${workspace}"
 try {
-    BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
+    jcrTemplate.doExecuteWithSystemSessionAsUser(null, workspace, null, { session ->
         String path = "${MOUNTPOINT}/PublicationSanityDefaultCheck-PATH_CONFLICT-${workspace}.txt"
         if (!session.nodeExists(path)) {
             log.info "${path} does not exists"
