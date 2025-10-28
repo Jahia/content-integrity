@@ -1,3 +1,4 @@
+<%@ page import="org.jahia.modules.contentintegrity.services.Utils" %>
 <%@ page language="java" contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="template" uri="http://www.jahia.org/tags/templateLib" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -20,6 +21,8 @@
 <c:set var="scanPanelKey" value="scan" />
 <c:set var="resultsPanelKey" value="results" />
 <c:set var="resultsDetailsAreaID" value="resultsDetails" />
+<c:set var="resultsChartAreaID" value="resultsChart" />
+<c:set var="resultsChartWrapperID" value="resultsChartWrapper" />
 <c:set var="configurationAreaID" value="configurations" />
 <c:set var="configurationPanelID" value="configurationPanelWrapper" />
 <c:set var="errorDetailsPanelID" value="errorDetailsPanelWrapper" />
@@ -31,7 +34,8 @@
 <c:set var="excludedPathsAddButtonID" value="addExcludedPath" />
 <c:set var="excludedPathsCurrentValuesID" value="excludedPaths" />
 
-<template:addResources type="javascript" resources="jquery.js,jquery-ui.min.js,contentIntegrity.js"/>
+<template:addResources type="javascript" resources="jquery.js,jquery-ui.min.js,chart.umd.js,contentIntegrity.js"/>
+<%--<template:addResources type="javascript" resources="jquery.js,jquery-ui.min.js,contentIntegrity.js?v=<%=Utils.getContentIntegrityVersion()%>"/>--%>
 <template:addResources type="css" resources="contentIntegrity.css,jquery-ui.smoothness.css"/>
 <template:addResources>
     <script type="text/javascript">
@@ -65,12 +69,20 @@
             },
             resultsPanel: {
                 key: "${resultsPanelKey}",
+                views: {
+                    default: "default",
+                    chart: "chart"
+                },
                 resultsSelector: {
                     wrapper: "resultsSelector",
-                    select: "resultList",
+                    select: "resultList"
                 },
                 resultsArea: {
                     id: "${resultsDetailsAreaID}"
+                },
+                chartArea: {
+                    id: "${resultsChartAreaID}",
+                    wrapper: "${resultsChartWrapperID}"
                 },
                 pager: {
                     allowedPageSizes: [5, 10, 20, 50, 100],
@@ -157,6 +169,12 @@
         <td><label for="includeVirtualNodes">Include the virtual nodes</label></td>
         <td><input id="includeVirtualNodes" type="checkbox" checked="checked"></td>
     </tr>
+    <%--
+    <tr>
+        <td><label for="switchToResults">Display the errors at the end of the scan</label></td>
+        <td><input id="switchToResults" type="checkbox" checked="checked"></td>
+    </tr>
+    --%>
 </table>
 <div>
     <input id="${runScanButtonID}" type="button" value="Run an integrity check"/>
@@ -172,4 +190,8 @@
     <div id="resultsSelector"></div>
     <div id="${resultsDetailsAreaID}"></div>
 </div>
+<div id="${resultsChartWrapperID}"><canvas id="${resultsChartAreaID}"></canvas></div>
 <div id="${errorDetailsPanelID}" style="display: none"></div>
+<%--
+https://www.chartjs.org/docs/latest/getting-started/
+--%>
