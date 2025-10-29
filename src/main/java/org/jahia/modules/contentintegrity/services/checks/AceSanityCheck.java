@@ -463,9 +463,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }
 
         if (node.hasProperty(J_PRINCIPAL)) {
-            final String principal = node.getProperty(J_PRINCIPAL).getString();
+            final String principalName = node.getProperty(J_PRINCIPAL).getString();
             JCRSiteNode site = null;
             JCRGroupNode sitePrivGroup = null;
+            JCRNodeWrapper principal = null;
             for (String role : getRoleNames(node, errors, node)) {
                 if (privilegedAccessRoles.contains(role)) {
                     if (site == null) site = node.getResolveSite();
@@ -477,10 +478,17 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                     if (sitePrivGroup == null)
                         sitePrivGroup = groupService.lookupGroup(site.getSiteKey(), SITE_PRIVILEGED_GROUPNAME, site.getSession());
                     if (sitePrivGroup != null) {
-                        if (!sitePrivGroup.isMember(getPrincipal(site.getSiteKey(), principal))) {
+                        if (principal == null) {
+                            principal = getPrincipal(site.getSiteKey(), principalName);
+                            if (principal == null) {
+                                // Already tracked as INVALID_PRINCIPAL
+                                break;
+                            }
+                        }
+                        if (!sitePrivGroup.isMember(principal)) {
                             errors.addError(createError(node, MISSING_SITE_PRIVILEGED_GRP_MEMBER)
                                     .addExtraInfo("site-privileged-grp", sitePrivGroup.getCanonicalPath())
-                                    .addExtraInfo("principal", principal, true)
+                                    .addExtraInfo("principal", principalName, true)
                                     .addExtraInfo("role", role));
                         }
                     }
