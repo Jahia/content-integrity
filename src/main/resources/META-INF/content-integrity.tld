@@ -9,10 +9,17 @@
     <tlib-version>1.0</tlib-version>
     <short-name>content-integrity-utils</short-name>
     <uri>http://www.jahia.org/tags/content-integrity-utils</uri>
+
     <tag>
         <name>toolsToken</name>
         <tag-class>org.jahia.modules.contentintegrity.taglib.ToolsTokenTag</tag-class>
         <body-content>empty</body-content>
     </tag>
+    <function>
+        <name>screenView</name>
+        <function-class>org.jahia.modules.contentintegrity.taglib.Functions</function-class>
+        <function-signature>java.lang.String getScreenView()</function-signature>
+    </function>
+
 
 </taglib>
