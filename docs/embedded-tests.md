@@ -148,6 +148,14 @@ Errors are usually located under `/modules`, in a node being part of a template.
 Otherwise, you will need to fix the node in the JCR, updating the property value to match the node name.  
 If the impacted nodes are automatically created, for example from some custom java code, it is important as well to identify & fix the faulty code, in order to avoid reintroducing the issue.
 
+`Error code: MISSING_JCR_LANGUAGE_PROP`
+
+Translation node without the `jcr:language` property. This one needs to be defined, and its value can usually be deducted from the node name.
+
+`Error code: INCONSISTENT_JCR_LANGUAGE_PROP`
+
+Translation node with a `jcr:language` property which is not compliant with the node name. Usually, the property has to be modified accordingly to the node name. 
+
 ## LockSanityCheck
 
 Detects the inconsistencies related to the JCR locks.
