@@ -4,11 +4,26 @@ import org.jahia.api.Constants
 import org.jahia.api.content.JCRTemplate
 import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRContentUtils
+import org.jahia.services.content.JCRNodeWrapper
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.utils.LanguageCodeConverters
 
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
+import javax.jcr.Value
+
+Boolean isPropertyMultiple(JCRNodeWrapper node, String prop) {
+    def isMultiple = null
+    def found = false
+    def types = node.definition.requiredPrimaryTypes.iterator()
+    def type
+    while (!found && types.hasNext()) {
+        type = types.next()
+        found = type.getPropertyDefinition(prop)
+        if (found) isMultiple = type.getPropertyDefinition(prop).multiple
+    }
+    return isMultiple
+}
 
 for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
@@ -32,12 +47,18 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def property = data[2]
                     def defaultValue = data[3]
                     try {
-                        def node = session.getNodeByIdentifier(uuid)
+                        JCRNodeWrapper node = session.getNodeByIdentifier(uuid)
                         if (StringUtils.isNotBlank(locale)) {
-                            node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
+                            node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale)) as JCRNodeWrapper
                         }
-                        log.info "#${count} Set property ${property} node ${node.path} with value ${defaultValue}"
-                        node.setProperty(property, defaultValue)
+                        def isMultiple = isPropertyMultiple(node, property)
+                        if (isMultiple == null) {
+                            log.error "Prop ${properties} not found for node type node ${node.definition.name} (node: ${node.path})"
+                        } else {
+                            log.info "#${count} Set property ${property} node ${node.path} with value ${defaultValue}"
+                            if (isMultiple) node.setProperty(property, new Value[]{defaultValue})
+                            else node.setProperty(property, defaultValue)
+                        }
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
                         log.warn "#${count} [WARN] uuid not found: ${uuid}"
