@@ -7,10 +7,25 @@ import org.jahia.services.content.JCRContentUtils
 import org.jahia.services.content.JCRNodeWrapper
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.decorator.JCRSiteNode
+import org.jahia.services.content.nodetypes.ValueImpl
 import org.jahia.utils.LanguageCodeConverters
 
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
+import javax.jcr.Value
+
+Boolean isPropertyMultiple(JCRNodeWrapper node, String prop) {
+    def isMultiple = null
+    def found = false
+    def types = node.definition.requiredPrimaryTypes.iterator()
+    def type
+    while (!found && types.hasNext()) {
+        type = types.next()
+        found = type.getPropertyDefinition(prop)
+        if (found) isMultiple = type.getPropertyDefinition(prop).multiple
+    }
+    return isMultiple
+}
 
 for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
     log.info "Traversing workspace ${workspace}"
@@ -34,14 +49,14 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     def property = data[2]
                     def defaultValue = data[3]
                     try {
-                        def node = session.getNodeByIdentifier(uuid)
+                        JCRNodeWrapper node = session.getNodeByIdentifier(uuid)
                         JCRSiteNode site = node.getResolveSite()
-                        if (node.path.startsWith("/modules/"))  {
+                        if (node.path.startsWith("/modules/")) {
                             log.warn "#${count} [WARN] [IGNORE]: Set property ${property} node ${node.path} with value ${defaultValue}"
                             return null
                         }
                         if (StringUtils.isNotBlank(locale)) {
-                            node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale))
+                            node = node.getI18N(LanguageCodeConverters.languageCodeToLocale(locale)) as JCRNodeWrapper
                         }
                         if (StringUtils.equals(defaultValue, "[site.home]")) {
                             if (site == null) {
@@ -55,8 +70,14 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                             }
                             defaultValue = home.identifier
                         }
-                        log.info "#${count} Set property ${property} node ${node.path} with value ${defaultValue}"
-                        node.setProperty(property, defaultValue)
+                        def isMultiple = isPropertyMultiple(node, property)
+                        if (isMultiple == null) {
+                            log.erro "Prop ${properties} not found for node type node ${node.definition.name} (node: ${node.path})"
+                        } else {
+                            log.info "#${count} Set property ${property} node ${node.path} with value ${defaultValue}"
+                            if (isMultiple) node.setProperty(property, new Value[]{defaultValue})
+                            else node.setProperty(property, defaultValue)
+                        }
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
                         log.warn "#${count} [WARN] uuid not found: ${uuid}"
