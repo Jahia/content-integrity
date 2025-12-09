@@ -6,21 +6,45 @@ import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRContentUtils
 import org.jahia.services.content.JCRNodeWrapper
 import org.jahia.services.content.JCRObservationManager
+import org.jahia.services.content.nodetypes.ExtendedNodeType
 import org.jahia.utils.LanguageCodeConverters
 
 import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
 import javax.jcr.Value
 
+List<ExtendedNodeType> getSuperTypes(JCRNodeWrapper node) {
+    final ExtendedNodeType primaryNodeType
+    final ExtendedNodeType[] mixinNodeTypes
+    try {
+        primaryNodeType = node.getPrimaryNodeType()
+        mixinNodeTypes = node.getMixinNodeTypes()
+    } catch (RepositoryException e) {
+        log.error("Impossible to load the types of the node", e)
+        return Collections.emptyList()
+    }
+
+    final List<ExtendedNodeType> superTypes = new ArrayList<>(mixinNodeTypes.length + 1)
+    superTypes.add(primaryNodeType)
+    superTypes.addAll(Arrays.asList(mixinNodeTypes))
+    return superTypes
+}
+
 Boolean isPropertyMultiple(JCRNodeWrapper node, String prop) {
     def isMultiple = null
     def found = false
-    def types = node.definition.requiredPrimaryTypes.iterator()
+
+    def types = getSuperTypes(node).iterator()
     def type
     while (!found && types.hasNext()) {
         type = types.next()
-        found = type.getPropertyDefinition(prop)
-        if (found) isMultiple = type.getPropertyDefinition(prop).multiple
+        def propertyIt = type.propertyDefinitions.iterator()
+        def property
+        while (!found && propertyIt.hasNext()) {
+            property = propertyIt.next()
+            found = property.name == prop
+            if (found) isMultiple = property.multiple
+        }
     }
     return isMultiple
 }

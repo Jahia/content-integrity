@@ -7,6 +7,7 @@ import org.jahia.services.content.JCRContentUtils
 import org.jahia.services.content.JCRNodeWrapper
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.decorator.JCRSiteNode
+import org.jahia.services.content.nodetypes.ExtendedNodeType
 import org.jahia.services.content.nodetypes.ValueImpl
 import org.jahia.utils.LanguageCodeConverters
 
@@ -14,15 +15,38 @@ import javax.jcr.ItemNotFoundException
 import javax.jcr.RepositoryException
 import javax.jcr.Value
 
+List<ExtendedNodeType> getSuperTypes(JCRNodeWrapper node) {
+    final ExtendedNodeType primaryNodeType
+    final ExtendedNodeType[] mixinNodeTypes
+    try {
+        primaryNodeType = node.getPrimaryNodeType()
+        mixinNodeTypes = node.getMixinNodeTypes()
+    } catch (RepositoryException e) {
+        log.error("Impossible to load the types of the node", e)
+        return Collections.emptyList()
+    }
+
+    final List<ExtendedNodeType> superTypes = new ArrayList<>(mixinNodeTypes.length + 1)
+    superTypes.add(primaryNodeType)
+    superTypes.addAll(Arrays.asList(mixinNodeTypes))
+    return superTypes
+}
+
 Boolean isPropertyMultiple(JCRNodeWrapper node, String prop) {
     def isMultiple = null
     def found = false
-    def types = node.definition.requiredPrimaryTypes.iterator()
+
+    def types = getSuperTypes(node).iterator()
     def type
     while (!found && types.hasNext()) {
         type = types.next()
-        found = type.getPropertyDefinition(prop)
-        if (found) isMultiple = type.getPropertyDefinition(prop).multiple
+        def propertyIt = type.propertyDefinitions.iterator()
+        def property
+        while (!found && propertyIt.hasNext()) {
+            property = propertyIt.next()
+            found = property.name == prop
+            if (found) isMultiple = property.multiple
+        }
     }
     return isMultiple
 }
@@ -72,11 +96,11 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                         }
                         def isMultiple = isPropertyMultiple(node, property)
                         if (isMultiple == null) {
-                            log.error "Prop ${properties} not found for node type node ${node.definition.name} (node: ${node.path})"
+                            log.error "Prop ${property} not found for node type node ${node.definition.name} (node: ${node.path})"
                         } else {
                             log.info "#${count} Set property ${property} node ${node.path} with value ${defaultValue}"
-                            if (isMultiple) node.setProperty(property, new Value[]{defaultValue})
-                            else node.setProperty(property, defaultValue)
+                            if (isMultiple) node.setProperty(property, new Value[]{new ValueImpl(defaultValue)})
+                            else node.setProperty(property, new ValueImpl(defaultValue))
                         }
                         if (SAVE) session.save()
                     } catch (ItemNotFoundException e) {
