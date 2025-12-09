@@ -29,6 +29,23 @@ import java.util.stream.Stream;
 public class ScriptInputExtractionCommand implements Action {
     private static final Logger logger = LoggerFactory.getLogger(ScriptInputExtractionCommand.class);
 
+    // content-integrity < 3.29 "Check ID";"Fixed";"Error type";"Workspace";"Node identifier";"Node path";"Site";"Node primary type";"Node mixins";"Locale";"Error message";"Extra information";"Specific extra information"
+    // content-integrity >= 3.29 "Check ID";"Fixed";"Error type";"Impact on XML import";"Workspace";"Node identifier";"Node path";"Site";"Node primary type";"Node mixins";"Locale";"Error message";"Extra information";"Specific extra information"
+    private static final int HEADER_CHECK_ID = 0;
+    private static final int HEADER_ERROR_TYPE = 2;
+    // private static final int HEADER_WORKSPACE = 3;
+    private static final int HEADER_WORKSPACE = 4;
+    // private static final int HEADER_NODE_IDENTIFIER = 4;
+    private static final int HEADER_NODE_IDENTIFIER = 5;
+    // private static final int HEADER_LOCALE = 9;
+    private static final int HEADER_LOCALE = 10;
+    // private static final int HEADER_ERROR_MESSAGE = 10;
+    private static final int HEADER_ERROR_MESSAGE = 11;
+    // private static final int HEADER_EXTRA_INFORMATION = 11;
+    private static final int HEADER_EXTRA_INFORMATION = 12;
+    // private static final int HEADER_SPECIFIC_EXTRA_INFORMATION = 12;
+    private static final int HEADER_SPECIFIC_EXTRA_INFORMATION = 13;
+
     @Option(name = "-o")
     private boolean overrideFiles;
 
@@ -47,7 +64,7 @@ public class ScriptInputExtractionCommand implements Action {
         if (paramFile.isDirectory()) {
             targetFolder = paramFile;
             final Collection<File> fileList = FileUtils.listFiles(targetFolder, Collections.singletonList("csv").toArray(new String[0]), false);
-            if (fileList == null || fileList.size() != 1) {
+            if (fileList.size() != 1) {
                 logger.error("Unable to identify the csv file in the specified folder");
                 return endScript();
             }
@@ -113,9 +130,9 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "UndeployedModulesReferencesCheck".equals(l[0]))
-                //.filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5] + ";" + extractUndeployedModule(l[12]))
+                .filter(l -> "UndeployedModulesReferencesCheck".equals(l[HEADER_CHECK_ID]))
+                //.filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER] + ";" + extractUndeployedModule(l[HEADER_EXTRA_INFORMATION]))
                 .collect(Collectors.toList());
         save(txtLines, "UndeployedModulesReferencesCheck", null, workspace, targetFolder);
     }
@@ -129,9 +146,9 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "ChildNodeDefinitionsSanityCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "ChildNodeDefinitionsSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "ChildNodeDefinitionsSanityCheck", null, workspace, targetFolder);
     }
@@ -140,10 +157,10 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "UndeclaredNodeTypesCheck".equals(l[0]))
-                .filter(l -> "Undeclared mixin type".equals(l[11]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5] + ";" + extractUndeclaredMixin(l[12]))
+                .filter(l -> "UndeclaredNodeTypesCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "Undeclared mixin type".equals(l[HEADER_ERROR_MESSAGE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER] + ";" + extractUndeclaredMixin(l[HEADER_EXTRA_INFORMATION]))
                 .collect(Collectors.toList());
         save(txtLines, "UndeclaredNodeTypesCheck", "MIXIN", workspace, targetFolder);
     }
@@ -157,11 +174,11 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "UndeclaredNodeTypesCheck".equals(l[0]))
-                .filter(l -> "Undeclared primary type".equals(l[11]))
-                .filter(l -> workspace.equals(l[4]))
+                .filter(l -> "UndeclaredNodeTypesCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "Undeclared primary type".equals(l[HEADER_ERROR_MESSAGE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
                 //  {primary type=fwk:newsListNewsReference}
-                .map(l -> l[5])
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "UndeclaredNodeTypesCheck", "PRIMARY_TYPE", workspace, targetFolder);
     }
@@ -170,17 +187,17 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[0]))
-                .filter(l -> "EMPTY_MANDATORY_PROPERTY".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
+                .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "EMPTY_MANDATORY_PROPERTY".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
                 .map(l -> {
-                    final String defaultValue = values.get(l[12]);
+                    final String defaultValue = values.get(l[HEADER_EXTRA_INFORMATION]);
                     if (StringUtils.isBlank(defaultValue)) {
-                        logger.warn("No default value for {}", l[12]);
+                        logger.warn("No default value for {}", l[HEADER_EXTRA_INFORMATION]);
                         return null;
                     }
                     // {declaring-type=iso:title, property-name=jcr:title}
-                    return l[5] + ";" + l[10] + ";" + extractPropertyName(l[12]) + ";" + defaultValue;
+                    return l[HEADER_NODE_IDENTIFIER] + ";" + l[HEADER_LOCALE] + ";" + extractPropertyName(l[HEADER_EXTRA_INFORMATION]) + ";" + defaultValue;
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -195,18 +212,18 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[0]))
-                .filter(l -> "INVALID_VALUE_CONSTRAINT".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
+                .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "INVALID_VALUE_CONSTRAINT".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
                 .map(l -> {
-                    final String key = l[12] + l[13];
+                    final String key = l[HEADER_EXTRA_INFORMATION] + l[HEADER_SPECIFIC_EXTRA_INFORMATION];
                     final String defaultValue = values.get(key);
                     if (StringUtils.isBlank(defaultValue)) {
                         logger.warn("No default value for {}", key);
                         return null;
                     }
                     // {constraints=[transparent, light, dark], declaring-type=fwk:allowedInCarousel, property-name=bgcolorText}
-                    return l[5] + ";" + l[10] + ";" + extractPropertyName(l[12]) + ";" + defaultValue;
+                    return l[HEADER_NODE_IDENTIFIER] + ";" + l[HEADER_LOCALE] + ";" + extractPropertyName(l[HEADER_EXTRA_INFORMATION]) + ";" + defaultValue;
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -217,10 +234,10 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[0]))
-                .filter(l -> "UNDECLARED_PROPERTY".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5] + ";" + l[10] + ";" + extractUndeclaredPropName(l[12]))
+                .filter(l -> "PropertyDefinitionsSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "UNDECLARED_PROPERTY".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER] + ";" + l[HEADER_LOCALE] + ";" + extractUndeclaredPropName(l[HEADER_EXTRA_INFORMATION]))
                 .collect(Collectors.toList());
         save(txtLines, "PropertyDefinitionsSanityCheck", "UNDECLARED_PROPERTY", workspace, targetFolder);
     }
@@ -234,9 +251,9 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "MarkForDeletionCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "MarkForDeletionCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "MarkForDeletionCheck", null, workspace, targetFolder);
     }
@@ -245,10 +262,10 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "PublicationSanityLiveCheck".equals(l[0]))
-                .filter(l -> "NO_DEFAULT_NODE".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "PublicationSanityLiveCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "NO_DEFAULT_NODE".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "PublicationSanityLiveCheck", "NO_DEFAULT_NODE", workspace, targetFolder);
     }
@@ -257,10 +274,10 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "PublicationSanityLiveCheck".equals(l[0]))
-                .filter(l -> "INCONSISTENT_UGC".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "PublicationSanityLiveCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "INCONSISTENT_UGC".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "PublicationSanityLiveCheck", "INCONSISTENT_UGC", workspace, targetFolder);
     }
@@ -269,9 +286,9 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "JCRLanguagePropertyCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "JCRLanguagePropertyCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "JCRLanguagePropertyCheck", null, workspace, targetFolder);
     }
@@ -280,10 +297,10 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "PublicationSanityDefaultCheck".equals(l[0]))
-                .filter(l -> "PATH_CONFLICT".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "PublicationSanityDefaultCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "PATH_CONFLICT".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "PublicationSanityDefaultCheck", "PATH_CONFLICT", workspace, targetFolder);
     }
@@ -292,9 +309,9 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "NodeNameInfoSanityCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "NodeNameInfoSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "NodeNameInfoSanityCheck", null, workspace, targetFolder);
     }
@@ -303,9 +320,9 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "WipSanityCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "WipSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "WipSanityCheck", null, workspace, targetFolder);
     }
@@ -314,9 +331,9 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "ReferencesSanityCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5] + ";" + l[10] + ";" + extractPropertyName(l[12]))
+                .filter(l -> "ReferencesSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER] + ";" + l[HEADER_LOCALE] + ";" + extractPropertyName(l[HEADER_EXTRA_INFORMATION]))
                 .collect(Collectors.toList());
         save(txtLines, "ReferencesSanityCheck", null, workspace, targetFolder);
     }
@@ -325,9 +342,9 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "BinaryPropertiesSanityCheck".equals(l[0]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "BinaryPropertiesSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "BinaryPropertiesSanityCheck", null, workspace, targetFolder);
     }
@@ -336,11 +353,11 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "PublicationSanityDefaultCheck".equals(l[0]))
-                .filter(l -> "NO_LIVE_NODE".equals(l[2]))
-                .filter(l -> "Found a node flagged as published, but no corresponding live node exists".equals(l[11]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "PublicationSanityDefaultCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "NO_LIVE_NODE".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> "Found a node flagged as published, but no corresponding live node exists".equals(l[HEADER_ERROR_MESSAGE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "PublicationSanityDefaultCheck", "NO_LIVE_NODE", workspace, targetFolder);
     }
@@ -349,11 +366,11 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "PublicationSanityDefaultCheck".equals(l[0]))
-                .filter(l -> "NO_LIVE_NODE".equals(l[2]))
-                .filter(l -> "Found a node auto-published, but no corresponding live node exists".equals(l[11]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "PublicationSanityDefaultCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "NO_LIVE_NODE".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> "Found a node auto-published, but no corresponding live node exists".equals(l[HEADER_ERROR_MESSAGE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "PublicationSanityDefaultCheck", "NO_LIVE_NODE_AUTO_PUBLISH", workspace, targetFolder);
     }
@@ -362,10 +379,10 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "LockSanityCheck".equals(l[0]))
-                .filter(l -> "DELETION_LOCK_ON_I18N".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "LockSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "DELETION_LOCK_ON_I18N".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "LockSanityCheck", "DELETION_LOCK_ON_I18N", workspace, targetFolder);
     }
@@ -374,10 +391,10 @@ public class ScriptInputExtractionCommand implements Action {
         final List<String> txtLines = lines.stream()
                 .map(l -> l.split(";"))
                 .peek(ScriptInputExtractionCommand::unescapeCSV)
-                .filter(l -> "LockSanityCheck".equals(l[0]))
-                .filter(l -> "INCONSISTENT_LOCK".equals(l[2]))
-                .filter(l -> workspace.equals(l[4]))
-                .map(l -> l[5])
+                .filter(l -> "LockSanityCheck".equals(l[HEADER_CHECK_ID]))
+                .filter(l -> "INCONSISTENT_LOCK".equals(l[HEADER_ERROR_TYPE]))
+                .filter(l -> workspace.equals(l[HEADER_WORKSPACE]))
+                .map(l -> l[HEADER_NODE_IDENTIFIER])
                 .collect(Collectors.toList());
         save(txtLines, "LockSanityCheck", "INCONSISTENT_LOCK", workspace, targetFolder);
     }
