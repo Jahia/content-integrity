@@ -26,6 +26,7 @@ for (String workspace in [Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE]) {
                     ++count
                     try {
                         def node = session.getNodeByIdentifier(uuid)
+                        if(node.isNodeType('jmix:markedForDeletionRoot')) node.unmarkForDeletion()
                         log.info "#${count} Repair LockSanityCheck-INCONSISTENT_LOCK for node ${node.path}"
                         try {
                             node.lock(true, false)
