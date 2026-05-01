@@ -20,6 +20,7 @@
   * [TemplatesIndexationCheck](#templatesindexationcheck)
   * [UndeclaredNodeTypesCheck](#undeclarednodetypescheck)
   * [UndeployedModulesReferencesCheck](#undeployedmodulesreferencescheck)
+  * [UnreadablePublicationStatusCheck](#unreadablepublicationstatuscheck)
   * [UserAccountSanityCheck](#useraccountsanitycheck)
   * [VersionHistoryCheck](#versionhistorycheck)
   * [VersionsSanityCheck](#versionsanitycheck)
@@ -527,6 +528,44 @@ If the module was undeployed for good reasons, then you need to clean the site n
 
     root@dx()> jcr:cd /sites/digitall
     root@dx()> jcr:prop-set -multiple -op remove j:installedModules myOldModule 
+
+## UnreadablePublicationStatusCheck
+
+Detects `jmix:i18n` nodes for which the workflow and delete status cannot be read by the publication service.
+
+When computing publication info, `ComplexPublicationServiceImpl` calls `session.getNodeByUUID(uuid)` on a locale-specific session for each language a node is translated into. If the node's path cannot be resolved in that locale (typically because the node or one of its ancestors is missing the corresponding translation sub-node), Jahia throws a `PathNotFoundException` wrapped as an `ItemNotFoundException`, and logs the warning:
+
+```
+Issue when reading workflow and delete status of node <path>
+```
+
+This check replicates that lookup: for every `j:translation_<lang>` child found on an `jmix:i18n` node, it attempts to load the parent node by identifier via a locale-specific system session. A failure is reported as an integrity error. The check runs on both the `default` and `live` workspaces.
+
+### Dealing with errors
+
+`Error code: UNREADABLE_PUBLICATION_STATUS`
+
+**Description**: The node has a `j:translation_<lang>` child but cannot be loaded via a localized JCR session for that language. This blocks the publication service from computing the publication status of the node and its subtree.
+
+The root cause is usually one of the following:
+
+- An ancestor of the reported node has `jmix:i18n` but is missing the translation for the affected language (e.g. the ancestor's `j:translation_<lang>` was deleted while the descendant's was not, or vice-versa).
+- A database or datastore failure partially wrote or deleted a translation node, leaving the tree in an inconsistent state.
+
+To fix the issue, identify which node in the path is missing its translation for the reported locale. Then either:
+
+- Restore the missing translation node (recreate `j:translation_<lang>` on the ancestor and republish).
+- Or, if the orphaned translation sub-node on the reported node is the cause, delete it.
+
+In the `live` workspace, deleting the problematic node or its orphaned translation directly via a Groovy script is often the quickest way to unblock publication:
+
+```groovy
+def session = org.jahia.services.content.JCRSessionFactory.getInstance()
+                  .getCurrentSystemSession("live", null, null)
+def node = session.getNode("/sites/mySite/path/to/node")
+node.remove()
+session.save()
+```
 
 ## UserAccountSanityCheck
 
