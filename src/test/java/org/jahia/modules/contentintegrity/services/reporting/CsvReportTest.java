@@ -1,46 +1,72 @@
 package org.jahia.modules.contentintegrity.services.reporting;
 
+import org.apache.commons.lang.StringEscapeUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ErrorCollector;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.is;
 
 public class CsvReportTest {
 
+    // ErrorCollector reports every failed assertion of a test method, instead of stopping at the first one.
+    @Rule
+    public final ErrorCollector collector = new ErrorCollector();
+
     @Test
     public void wrapsAndEscapesAnOrdinaryValue() {
-        assertEquals("\"plain text\"", CsvReport.escapeCsv("plain text"));
-        assertEquals("\"he said \"\"hi\"\"\"", CsvReport.escapeCsv("he said \"hi\""));
-        assertEquals("\"trimmed\"", CsvReport.escapeCsv("  trimmed  "));
+        assertCell("\"plain text\"", "plain text");
+        assertCell("\"he said \"\"hi\"\"\"", "he said \"hi\"");
+        assertCell("\"trimmed\"", "  trimmed  ");
     }
 
     @Test
     public void writesAnEmptyCellForABlankValue() {
-        assertEquals("\"\"", CsvReport.escapeCsv(null));
-        assertEquals("\"\"", CsvReport.escapeCsv(""));
-        assertEquals("\"\"", CsvReport.escapeCsv("   "));
+        assertCell("\"\"", null);
+        assertCell("\"\"", "");
+        assertCell("\"\"", "   ");
     }
 
     @Test
     public void writesAnEmptyCellWhenOnlyControlCharactersRemain() {
         // U+0001 is not blank for StringUtils, and trim() removes it, so the value is empty here.
-        assertEquals("\"\"", CsvReport.escapeCsv("\u0001"));
+        assertCell("\"\"", "\u0001");
     }
 
     @Test
     public void keepsAValueThatStartsWithAFormulaTriggerAsLiteralText() {
-        assertEquals("\"'=1+1\"", CsvReport.escapeCsv("=1+1"));
-        assertEquals("\"'+1\"", CsvReport.escapeCsv("+1"));
-        assertEquals("\"'-1\"", CsvReport.escapeCsv("-1"));
-        assertEquals("\"'@SUM(A1)\"", CsvReport.escapeCsv("@SUM(A1)"));
-        // The leading whitespace is trimmed first, so the trigger below is the first character.
-        assertEquals("\"'=1+1\"", CsvReport.escapeCsv("  =1+1"));
+        assertCell("\"'=1+1\"", "=1+1");
+        assertCell("\"'+1\"", "+1");
+        assertCell("\"'-1\"", "-1");
+        assertCell("\"'@SUM(A1)\"", "@SUM(A1)");
+    }
+
+    @Test
+    public void testsTheFirstCharacterOfTheTrimmedValue() {
+        // trim() removes every character below U+0020, so a leading space, TAB or CR never reaches the
+        // trigger test. It reveals the trigger that follows it, and it neutralises TAB and CR themselves.
+        assertCell("\"'=1+1\"", "  =1+1");
+        assertCell("\"'=1+1\"", "\t=1+1");
+        assertCell("\"'=1+1\"", "\r=1+1");
+        assertCell("\"SUM(A1)\"", "\tSUM(A1)");
+        assertCell("\"SUM(A1)\"", "\rSUM(A1)");
+    }
+
+    @Test
+    public void writesAValueThatStartsWithADoubleQuoteWithoutTheLiteralTextPrefix() {
+        // The cell starts with a double quote, which no spreadsheet application reads as a formula.
+        assertCell("\"\"\"=1+1\"", "\"=1+1");
     }
 
     @Test
     public void leavesAValueThatCarriesATriggerAwayFromTheStartUnchanged() {
-        assertEquals("\"/sites/mysite/home/=1+1\"", CsvReport.escapeCsv("/sites/mysite/home/=1+1"));
-        assertEquals("\"{property-name=j:linknode}\"", CsvReport.escapeCsv("{property-name=j:linknode}"));
-        assertEquals("\"a-b-c\"", CsvReport.escapeCsv("a-b-c"));
-        assertEquals("\"user@example.com\"", CsvReport.escapeCsv("user@example.com"));
+        assertCell("\"/sites/mysite/home/=1+1\"", "/sites/mysite/home/=1+1");
+        assertCell("\"{property-name=j:linknode}\"", "{property-name=j:linknode}");
+        assertCell("\"a-b-c\"", "a-b-c");
+        assertCell("\"user@example.com\"", "user@example.com");
+    }
+
+    private void assertCell(String expected, String value) {
+        collector.checkThat(StringEscapeUtils.escapeJava(value), CsvReport.escapeCsv(value), is(expected));
     }
 }

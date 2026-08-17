@@ -22,7 +22,7 @@ public class CsvReport extends Report {
     private static final String CSV_VALUE_WRAPPER = "\"";
     private static final String CSV_EMPTY_VALUE = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
     private static final String ESCAPED_CSV_VALUE_WRAPPER = CSV_VALUE_WRAPPER + CSV_VALUE_WRAPPER;
-    private static final String FORMULA_TRIGGER_CHARS = "=+-@\t\r";
+    private static final String FORMULA_TRIGGER_CHARS = "=+-@";
     private static final String LITERAL_TEXT_PREFIX = "'";
     public static final int MAX_NUMBER_OF_LINES = 500 * 1000;
 
@@ -77,8 +77,9 @@ public class CsvReport extends Report {
     static String escapeCsv(String text) {
         if (StringUtils.isBlank(text)) return CSV_EMPTY_VALUE;
         final String value = StringUtils.replace(text.trim(), CSV_VALUE_WRAPPER, ESCAPED_CSV_VALUE_WRAPPER);
-        // A spreadsheet application evaluates a cell that starts with = + - @ TAB or CR as a formula,
-        // so such a value is exported with a leading single quote and stays literal text.
+        // A spreadsheet application evaluates a cell that starts with = + - or @ as a formula.
+        // The leading single quote keeps such a value literal text.
+        // TAB and CR are formula triggers too, and the trim above already removes them.
         final boolean startsWithFormulaTrigger = !value.isEmpty()
                 && FORMULA_TRIGGER_CHARS.indexOf(value.charAt(0)) >= 0;
         return String.format("%s%s%s%s",
