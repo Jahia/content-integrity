@@ -6,29 +6,24 @@
     "build:dev": "yarn webpack",
     "build:production": "yarn webpack --mode=production",
     "webpack": "node --max_old_space_size=2048 ./node_modules/webpack/bin/webpack.js",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject",
     "dev": "yarn webpack --watch",
     "watch": "yarn webpack --watch"
   },
   "dependencies": {
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-scripts": "^5.0.0"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/preset-env": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "babel-loader": "^10.0.0",
     "clean-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^13.0.1",
     "webpack": "^5.104.1",
     "webpack-bundle-analyzer": "^4.10.2",
-    "webpack-cli": "^6.0.1",
-    "@babel/core": "^7.28.5",
-    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "babel-loader": "^10.0.0",
-    "@babel/preset-env": "^7.28.5",
-    "@babel/preset-react": "^7.28.5"
+    "webpack-cli": "^6.0.1"
   },
   "browserslist": {
     "production": [
