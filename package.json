@@ -1,6 +1,6 @@
 {
   "name": "@jahia/content-integrity",
-  "version": "3.36.0-SNAPSHOT",
+  "version": "4.0.0-SNAPSHOT",
   "description": "Content Integrity administration UI for Jahia",
   "main": "index.js",
   "author": "Jahia",
