@@ -10,12 +10,10 @@ import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 import java.util.Collection;
 
@@ -24,13 +22,11 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_FRO
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_VERSIONABLEUUID;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NT_VERSION;
 
-/*
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/jcr:system/jcr:versionStorage",
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.NT_VERSIONHISTORY,
         ContentIntegrityCheck.ENABLED + "=false"
 })
- */
 public class VersionSanityCheck extends AbstractContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(VersionSanityCheck.class);

@@ -64,7 +64,8 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
             JCRNodeWrapper samePathLiveNode = null;
             try {
                 samePathLiveNode = liveSession.getNode(node.getPath());
-            } catch (PathNotFoundException ignored) {}
+            } catch (PathNotFoundException ignored) {
+            }
             if (samePathLiveNode != null) {
                 final String samePathLiveNodeIdentifier = samePathLiveNode.getIdentifier();
                 if (!StringUtils.equals(node.getIdentifier(), samePathLiveNodeIdentifier)) {
@@ -84,7 +85,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());
                 } catch (ItemNotFoundException infe) {
                     final String msg = String.format("Found a node %s, but no corresponding live node exists",
-                            flaggedPublished? "flagged as published" : "auto-published");
+                            flaggedPublished ? "flagged as published" : "auto-published");
                     final ContentIntegrityError error = createError(node, NO_LIVE_NODE, msg);
                     return trackError(errors, error);
                 }

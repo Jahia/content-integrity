@@ -245,7 +245,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         }
 
         if (!propertyNode.hasProperty(pName)) {
-            trackMissingMandatoryValue(pName, propertyDefinition, node, locale, errors );
+            trackMissingMandatoryValue(pName, propertyDefinition, node, locale, errors);
             return;
         }
 
@@ -255,7 +255,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         }
     }
 
-    private boolean isPropertyEmpty (Property property) throws RepositoryException {
+    private boolean isPropertyEmpty(Property property) throws RepositoryException {
         boolean isEmpty = true;
         if (property.isMultiple()) {
             for (Value value : property.getValues()) {
@@ -439,9 +439,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     private void checkValue(Value value, int valueIdx,
-                               String pName, ExtendedPropertyDefinition epd,
-                               JCRNodeWrapper jahiaNode, String locale,
-                               ContentIntegrityErrorList errors) throws RepositoryException {
+                            String pName, ExtendedPropertyDefinition epd,
+                            JCRNodeWrapper jahiaNode, String locale,
+                            ContentIntegrityErrorList errors) throws RepositoryException {
         if (isValueEmpty(value)) return;
         if (!constraintIsValid(value, epd, errors, jahiaNode)) {
             trackInvalidValueConstraint(pName, epd, getPrintableValue(value, errors, jahiaNode), valueIdx, jahiaNode, locale, epd.getValueConstraints(), errors);

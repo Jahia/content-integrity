@@ -92,6 +92,6 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
             errors.addError(createFrameworkError(site, e));
         }
 
-        return  errors;
+        return errors;
     }
 }

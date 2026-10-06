@@ -29,7 +29,8 @@ import javax.jcr.RepositoryException;
 import java.util.Collections;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.MIX_VERSIONABLE
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.MIX_VERSIONABLE,
+        ContentIntegrityCheck.ENABLED + "=false"
 })
 public class VersionHistoryCheck extends AbstractContentIntegrityCheck implements
         ContentIntegrityCheck.SupportsIntegrityErrorFix,

@@ -39,7 +39,7 @@
         "BOTH": "All workspaces"
       },
       "includeVirtualNodes": "Include the virtual nodes",
-      "includeVirtualNodesHelper": "Uncheck to skip the nodes exposed by an external data provider, such as an EDP connector.",
+      "includeVirtualNodesHelper": "Uncheck to skip the nodes exposed by an external data provider, such as an EDP or LDAP connector.",
       "run": "Run the scan",
       "stop": "Stop",
       "logs": "Scan logs",
