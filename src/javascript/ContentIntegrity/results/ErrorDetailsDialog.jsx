@@ -7,6 +7,9 @@ import {Dialog} from '../common/Dialog';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {GET_ERROR_DETAILS} from '../ContentIntegrity.gql';
 import {formatCell} from './columns';
+import {FixAction} from './FixAction';
+import {FixValuesForm} from './FixValuesForm';
+import {FIX_STATES} from './useFixError';
 import styles from '../ContentIntegrity.scss';
 
 const isEmpty = value => value === null || value === undefined || value === '';
@@ -47,7 +50,7 @@ DetailsSection.propTypes = {
     })).isRequired
 };
 
-export const ErrorDetailsDialog = ({errorId, resultsId, onClose}) => {
+export const ErrorDetailsDialog = ({errorId, resultsId, fixState, onFix, onClose}) => {
     const {t} = useTranslation('content-integrity');
     const {data, loading, error} = useQuery(GET_ERROR_DETAILS, {
         variables: {id: errorId, resultsID: resultsId},
@@ -62,7 +65,12 @@ export const ErrorDetailsDialog = ({errorId, resultsId, onClose}) => {
         <Dialog isOpen
                 title={t('label.details.title')}
                 size="large"
-                actions={<Button label={t('label.close')} variant="outlined" onClick={onClose}/>}
+                actions={(
+                    <>
+                        {details && (!details.fixWithValues || fixState === FIX_STATES.FIXED) && <FixAction error={details} state={fixState} size="default" onFix={onFix}/>}
+                        <Button label={t('label.close')} variant="outlined" onClick={onClose}/>
+                    </>
+                )}
                 onClose={onClose}
         >
             {loading && <div className={styles.centered}><Loader size="big"/></div>}
@@ -72,9 +80,10 @@ export const ErrorDetailsDialog = ({errorId, resultsId, onClose}) => {
                 <div className={styles.details}>
                     <div className={styles.detailsSummary}>
                         <Typography variant="heading" weight="bold">{details.message}</Typography>
-                        {details.importError === true && (
+                        {(details.importError === true || details.fixed || fixState === FIX_STATES.FIXED) && (
                             <div className={styles.detailsChips}>
-                                <Chip label={t('label.details.impactsImport')} icon={<Warning/>} color="warning"/>
+                                {details.importError === true && <Chip label={t('label.details.impactsImport')} icon={<Warning/>} color="warning"/>}
+                                {(details.fixed || fixState === FIX_STATES.FIXED) && <Chip label={t('label.fix.fixed')} color="success"/>}
                             </div>
                         )}
                     </div>
@@ -96,6 +105,12 @@ export const ErrorDetailsDialog = ({errorId, resultsId, onClose}) => {
                                     ]}/>
                     <DetailsSection title={t('label.details.extraInfos')}
                                     rows={(details.extraInfos || []).map(info => ({label: info.label, value: info.value, isCode: true}))}/>
+                    {details.fixWithValues && details.fixValues && fixState !== FIX_STATES.FIXED && (
+                        <FixValuesForm errorId={details.id}
+                                       definition={details.fixValues}
+                                       isFixing={fixState === FIX_STATES.FIXING}
+                                       onFix={onFix}/>
+                    )}
                 </div>
             )}
         </Dialog>
@@ -105,5 +120,7 @@ export const ErrorDetailsDialog = ({errorId, resultsId, onClose}) => {
 ErrorDetailsDialog.propTypes = {
     errorId: PropTypes.string.isRequired,
     resultsId: PropTypes.string.isRequired,
+    fixState: PropTypes.string,
+    onFix: PropTypes.func.isRequired,
     onClose: PropTypes.func.isRequired
 };

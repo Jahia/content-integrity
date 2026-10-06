@@ -1,11 +1,14 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.services.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +35,32 @@ public class GqlScanResultsError {
     @GraphQLField
     public boolean isFixed() {
         return error.isFixed();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the check which has detected the error provides a fix, and the error is not fixed yet")
+    public boolean isFixable() {
+        if (error.isFixed()) return false;
+        final ContentIntegrityCheck check = Utils.getContentIntegrityService().getContentIntegrityCheck(error.getIntegrityCheckID());
+        return check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the fix of the error takes values, which are described by the field 'fixValues'")
+    public boolean isFixWithValues() {
+        if (error.isFixed()) return false;
+        final ContentIntegrityCheck check = Utils.getContentIntegrityService().getContentIntegrityCheck(error.getIntegrityCheckID());
+        return check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues
+                && ((ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) check).isFixWithValues(error);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The values to provide to fix the error, null if its fix doesn't take values")
+    public GqlFixValuesDefinition getFixValues() {
+        if (!isFixWithValues()) return null;
+        return Optional.ofNullable(Utils.getContentIntegrityService().getFixValuesDefinition(error))
+                .map(GqlFixValuesDefinition::new)
+                .orElse(null);
     }
 
     @GraphQLField

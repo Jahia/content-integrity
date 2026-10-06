@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import PropTypes from 'prop-types';
 import {useQuery} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
@@ -24,6 +24,8 @@ import {
 import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST} from '../ContentIntegrity.gql';
 import {COLUMNS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
 import {ErrorDetailsDialog} from './ErrorDetailsDialog';
+import {FixAction} from './FixAction';
+import {useFixError} from './useFixError';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {ReportLinks} from '../common/ReportLinks';
 import styles from '../ContentIntegrity.scss';
@@ -117,6 +119,9 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
     });
     // Keep the previous page on screen while the next one loads, so the table does not flash.
     const details = (results.data ?? results.previousData)?.integrity?.results;
+    // After a fix, the errors are read again: their 'fixed' and 'fixable' fields have changed
+    const {refetch: refetchResults} = results;
+    const {fix, states: fixStates} = useFixError(resultsId, useCallback(() => refetchResults(), [refetchResults]));
     const possibleValues = useMemo(
         () => Object.fromEntries((details?.possibleValues || []).map(c => [c.name, c.values])),
         [details]
@@ -235,7 +240,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                 <TableHead>
                                     <TableRow>
                                         {columns.map(c => <TableHeadCell key={c.key} width={c.width}>{t(`label.column.${c.key}`)}</TableHeadCell>)}
-                                        <TableHeadCell width="56px"><span className={styles.srOnly}>{t('label.results.details')}</span></TableHeadCell>
+                                        <TableHeadCell width="160px"><span className={styles.srOnly}>{t('label.results.actions')}</span></TableHeadCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -250,13 +255,16 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                                     ) : formatCell(error[c.key])}
                                                 </TableBodyCell>
                                             ))}
-                                            <TableBodyCell width="56px">
-                                                <Button variant="ghost"
-                                                        size="small"
-                                                        icon={<Information/>}
-                                                        title={t('label.results.details')}
-                                                        aria-label={t('label.results.details')}
-                                                        onClick={() => setDetailsId(error.id)}/>
+                                            <TableBodyCell width="160px">
+                                                <div className={styles.rowActions}>
+                                                    <FixAction error={error} state={fixStates[error.id]} onFix={fix} onOpenValues={setDetailsId}/>
+                                                    <Button variant="ghost"
+                                                            size="small"
+                                                            icon={<Information/>}
+                                                            title={t('label.results.details')}
+                                                            aria-label={t('label.results.details')}
+                                                            onClick={() => setDetailsId(error.id)}/>
+                                                </div>
                                             </TableBodyCell>
                                         </TableRow>
                                     ))}
@@ -281,7 +289,11 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
             </Paper>
 
             {detailsId && resultsId && (
-                <ErrorDetailsDialog errorId={detailsId} resultsId={resultsId} onClose={() => setDetailsId(null)}/>
+                <ErrorDetailsDialog errorId={detailsId}
+                                    resultsId={resultsId}
+                                    fixState={fixStates[detailsId]}
+                                    onFix={fix}
+                                    onClose={() => setDetailsId(null)}/>
             )}
         </div>
     );

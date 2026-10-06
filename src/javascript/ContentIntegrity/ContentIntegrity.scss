@@ -235,6 +235,13 @@
     flex: 1;
 }
 
+.rowActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-nano);
+}
+
 .tableWrapper {
     // width: 0 + min-width: 100% gives the scroll container no intrinsic width: it takes the card's
     // width and scrolls, instead of reporting the table's width up the flex layout.
@@ -425,4 +432,42 @@
     justify-content: flex-end;
     gap: var(--spacing-small);
     margin-top: var(--spacing-medium);
+}
+
+// The fix is an action, not a detail: framed apart from the sections above it.
+.fixValuesSection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+    padding: var(--spacing-medium);
+    border: 1px solid var(--color-gray_light);
+    border-radius: 4px;
+    background-color: var(--color-gray_light20);
+}
+
+// Moonstone indents a field for a leading control this one doesn't have.
+.fixValuesField.fixValuesField {
+    padding-left: 0;
+}
+
+.fixValues {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+}
+
+.fixValuesRow {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-nano);
+}
+
+.fixValuesInput {
+    flex: 1;
+    min-width: 0;
+}
+
+.fixValuesActions {
+    display: flex;
+    justify-content: flex-end;
 }

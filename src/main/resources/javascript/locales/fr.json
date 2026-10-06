@@ -64,7 +64,8 @@
       "noResultsTitle": "Aucun résultat d'analyse",
       "filters": "Filtres",
       "filtersCount": "Filtres ({{count}})",
-      "clearFilters": "Effacer les filtres"
+      "clearFilters": "Effacer les filtres",
+      "actions": "Actions"
     },
     "details": {
       "title": "Détails de l'erreur",
@@ -104,6 +105,26 @@
       },
       "showLogs": "Afficher le journal",
       "hideLogs": "Masquer le journal"
+    },
+    "fix": {
+      "fix": "Corriger",
+      "fixed": "Corrigée",
+      "failed": "Non corrigée",
+      "failedHelper": "La correction du contrôle n'a pas corrigé cette erreur. Elle doit être corrigée à la main.",
+      "helper": "Corriger cette erreur avec la correction de {{check}}",
+      "withValues": "Corriger…",
+      "withValuesHelper": "Saisir la valeur qui corrige cette erreur"
+    },
+    "fixValues": {
+      "title": "Corriger avec une valeur",
+      "description": "La propriété obligatoire {{property}} n'a pas de valeur. Saisissez la valeur à définir, puis corrigez l'erreur.",
+      "type": "Type : {{type}}",
+      "constraints": "Contraintes : {{constraints}}",
+      "valueAt": "Valeur {{index}}",
+      "choose": "Choisir une valeur",
+      "add": "Ajouter une valeur",
+      "remove": "Supprimer cette valeur",
+      "submit": "Définir la valeur et corriger"
     }
   }
 }

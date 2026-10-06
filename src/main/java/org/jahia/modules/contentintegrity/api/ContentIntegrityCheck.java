@@ -4,6 +4,7 @@ import org.jahia.services.content.JCRNodeWrapper;
 
 import javax.jcr.RepositoryException;
 import java.util.Collection;
+import java.util.List;
 
 public interface ContentIntegrityCheck {
 
@@ -58,6 +59,36 @@ public interface ContentIntegrityCheck {
          * @throws RepositoryException
          */
         boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException;
+    }
+
+    /**
+     * A check whose fix of some errors takes values provided by an administrator, for example the value of a missing mandatory property.
+     */
+    interface SupportsIntegrityErrorFixWithValues extends SupportsIntegrityErrorFix {
+        /**
+         * @param error the error to fix
+         * @return true if the fix of this error takes values. Only reads the error, so it is cheap to call on every error of a scan
+         */
+        boolean isFixWithValues(ContentIntegrityError error);
+
+        /**
+         * @param node  the node on which the error has been identified
+         * @param error the error to fix
+         * @return the description of the values to provide, null if the fix of this error doesn't take values
+         * @throws RepositoryException
+         */
+        FixValuesDefinition getFixValuesDefinition(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException;
+
+        /**
+         * Fix a single error with the provided values.
+         *
+         * @param node   the node on which the error has been identified
+         * @param error  the error to fix
+         * @param values the values, as strings
+         * @return true if the error has been successfully fixed. false otherwise
+         * @throws RepositoryException if the values are invalid, with a message which explains why
+         */
+        boolean fixError(JCRNodeWrapper node, ContentIntegrityError error, List<String> values) throws RepositoryException;
     }
 
     interface IsConfigurable {

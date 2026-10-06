@@ -1,16 +1,21 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,9 +37,11 @@ public class GqlScanResults {
     private final int errorCount, totalErrorCount;
     private final Collection<String> currentFilters;
     private final List<GqlScanReportFile> reports;
+    private final ContentIntegrityResults results;
 
     public GqlScanResults(String id, Collection<String> filters) {
         final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
+        results = all;
         if (all == null) {
             allErrors = null;
             filteredErrors = null;
@@ -108,6 +115,31 @@ public class GqlScanResults {
                 .filter(e -> StringUtils.equals(e.getErrorID(), id))
                 .map(GqlScanResultsError::new)
                 .findFirst().orElse(null);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Fixes the error with the fix of the check which has detected it, and returns the error. Its field 'fixed' tells if the fix has succeeded")
+    public GqlScanResultsError fixError(@GraphQLName("id") @GraphQLNonNull String id,
+                                        @GraphQLName("values") @GraphQLDescription("The values to fix the error with, when its field 'fixWithValues' is true") List<String> values) {
+        final ContentIntegrityError error = allErrors.stream()
+                .filter(e -> StringUtils.equals(e.getErrorID(), id))
+                .findFirst().orElse(null);
+        if (error == null) return null;
+        if (!error.isFixed()) {
+            final ContentIntegrityService service = Utils.getContentIntegrityService();
+            if (values == null) {
+                service.fixError(error);
+            } else {
+                try {
+                    service.fixError(error, values);
+                } catch (RepositoryException e) {
+                    throw new GqlJcrWrongInputException(e.getMessage());
+                }
+            }
+            // The fixed status is part of the results, which are stored in a cache
+            if (error.isFixed()) service.storeErrorsInCache(results);
+        }
+        return new GqlScanResultsError(error);
     }
 
     @GraphQLField

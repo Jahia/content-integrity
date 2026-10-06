@@ -145,6 +145,9 @@ export const GET_SCAN_RESULTS = gql`
                     message
                     extraInfosString
                     importError
+                    fixed
+                    fixable
+                    fixWithValues
                 }
                 possibleValues(names: $filterColumns, withErrorsOnly: false) {
                     name
@@ -175,10 +178,37 @@ export const GET_ERROR_DETAILS = gql`
                     errorType
                     site
                     importError
+                    fixed
+                    fixable
+                    fixWithValues
+                    fixValues {
+                        name
+                        type
+                        multiple
+                        choices
+                        constraints
+                        defaultValues
+                    }
                     extraInfos {
                         label
                         value
                     }
+                }
+            }
+        }
+    }
+`;
+
+// Runs the fix of the check which has detected the error. 'fixed' tells if the fix has succeeded.
+export const FIX_ERROR = gql`
+    query ContentIntegrityFixError($resultsID: String!, $id: String!, $values: [String]) {
+        integrity: contentIntegrity {
+            results: scanResultsDetails(id: $resultsID) {
+                error: fixError(id: $id, values: $values) {
+                    id
+                    fixed
+                    fixable
+                    fixWithValues
                 }
             }
         }

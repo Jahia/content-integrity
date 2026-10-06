@@ -13,6 +13,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
+import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
@@ -493,6 +494,44 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 logger.error(String.format("Failed to fix the error %s", error.toJSON()), e);
             }
         }
+    }
+
+    @Override
+    public void fixError(ContentIntegrityError error, List<String> values) throws RepositoryException {
+        final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+        if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues)) {
+            throw new RepositoryException("The check which has detected the error doesn't fix it with values");
+        }
+        final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = (ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) integrityCheck;
+        if (!check.isFixWithValues(error)) {
+            throw new RepositoryException("This error is not fixed with values");
+        }
+        final JCRNodeWrapper node = getErrorNode(error);
+        if (check.fixError(node, error, values)) {
+            error.setFixed(true);
+        } else {
+            logger.error(String.format("Failed to fix the error %s", error.toJSON()));
+        }
+    }
+
+    @Override
+    public FixValuesDefinition getFixValuesDefinition(ContentIntegrityError error) {
+        final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+        if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues)) return null;
+        final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = (ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) integrityCheck;
+        if (!check.isFixWithValues(error)) return null;
+        try {
+            return check.getFixValuesDefinition(getErrorNode(error), error);
+        } catch (RepositoryException e) {
+            logger.error(String.format("Impossible to describe the values to fix the error %s", error.toJSON()), e);
+            return null;
+        }
+    }
+
+    private JCRNodeWrapper getErrorNode(ContentIntegrityError error) throws RepositoryException {
+        final JCRSessionWrapper session = JCRUtils.getSystemSession(error.getWorkspace());
+        if (session == null) throw new RepositoryException("Impossible to open a session on the workspace " + error.getWorkspace());
+        return session.getNodeByUUID(error.getUuid());
     }
 
     @Override
