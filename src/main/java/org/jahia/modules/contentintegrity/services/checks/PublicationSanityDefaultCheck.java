@@ -8,7 +8,9 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -141,13 +143,27 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
         return super.checkIntegrityAfterChildren(node);
     }
 
+    /*
+     * NO_LIVE_NODE, from the jcr-scripts fixes: a node flagged as published but missing in live loses the flag.
+     * An auto-published node missing in live is published again.
+     */
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
-        if (integrityError.getErrorType().equals(NO_LIVE_NODE)) {
-            node.getProperty(PUBLISHED).remove();
-            node.getSession().save();
-            return true;
+        if (!integrityError.getErrorType().equals(NO_LIVE_NODE)) return false;
+        if (node.isNodeType(Constants.JMIX_AUTO_PUBLISH)) {
+            final String uuid = node.getIdentifier();
+            RepairUtils.runWithListenersDisabled(() -> {
+                if (node.hasProperty(PUBLISHED)) {
+                    node.getProperty(PUBLISHED).remove();
+                    node.saveSession();
+                }
+                RepairUtils.runAsRoot(() -> JCRPublicationService.getInstance().publishByMainId(uuid));
+            });
+            return JCRUtils.nodeExists(uuid, JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, true));
         }
-        return false;
+        if (!node.hasProperty(PUBLISHED)) return false;
+        node.getProperty(PUBLISHED).remove();
+        node.getSession().save();
+        return true;
     }
 }

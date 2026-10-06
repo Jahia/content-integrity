@@ -28,8 +28,6 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
 
     private static final Logger logger = LoggerFactory.getLogger(FixIntegrityErrorsCommand.class);
 
-    private static final boolean devMode = Boolean.parseBoolean(getProperty("modules.contentIntegrity.devMode"));
-
     @Reference
     Session session;
 
@@ -43,11 +41,6 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
 
     @Override
     public Object execute() throws Exception {
-        if (!devMode) {
-            System.out.println("Not yet available, coming soon!");
-            return null;
-        }
-
         if (CollectionUtils.isEmpty(errorIDs)) {
             System.out.println("No error specified");
             return null;

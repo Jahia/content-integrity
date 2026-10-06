@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_LASTPUBLISHED;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LASTMODIFIED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_ORIGIN_WS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.LASTPUBLISHED;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.ORIGIN_WORKSPACE;
@@ -37,7 +38,6 @@ public class JCRUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(JCRUtils.class);
 
-    private static final String JMIX_ORIGIN_WS = "jmix:originWS";
 
     public enum UGC_STATE {UGC, NON_UGC, UNDEFINED, INCONSISTENT}
 

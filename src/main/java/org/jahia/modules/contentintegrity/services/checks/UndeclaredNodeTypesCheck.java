@@ -4,9 +4,11 @@ import org.apache.commons.lang.StringUtils;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.data.templates.ModuleState;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -17,6 +19,7 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.Arrays;
@@ -33,7 +36,7 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_MIX
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PRIMARYTYPE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
-public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
+public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(UndeclaredNodeTypesCheck.class);
 
@@ -150,5 +153,30 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
         public boolean isGhostType() {
             return isGhostType;
         }
+    }
+
+    /*
+     * From the jcr-scripts fixes: an undeclared mixin is removed from the node. A node can't change its primary
+     * type, so a node whose primary type is undeclared is removed.
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        if (!error.getErrorType().equals(UNDECLARED_NODE_TYPE) && !error.getErrorType().equals(GHOST_NODE_TYPE)) return false;
+
+        final Object mixin = error.getExtraInfo("mixin type");
+        if (mixin != null) {
+            RepairUtils.runWithListenersDisabled(() -> {
+                final Node realNode = node.getRealNode();
+                realNode.removeMixin((String) mixin);
+                realNode.getSession().save();
+                node.getSession().refresh(false);
+            });
+            return true;
+        }
+        if (error.getExtraInfo("primary type") != null) {
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeNodeRaw(node));
+            return true;
+        }
+        return false;
     }
 }

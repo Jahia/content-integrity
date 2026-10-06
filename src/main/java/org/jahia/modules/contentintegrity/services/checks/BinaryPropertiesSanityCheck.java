@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.data.DataStoreException;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
@@ -11,6 +12,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -24,10 +26,11 @@ import javax.jcr.RepositoryException;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_CONTENT;
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
-public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
+public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(BinaryPropertiesSanityCheck.class);
     private static final String DOWNLOAD_STREAM = "download-stream";
@@ -112,5 +115,26 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
             errors.addError(createFrameworkError(node, "Impossible to check the node " + node.getPath(), e));
         }
         return errors;
+    }
+
+    /*
+     * From the jcr-scripts fix: a broken binary can't be restored. The file holding it is removed, or only the
+     * binary property when it is held by a translation node, so that the other languages are kept.
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        if (!error.getErrorType().equals(INVALID_BINARY)) return false;
+        final String propertyPath = (String) error.getExtraInfo("property-path");
+        if (StringUtils.isBlank(propertyPath)) return false;
+
+        final JCRNodeWrapper holder = node.getSession().getNode(StringUtils.substringBeforeLast(propertyPath, "/"));
+        if (holder.isNodeType(Constants.JAHIANT_TRANSLATION)) {
+            final String propertyName = StringUtils.substringAfterLast(propertyPath, "/");
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removePropertyRaw(holder, propertyName));
+            return true;
+        }
+        final JCRNodeWrapper toRemove = StringUtils.equals(holder.getName(), JCR_CONTENT) ? holder.getParent() : holder;
+        RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeNodeRaw(toRemove));
+        return true;
     }
 }

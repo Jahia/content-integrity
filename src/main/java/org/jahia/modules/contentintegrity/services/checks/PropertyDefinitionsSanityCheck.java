@@ -15,6 +15,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.modules.external.ExternalNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
@@ -64,7 +65,7 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=" + JAHIANT_TRANSLATION
 })
-public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
+public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyDefinitionsSanityCheck.class);
 
@@ -771,5 +772,42 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             errors.addError(createFrameworkError(checkedNode, e));
             return FAILED_TO_CALCULATE_VALUE_STR;
         }
+    }
+
+    /*
+     * From the jcr-scripts fixes:
+     * - an undeclared property is removed, at the Jackrabbit level since it has no definition;
+     * - an empty mandatory property, or a value which breaks a constraint, gets the default value of its
+     *   definition. Without a default value, the right value can't be guessed: the error is left to fix by hand
+     *   (the scripts read it from a values.txt file filled in by hand).
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        final String propertyName = (String) error.getExtraInfo("property-name");
+        if (StringUtils.isBlank(propertyName)) return false;
+        final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
+
+        if (error.getErrorType().equals(UNDECLARED_PROPERTY)) {
+            final boolean[] removed = new boolean[1];
+            RepairUtils.runWithListenersDisabled(() -> removed[0] = RepairUtils.removePropertyRaw(target, propertyName));
+            return removed[0];
+        }
+        if (error.getErrorType().equals(EMPTY_MANDATORY_PROPERTY) || error.getErrorType().equals(INVALID_VALUE_CONSTRAINT)) {
+            if (StringUtils.startsWith(target.getPath(), "/modules/")) return false;
+            final JCRNodeWrapper definitionHolder = target.isNodeType(JAHIANT_TRANSLATION) ? target.getParent() : target;
+            final ExtendedPropertyDefinition definition = definitionHolder.getApplicablePropertyDefinition(propertyName);
+            final Value[] defaultValues = definition == null ? null : definition.getDefaultValues();
+            if (defaultValues == null || defaultValues.length == 0) {
+                logger.info("No default value for the property {} on {}: the error has to be fixed by hand", propertyName, target.getPath());
+                return false;
+            }
+            RepairUtils.runWithListenersDisabled(() -> {
+                if (definition.isMultiple()) target.setProperty(propertyName, defaultValues);
+                else target.setProperty(propertyName, defaultValues[0]);
+                target.saveSession();
+            });
+            return true;
+        }
+        return false;
     }
 }

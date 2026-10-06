@@ -3,13 +3,17 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPropertyWrapper;
+import org.jahia.services.content.JCRValueWrapper;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +26,9 @@ import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import javax.jcr.nodetype.PropertyDefinition;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULATION_ERROR;
@@ -30,7 +36,7 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.MIX_VER
 import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
-public class ReferencesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
+public class ReferencesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(ReferencesSanityCheck.class);
     private static final String VALIDATE_REFS = "validate-refs";
@@ -156,5 +162,37 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
             }
         }
         return errors;
+    }
+
+    /*
+     * From the jcr-scripts fix: the broken reference is removed. On a multi-valued property, only the broken
+     * value is removed, and the property is removed when no value remains. A broken reference to a virtual
+     * node is not fixed, since the provider might be temporarily unavailable.
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        if (!error.getErrorType().equals(BROKEN_REF)) return false;
+        final String propertyName = (String) error.getExtraInfo("property-name");
+        final String missingUuid = (String) error.getExtraInfo("missing-uuid");
+        final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
+        if (StringUtils.isBlank(propertyName) || !target.hasProperty(propertyName)) return false;
+
+        RepairUtils.runWithListenersDisabled(() -> {
+            final JCRPropertyWrapper property = target.getProperty(propertyName);
+            if (property.isMultiple() && missingUuid != null) {
+                final List<Value> kept = new ArrayList<>();
+                for (JCRValueWrapper value : property.getValues()) {
+                    if (!missingUuid.equals(value.getString())) kept.add(value);
+                }
+                if (!kept.isEmpty()) {
+                    property.setValue(kept.toArray(new Value[0]));
+                    target.saveSession();
+                    return;
+                }
+            }
+            property.remove();
+            target.saveSession();
+        });
+        return true;
     }
 }

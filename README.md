@@ -228,7 +228,22 @@ or when restarting the server.
 
  
 #### jcr:integrity-fix
-Coming soon    
+Fixes some errors of a scan, using the fix provided by the check which has detected them. The errors are specified by their ID, as printed by `jcr:integrity-printTestResults`, or `*` for all the errors which are not fixed yet.
+
+**Options:**
+
+| Name | alias  | Value  | Mandatory | Multiple | Description                                                                      |
+|------|--------|:------:|:---------:|:--------:|----------------------------------------------------------------------------------|
+| -t   | --test | string |           |          | ID of the scan from which to load the errors. Latest scan used if not defined    |
+
+**Example:**
+
+    jahia@dx()> jcr:integrity-fix 3 7
+    Fixed the error id=3
+    Impossible to fix the error id=7
+    jahia@dx()> jcr:integrity-fix *
+
+Not every error type can be fixed automatically. When a check provides no fix for an error, the error is reported as impossible to fix.
 
 ## FAQ
 

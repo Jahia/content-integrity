@@ -8,9 +8,11 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.templates.JahiaTemplateManagerService;
 import org.osgi.framework.Bundle;
@@ -75,16 +77,28 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
                     missingModule, site.getSiteKey()));
             return true;
         }
+        unreferenceModule(site, missingModule);
+        // From the jcr-scripts fix: the error is reported in the default workspace only, but the site node is
+        // auto-published, so the module is unreferenced from the live site node as well.
+        if (JCRUtils.isInDefaultWorkspace(site)) {
+            final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, true);
+            if (JCRUtils.nodeExists(site.getIdentifier(), liveSession)) {
+                unreferenceModule((JCRSiteNode) liveSession.getNodeByIdentifier(site.getIdentifier()), missingModule);
+            }
+        }
+        return true;
+    }
+
+    private void unreferenceModule(JCRSiteNode site, String missingModule) throws RepositoryException {
+        final String workspace = site.getSession().getWorkspace().getName();
         final List<String> siteModules = site.getInstalledModules();
-        final boolean remove = siteModules.remove(missingModule);
-        if (!remove) {
-            logger.info(String.format("The module %s is already unreferenced from the site %s",
-                    missingModule, site.getSiteKey()));
-            return true;
+        if (!siteModules.remove(missingModule)) {
+            logger.info(String.format("The module %s is already unreferenced from the site %s in %s",
+                    missingModule, site.getSiteKey(), workspace));
+            return;
         }
         site.setInstalledModules(siteModules);
         site.getSession().save();
-        logger.info(String.format("Unreferenced the module %s from the site %s", missingModule, site.getSiteKey()));
-        return true;
+        logger.info(String.format("Unreferenced the module %s from the site %s in %s", missingModule, site.getSiteKey(), workspace));
     }
 }

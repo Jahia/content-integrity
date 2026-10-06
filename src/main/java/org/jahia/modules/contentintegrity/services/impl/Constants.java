@@ -29,6 +29,7 @@ public class Constants extends org.jahia.api.Constants {
     public static final String PROPERTY_DEFINITION_NAME_WILDCARD = "*";
     public static final String PROPERTY_DEFINITION_NAME_JCR_PREFIX = "jcr:";
     public static final String JMIX_AUTO_PUBLISH = "jmix:autoPublish";
+    public static final String JMIX_ORIGIN_WS = "jmix:originWS";
     public static final String JMIX_LIVE_PROPERTIES = "jmix:liveProperties";
     public static final String J_LIVE_PROPERTIES = "j:liveProperties";
     public static final String JMIX_DELETED_CHILDREN = "jmix:deletedChildren";

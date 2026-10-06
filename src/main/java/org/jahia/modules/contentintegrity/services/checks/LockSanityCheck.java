@@ -7,6 +7,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.osgi.service.component.ComponentContext;
@@ -26,7 +27,7 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LOCK_
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.EDIT_WORKSPACE,
         ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=" + J_LOCK_TYPES + "," + J_LOCKTOKEN + "," + JCR_LOCKISDEEP + "," + JCR_LOCKOWNER
 })
-public class LockSanityCheck extends AbstractContentIntegrityCheck {
+public class LockSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(LockSanityCheck.class);
 
@@ -91,5 +92,49 @@ public class LockSanityCheck extends AbstractContentIntegrityCheck {
         } catch (RepositoryException e) {
             errors.addError(createFrameworkError(node, String.format("Error while checking the node %s", node.getPath()), e));
         }
+    }
+
+    private static final String[] LOCK_PROPERTIES = {JCR_LOCKISDEEP, JCR_LOCKOWNER, J_LOCK_TYPES, J_LOCKTOKEN,
+            "j:deletionMessage", "j:deletionDate", "j:deletionUser"};
+
+    /*
+     * From the jcr-scripts fixes: the lock is set and released, so that the platform cleans what it can, then the
+     * remaining lock and deletion properties are removed. A deletion lock left on a translation node is cleaned
+     * the same way, after marking and unmarking the node for deletion.
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        if (error.getErrorType().equals(INCONSISTENT_LOCK)) {
+            RepairUtils.runWithListenersDisabled(() -> {
+                if (node.isNodeType(Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT)) node.unmarkForDeletion();
+                try {
+                    node.lock(true, false);
+                } catch (RepositoryException e) {
+                    logger.debug("Impossible to lock {}", node.getPath(), e);
+                }
+                try {
+                    node.unlock();
+                } catch (RepositoryException e) {
+                    logger.debug("Impossible to unlock {}", node.getPath(), e);
+                }
+                removeLockProperties(node);
+            });
+            return true;
+        }
+        if (error.getErrorType().equals(DELETION_LOCK_ON_I18N)) {
+            RepairUtils.runWithListenersDisabled(() -> {
+                RepairUtils.markThenUnmarkForDeletion(node, getName());
+                removeLockProperties(node);
+            });
+            return true;
+        }
+        return false;
+    }
+
+    private void removeLockProperties(JCRNodeWrapper node) throws RepositoryException {
+        for (String property : LOCK_PROPERTIES) {
+            if (node.hasProperty(property)) node.getProperty(property).remove();
+        }
+        node.saveSession();
     }
 }

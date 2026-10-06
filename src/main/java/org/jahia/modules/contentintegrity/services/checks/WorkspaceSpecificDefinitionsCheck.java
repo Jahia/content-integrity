@@ -3,18 +3,21 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
@@ -23,11 +26,13 @@ import java.util.stream.Stream;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_MARKED_FOR_DELETION;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_LANGUAGES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_DISABLED;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
-public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
+public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(WorkspaceSpecificDefinitionsCheck.class);
 
@@ -187,5 +192,55 @@ public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityC
         public boolean isValueValid(String value) {
             return equalOperator == StringUtils.equals(value, propertyValue);
         }
+    }
+
+    /*
+     * From the jcr-scripts fixes (clean-recursive):
+     * - a deletion mark found in the wrong workspace is cleaned by marking then unmarking the node for deletion,
+     *   any other unexpected mixin is removed;
+     * - an unexpected property is removed;
+     * - an unexpected WIP status removes the WIP state of the node, any other unexpected value removes the property.
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        final ContentIntegrityErrorType errorType = error.getErrorType();
+        if (errorType.equals(UNEXPECTED_TYPE)) {
+            final String type = (String) error.getExtraInfo("unexpected-type");
+            if (type == null) return false;
+            if (type.equals(JAHIAMIX_MARKED_FOR_DELETION) || type.equals(JAHIAMIX_MARKED_FOR_DELETION_ROOT)) {
+                RepairUtils.runWithListenersDisabled(() -> {
+                    RepairUtils.markThenUnmarkForDeletion(node, getName());
+                    node.saveSession();
+                });
+                return true;
+            }
+            if (!node.isNodeType(type) || node.getPrimaryNodeTypeName().equals(type)) return false;
+            RepairUtils.runWithListenersDisabled(() -> {
+                node.removeMixin(type);
+                node.saveSession();
+            });
+            return true;
+        }
+        if (errorType.equals(UNEXPECTED_PROP)) {
+            final String property = (String) error.getExtraInfo("unexpected-prop");
+            if (property == null) return false;
+            final boolean[] removed = new boolean[1];
+            RepairUtils.runWithListenersDisabled(() -> removed[0] = RepairUtils.removePropertyRaw(node, property));
+            return removed[0];
+        }
+        if (errorType.equals(UNEXPECTED_PROP_VALUE)) {
+            final String property = (String) error.getExtraInfo("unexpected-prop");
+            if (property == null) return false;
+            final String[] properties = WORKINPROGRESS_STATUS.equals(property) ?
+                    new String[]{WORKINPROGRESS_STATUS, WORKINPROGRESS_LANGUAGES, WORKINPROGRESS} : new String[]{property};
+            RepairUtils.runWithListenersDisabled(() -> {
+                for (String p : properties) {
+                    if (node.hasProperty(p)) node.getProperty(p).remove();
+                }
+                node.saveSession();
+            });
+            return true;
+        }
+        return false;
     }
 }

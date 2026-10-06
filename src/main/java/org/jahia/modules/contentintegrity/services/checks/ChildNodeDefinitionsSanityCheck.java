@@ -1,10 +1,12 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.osgi.service.component.annotations.Component;
@@ -21,7 +23,7 @@ import java.util.stream.Collectors;
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=rep:root"
 })
-public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityCheck {
+public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     private static final Logger logger = LoggerFactory.getLogger(ChildNodeDefinitionsSanityCheck.class);
 
@@ -70,6 +72,17 @@ public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityChe
         If there's a RepositoryException of another type than ConstraintViolationException,
         let's return true, so that no ContentIntegrityError is created with an error type related to the current check
          */
+        return true;
+    }
+
+    /*
+     * From the jcr-scripts fix: a node that its parent definition doesn't allow is removed, at the Jackrabbit
+     * level, since the regular API can't load its definition.
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        if (!error.getErrorType().equals(NOT_ALLOWED_BY_PARENT_DEF)) return false;
+        RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeNodeRaw(node));
         return true;
     }
 }

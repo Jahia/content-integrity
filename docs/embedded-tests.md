@@ -7,6 +7,7 @@
   * [FlatStorageCheck](#flatstoragecheck)
   * [HomePageDeclarationCheck](#homepagedeclarationcheck)
   * [JCRLanguagePropertyCheck](#jcrlanguagepropertycheck)
+  * [LivePropertiesCheck](#livepropertiescheck)
   * [LockSanityCheck](#locksanitycheck)
   * [MarkForDeletionCheck](#markfordeletioncheck)
   * [NodeNameInfoSanityCheck](#nodenameinfosanitycheck)
@@ -157,6 +158,28 @@ Translation node without the `jcr:language` property. This one needs to be defin
 
 Translation node with a `jcr:language` property which is not compliant with the node name. Usually, the property has to be modified accordingly to the node name. 
 
+## LivePropertiesCheck
+
+Tracks the nodes flagged with the mixin `jmix:liveProperties`, in the `default` and the `live` workspaces.
+
+This check is disabled by default, since `jmix:liveProperties` can be used on purpose.
+
+### Dealing with errors
+
+#### Live properties defined on the node
+
+`Error code: LIVE_PROPERTIES`
+
+**Description**: the node is flagged with `jmix:liveProperties`, and the property `j:liveProperties` lists some properties.
+
+#### Live properties mixin without any property
+
+`Error code: EMPTY_LIVE_PROPERTIES`
+
+**Description**: the node is flagged with `jmix:liveProperties`, but the property `j:liveProperties` is missing or has no value.
+
+Both errors can be fixed with the command `jcr:integrity-fix`, which deletes the property `j:liveProperties` and the mixin `jmix:liveProperties`.
+
 ## LockSanityCheck
 
 Detects the inconsistencies related to the JCR locks.
@@ -197,47 +220,41 @@ If a few pieces of content are impacted, you can delete again the root node of t
 
 If an important number of nodes are impacted, you will need to write a script to clean the mixins on the inconsistent nodes.
 
+The errors can be fixed with the command `jcr:integrity-fix`, which unmarks the nodes for deletion.
+
+#### Deletion mark in the `live` workspace
+
+`Error code: DELETION_MARK_IN_LIVE`
+
+**Description**: a deletion is marked in the `default` workspace, and published as a removal. The mixin `jmix:markedForDeletion` never exists in the `live` workspace.
+
+The error can be fixed with the command `jcr:integrity-fix`, which unmarks the node for deletion.
+
+#### Deletion mark under `/users`
+
+`Error code: DELETION_MARK_UNDER_USERS`
+
+**Description**: the users are auto-published, so no node under `/users` is expected to be marked for deletion, in the `default` or the `live` workspace.
+
+The error can be fixed with the command `jcr:integrity-fix`, which unmarks the node for deletion.
+
 ## NodeNameInfoSanityCheck
 
 Each node has a name and a path. This information is copied to properties on the nodes: `j:nodename` and `j:fullpath`.
 Renaming or moving a node, or one of its parents updates one or both properties. They are supposed to be automatically synchronized.
 
-The property `j:fullpath` is deprecated and will be removed from Jahia in a future version. 
-- If your code leverages this property, you should rewrite it. But you might want to enable the validation of the property in the meantime
-- Otherwise, you should not enable its validation, since no feature in the product leverages it, and so an invalid value has no consequence 
-
-### Configuration
-
-| Name           |  Type   | Default Value | Description                                     |
-|----------------|:-------:|:-------------:|-------------------------------------------------|
-| check-fullpath | boolean |     false     | If `true`, the property `j:fullpath` is checked |
+The property `j:fullpath` is deprecated and will be removed from Jahia in a future version. It might be missing,
+but when it is defined, it must hold the path of the node.
 
 ### Dealing with errors
-
-#### Missing j:fullpath property
-
-`Error code: MISSING_FULLPATH`
-
-**Description**: `j:fullpath` is managed by the publication process. Therefore, it must be missing in the workspace `default` only on nodes which have never been published, and in the workspace `live` only on UGC nodes. But it must be present on every node which has been published at least once (no matter the current publication status).
-
-Republishing the node should be enough to add the missing property to the node, in `default` and `live`.
-
-#### Unexpected j:fullpath property
-
-`Error code: UNEXPECTED_FULLPATH`
-
-**Description**: `j:fullpath` is managed by the publication process. Therefore, it must be missing in the workspace `default` on nodes which have never been published, and in the workspace `live` on UGC nodes.
-
-Fixing this error is not critical, but identifying when and how this property has been created is important.
-The property can be deleted from the node to fix the error.
 
 #### Invalid j:fullpath property
 
 `Error code: INVALID_FULLPATH`
 
-**Description**: `j:fullpath` is managed by the publication process. Therefore, it must have as a value the path of the node at the time of the last publication. As a consequence, in each workspace the value must match the current path of the node in the `live` workspace.
+**Description**: when the property `j:fullpath` is defined, its value must be the current path of the node, in the workspace `default` and in the workspace `live`.
 
-Republishing the node should be enough to fix the value of the property, in `default` and `live`.
+The error can be fixed with the command `jcr:integrity-fix`, which sets the path of the node as the value of the property.
 
 #### Missing j:nodename property
 
@@ -398,6 +415,16 @@ If the node should be flagged as a UGC node, you need to set the property `j:ori
 If the node is the remaining of a failed deletion, which has been completed only in the `default` workspace, then you need to delete the remaining `live` node.
 
 If the node is incorrectly missing in `default`, you need to delete the `live` node, recreate the `default` node, and republish it.
+
+The command `jcr:integrity-fix` restores the node in the `default` workspace, by publishing it from `live`.
+
+#### UGC node which exists in the `default` workspace
+
+`Error code: UNEXPECTED_UGC`
+
+**Description**: The node is flagged as UGC (`j:originWS` is `live`), but a node with the same identifier exists in the `default` workspace. A UGC node is created in `live` and has no counterpart in `default`.
+
+The error can be fixed with the command `jcr:integrity-fix`, which sets the property `j:originWS` to `default`.
 
 _work in progress_
 
@@ -623,6 +650,14 @@ As a consequence, the data model of the technical information stored on the node
 ### Dealing with errors
 
 If some properties related to the legacy model are identified on some nodes, you should write a script to clean them up. Those properties are completely ignored after the refactoring, so deleting them will have no functional impact.
+
+#### WIP property in the `live` workspace
+
+`Error code: WIP_IN_LIVE`
+
+**Description**: the `work in progress` state is an editing state. No WIP property (`j:workInProgress`, `j:workInProgressStatus`, `j:workInProgressLanguages`) is expected in the `live` workspace.
+
+The error can be fixed with the command `jcr:integrity-fix`, which deletes the WIP properties of the node.
 
 ## WorkspaceSpecificDefinitionsCheck
 
