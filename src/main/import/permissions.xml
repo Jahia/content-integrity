@@ -2,9 +2,7 @@
 <permissions jcr:primaryType="jnt:permission"
              xmlns:jcr="http://www.jcp.org/jcr/1.0"
              xmlns:jnt="http://www.jahia.org/jahia/nt/1.0">
-
     <admin jcr:primaryType="jnt:permission">
-        <adminContentIntegrity jcr:primaryType="jnt:permission" />
+        <adminContentIntegrity jcr:primaryType="jnt:permission"/>
     </admin>
-
 </permissions>

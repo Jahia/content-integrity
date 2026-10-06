@@ -66,17 +66,6 @@
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-module-signature>MCwCFHdp904LH4IFN2HdwDjiIuCsV8+HAhRg06+lxJAqGLhHMbpKlvYcBPL7/Q==</jahia-module-signature>
-        <!--
-        TODO review when compiling against Jahia 8.1+
-        Jahia 8.0 provides graphql-java-annotations:6.1 and graphql-dxm-provider:2.x
-        Jahia 8.1 provides graphql-java-annotations:7.2.1 and graphql-dxm-provider:2.x
-        Jahia 8.2 provides graphql-java-annotations:21.1 and graphql-dxm-provider:3.x
-        As a consequence, we need to override the generated import-package to work with both versions
-        -->
-        <import-package>graphql.annotations.annotationTypes;version="[6.1,22)",
-            org.jahia.modules.graphql.provider.dxm;version="[2.3,4)",
-            org.jahia.modules.external;version="[4.0,5)"
-        </import-package>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl,
             org.jahia.modules.contentintegrity.taglib</export-package>
@@ -224,7 +213,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.2</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
