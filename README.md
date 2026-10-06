@@ -29,23 +29,41 @@ By default, this permission is added to the role `server-administrator`, thus an
 
 ### <a name="how-to-use-ui"></a>UI
 
-The module registers an additional page in the administration.
+The module adds a page to the administration, under **Server > System > Content Integrity**. The page displays the last scan and the scan results. Use **New scan** to run a scan.
 
-![Overview](./docs/img/ui-overview.png)
+![Content Integrity page](./docs/img/ui-overview.png)
 
-All the available checks (provided by the module itself, or by extensions) are listed. Those configured as active are preselected. 
+#### Run a scan
 
-Some checks are configurable. A button is displayed in front of those to open the related configuration screen: ![picto-configure](./src/main/resources/img/configure.png)
+**New scan** opens a dialog to configure the scan. The dialog keeps the selection and the parameters from one scan to the next.
+
+![New scan dialog](./docs/img/ui-new-scan.png)
+
+All the available checks, provided by the module itself or by extensions, are listed. Those configured as active are preselected. Use **Select all** and **Unselect all** to change the selection quickly.
+
+Each check has a help button that opens its documentation. A configurable check also has a configure button, which opens a dialog to edit its parameters. The dialog can also reset them to their default values.
 
 The scan is executed on a tree, by default on the whole JCR, starting from its root node. To scan a single site, a specific section, the files hierarchy of a site, ... , specify the related root node as the root of the scan.
 
-All the nodes under the specified one will be scanned, unless some subtrees are specified to be excluded. If needed, specify the path of the root nodes of those trees to skip.
+All the nodes under the specified one will be scanned, unless some subtrees are specified to be excluded. If needed, add the path of the root nodes of those trees to skip, then click on a path to remove it from the list.
 
 The scan can be run on a single workspace, or on both.
 
 Virtual nodes (e.g. exposed by an EDP connector) can be excluded from the scan. This is useful when processing those nodes involves a lot of connections to a 3rd party system, with an important impact on the duration of the scan.
 
-When running a scan, the related logs are displayed in the UI. The scan is run in background, and leaving the screen will have no impact on its execution. When the scan is over, the results can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`), or viewed in the UI, in the tab `Results`.
+#### Follow the scan
+
+While a scan runs, its logs are displayed above the results, and **Stop** interrupts it. The scan is run in background, and leaving the page will have no impact on its execution: when coming back to the page, the running scan is displayed again.
+
+When the scan is over, its results are displayed, and its reports can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`). The page always displays the last scan, with its status, its logs and its reports.
+
+#### Explore the results
+
+Select the scan to display, and choose the columns to display. Use **Filters** to filter the errors on the check, the error type, the workspace, the site, the node type, the locale, the message or the impact on the XML import. Each filter value shows its number of errors, and the button shows the number of active filters.
+
+Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. Click on the details button of an error to display all its information, including the extra information provided by the check.
+
+The results are kept in memory: they are lost when the module or the server restarts. The reports uploaded to the JCR remain available.
 
 ### Karaf Shell commands
 The content integrity service is available through the [Karaf console](https://academy.jahia.com/documentation/system-administrator/jahia/8/installing-and-configuring-jahia/installing-configuring-and-troubleshooting-jahia/configuring-jahia-features#osgi-ssh-console).

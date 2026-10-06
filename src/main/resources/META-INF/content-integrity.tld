@@ -15,11 +15,6 @@
         <tag-class>org.jahia.modules.contentintegrity.taglib.ToolsTokenTag</tag-class>
         <body-content>empty</body-content>
     </tag>
-    <function>
-        <name>screenView</name>
-        <function-class>org.jahia.modules.contentintegrity.taglib.Functions</function-class>
-        <function-signature>java.lang.String getScreenView()</function-signature>
-    </function>
 
 
 </taglib>

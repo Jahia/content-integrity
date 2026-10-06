@@ -2,6 +2,108 @@
   "label": {
     "settings": {
       "title": "Content Integrity"
+    },
+    "contentIntegrity": {
+      "description": "Validate the integrity of the content"
+    },
+    "add": "Add",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "reports": "Reports",
+    "openInJcrBrowser": "Open in the JCR browser",
+    "checks": {
+      "title": "Integrity checks ({{selected}} of {{total}} selected)",
+      "selectAll": "Select all",
+      "unselectAll": "Unselect all",
+      "documentation": "Documentation of {{check}}",
+      "configure": "Configure {{check}}"
+    },
+    "config": {
+      "title": "Configure {{check}}",
+      "reset": "Reset to default values",
+      "none": "This check has no configuration.",
+      "integerExpected": "An integer value is expected"
+    },
+    "scan": {
+      "parameters": "Scan parameters",
+      "rootNode": "Root node",
+      "rootNodeHelper": "Every node under this one is scanned. Use / to scan the whole repository.",
+      "excludedPaths": "Excluded paths",
+      "excludedPathsHelper": "The subtrees under these paths are skipped.",
+      "removeExcludedPath": "Remove the excluded path {{path}}",
+      "workspace": {
+        "label": "Workspace",
+        "EDIT": "default",
+        "LIVE": "live",
+        "BOTH": "All workspaces"
+      },
+      "includeVirtualNodes": "Include the virtual nodes",
+      "includeVirtualNodesHelper": "Uncheck to skip the nodes exposed by an external data provider, such as an EDP connector.",
+      "run": "Run the scan",
+      "stop": "Stop",
+      "logs": "Scan logs",
+      "newScan": "New scan",
+      "newScanTitle": "New integrity scan"
+    },
+    "results": {
+      "scan": "Scan",
+      "columns": "Columns",
+      "columnsCount": "Displayed columns: {{count}}",
+      "refresh": "Refresh",
+      "all": "All",
+      "empty": "(empty)",
+      "noResults": "Run a scan to check the integrity of the content. Its results are displayed here.",
+      "errorCount": "Errors: {{count}}",
+      "errorCountFiltered": "Errors: {{count}} (total: {{total}})",
+      "tableLabel": "Integrity errors",
+      "details": "Error details",
+      "rowsPerPage": "Errors per page",
+      "of": "of",
+      "title": "Scan results",
+      "noResultsTitle": "No scan results yet",
+      "filters": "Filters",
+      "filtersCount": "Filters ({{count}})",
+      "clearFilters": "Clear the filters"
+    },
+    "details": {
+      "title": "Error details",
+      "unknown": "This error no longer exists in the scan results.",
+      "node": "Node",
+      "check": "Detection",
+      "extraInfos": "Additional information",
+      "impactsImport": "Impacts the XML import",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "column": {
+      "checkName": "Check name",
+      "errorType": "Error type",
+      "workspace": "Workspace",
+      "site": "Site",
+      "nodePath": "Path",
+      "nodeId": "UUID",
+      "nodePrimaryType": "Primary type",
+      "nodeMixins": "Mixins",
+      "locale": "Locale",
+      "message": "Message",
+      "extraInfosString": "Extra info",
+      "importError": "Impact on XML import"
+    },
+    "execution": {
+      "current": "Scan in progress",
+      "last": "Last scan",
+      "runningHelper": "Scan {{id}}. It continues in the background if you leave this page.",
+      "id": "Scan {{id}}",
+      "showResults": "Show its results",
+      "status": {
+        "running": "Running",
+        "finished": "Finished",
+        "interrupted": "Stopped",
+        "failed": "Failed"
+      },
+      "showLogs": "Show the logs",
+      "hideLogs": "Hide the logs"
     }
   }
 }

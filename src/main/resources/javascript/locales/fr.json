@@ -1,7 +1,109 @@
 {
   "label": {
     "settings": {
-      "title": "Content Integrity"
+      "title": "Intégrité du contenu"
+    },
+    "contentIntegrity": {
+      "description": "Vérifier l'intégrité du contenu du référentiel"
+    },
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "reports": "Rapports",
+    "openInJcrBrowser": "Ouvrir dans le navigateur JCR",
+    "checks": {
+      "title": "Contrôles d'intégrité ({{selected}} sélectionnés sur {{total}})",
+      "selectAll": "Tout sélectionner",
+      "unselectAll": "Tout désélectionner",
+      "documentation": "Documentation du contrôle {{check}}",
+      "configure": "Configurer le contrôle {{check}}"
+    },
+    "config": {
+      "title": "Configuration du contrôle {{check}}",
+      "reset": "Rétablir les valeurs par défaut",
+      "none": "Ce contrôle n'a aucun paramètre.",
+      "integerExpected": "Saisissez un nombre entier"
+    },
+    "scan": {
+      "parameters": "Paramètres de l'analyse",
+      "rootNode": "Nœud racine",
+      "rootNodeHelper": "Tous les nœuds situés sous ce nœud sont analysés. Saisissez / pour analyser tout le référentiel.",
+      "excludedPaths": "Chemins exclus",
+      "excludedPathsHelper": "Les arborescences situées sous ces chemins ne sont pas analysées.",
+      "removeExcludedPath": "Retirer le chemin exclu {{path}}",
+      "workspace": {
+        "label": "Espace de travail",
+        "EDIT": "Édition (default)",
+        "LIVE": "Publié (live)",
+        "BOTH": "Les deux espaces de travail"
+      },
+      "includeVirtualNodes": "Inclure les nœuds virtuels",
+      "includeVirtualNodesHelper": "Décochez cette case pour ignorer les nœuds exposés par un fournisseur de données externe, comme un connecteur EDP.",
+      "run": "Lancer l'analyse",
+      "stop": "Arrêter",
+      "logs": "Journal de l'analyse",
+      "newScan": "Nouvelle analyse",
+      "newScanTitle": "Nouvelle analyse d'intégrité"
+    },
+    "results": {
+      "scan": "Analyse",
+      "columns": "Colonnes",
+      "columnsCount": "Colonnes affichées : {{count}}",
+      "refresh": "Actualiser",
+      "all": "Toutes les valeurs",
+      "empty": "(vide)",
+      "noResults": "Lancez une analyse pour vérifier l'intégrité du contenu. Ses résultats s'affichent ici.",
+      "errorCount": "Erreurs : {{count}}",
+      "errorCountFiltered": "Erreurs : {{count}} (sur {{total}})",
+      "tableLabel": "Erreurs d'intégrité",
+      "details": "Détails de l'erreur",
+      "rowsPerPage": "Erreurs par page",
+      "of": "sur",
+      "title": "Résultats d'analyse",
+      "noResultsTitle": "Aucun résultat d'analyse",
+      "filters": "Filtres",
+      "filtersCount": "Filtres ({{count}})",
+      "clearFilters": "Effacer les filtres"
+    },
+    "details": {
+      "title": "Détails de l'erreur",
+      "unknown": "Cette erreur ne figure plus dans les résultats de l'analyse.",
+      "node": "Nœud",
+      "check": "Détection",
+      "extraInfos": "Informations complémentaires",
+      "impactsImport": "Impacte l'import XML",
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "column": {
+      "checkName": "Contrôle",
+      "errorType": "Type d'erreur",
+      "workspace": "Espace de travail",
+      "site": "Site",
+      "nodePath": "Chemin",
+      "nodeId": "UUID",
+      "nodePrimaryType": "Type principal",
+      "nodeMixins": "Mixins",
+      "locale": "Langue",
+      "message": "Message",
+      "extraInfosString": "Informations complémentaires",
+      "importError": "Impact sur l'import XML"
+    },
+    "execution": {
+      "current": "Analyse en cours",
+      "last": "Dernière analyse",
+      "runningHelper": "Analyse {{id}}. Elle se poursuit en arrière-plan si vous quittez cette page.",
+      "id": "Analyse {{id}}",
+      "showResults": "Afficher ses résultats",
+      "status": {
+        "running": "En cours",
+        "finished": "Terminée",
+        "interrupted": "Arrêtée",
+        "failed": "En échec"
+      },
+      "showLogs": "Afficher le journal",
+      "hideLogs": "Masquer le journal"
     }
   }
 }

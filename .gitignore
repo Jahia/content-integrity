@@ -17,7 +17,7 @@ repository.xml.generated
 # JS
 /node_modules
 /node
-/src/main/resources/javascript/ui
+/src/main/resources/javascript/apps
 
 # Custom
 TODO.md

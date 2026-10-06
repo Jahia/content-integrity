@@ -1,0 +1,428 @@
+// Layout and spacing only: colours, radius and spacing come from the Moonstone design tokens.
+
+.root {
+    width: 100%;
+    min-width: 0;
+    max-width: 1400px;
+}
+
+// min-width: 0 lets a wide table scroll inside its card instead of widening the page.
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-medium);
+    min-width: 0;
+}
+
+.card {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: var(--spacing-medium) var(--spacing-large);
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-small);
+    margin-bottom: var(--spacing-small);
+}
+
+.sectionTitle {
+    margin-bottom: var(--spacing-small);
+}
+
+.sectionActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+}
+
+.checksGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--spacing-nano) var(--spacing-medium);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.checkItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 32px;
+    padding: 0 var(--spacing-nano);
+    border-radius: var(--radius);
+
+    &:hover {
+        background: var(--color-gray_light40, var(--color-light));
+    }
+}
+
+.checkboxLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-small);
+    min-width: 0;
+    cursor: pointer;
+}
+
+.checkName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.checkActions {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.iconLink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: var(--color-gray);
+    border-radius: var(--radius);
+
+    &:hover,
+    &:focus-visible {
+        color: var(--color-accent);
+    }
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: var(--spacing-medium) var(--spacing-large);
+    align-items: start;
+}
+
+.inlineField {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-nano);
+    // Same indent as the content of a Moonstone Field (32px padding + 3px border).
+    padding: var(--spacing-medium) 0 0 35px;
+}
+
+.helper {
+    color: var(--color-gray);
+}
+
+.error {
+    color: var(--color-danger);
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-nano);
+    margin: var(--spacing-small) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chipButton {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+
+    &:disabled {
+        cursor: default;
+        opacity: 0.6;
+    }
+}
+
+.logs {
+    height: 360px;
+    margin: var(--spacing-small) 0 0;
+    padding: var(--spacing-small) var(--spacing-medium);
+    overflow: auto;
+    font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--color-light);
+    background: var(--color-dark);
+    border-radius: var(--radius);
+}
+
+.finished {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-medium);
+    margin-top: var(--spacing-small);
+}
+
+.reports {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-nano);
+    margin-top: var(--spacing-small);
+}
+
+.reportList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.reportLink {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-nano);
+    color: var(--color-accent);
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--spacing-medium);
+}
+
+.resultsHeader {
+    margin-top: var(--spacing-large);
+    padding-top: var(--spacing-medium);
+    border-top: 1px solid var(--color-gray40);
+}
+
+.executionActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+}
+
+.clearFilters {
+    margin-top: var(--spacing-small);
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-small) var(--spacing-medium);
+    margin-top: var(--spacing-medium);
+}
+
+.filter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-nano);
+    min-width: 0;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.tableWrapper {
+    // width: 0 + min-width: 100% gives the scroll container no intrinsic width: it takes the card's
+    // width and scrolls, instead of reporting the table's width up the flex layout.
+    width: 0;
+    min-width: 100%;
+    overflow-x: auto;
+}
+
+// Moonstone tables are flex rows: a cell with a `width` keeps it, the others share what is left.
+// A long path or message is truncated with an ellipsis (full value in the tooltip and in the
+// details dialog) instead of widening the page.
+.table {
+    width: 100%;
+}
+
+.cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.linkButton {
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    color: var(--color-accent);
+    cursor: pointer;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.cell .linkButton {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.detailsList .linkButton {
+    word-break: break-word;
+}
+
+.breakAll {
+    word-break: break-word;
+}
+
+.details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-large);
+}
+
+.detailsSummary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+    padding-bottom: var(--spacing-medium);
+    border-bottom: 1px solid var(--color-gray40);
+}
+
+.detailsChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-small);
+}
+
+.detailsSectionTitle {
+    margin-bottom: var(--spacing-small);
+}
+
+.detailsList {
+    display: grid;
+    // One label width for every section, so the values line up from one section to the next.
+    grid-template-columns: 190px 1fr;
+    gap: var(--spacing-small) var(--spacing-large);
+    align-items: baseline;
+    margin: 0;
+
+    dt,
+    dd {
+        margin: 0;
+    }
+}
+
+.detailsLabel {
+    color: var(--color-gray);
+}
+
+.code {
+    font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+    // Monospace glyphs are wider than the UI font: scale them down to match its visual size.
+    font-size: 0.86em;
+}
+
+.centered {
+    display: flex;
+    justify-content: center;
+    padding: var(--spacing-large);
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.configItem {
+    margin-bottom: var(--spacing-medium);
+}
+
+.dialogBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-large);
+    background: rgba(19, 28, 33, 0.6);
+}
+
+.dialog {
+    display: flex;
+    width: 560px;
+    max-width: 100%;
+    max-height: 90vh;
+}
+
+.dialogLarge {
+    width: 800px;
+}
+
+.dialogXLarge {
+    width: 1100px;
+}
+
+.dialogSections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-large);
+}
+
+.titleWithStatus {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-small);
+    padding: var(--spacing-huge) var(--spacing-large);
+    text-align: center;
+}
+
+.dialogPaper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: 90vh;
+    box-shadow: var(--shadow);
+}
+
+.dialogHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-medium);
+}
+
+.dialogBody {
+    flex: 1;
+    overflow: auto;
+}
+
+.dialogActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-small);
+    margin-top: var(--spacing-medium);
+}

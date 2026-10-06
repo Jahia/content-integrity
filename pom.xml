@@ -49,7 +49,7 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>8.0.2.0</version>
+        <version>8.2.3.0</version>
     </parent>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
@@ -58,8 +58,6 @@
     <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
 
     <properties>
-        <!-- TODO: review the plugin version when changing the version of jahia-modules -->
-        <jahia.plugin.version>6.9</jahia.plugin.version>
         <!-- TODO: clean when we drop the support of Jahia 7
         dependency to serverSettings because we override the declaration of system-health in the admin navigation,
         required to load the label from the resources bundle of this module
@@ -67,7 +65,7 @@
         <jahia-depends>default,graphql-dxm-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
-        <jahia-module-signature>MCwCFB54BnksprdsyjrX5YFUfqvQOdoXAhR7K8mdqHINdxxAI5fIxmvwD6marw==</jahia-module-signature>
+        <jahia-module-signature>MCwCFHdp904LH4IFN2HdwDjiIuCsV8+HAhRg06+lxJAqGLhHMbpKlvYcBPL7/Q==</jahia-module-signature>
         <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <!--
         TODO review when compiling against Jahia 8.1+
@@ -77,13 +75,14 @@
         As a consequence, we need to override the generated import-package to work with both versions
         -->
         <import-package>graphql.annotations.annotationTypes;version="[6.1,22)",
-            org.jahia.modules.graphql.provider.dxm;version="[2.3,4)"
+            org.jahia.modules.graphql.provider.dxm;version="[2.3,4)",
+            org.jahia.modules.external;version="[4.0,5)"
         </import-package>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl,
             org.jahia.modules.contentintegrity.taglib</export-package>
-        <graphql-dxm-provider.version>2.3.0</graphql-dxm-provider.version>
-        <external-provider.version>4.0.0</external-provider.version>
+        <graphql-dxm-provider.version>3.7.0</graphql-dxm-provider.version>
+        <external-provider.version>4.9.0</external-provider.version>
         <yarn.arguments>build:production</yarn.arguments>
     </properties>
 
@@ -127,7 +126,7 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>src/main/resources/javascript/apps/ui</directory>
+                            <directory>src/main/resources/javascript/apps</directory>
                             <includes>
                                 <include>*</include>
                             </includes>
