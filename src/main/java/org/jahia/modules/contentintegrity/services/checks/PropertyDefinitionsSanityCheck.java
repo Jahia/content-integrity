@@ -30,7 +30,6 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -43,6 +42,7 @@ import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.PropertyDefinition;
 import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
 import javax.validation.groups.Default;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -86,7 +86,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private ExtendedNodeType jntTranslationNt;
     private final Map<String, Boolean> jntTranslationNtParents = new HashMap<>();
     private Map<String, Constructor<?>> validators;
-    private LocalValidatorFactoryBean validatorFactoryBean;
+    private Validator validatorFactoryBean;
 
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();

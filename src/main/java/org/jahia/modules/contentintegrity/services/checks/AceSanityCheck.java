@@ -15,13 +15,18 @@ import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRObservationManager;
+import org.jahia.services.content.JCRPublicationService;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
+import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.sites.JahiaSitesService;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
+import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -30,9 +35,12 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.Node;
 import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
+import javax.jcr.Value;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,8 +59,10 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WO
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_ACE_NODENAME_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EXTERNAL_PERMISSIONS_PATH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_ROLE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LASTMODIFIED;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_AUTO_PUBLISH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_ACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_PERMISSIONS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ACE_TYPE;
@@ -61,6 +71,10 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINC
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRIVILEGED_ACCESS;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.J_SOURCE_ACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.MIX_VERSIONABLE;
+import static org.jahia.modules.contentintegrity.services.impl.Constants.PUBLISHED;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SLASH;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.SPACE;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.UNDERSCORE;
@@ -80,6 +94,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private static final String EXTRA_MSG_INVALID_PRINCIPAL = "If the principal exists, check if it is defined at site level, and if does, if this site differs from the current site. Warning: if the principal comes from an external source such as a LDAP, it might be just temporarily missing because of a connectivity issue";
     private static final String ACE_COUNT_THRESHOLD_KEY = "ace-count-threshold";
     private static final int ACE_COUNT_THRESHOLD_DEFAULT = 1000;
+    private static final String JMIX_ACCESS_CONTROLLED = "jmix:accessControlled";
 
     public static final ContentIntegrityErrorType NO_PRINCIPAL = createErrorType("NO_PRINCIPAL", "ACE without principal");
     public static final ContentIntegrityErrorType INVALID_PRINCIPAL = createErrorType("INVALID_PRINCIPAL", "ACE with an invalid principal");
@@ -132,16 +147,21 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     @Override
     public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
+        if (!loadRoles()) setScanDurationDisabled(true);
+        if (groupService == null) groupService = ServicesRegistry.getInstance().getJahiaGroupManagerService();
+        if (userService == null) userService = ServicesRegistry.getInstance().getJahiaUserManagerService();
+    }
+
+    private boolean loadRoles() {
         final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);
         try {
             processRole(defaultSession.getNode("/roles"), null, true);
         } catch (RepositoryException e) {
             logger.error("Error while loading the available roles", e);
-            setScanDurationDisabled(true);
+            return false;
         }
         roles.values().stream().filter(Role::isPrivileged).map(Role::getName).forEach(privilegedAccessRoles::add);
-        if (groupService == null) groupService = ServicesRegistry.getInstance().getJahiaGroupManagerService();
-        if (userService == null) userService = ServicesRegistry.getInstance().getJahiaUserManagerService();
+        return true;
     }
 
     @Override
@@ -282,18 +302,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                                         .addExtraInfo("expected-external-permissions-names", roleExternalPermissions.keySet()));
                             } else {
                                 final String externalAcePathPattern = roleExternalPermissions.get(externalPermissionsName);
-                                final StringBuilder expectedPath = new StringBuilder();
-                                final Matcher matcher = CURRENT_SITE_PATTERN.matcher(externalAcePathPattern);
-                                if (matcher.find()) {
-                                    expectedPath.append(matcher.replaceFirst(srcAce.getResolveSite().getPath()));
-                                } else {
-                                    expectedPath.append(externalAcePathPattern);
-                                }
-                                if (expectedPath.charAt(expectedPath.length() - 1) != JCR_PATH_SEPARATOR_CHAR) {
-                                    expectedPath.append(JCR_PATH_SEPARATOR_CHAR);
-                                }
-                                expectedPath.append(ACL).append(JCR_PATH_SEPARATOR).append(externalAceNode.getName());
-                                if (!StringUtils.equals(expectedPath.toString(), externalAceNode.getPath())) {
+                                final String expectedPath = getExpectedExternalAcePath(externalAceNode, srcAce, externalAcePathPattern);
+                                if (!StringUtils.equals(expectedPath, externalAceNode.getPath())) {
                                     errors.addError(createError(externalAceNode, INVALID_EXTERNAL_ACE_PATH)
                                             .addExtraInfo("ace-uuid", srcAceIdentifier, true)
                                             .addExtraInfo("ace-path", srcAce.getPath(), true)
@@ -497,30 +507,237 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }
     }
 
+    /*
+     * The repairs below were moved from the hidden ACE cleanup scripts (former package org.jahia.modules.aclcleanup).
+     * They run through the integrity-fix command, after the scan: the state built during the scan has been reset,
+     * so each repair works from the node and reloads the roles when needed.
+     */
     @Override
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
+        final ContentIntegrityErrorType errorType = error.getErrorType();
+        if (errorType.equals(INVALID_PRINCIPAL)) {
+            return removeRolesOfInvalidPrincipal(ace);
+        }
+        if (errorType.equals(NO_PRINCIPAL) || errorType.equals(NO_ACE_TYPE_PROP) || errorType.equals(INVALID_ACE_TYPE_PROP)
+                || errorType.equals(NO_SOURCE_ACE_PROP) || errorType.equals(EMPTY_SOURCE_ACE_PROP)) {
+            return deleteAce(ace);
+        }
+        if (errorType.equals(SOURCE_ACE_BROKEN_REF) || errorType.equals(SOURCE_ACE_NOT_TYPE_GRANT)
+                || errorType.equals(ROLES_DIFFER_ON_SOURCE_ACE) || errorType.equals(INVALID_EXTERNAL_ACE_PATH)) {
+            return removeInvalidSourceAces(ace);
+        }
+        if (errorType.equals(MISSING_EXTERNAL_ACE)) {
+            return triggerAclListener(ace);
+        }
+        return false;
+    }
+
+    private boolean removeRolesOfInvalidPrincipal(JCRNodeWrapper ace) throws RepositoryException {
         if (!EDIT_WORKSPACE.equals(ace.getSession().getWorkspace().getName())) return false;
 
         final JCRNodeWrapper node = ace.getParent().getParent();
-        ContentIntegrityErrorType errorType = error.getErrorType();
-        if (errorType.equals(NO_PRINCIPAL)) {
-            return false;
-        } else if (errorType.equals(INVALID_PRINCIPAL)) {
-            final String principal = ace.getPropertyAsString(J_PRINCIPAL);
-            final JCRPropertyWrapper roles = ace.getProperty(J_ROLES);
-            final Map<String, String> rolesRem = new HashMap<>();
-            for (JCRValueWrapper r : roles.getValues()) {
-                rolesRem.put(r.getString(), "REMOVE");
-            }
-            if (node.changeRoles(principal, rolesRem)) {
-                node.saveSession();
-                return true;
-            } else {
-                return false;
-            }
+        final String principal = ace.getPropertyAsString(J_PRINCIPAL);
+        final JCRPropertyWrapper aceRoles = ace.getProperty(J_ROLES);
+        final Map<String, String> rolesRem = new HashMap<>();
+        for (JCRValueWrapper r : aceRoles.getValues()) {
+            rolesRem.put(r.getString(), "REMOVE");
         }
-
+        if (node.changeRoles(principal, rolesRem)) {
+            node.saveSession();
+            return true;
+        }
         return false;
+    }
+
+    /**
+     * Rewrites the j:sourceAce property of an external ACE without its invalid values, and deletes the external ACE
+     * when no valid source remains. A source is invalid when it can't be resolved, when it is not of type GRANT, or
+     * when the role or the location of the external ACE do not match it.
+     */
+    private boolean removeInvalidSourceAces(JCRNodeWrapper externalAce) throws RepositoryException {
+        if (!externalAce.isNodeType(JNT_EXTERNAL_ACE) || !externalAce.hasProperty(J_SOURCE_ACE)) return false;
+        if (roles.isEmpty()) loadRoles();
+
+        final JCRValueWrapper[] values = externalAce.getProperty(J_SOURCE_ACE).getValues();
+        final List<Value> validSources = new ArrayList<>();
+        for (JCRValueWrapper value : values) {
+            if (isValidSourceAce(externalAce, value)) validSources.add(value);
+        }
+        if (validSources.size() == values.length) return false;
+        if (validSources.isEmpty()) return deleteExternalAce(externalAce);
+
+        return executeWithDisabledListeners(() -> {
+            externalAce.setProperty(J_SOURCE_ACE, validSources.toArray(new Value[0]));
+            externalAce.saveSession();
+        });
+    }
+
+    private boolean isValidSourceAce(JCRNodeWrapper externalAce, JCRValueWrapper value) throws RepositoryException {
+        JCRNodeWrapper srcAce = null;
+        try {
+            srcAce = value.getNode();
+        } catch (RepositoryException ignored) {
+        }
+        if (srcAce == null) {
+            // In live, a source ACE which is not published yet still exists in the default workspace
+            return JCRUtils.isInLiveWorkspace(externalAce)
+                    && JCRUtils.nodeExists(value.getString(), JCRUtils.getSystemSession(EDIT_WORKSPACE, true));
+        }
+        if (srcAce.hasProperty(J_ACE_TYPE) && !StringUtils.equals(ACE_TYPE_GRANT, srcAce.getPropertyAsString(J_ACE_TYPE))) {
+            return false;
+        }
+        if (!externalAce.hasProperty(J_ROLES) || !srcAce.hasProperty(J_ROLES)) return true;
+
+        final List<String> externalAceRoles = getRoleNames(externalAce, null, externalAce);
+        if (externalAceRoles.size() != 1) return true;
+        final String role = externalAceRoles.get(0);
+        if (!getRoleNames(srcAce, null, externalAce).contains(role)) return false;
+
+        final Role roleDef = roles.get(role);
+        final String externalPermissionsName = externalAce.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME);
+        if (roleDef == null || !roleDef.getExternalPermissions().containsKey(externalPermissionsName)) return true;
+        return StringUtils.equals(getExpectedExternalAcePath(externalAce, srcAce, roleDef.getExternalPermissions().get(externalPermissionsName)), externalAce.getPath());
+    }
+
+    private String getExpectedExternalAcePath(JCRNodeWrapper externalAce, JCRNodeWrapper srcAce, String externalAcePathPattern) throws RepositoryException {
+        final StringBuilder expectedPath = new StringBuilder();
+        final Matcher matcher = CURRENT_SITE_PATTERN.matcher(externalAcePathPattern);
+        if (matcher.find()) {
+            expectedPath.append(matcher.replaceFirst(srcAce.getResolveSite().getPath()));
+        } else {
+            expectedPath.append(externalAcePathPattern);
+        }
+        if (expectedPath.length() == 0 || expectedPath.charAt(expectedPath.length() - 1) != JCR_PATH_SEPARATOR_CHAR) {
+            expectedPath.append(JCR_PATH_SEPARATOR_CHAR);
+        }
+        return expectedPath.append(ACL).append(JCR_PATH_SEPARATOR).append(externalAce.getName()).toString();
+    }
+
+    /**
+     * Saves the j:aceType of a GRANT ACE again, so that the ACL listener recreates its missing external ACE,
+     * then publishes the ACL when the ACE is already published.
+     */
+    private boolean triggerAclListener(JCRNodeWrapper ace) throws RepositoryException {
+        if (!ace.hasProperty(J_ACE_TYPE)) {
+            logger.error(String.format("Impossible to fix %s since it has no property %s", ace.getPath(), J_ACE_TYPE));
+            return false;
+        }
+        ace.setProperty(J_ACE_TYPE, ace.getPropertyAsString(J_ACE_TYPE));
+        ace.saveSession();
+        if (JCRUtils.isInDefaultWorkspace(ace) && JCRUtils.nodeExists(ace.getIdentifier(), JCRUtils.getSystemSession(LIVE_WORKSPACE, true))) {
+            publish(Collections.singletonList(ace.getParent().getIdentifier()));
+        }
+        return true;
+    }
+
+    private boolean deleteAce(JCRNodeWrapper ace) throws RepositoryException {
+        return ace.isNodeType(JNT_EXTERNAL_ACE) ? deleteExternalAce(ace) : deleteRegularAce(ace);
+    }
+
+    /**
+     * Deletes a regular ACE, with the listeners enabled so that its external ACE are cleaned too. In the default
+     * workspace, the node is republished when it had no pending modification, otherwise only its ACL is.
+     */
+    private boolean deleteRegularAce(JCRNodeWrapper ace) throws RepositoryException {
+        final JCRNodeWrapper acl = ace.getParent();
+        final JCRNodeWrapper node = acl.getParent();
+        final boolean hadPendingModifications = hasPendingModifications(node);
+        ace.remove();
+        node.saveSession();
+        if (JCRUtils.isInDefaultWorkspace(node)) republish(node, acl, hadPendingModifications);
+        return true;
+    }
+
+    private void republish(JCRNodeWrapper node, JCRNodeWrapper acl, boolean hadPendingModifications) throws RepositoryException {
+        if (node.isNodeType(JMIX_AUTO_PUBLISH)) return; // republished by the platform
+
+        if (!hadPendingModifications) {
+            if (node.isNodeType(MIX_VERSIONABLE)) {
+                publish(Collections.singletonList(node.getIdentifier()));
+            } else {
+                logger.warn(String.format("%s had no pending modification, but it can't be republished", node.getPath()));
+            }
+        } else if (isPublished(node)) {
+            // Republishing the node would publish the pending modifications as well: only the ACL is published
+            publish(Collections.singletonList(acl.getIdentifier()));
+        } else {
+            logger.warn(String.format("%s and its ACL can't be republished since the node has never been published", node.getPath()));
+        }
+    }
+
+    /**
+     * Deletes an external ACE with the listeners disabled, in the live workspace as well when it is deleted from the
+     * default one, then deletes the ACL when it is left empty.
+     */
+    private boolean deleteExternalAce(JCRNodeWrapper externalAce) {
+        return executeWithDisabledListeners(() -> {
+            if (JCRUtils.isInDefaultWorkspace(externalAce)) {
+                final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(LIVE_WORKSPACE, true);
+                if (JCRUtils.nodeExists(externalAce.getIdentifier(), liveSession)) {
+                    final JCRNodeWrapper liveExternalAce = liveSession.getNodeByUUID(externalAce.getIdentifier());
+                    final JCRNodeWrapper liveNode = liveExternalAce.getParent().getParent();
+                    liveExternalAce.remove();
+                    removeAclIfEmpty(liveNode);
+                    liveSession.save();
+                }
+            }
+            final JCRNodeWrapper node = externalAce.getParent().getParent();
+            externalAce.remove();
+            removeAclIfEmpty(node);
+            node.saveSession();
+        });
+    }
+
+    private void removeAclIfEmpty(JCRNodeWrapper node) throws RepositoryException {
+        if (!node.hasNode(ACL)) return;
+        final JCRNodeWrapper acl = node.getNode(ACL);
+        if (acl.getNodes().hasNext()) return;
+        acl.remove();
+        if (node.isNodeType(JMIX_ACCESS_CONTROLLED)) node.removeMixin(JMIX_ACCESS_CONTROLLED);
+    }
+
+    private boolean hasPendingModifications(JCRNodeWrapper node) throws RepositoryException {
+        if (!isPublished(node) || !node.hasProperty(JCR_LASTMODIFIED)) return true;
+        final Calendar lastModified = node.getProperty(JCR_LASTMODIFIED).getDate();
+        final Calendar lastPublished = node.getProperty(LASTPUBLISHED).getDate();
+        return lastModified.after(lastPublished);
+    }
+
+    private boolean isPublished(JCRNodeWrapper node) throws RepositoryException {
+        return node.hasProperty(LASTPUBLISHED) && node.hasProperty(PUBLISHED) && node.getProperty(PUBLISHED).getBoolean();
+    }
+
+    private void publish(List<String> uuids) throws RepositoryException {
+        final JCRSessionFactory sessionFactory = JCRSessionFactory.getInstance();
+        final JahiaUser currentUser = sessionFactory.getCurrentUser();
+        final boolean switchToRoot = currentUser == null || !currentUser.isRoot();
+        if (switchToRoot) {
+            final JCRUserNode rootUser = JahiaUserManagerService.getInstance().lookupRootUser();
+            sessionFactory.setCurrentUser(rootUser.getJahiaUser());
+        }
+        try {
+            JCRPublicationService.getInstance().publish(uuids, EDIT_WORKSPACE, LIVE_WORKSPACE, false, null);
+        } finally {
+            if (switchToRoot) sessionFactory.setCurrentUser(currentUser);
+        }
+    }
+
+    private boolean executeWithDisabledListeners(JcrOperation operation) {
+        JCRObservationManager.setAllEventListenersDisabled(true);
+        try {
+            operation.execute();
+            return true;
+        } catch (RepositoryException e) {
+            logger.error("", e);
+            return false;
+        } finally {
+            JCRObservationManager.setAllEventListenersDisabled(false);
+        }
+    }
+
+    @FunctionalInterface
+    private interface JcrOperation {
+        void execute() throws RepositoryException;
     }
 
     private static class Role {
