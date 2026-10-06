@@ -17,7 +17,7 @@ import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutio
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
-import org.jahia.services.SpringContextSingleton;
+import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -66,6 +66,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private final List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
     private Cache errorsCache;
     private EhCacheProvider ehCacheProvider;
+    private static final String BIG_CACHE_PROVIDER = "bigcache";
     private final String errorsCacheName = "ContentIntegrityService-errors";
     private final long errorsCacheTti = 5L * 7L * 24L * 3600L; // 5 weeks;
     private long nbNodesToScanCalculationDuration = 0L;
@@ -76,8 +77,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Activate
     public void start() throws JahiaInitializationException {
+        // The "bigcache" provider is the bigEhCacheProvider of the core. It is not published as an OSGi service
+        // (the only published CacheProvider is the default one), so it is read from the cache service.
         if (ehCacheProvider == null)
-            ehCacheProvider = (EhCacheProvider) SpringContextSingleton.getBean("bigEhCacheProvider");
+            ehCacheProvider = (EhCacheProvider) ServicesRegistry.getInstance().getCacheService().getCacheProviders().get(BIG_CACHE_PROVIDER);
         if (errorsCache == null) {
             errorsCache = ehCacheProvider.getCacheManager().getCache(errorsCacheName);
             if (errorsCache == null) {

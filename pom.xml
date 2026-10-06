@@ -66,7 +66,6 @@
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
         <jahia-module-signature>MCwCFHdp904LH4IFN2HdwDjiIuCsV8+HAhRg06+lxJAqGLhHMbpKlvYcBPL7/Q==</jahia-module-signature>
-        <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
         <!--
         TODO review when compiling against Jahia 8.1+
         Jahia 8.0 provides graphql-java-annotations:6.1 and graphql-dxm-provider:2.x
@@ -141,7 +140,6 @@
                 <configuration>
                     <instructions>
                         <Karaf-Commands>*</Karaf-Commands>
-                        <_dsannotations>*</_dsannotations>
                         <Content-Integrity-Version>${project.version}</Content-Integrity-Version>
                     </instructions>
                 </configuration>
