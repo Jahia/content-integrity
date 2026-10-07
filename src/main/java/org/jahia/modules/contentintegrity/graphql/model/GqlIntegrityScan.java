@@ -30,7 +30,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,6 +45,8 @@ public class GqlIntegrityScan {
     private static final Map<String, List<String>> executionLog = new HashMap<>();
     private static final Map<String, List<ContentIntegrityReport>> executionReports = new HashMap<>();
     private static final Map<String, String> scanResults = new HashMap<>();
+    // The executions asked to stop: they stay RUNNING until their scan has actually ended
+    private static final Set<String> stopRequests = ConcurrentHashMap.newKeySet();
     private static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
     private static final int LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE = 100;
     private static final int LOGS_LIMIT_CLIENT_SIDE_END_SIZE = 500;
@@ -122,7 +126,7 @@ public class GqlIntegrityScan {
             try {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
-                    if (executionStatus.get(id) != Status.RUNNING) break;
+                    if (stopRequests.contains(id)) break;
                     final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse(Constants.ROOT_NODE_PATH), excludedPaths, skipMountPoints, ws, checksToExecute, console);
                     if (contentIntegrityResults != null)
                         results.add(contentIntegrityResults.setExecutionID(id));
@@ -145,12 +149,13 @@ public class GqlIntegrityScan {
                         executionReports.put(id, mergedResults.getReports());
                     }
                 }
-                executionStatus.put(id, Status.FINISHED);
+                executionStatus.put(id, stopRequests.contains(id) ? Status.INTERRUPTED : Status.FINISHED);
             } catch (ConcurrentExecutionException cee) {
                 logger.error("", cee);
                 output.add(cee.getMessage());
                 executionStatus.put(id, Status.FAILED);
             } finally {
+                stopRequests.remove(id);
                 JcrSessionFilter.endRequest();
             }
 
@@ -203,14 +208,15 @@ public class GqlIntegrityScan {
 
     @GraphQLField
     public boolean stopRunningScan() {
-        executionStatus.put(id, Status.INTERRUPTED);
-
-        final ContentIntegrityService service = getService();
-
-        if (!service.isScanRunning())
+        // Only this execution can be stopped: the scan which runs may have been started by another one.
+        // Its status becomes INTERRUPTED once its scan has ended, so that no other scan is started in between.
+        if (executionStatus.get(id) != Status.RUNNING || !stopRequests.add(id)) {
             return Boolean.FALSE;
+        }
 
-        service.stopRunningScan();
+        // Between two workspaces, no tree is being scanned: the scan stops before the next workspace
+        final ContentIntegrityService service = getService();
+        if (service.isScanRunning()) service.stopRunningScan();
         return Boolean.TRUE;
     }
 
