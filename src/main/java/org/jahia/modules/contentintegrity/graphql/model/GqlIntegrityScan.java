@@ -100,9 +100,12 @@ public class GqlIntegrityScan {
     public String getScan(@GraphQLName("workspace") @GraphQLNonNull GqlIntegrityService.Workspace workspace,
                           @GraphQLName("startNode") @GraphQLDescription(PATH_DESC) String path,
                           @GraphQLName("excludedPaths") List<String> excludedPaths,
-                          @GraphQLName("skipMountPoints") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean skipMountPoints,
+                          @GraphQLName("skipMountPoints") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) Boolean skipMountPoints,
                           @GraphQLName("checksToRun") List<String> checksToRun,
-                          @GraphQLName("uploadResults") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) boolean uploadResults) {
+                          @GraphQLName("uploadResults") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) Boolean uploadResults) {
+        // Boxed: graphql-java 13 (Jahia 8.1) passes null for a declared variable left unset, instead of the default value
+        final boolean skipMountPointsValue = Boolean.TRUE.equals(skipMountPoints);
+        final boolean uploadResultsValue = Boolean.TRUE.equals(uploadResults);
         id = generateExecutionID();
         executionStatus.put(id, Status.RUNNING);
         final List<String> output = new ArrayList<>();
@@ -127,7 +130,7 @@ public class GqlIntegrityScan {
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
                     if (stopRequests.contains(id)) break;
-                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse(Constants.ROOT_NODE_PATH), excludedPaths, skipMountPoints, ws, checksToExecute, console);
+                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse(Constants.ROOT_NODE_PATH), excludedPaths, skipMountPointsValue, ws, checksToExecute, console);
                     if (contentIntegrityResults != null)
                         results.add(contentIntegrityResults.setExecutionID(id));
                 }
@@ -145,7 +148,7 @@ public class GqlIntegrityScan {
 
                     console.logLine(String.format("%d error%s found%s", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s", details));
 
-                    if (uploadResults && Utils.writeDumpInTheJCR(mergedResults, false, console)) {
+                    if (uploadResultsValue && Utils.writeDumpInTheJCR(mergedResults, false, console)) {
                         executionReports.put(id, mergedResults.getReports());
                     }
                 }
