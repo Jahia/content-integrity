@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
-import {Add, Build, Button, Close, Dropdown, Field, Input, Typography} from '@jahia/moonstone';
+import {Add, Build, Button, Close, Dropdown, Input, Typography} from '@jahia/moonstone';
+import {FormField} from '../common/FormField';
 import styles from '../ContentIntegrity.scss';
 
 const BOOLEAN_CHOICES = ['true', 'false'];
@@ -102,12 +103,12 @@ export const FixValuesForm = ({errorId, definition, isFixing, onFix}) => {
                 <Typography variant="subheading" weight="bold">{t('label.fixValues.title')}</Typography>
                 <Typography variant="body" className={styles.helper}>{t('label.fixValues.description', {property: definition.name})}</Typography>
             </div>
-            <Field id={`${fieldId}-field`}
-                   className={styles.fixValuesField}
-                   label={definition.name}
-                   helper={helper}
-                   hasError={Boolean(message)}
-                   errorMessage={message || undefined}
+            <FormField id={`${fieldId}-field`}
+                       className={styles.fixValuesField}
+                       label={definition.name}
+                       helper={helper}
+                       hasError={Boolean(message)}
+                       errorMessage={message || undefined}
             >
                 <div className={styles.fixValues}>
                     {values.map(renderValue)}
@@ -121,7 +122,7 @@ export const FixValuesForm = ({errorId, definition, isFixing, onFix}) => {
                         </div>
                     )}
                 </div>
-            </Field>
+            </FormField>
             <div className={styles.fixValuesActions}>
                 <Button label={t('label.fixValues.submit')}
                         icon={<Build/>}

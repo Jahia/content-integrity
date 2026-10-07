@@ -1,7 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
-import {Button, ChevronDown, ChevronRight, Chip, Loader, Paper, Typography, ViewList} from '@jahia/moonstone';
+import {Button, ChevronDown, ChevronRight, Chip, Loader, Typography, ViewList} from '@jahia/moonstone';
+import {Card} from '../common/Card';
 import {ScanLogs} from './ScanLogs';
 import {ReportLinks} from '../common/ReportLinks';
 import styles from '../ContentIntegrity.scss';
@@ -24,7 +25,7 @@ export const ExecutionCard = ({execution, isRunning, error, displayedResultsId, 
 
     const status = execution.status || '';
     return (
-        <Paper className={styles.card}>
+        <Card className={styles.card}>
             <section className={styles.section} aria-labelledby="ci-exec-title">
                 <div className={styles.sectionHeader}>
                     <div className={styles.titleWithStatus}>
@@ -61,7 +62,7 @@ export const ExecutionCard = ({execution, isRunning, error, displayedResultsId, 
                     </>
                 )}
             </section>
-        </Paper>
+        </Card>
     );
 };
 

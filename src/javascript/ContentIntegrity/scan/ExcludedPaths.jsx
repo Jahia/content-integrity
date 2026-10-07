@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
-import {Add, Button, Chip, Close, Field, Input} from '@jahia/moonstone';
+import {Add, Button, Chip, Close, Input} from '@jahia/moonstone';
+import {FormField} from '../common/FormField';
 import styles from '../ContentIntegrity.scss';
 
 export const ExcludedPaths = ({paths, onChange, isDisabled}) => {
@@ -18,9 +19,9 @@ export const ExcludedPaths = ({paths, onChange, isDisabled}) => {
     };
 
     return (
-        <Field id="ci-excluded-paths-field"
-               label={t('label.scan.excludedPaths')}
-               helper={t('label.scan.excludedPathsHelper')}
+        <FormField id="ci-excluded-paths-field"
+                   label={t('label.scan.excludedPaths')}
+                   helper={t('label.scan.excludedPathsHelper')}
         >
             <div className={styles.inputWithButton}>
                 <div className={styles.inputWithButtonInput}>
@@ -56,7 +57,7 @@ export const ExcludedPaths = ({paths, onChange, isDisabled}) => {
                     ))}
                 </ul>
             )}
-        </Field>
+        </FormField>
     );
 };
 

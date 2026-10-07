@@ -15,7 +15,7 @@ End-to-end tests of the content-integrity module, run against a Jahia server whe
 
 ## Run the tests
 
-The tests need Jahia 8.2.3 or later with the module deployed, and a root password. They create their own sites, named
+The tests need Jahia 8.1.5 or later with the module deployed, and a root password. They create their own sites, named
 `ci<Something>`, and their own users, named `ci-<site>-*`, then delete them.
 
 ```bash

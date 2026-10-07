@@ -49,8 +49,9 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>8.2.3.0</version>
+        <version>8.1.5.0</version>
     </parent>
+    <groupId>org.jahia.community</groupId>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
     <version>4.0.0-SNAPSHOT</version>
@@ -62,12 +63,21 @@
         <jahia-depends>default,graphql-dxm-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
-        <jahia-module-signature>MCwCFGH1J419FaMKuNnq2lCFmeIzBon7AhQEY5pVH9HNXACb4TlbNCU9O8YRfw==</jahia-module-signature>
         <export-package>org.jahia.modules.contentintegrity.api,
             org.jahia.modules.contentintegrity.services.impl,
             org.jahia.modules.contentintegrity.taglib</export-package>
-        <graphql-dxm-provider.version>3.7.0</graphql-dxm-provider.version>
-        <external-provider.version>4.9.0</external-provider.version>
+        <!--
+        Built against Jahia 8.1.5 to run on 8.1.5 and later. Jahia 8.1 provides graphql-java 13, graphql-java-annotations
+        7.2.1 and graphql-dxm-provider 2.x; Jahia 8.2 provides graphql-java 21, graphql-java-annotations 21.1 and
+        graphql-dxm-provider 3.x. The generated ranges cover 8.1 only, so these imports are widened to both lines.
+        -->
+        <import-package>graphql;version="[13.0,22)",
+            graphql.annotations.annotationTypes;version="[7.2,22)",
+            org.jahia.modules.graphql.provider.dxm;version="[2.3,4)",
+            org.jahia.modules.graphql.provider.dxm.node;version="[2.3,4)",
+            org.jahia.modules.graphql.provider.dxm.util;version="[2.3,4)"</import-package>
+        <graphql-dxm-provider.version>2.3.0</graphql-dxm-provider.version>
+        <external-provider.version>4.0.0</external-provider.version>
         <yarn.arguments>build:production</yarn.arguments>
     </properties>
 
@@ -207,24 +217,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>content-integrity-ci</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.felix</groupId>
-                        <artifactId>maven-bundle-plugin</artifactId>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <instructions>
-                                <Jahia-CI-Purge>true</Jahia-CI-Purge>
-                            </instructions>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

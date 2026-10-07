@@ -1,18 +1,27 @@
-import React, {useEffect, useId, useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
-import {Button, Close, Paper, Typography} from '@jahia/moonstone';
+import {Button, Close, Typography} from '@jahia/moonstone';
+import {Card} from './Card';
 import styles from '../ContentIntegrity.scss';
+
+// useId needs React 18, and Jahia 8.1 shares React 16
+let dialogCount = 0;
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * Modal dialog built on Moonstone primitives. Moonstone 2.14, the version the Jahia runtime shares,
+ * Modal dialog built on Moonstone primitives. Moonstone, as shared by Jahia 8.1 and 8.2,
  * ships no Modal component. Escape closes it, focus is trapped inside it while open and restored
  * to the trigger on close.
  */
 export const Dialog = ({isOpen, title, onClose, actions, children, size}) => {
     const dialogRef = useRef(null);
-    const titleId = useId();
+    const titleId = useRef(null);
+    if (titleId.current === null) {
+        dialogCount += 1;
+        titleId.current = `ci-dialog-title-${dialogCount}`;
+    }
+
     const onCloseRef = useRef(onClose);
     onCloseRef.current = onClose;
 
@@ -80,16 +89,16 @@ export const Dialog = ({isOpen, title, onClose, actions, children, size}) => {
                  className={[styles.dialog, size === 'large' && styles.dialogLarge, size === 'xlarge' && styles.dialogXLarge].filter(Boolean).join(' ')}
                  role="dialog"
                  aria-modal="true"
-                 aria-labelledby={titleId}
+                 aria-labelledby={titleId.current}
             >
-                <Paper className={styles.dialogPaper}>
+                <Card className={styles.dialogPaper}>
                     <div className={styles.dialogHeader}>
-                        <Typography id={titleId} variant="heading" weight="bold">{title}</Typography>
+                        <Typography id={titleId.current} variant="heading" weight="bold">{title}</Typography>
                         <Button variant="ghost" icon={<Close/>} aria-label="Close" onClick={onClose}/>
                     </div>
                     <div className={styles.dialogBody}>{children}</div>
                     {actions && <div className={styles.dialogActions}>{actions}</div>}
-                </Paper>
+                </Card>
             </div>
         </div>
     );

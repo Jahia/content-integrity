@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Add, Button, Cancel, Header, LayoutContent, Reload} from '@jahia/moonstone';
+import {Add, Button, Cancel, Header, Reload} from '@jahia/moonstone';
+import {PageLayout} from './common/PageLayout';
 import {NewScanDialog} from './scan/NewScanDialog';
 import {ExecutionCard} from './scan/ExecutionCard';
 import {RUNNING, useScanExecution} from './scan/useScanExecution';
@@ -35,7 +36,7 @@ export const ContentIntegrityAdmin = () => {
     const locked = isRunning || isStarting;
 
     return (
-        <LayoutContent
+        <PageLayout
             header={(
                 <Header title={t('label.settings.title')}
                         contentType={t('label.contentIntegrity.description')}

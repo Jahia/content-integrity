@@ -1,5 +1,7 @@
 import React from 'react';
+import {ApolloProvider} from '@apollo/client';
 import {registry} from '@jahia/ui-extender';
+import {apolloClient} from './common/apolloClient';
 import {ContentIntegrityAdmin} from './ContentIntegrityAdmin';
 
 export default () => {
@@ -8,6 +10,6 @@ export default () => {
         label: 'content-integrity:label.settings.title',
         isSelectable: true,
         requiredPermission: 'adminContentIntegrity',
-        render: () => React.createElement(ContentIntegrityAdmin)
+        render: () => React.createElement(ApolloProvider, {client: apolloClient}, React.createElement(ContentIntegrityAdmin))
     });
 };

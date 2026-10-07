@@ -6,6 +6,23 @@ const ModuleFederationPlugin = require('webpack/lib/container/ModuleFederationPl
 const getModuleFederationConfig = require('@jahia/webpack-config/getModuleFederationConfig');
 const packageJson = require('./package.json');
 
+// The module runs on Jahia 8.1.5 and later. The shared versions, measured on the jahia-ui-root and app-shell bundles:
+// Jahia 8.1.5 shares React 16.14, Moonstone 1.6.2, i18next 19.9 and react-i18next 11.16 to 11.12;
+// Jahia 8.2.3 shares React 18.3, Moonstone 2.14 and react-i18next 11.18.
+const moduleFederationConfig = getModuleFederationConfig(packageJson);
+Object.entries({
+    react: '>=16.14.0 <19',
+    'react-dom': '>=16.14.0 <19',
+    '@jahia/moonstone': '>=1.6.2 <3',
+    i18next: '>=19.9.2 <22',
+    'react-i18next': '>=11.12.0 <12'
+}).forEach(([name, range]) => {
+    moduleFederationConfig.shared[name].requiredVersion = range;
+});
+// Jahia 8.1 shares react-apollo 3 for its UI and Jahia 8.2 @apollo/client 3: the module bundles @apollo/client and
+// provides its own client (src/javascript/ContentIntegrity/common/apolloClient.js).
+delete moduleFederationConfig.shared['@apollo/client'];
+
 module.exports = (env, argv) => {
     const config = {
         entry: {
@@ -60,9 +77,9 @@ module.exports = (env, argv) => {
         },
         plugins: [
             new CleanWebpackPlugin({verbose: false}),
-            // React, Moonstone, Apollo and i18next are shared singletons provided by jahia-ui-root:
-            // they are consumed from the running Jahia (import: false), never bundled here.
-            new ModuleFederationPlugin(getModuleFederationConfig(packageJson)),
+            // React, Moonstone and i18next are shared singletons provided by the running Jahia (import: false),
+            // never bundled here. Apollo is not: see moduleFederationConfig below.
+            new ModuleFederationPlugin(moduleFederationConfig),
             new CopyWebpackPlugin({
                 patterns: [
                     {from: 'package.json', to: ''}

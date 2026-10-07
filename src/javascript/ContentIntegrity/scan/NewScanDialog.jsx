@@ -2,7 +2,9 @@ import React, {useEffect, useMemo, useState} from 'react';
 import PropTypes from 'prop-types';
 import {useQuery} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
-import {Button, Checkbox, Dropdown, Field, Input, Loader, Typography} from '@jahia/moonstone';
+import {Button, Dropdown, Input, Loader, Typography} from '@jahia/moonstone';
+import {Checkbox} from '../common/Checkbox';
+import {FormField} from '../common/FormField';
 import {GET_CHECKS} from '../ContentIntegrity.gql';
 import {Dialog} from '../common/Dialog';
 import {ChecksSelector} from './ChecksSelector';
@@ -69,24 +71,24 @@ export const NewScanDialog = ({isOpen, onClose, onRun}) => {
                             {t('label.scan.parameters')}
                         </Typography>
                         <div className={styles.formGrid}>
-                            <Field id="ci-root-node-field" label={t('label.scan.rootNode')} helper={t('label.scan.rootNodeHelper')}>
+                            <FormField id="ci-root-node-field" label={t('label.scan.rootNode')} helper={t('label.scan.rootNodeHelper')}>
                                 <Input id="ci-root-node"
                                        aria-label={t('label.scan.rootNode')}
                                        value={rootPath}
                                        onChange={e => setRootPath(e.target.value)}/>
-                            </Field>
-                            <Field id="ci-workspace-field" label={t('label.scan.workspace.label')}>
+                            </FormField>
+                            <FormField id="ci-workspace-field" label={t('label.scan.workspace.label')}>
                                 <Dropdown data={workspaceData}
                                           value={workspace}
                                           variant="outlined"
                                           onChange={(e, item) => setWorkspace(item.value)}/>
-                            </Field>
+                            </FormField>
                             <ExcludedPaths paths={excludedPaths} onChange={setExcludedPaths}/>
                             <div className={styles.inlineField}>
                                 <label className={styles.checkboxLabel} htmlFor="ci-virtual-nodes">
                                     <Checkbox id="ci-virtual-nodes"
                                               checked={includeVirtualNodes}
-                                              onChange={(e, v, checked) => setIncludeVirtualNodes(checked)}/>
+                                              onChange={checked => setIncludeVirtualNodes(checked)}/>
                                     <Typography variant="body" component="span">{t('label.scan.includeVirtualNodes')}</Typography>
                                 </label>
                                 <Typography variant="caption" className={styles.helper}>{t('label.scan.includeVirtualNodesHelper')}</Typography>

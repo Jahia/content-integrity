@@ -2,7 +2,9 @@ import React, {useEffect, useMemo, useState} from 'react';
 import PropTypes from 'prop-types';
 import {useApolloClient, useQuery} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
-import {Button, Checkbox, Field, Input, Loader, Typography} from '@jahia/moonstone';
+import {Button, Input, Loader, Typography} from '@jahia/moonstone';
+import {Checkbox} from '../common/Checkbox';
+import {FormField} from '../common/FormField';
 import {Dialog} from '../common/Dialog';
 import {buildSaveConfigurationsQuery, GET_CHECK_CONFIGURATIONS, RESET_CHECK_CONFIGURATIONS} from '../ContentIntegrity.gql';
 import styles from '../ContentIntegrity.scss';
@@ -66,7 +68,7 @@ export const CheckConfigDialog = ({checkId, onClose}) => {
                     <label className={styles.checkboxLabel} htmlFor={id}>
                         <Checkbox id={id}
                                   checked={value === 'true'}
-                                  onChange={(e, v, checked) => setValues(prev => ({...prev, [conf.name]: checked ? 'true' : 'false'}))}/>
+                                  onChange={checked => setValues(prev => ({...prev, [conf.name]: checked ? 'true' : 'false'}))}/>
                         <Typography variant="body" component="span" weight="semiBold">{conf.name}</Typography>
                     </label>
                     {conf.description && <Typography variant="caption" className={styles.helper}>{conf.description}</Typography>}
@@ -76,13 +78,13 @@ export const CheckConfigDialog = ({checkId, onClose}) => {
 
         const hasError = !isValid(conf.type, value);
         return (
-            <Field key={conf.name}
-                   id={`${id}-field`}
-                   label={conf.name}
-                   helper={conf.description || undefined}
-                   hasError={hasError}
-                   errorMessage={hasError ? t('label.config.integerExpected') : undefined}
-                   className={styles.configItem}
+            <FormField key={conf.name}
+                       id={`${id}-field`}
+                       label={conf.name}
+                       helper={conf.description || undefined}
+                       hasError={hasError}
+                       errorMessage={hasError ? t('label.config.integerExpected') : undefined}
+                       className={styles.configItem}
             >
                 <Input id={id}
                        aria-label={conf.name}
@@ -92,7 +94,7 @@ export const CheckConfigDialog = ({checkId, onClose}) => {
                            const next = e.target.value;
                            setValues(prev => ({...prev, [conf.name]: next}));
                        }}/>
-            </Field>
+            </FormField>
         );
     };
 

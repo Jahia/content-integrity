@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
-import {Button, Checkbox, HelpOutline, Tune, Typography} from '@jahia/moonstone';
+import {Button, HelpOutline, Tune, Typography} from '@jahia/moonstone';
+import {Checkbox} from '../common/Checkbox';
 import {CheckConfigDialog} from './CheckConfigDialog';
 import styles from '../ContentIntegrity.scss';
 
@@ -38,7 +39,7 @@ export const ChecksSelector = ({checks, selected, onChange, isDisabled}) => {
                                       value={check.id}
                                       checked={selected.includes(check.id)}
                                       isDisabled={isDisabled}
-                                      onChange={(e, value, checked) => toggle(check.id, checked)}/>
+                                      onChange={checked => toggle(check.id, checked)}/>
                             <Typography variant="body" component="span" className={styles.checkName}>{check.id}</Typography>
                         </label>
                         <span className={styles.checkActions}>

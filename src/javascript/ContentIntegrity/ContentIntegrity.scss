@@ -31,6 +31,32 @@
     justify-content: center;
 }
 
+// Moonstone's Paper and LayoutContent, which Moonstone 1.6 (Jahia 8.1.5) does not have: see common/Card.jsx and
+// common/PageLayout.jsx. Declared before .card and .dialogPaper, which adjust their padding.
+.paper {
+    padding: var(--spacing-large);
+    border-radius: var(--radius);
+    background-color: var(--color-white);
+    box-shadow: #32325d40 0 2px 5px -1px, #0000004d 0 1px 3px -1px;
+}
+
+.pageLayout {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.pageLayoutContent {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: var(--spacing-large);
+    overflow: auto;
+    background-color: var(--color-gray_light40);
+}
+
 .card {
     min-width: 0;
     max-width: 100%;
@@ -135,6 +161,34 @@
     gap: var(--spacing-nano);
     // Same indent as the content of a Moonstone Field (32px padding + 3px border).
     padding: var(--spacing-medium) 0 0 35px;
+}
+
+// The layout of Moonstone's Field, which Moonstone 2.5 (Jahia 8.1) does not have: see common/FormField.jsx
+.field {
+    display: flex;
+    flex-direction: column;
+    padding-left: 32px;
+    border-left: 3px solid transparent;
+}
+
+.fieldError {
+    border-color: var(--color-warning);
+}
+
+.fieldHelper {
+    margin-top: 2px;
+    color: var(--color-gray_dark_plain60, #7e8386);
+}
+
+.fieldChildren {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+    margin-top: var(--spacing-small);
+}
+
+.fieldErrorMessage {
+    color: var(--color-warning);
 }
 
 .helper {
@@ -485,7 +539,8 @@
     padding: var(--spacing-medium);
     border: 1px solid var(--color-gray_light);
     border-radius: 4px;
-    background-color: var(--color-gray_light20);
+    // Moonstone 2.5 (Jahia 8.1) does not define this token
+    background-color: var(--color-gray_light20, rgba(218, 218, 218, .2));
 }
 
 // Moonstone indents a field for a leading control this one doesn't have.

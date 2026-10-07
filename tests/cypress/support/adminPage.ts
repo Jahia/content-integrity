@@ -57,9 +57,10 @@ export const clearFilters = (): void => {
 
 /**
  * The Moonstone dropdown displayed under a label, such as a filter of the results table or a field of a dialog.
+ * Its role is listbox in Moonstone 2 (Jahia 8.2) and dropdown in Moonstone 1.6 (Jahia 8.1.5), its class is the same.
  */
 export const getDropdown = (label: string): Cypress.Chainable<JQuery<HTMLElement>> =>
-    cy.contains('label', new RegExp(`^${label}$`)).parent().find('[role=listbox]').first();
+    cy.contains('label', new RegExp(`^${label}$`)).parent().find('.moonstone-dropdown').first();
 
 /**
  * Opens the menu of a dropdown from its chevron, on its right: the middle of a multiple dropdown holds its tags, which

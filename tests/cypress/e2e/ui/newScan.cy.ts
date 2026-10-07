@@ -55,7 +55,7 @@ describe('New scan', () => {
         openNewScanDialog();
         getDialog('New integrity scan').within(() => {
             cy.get('#ci-root-node').should('have.value', '/');
-            cy.get('#ci-workspace-field [role=listbox]').should('contain.text', 'All workspaces');
+            cy.get('#ci-workspace-field .moonstone-dropdown').should('contain.text', 'All workspaces');
             cy.get('#ci-virtual-nodes').should('be.checked');
             cy.get('ul[aria-label="Excluded paths"]').should('not.exist');
         });
@@ -126,7 +126,7 @@ describe('New scan', () => {
         getDialog('New integrity scan').within(() => {
             cy.get('#ci-root-node').clear().type(ROOT);
             cy.get('#ci-excluded-paths').type(`${INCONSISTENT_LOCK}{enter}`);
-            cy.get('#ci-workspace-field [role=listbox]').click();
+            cy.get('#ci-workspace-field .moonstone-dropdown').click();
         });
         getMenuItem(/^default$/).click();
         getDialog('New integrity scan').within(() => {

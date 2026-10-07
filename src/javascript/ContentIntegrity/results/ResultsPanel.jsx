@@ -8,7 +8,6 @@ import {
     Close,
     Dropdown,
     Loader,
-    Paper,
     Table,
     TableBody,
     TableBodyCell,
@@ -18,6 +17,7 @@ import {
     TableRow,
     Typography
 } from '@jahia/moonstone';
+import {Card} from '../common/Card';
 import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST} from '../ContentIntegrity.gql';
 import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
 import {ErrorDetailsDialog} from './ErrorDetailsDialog';
@@ -157,13 +157,13 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
 
     if (ids.length === 0) {
         return (
-            <Paper className={`${styles.card} ${styles.resultsCard}`}>
+            <Card className={`${styles.card} ${styles.resultsCard}`}>
                 <div className={styles.emptyState}>
                     <Typography variant="heading">{t('label.results.noResultsTitle')}</Typography>
                     <Typography variant="body" className={styles.helper}>{t('label.results.noResults')}</Typography>
                     <Button label={t('label.scan.newScan')} icon={<Add/>} color="accent" isDisabled={isScanLocked} onClick={onNewScan}/>
                 </div>
-            </Paper>
+            </Card>
         );
     }
 
@@ -173,7 +173,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
 
     return (
         <div className={styles.panel}>
-            <Paper className={`${styles.card} ${styles.resultsCard}`}>
+            <Card className={`${styles.card} ${styles.resultsCard}`}>
                 <Typography variant="subheading" weight="bold" className={styles.sectionTitle}>{t('label.results.title')}</Typography>
                 <div className={styles.toolbar}>
                     <div className={styles.filter}>
@@ -281,7 +281,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                         )}
                     </>
                 )}
-            </Paper>
+            </Card>
 
             {detailsId && resultsId && (
                 <ErrorDetailsDialog errorId={detailsId}
