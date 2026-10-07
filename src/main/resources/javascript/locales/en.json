@@ -62,8 +62,6 @@
       "of": "of",
       "title": "Scan results",
       "noResultsTitle": "No scan results yet",
-      "filters": "Filters",
-      "filtersCount": "Filters ({{count}})",
       "clearFilters": "Clear the filters",
       "actions": "Actions"
     },
@@ -125,6 +123,14 @@
       "add": "Add a value",
       "remove": "Remove this value",
       "submit": "Set the value and fix"
+    },
+    "fixAll": {
+      "button": "Fix all",
+      "title": "Fix all the displayed errors",
+      "description": "The fix of its check will be run on each of the {{count}} errors matching the filters.",
+      "warning": "Some fixes remove content, such as a node whose type is not declared anymore. The errors whose check provides no fix, and the ones fixed with a typed value, are skipped.",
+      "confirm": "Fix {{count}} errors",
+      "outcome": "{{fixed}} fixed, {{failed}} not fixed, {{skipped}} skipped, {{alreadyFixed}} already fixed"
     }
   }
 }

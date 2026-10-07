@@ -228,3 +228,18 @@ export const GET_ADMIN_PANEL_NODE = gql`
         }
     }
 `;
+
+export const FIX_ALL_ERRORS = gql`
+    query ContentIntegrityFixAllErrors($resultsID: String!, $filters: [String]!) {
+        integrity: contentIntegrity {
+            results: scanResultsDetails(id: $resultsID, filters: $filters) {
+                fixAll: fixAllErrors {
+                    fixed
+                    failed
+                    skipped
+                    alreadyFixed
+                }
+            }
+        }
+    }
+`;

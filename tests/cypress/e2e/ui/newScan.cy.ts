@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture} from '../../support/integrity';
-import {getDialog, getResultsTable, visitAdmin} from '../../support/adminPage';
+import {clearFilters, getDialog, getResultsTable, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiNewScan';
 const ROOT = `/sites/${SITE}/contents/locks`;
@@ -51,7 +51,10 @@ describe('New scan', () => {
             cy.contains('Integrity checks (1 of').should('be.visible');
             cy.contains('button', 'Run the scan').click();
         });
-        cy.contains('Errors: 3', {timeout: 60000}).should('be.visible');
+        // The lock errors do not block an XML import, so the default filter hides them
+        cy.contains('Errors: 0 (total: 3)', {timeout: 60000}).should('be.visible');
+        clearFilters();
+        cy.contains('Errors: 3').should('be.visible');
         getResultsTable().within(() => {
             cy.contains(`${ROOT}/inconsistent-lock`).should('exist');
             cy.contains(`${ROOT}/deletion-lock-on-translation/j:translation_en`).should('exist');

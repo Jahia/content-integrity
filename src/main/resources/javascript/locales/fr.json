@@ -62,8 +62,6 @@
       "of": "sur",
       "title": "Résultats d'analyse",
       "noResultsTitle": "Aucun résultat d'analyse",
-      "filters": "Filtres",
-      "filtersCount": "Filtres ({{count}})",
       "clearFilters": "Effacer les filtres",
       "actions": "Actions"
     },
@@ -125,6 +123,14 @@
       "add": "Ajouter une valeur",
       "remove": "Supprimer cette valeur",
       "submit": "Définir la valeur et corriger"
+    },
+    "fixAll": {
+      "button": "Tout corriger",
+      "title": "Corriger toutes les erreurs affichées",
+      "description": "Le correctif de son contrôle sera exécuté sur chacune des {{count}} erreurs correspondant aux filtres.",
+      "warning": "Certains correctifs suppriment du contenu, par exemple un nœud dont le type n'est plus déclaré. Les erreurs dont le contrôle ne fournit pas de correctif, et celles corrigées avec une valeur saisie, sont ignorées.",
+      "confirm": "Corriger {{count}} erreurs",
+      "outcome": "{{fixed}} corrigées, {{failed}} non corrigées, {{skipped}} ignorées, {{alreadyFixed}} déjà corrigées"
     }
   }
 }

@@ -6,6 +6,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
@@ -140,6 +141,36 @@ public class GqlScanResults {
             if (error.isFixed()) service.storeErrorsInCache(results);
         }
         return new GqlScanResultsError(error);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Fixes all the errors matching the filters of these results, each with the fix of the check which has detected it. " +
+            "The errors whose check provides no fix, and the ones fixed with values typed by an administrator, are skipped")
+    public GqlFixAllErrorsResult fixAllErrors() {
+        final GqlFixAllErrorsResult result = new GqlFixAllErrorsResult();
+        if (filteredErrors == null) return result;
+
+        final ContentIntegrityService service = Utils.getContentIntegrityService();
+        for (ContentIntegrityError error : filteredErrors) {
+            if (error.isFixed()) {
+                result.addAlreadyFixed();
+                continue;
+            }
+            final ContentIntegrityCheck check = service.getContentIntegrityCheck(error.getIntegrityCheckID());
+            final boolean fixedWithValues = check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues
+                    && ((ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) check).isFixWithValues(error);
+            if (!(check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix) || fixedWithValues) {
+                result.addSkipped();
+                continue;
+            }
+            // A fix can make another error of the list unfixable, for example when it removes its node: it is then counted as failed
+            service.fixError(error);
+            if (error.isFixed()) result.addFixed();
+            else result.addFailed();
+        }
+        // The fixed status is part of the results, which are stored in a cache
+        if (result.getFixed() > 0) service.storeErrorsInCache(results);
+        return result;
     }
 
     @GraphQLField

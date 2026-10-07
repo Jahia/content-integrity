@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {getDialog, getMenuItem, getRow, openRowMenu, visitAdmin} from '../../support/adminPage';
+import {clearFilters, getDialog, getMenuItem, getRow, openRowMenu, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiFixErrors';
 const LOCKS = `/sites/${SITE}/contents/locks`;
@@ -14,10 +14,11 @@ describe('Fix of the errors', () => {
 
     after(() => deleteTestSite(SITE));
 
-    // The page displays the latest scan results
+    // The page displays the latest scan results. The lock errors do not block an XML import, so the default filter hides them
     beforeEach(() => {
         scan(`/sites/${SITE}`, ['LockSanityCheck', 'PagesSanityCheck']);
         visitAdmin();
+        clearFilters();
     });
 
     it('displays no fix in the menu of an error that its check can not fix', () => {
@@ -45,6 +46,7 @@ describe('Fix of the errors', () => {
         getMenuItem(/^Fix$/).click();
         getRow(`${LOCKS}/deletion-lock-on-translation/j:translation_en`).within(() => cy.contains('Fixed').should('be.visible'));
         cy.reload();
+        clearFilters();
         getRow(`${LOCKS}/deletion-lock-on-translation/j:translation_en`).within(() => {
             cy.contains('Fixed').should('be.visible');
         });
@@ -54,6 +56,7 @@ describe('Fix of the errors', () => {
         runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});
         scan(`/sites/${SITE}`, ['LockSanityCheck', 'PagesSanityCheck']);
         cy.reload();
+        clearFilters();
         openRowMenu(`${LOCKS}/inconsistent-lock`);
         getMenuItem('Error details').click();
         getDialog('Error details').within(() => {

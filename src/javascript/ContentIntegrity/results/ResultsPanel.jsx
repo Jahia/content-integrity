@@ -6,7 +6,6 @@ import {
     Add,
     Button,
     Close,
-    Filter,
     Dropdown,
     Loader,
     Paper,
@@ -21,9 +20,10 @@ import {
     Typography
 } from '@jahia/moonstone';
 import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST} from '../ContentIntegrity.gql';
-import {COLUMNS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
+import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
 import {ErrorDetailsDialog} from './ErrorDetailsDialog';
 import {RowActions} from './RowActions';
+import {FixAllAction} from './FixAllAction';
 import {useFixError} from './useFixError';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {ReportLinks} from '../common/ReportLinks';
@@ -75,10 +75,9 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
     const [resultsId, setResultsId] = useState(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
-    const [filters, setFilters] = useState({});
+    const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
     const [detailsId, setDetailsId] = useState(null);
-    const [showFilters, setShowFilters] = useState(false);
 
     // A scan that just ended is not in the list yet: refresh it before selecting the requested results.
     const {refetch: refetchList} = list;
@@ -101,10 +100,11 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
 
     useEffect(() => {
         setPage(1);
-        setFilters({});
+        setFilters(DEFAULT_FILTERS);
         onResultsChange(resultsId);
     }, [resultsId, onResultsChange]);
 
+    const filterArgs = useMemo(() => toFilterArgs(filters), [filters]);
     const results = useQuery(GET_SCAN_RESULTS, {
         skip: !resultsId,
         fetchPolicy: 'network-only',
@@ -112,7 +112,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
             id: resultsId,
             offset: (page - 1) * pageSize,
             size: pageSize,
-            filters: toFilterArgs(filters),
+            filters: filterArgs,
             filterColumns: FILTERABLE_COLUMNS
         }
     });
@@ -145,7 +145,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
 
     if (ids.length === 0) {
         return (
-            <Paper className={styles.card}>
+            <Paper className={`${styles.card} ${styles.resultsCard}`}>
                 <div className={styles.emptyState}>
                     <Typography variant="heading">{t('label.results.noResultsTitle')}</Typography>
                     <Typography variant="body" className={styles.helper}>{t('label.results.noResults')}</Typography>
@@ -161,7 +161,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
 
     return (
         <div className={styles.panel}>
-            <Paper className={styles.card}>
+            <Paper className={`${styles.card} ${styles.resultsCard}`}>
                 <Typography variant="subheading" weight="bold" className={styles.sectionTitle}>{t('label.results.title')}</Typography>
                 <div className={styles.toolbar}>
                     <div className={styles.filter}>
@@ -182,13 +182,6 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                       prev.filter(k => k !== item.value) :
                                       COLUMNS.map(c => c.key).filter(k => prev.includes(k) || k === item.value)))}/>
                     </div>
-                    <Button label={activeFilterCount > 0 ? t('label.results.filtersCount', {count: activeFilterCount}) : t('label.results.filters')}
-                            icon={<Filter/>}
-                            variant={activeFilterCount > 0 ? 'default' : 'outlined'}
-                            color={activeFilterCount > 0 ? 'accent' : 'default'}
-                            aria-expanded={showFilters}
-                            aria-controls="ci-filters"
-                            onClick={() => setShowFilters(v => !v)}/>
                     <div className={styles.spacer}/>
                     <Button label={t('label.results.refresh')}
                             icon={<Reload/>}
@@ -198,29 +191,27 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                 results.refetch();
                             }}/>
                 </div>
-                {showFilters && (
-                    <div id="ci-filters">
-                        <div className={styles.filters}>
-                            {FILTERABLE_COLUMNS.map(column => (
-                                <FilterDropdown key={column}
-                                                column={column}
-                                                values={possibleValues[column]}
-                                                active={filters[column]}
-                                                onChange={onFilterChange}/>
-                            ))}
-                        </div>
-                        {activeFilterCount > 0 && (
-                            <Button className={styles.clearFilters}
-                                    label={t('label.results.clearFilters')}
-                                    icon={<Close/>}
-                                    variant="ghost"
-                                    onClick={() => {
-                                        setFilters({});
-                                        setPage(1);
-                                    }}/>
-                        )}
+                <div id="ci-filters">
+                    <div className={styles.filters}>
+                        {FILTERABLE_COLUMNS.map(column => (
+                            <FilterDropdown key={column}
+                                            column={column}
+                                            values={possibleValues[column]}
+                                            active={filters[column]}
+                                            onChange={onFilterChange}/>
+                        ))}
                     </div>
-                )}
+                    {activeFilterCount > 0 && (
+                        <Button className={styles.clearFilters}
+                                label={t('label.results.clearFilters')}
+                                icon={<Close/>}
+                                variant="ghost"
+                                onClick={() => {
+                                    setFilters({});
+                                    setPage(1);
+                                }}/>
+                    )}
+                </div>
 
                 <div className={`${styles.sectionHeader} ${styles.resultsHeader}`}>
                     <Typography variant="subheading" weight="bold">
@@ -229,6 +220,15 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                             t('label.results.errorCountFiltered', {count: errorCount, total: totalErrorCount})}
                     </Typography>
                     {results.loading && <Loader size="small"/>}
+                    <div className={styles.spacer}/>
+                    {details && (
+                        // Remounted when the results or the filters change, so that the outcome of a fix all is not shown for other errors
+                        <FixAllAction key={`${resultsId}|${filterArgs.join('|')}`}
+                                      resultsId={resultsId}
+                                      filterArgs={filterArgs}
+                                      errorCount={errorCount}
+                                      onFixed={refetchResults}/>
+                    )}
                 </div>
                 {results.error && <Typography className={styles.error}>{results.error.message}</Typography>}
                 {details && (

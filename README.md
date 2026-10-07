@@ -60,7 +60,9 @@ When the scan is over, its results are displayed, and its reports can be downloa
 
 #### Explore the results
 
-Select the scan to display, and choose the columns to display. Use **Filters** to filter the errors on the check, the error type, the workspace, the site, the node type, the locale, the message or the impact on the XML import. Each filter value shows its number of errors, and the button shows the number of active filters.
+Select the scan to display, and choose the columns to display: the check name, the error type, the workspace, the path and the message are displayed by default. The filters are always displayed, and filter the errors on the check, the error type, the workspace, the site, the node type, the locale, the message or the impact on the XML import. Each filter value shows its number of errors. By default, only the errors which make the XML import fail are displayed: **Clear the filters** displays all of them.
+
+**Fix all** runs the fix of every error matching the filters, after a confirmation, then displays how many errors were fixed, not fixed, skipped and already fixed. The errors whose check provides no fix, and the ones fixed with a typed value, are skipped. Some fixes remove content, so narrow the filters to the errors to fix first.
 
 Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. The actions on an error are in the menu of the 3 dots at the end of its row: **Error details** displays all its information, including the extra information provided by the check, and **Fix** runs the fix of the check which has detected it, when the check provides one. **Fix…** opens the details of an error which is fixed with a value to type, such as a missing mandatory property. The outcome of a fix stays displayed in the row.
 

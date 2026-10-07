@@ -32,3 +32,17 @@ export const openRowMenu = (path: string): void => {
  */
 export const getMenuItem = (label: string | RegExp): Cypress.Chainable<JQuery<HTMLElement>> =>
     cy.contains('li.moonstone-menuItem', label).should('be.visible');
+
+/**
+ * The filters of the results table, which are always displayed.
+ */
+export const getFilters = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.get('#ci-filters', {timeout: 30000}).should('be.visible');
+
+/**
+ * Removes the filters of the results table, including the default one, which displays only the errors which block an
+ * XML import.
+ */
+export const clearFilters = (): void => {
+    getFilters().within(() => cy.contains('button', 'Clear the filters').click());
+    getFilters().contains('button', 'Clear the filters').should('not.exist');
+};
