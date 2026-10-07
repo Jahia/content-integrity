@@ -21,20 +21,24 @@ export const ExcludedPaths = ({paths, onChange, isDisabled}) => {
         <Field id="ci-excluded-paths-field"
                label={t('label.scan.excludedPaths')}
                helper={t('label.scan.excludedPathsHelper')}
-               buttons={<Button label={t('label.add')} icon={<Add/>} variant="outlined" isDisabled={isDisabled || value.trim().length === 0} onClick={add}/>}
         >
-            <Input id="ci-excluded-paths"
-                   aria-label={t('label.scan.excludedPaths')}
-                   value={value}
-                   placeholder="/sites/mySite/files"
-                   isDisabled={isDisabled}
-                   onChange={e => setValue(e.target.value)}
-                   onKeyPress={e => {
-                       if (e.key === 'Enter') {
-                           e.preventDefault();
-                           add();
-                       }
-                   }}/>
+            <div className={styles.inputWithButton}>
+                <div className={styles.inputWithButtonInput}>
+                    <Input id="ci-excluded-paths"
+                           aria-label={t('label.scan.excludedPaths')}
+                           value={value}
+                           placeholder="/sites/mySite/files"
+                           isDisabled={isDisabled}
+                           onChange={e => setValue(e.target.value)}
+                           onKeyPress={e => {
+                               if (e.key === 'Enter') {
+                                   e.preventDefault();
+                                   add();
+                               }
+                           }}/>
+                </div>
+                <Button label={t('label.add')} icon={<Add/>} variant="outlined" isDisabled={isDisabled || value.trim().length === 0} onClick={add}/>
+            </div>
             {paths.length > 0 && (
                 <ul className={styles.chips} aria-label={t('label.scan.excludedPaths')}>
                     {paths.map(path => (

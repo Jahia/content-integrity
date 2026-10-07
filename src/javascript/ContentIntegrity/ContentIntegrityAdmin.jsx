@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Add, Button, Cancel, Header, LayoutContent} from '@jahia/moonstone';
+import {Add, Button, Cancel, Header, LayoutContent, Reload} from '@jahia/moonstone';
 import {NewScanDialog} from './scan/NewScanDialog';
 import {ExecutionCard} from './scan/ExecutionCard';
 import {RUNNING, useScanExecution} from './scan/useScanExecution';
@@ -17,6 +17,7 @@ export const ContentIntegrityAdmin = () => {
     const [isDialogOpen, setDialogOpen] = useState(false);
     const [requestedResultsId, setRequestedResultsId] = useState(null);
     const [displayedResultsId, setDisplayedResultsId] = useState(null);
+    const [refreshCount, setRefreshCount] = useState(0);
 
     // When the followed scan ends, display its results.
     const previousStatus = useRef(execution.status);
@@ -40,6 +41,11 @@ export const ContentIntegrityAdmin = () => {
                         contentType={t('label.contentIntegrity.description')}
                         mainActions={(
                             <>
+                                <Button label={t('label.results.refresh')}
+                                        icon={<Reload/>}
+                                        variant="ghost"
+                                        size="big"
+                                        onClick={() => setRefreshCount(c => c + 1)}/>
                                 {isRunning && (
                                     <Button label={t('label.scan.stop')} icon={<Cancel/>} color="danger" variant="outlined" size="big" onClick={stop}/>
                                 )}
@@ -62,6 +68,7 @@ export const ContentIntegrityAdmin = () => {
                                        displayedResultsId={displayedResultsId}
                                        onShowResults={setRequestedResultsId}/>
                         <ResultsPanel requestedResultsId={requestedResultsId}
+                                      refreshCount={refreshCount}
                                       isScanLocked={locked}
                                       onRequestConsumed={clearRequest}
                                       onResultsChange={setDisplayedResultsId}

@@ -145,6 +145,17 @@
     color: var(--color-danger);
 }
 
+.inputWithButton {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+}
+
+.inputWithButtonInput {
+    flex: 1;
+    min-width: 0;
+}
+
 .chips {
     display: flex;
     flex-wrap: wrap;
@@ -197,6 +208,17 @@
 }
 
 .reportList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.reportListCompact {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-medium);
+    // Same height as the outlined dropdowns of the toolbar, so the links are centered on them.
+    min-height: 32px;
     margin: 0;
     padding: 0;
     list-style: none;

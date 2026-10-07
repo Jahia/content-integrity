@@ -9,7 +9,6 @@ import {
     Dropdown,
     Loader,
     Paper,
-    Reload,
     Table,
     TableBody,
     TableBodyCell,
@@ -67,7 +66,7 @@ FilterDropdown.propTypes = {
     onChange: PropTypes.func.isRequired
 };
 
-export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsumed, onResultsChange, onNewScan}) => {
+export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, onRequestConsumed, onResultsChange, onNewScan}) => {
     const {t} = useTranslation('content-integrity');
     const list = useQuery(GET_SCAN_RESULTS_LIST, {fetchPolicy: 'network-only'});
     const ids = useMemo(() => list.data?.integrity?.scanResults || [], [list.data]);
@@ -123,6 +122,17 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
     // After a fix, the errors are read again: their 'fixed' and 'fixable' fields have changed
     const {refetch: refetchResults} = results;
     const {fix, states: fixStates} = useFixError(resultsId, useCallback(() => refetchResults(), [refetchResults]));
+    // The refresh button is in the page header: each click increments refreshCount.
+    useEffect(() => {
+        if (refreshCount > 0) {
+            refetchList();
+            if (resultsId) {
+                refetchResults();
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [refreshCount]);
+
     const possibleValues = useMemo(
         () => Object.fromEntries((details?.possibleValues || []).map(c => [c.name, c.values])),
         [details]
@@ -174,6 +184,8 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                   hasSearch={resultsData.length > 10}
                                   onChange={(e, item) => setResultsId(item.value)}/>
                     </div>
+                    {details && <ReportLinks isCompact reports={details.reports}/>}
+                    <div className={styles.spacer}/>
                     <div className={styles.filter}>
                         <Typography variant="caption" weight="semiBold" component="label">{t('label.results.columns')}</Typography>
                         <Dropdown data={columnsData}
@@ -184,14 +196,6 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                       prev.filter(k => k !== item.value) :
                                       COLUMNS.map(c => c.key).filter(k => prev.includes(k) || k === item.value)))}/>
                     </div>
-                    <div className={styles.spacer}/>
-                    <Button label={t('label.results.refresh')}
-                            icon={<Reload/>}
-                            variant="ghost"
-                            onClick={() => {
-                                refetchList();
-                                results.refetch();
-                            }}/>
                 </div>
                 <div id="ci-filters">
                     <div className={styles.filters}>
@@ -275,7 +279,6 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                                  setPage(1);
                                              }}/>
                         )}
-                        <ReportLinks reports={details.reports}/>
                     </>
                 )}
             </Paper>
@@ -294,6 +297,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
 
 ResultsPanel.propTypes = {
     requestedResultsId: PropTypes.string,
+    refreshCount: PropTypes.number.isRequired,
     isScanLocked: PropTypes.bool,
     onRequestConsumed: PropTypes.func.isRequired,
     onResultsChange: PropTypes.func.isRequired,
