@@ -52,6 +52,13 @@ public class GqlIntegrityService {
     }
 
     @GraphQLField
+    @GraphQLName("canFixErrors")
+    @GraphQLDescription("True if the current user may fix the errors, with the permission adminContentIntegrityFix")
+    public boolean canFixErrors() {
+        return Utils.canFixErrors();
+    }
+
+    @GraphQLField
     @GraphQLName("integrityCheckById")
     @GraphQLDescription("Returns the check specified by its ID")
     public GqlIntegrityCheck getIntegrityCheckById(@GraphQLName("id") @GraphQLDescription("ID of the check") String id) {

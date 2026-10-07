@@ -3,8 +3,16 @@
  */
 export const ADMIN_URL = '/jahia/administration/content-integrity';
 
-export const visitAdmin = (): void => {
-    cy.login();
+/**
+ * Opens the administration page, as root by default.
+ */
+export const visitAdmin = (user?: { username: string; password: string }): void => {
+    if (user) {
+        cy.login(user.username, user.password);
+    } else {
+        cy.login();
+    }
+
     cy.visit(ADMIN_URL);
     cy.contains('h1, h2, h3', 'Content Integrity', {timeout: 60000}).should('be.visible');
 };

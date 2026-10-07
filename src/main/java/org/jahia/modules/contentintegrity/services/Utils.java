@@ -19,6 +19,7 @@ import org.jahia.modules.contentintegrity.services.reporting.ReportWriter;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRAutoSplitUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.osgi.framework.Bundle;
@@ -65,6 +66,7 @@ public class Utils {
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
     private static final List<Report> reportGenerators = Arrays.asList(new CsvReport(), new ExcelReport());
     public static final String JAVA_ERROR_PREFIX = "[java error]";
+    public static final String FIX_PERMISSION = "adminContentIntegrityFix";
 
     public enum LOG_LEVEL {
         TRACE, INFO, WARN, ERROR, DEBUG
@@ -72,6 +74,19 @@ public class Utils {
 
     public static ContentIntegrityService getContentIntegrityService() {
         return BundleUtils.getOsgiService(ContentIntegrityService.class, null);
+    }
+
+    /**
+     * Tells if the current user may fix the errors. A fix writes to the repository with a system session, so the access
+     * to the module, which allows to scan and read the results, is not enough: the permission is checked on the root node.
+     */
+    public static boolean canFixErrors() {
+        try {
+            return JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission(FIX_PERMISSION);
+        } catch (RepositoryException e) {
+            logger.error("Impossible to check the permission " + FIX_PERMISSION, e);
+            return false;
+        }
     }
 
     public static void log(String message, Logger log, ExternalLogger... externalLoggers) {

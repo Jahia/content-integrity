@@ -50,13 +50,15 @@ DetailsSection.propTypes = {
     })).isRequired
 };
 
-export const ErrorDetailsDialog = ({errorId, resultsId, fixState, onFix, onClose}) => {
+export const ErrorDetailsDialog = ({errorId, resultsId, fixState, canFixErrors, onFix, onClose}) => {
     const {t} = useTranslation('content-integrity');
     const {data, loading, error} = useQuery(GET_ERROR_DETAILS, {
         variables: {id: errorId, resultsID: resultsId},
         fetchPolicy: 'no-cache'
     });
     const details = data?.integrity?.results?.error;
+    // Without the permission to fix the errors, the fix status is displayed but no fix is offered
+    const fixableError = details && {...details, fixable: canFixErrors && details.fixable};
 
     const nodeLink = value => <JcrBrowserLink uuid={details.nodeId} workspace={details.workspace}>{value}</JcrBrowserLink>;
     const label = key => t(`label.column.${key}`);
@@ -67,7 +69,7 @@ export const ErrorDetailsDialog = ({errorId, resultsId, fixState, onFix, onClose
                 size="large"
                 actions={(
                     <>
-                        {details && (!details.fixWithValues || fixState === FIX_STATES.FIXED) && <FixAction error={details} state={fixState} onFix={onFix}/>}
+                        {details && (!details.fixWithValues || fixState === FIX_STATES.FIXED) && <FixAction error={fixableError} state={fixState} onFix={onFix}/>}
                         <Button label={t('label.close')} variant="outlined" onClick={onClose}/>
                     </>
                 )}
@@ -105,7 +107,7 @@ export const ErrorDetailsDialog = ({errorId, resultsId, fixState, onFix, onClose
                                     ]}/>
                     <DetailsSection title={t('label.details.extraInfos')}
                                     rows={(details.extraInfos || []).map(info => ({label: info.label, value: info.value, isCode: true}))}/>
-                    {details.fixWithValues && details.fixValues && fixState !== FIX_STATES.FIXED && (
+                    {canFixErrors && details.fixWithValues && details.fixValues && fixState !== FIX_STATES.FIXED && (
                         <FixValuesForm errorId={details.id}
                                        definition={details.fixValues}
                                        isFixing={fixState === FIX_STATES.FIXING}
@@ -121,6 +123,7 @@ ErrorDetailsDialog.propTypes = {
     errorId: PropTypes.string.isRequired,
     resultsId: PropTypes.string.isRequired,
     fixState: PropTypes.string,
+    canFixErrors: PropTypes.bool,
     onFix: PropTypes.func.isRequired,
     onClose: PropTypes.func.isRequired
 };

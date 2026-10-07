@@ -5,7 +5,8 @@ End-to-end tests of the content-integrity module, run against a Jahia server whe
 * `cypress/e2e/checks`: one spec per integrity check. Each spec creates the faulty content, scans it, asserts every error
   type of the check, then fixes the errors when the check provides a fix and scans again to verify it.
 * `cypress/e2e/api`: the GraphQL API: the catalog and the configuration of the checks, the lifecycle of a scan, the fix of
-  all the errors matching filters, and the access to the scan reports, which only the server administrators may download.
+  all the errors matching filters, the permission to fix the errors (in the API and in the administration screen), and
+  the access to the scan reports, which only the server administrators may download.
 * `cypress/e2e/ui`: the administration page: a new scan, the default columns and filter of the results table, the fix of
   an error, the fix of all the filtered errors, the fix with a typed value.
 

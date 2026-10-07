@@ -118,6 +118,8 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
     });
     // Keep the previous page on screen while the next one loads, so the table does not flash.
     const details = (results.data ?? results.previousData)?.integrity?.results;
+    // The fix actions require the permission adminContentIntegrityFix, which the access to the module does not grant
+    const canFixErrors = (results.data ?? results.previousData)?.integrity?.canFixErrors === true;
     // After a fix, the errors are read again: their 'fixed' and 'fixable' fields have changed
     const {refetch: refetchResults} = results;
     const {fix, states: fixStates} = useFixError(resultsId, useCallback(() => refetchResults(), [refetchResults]));
@@ -221,7 +223,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                     </Typography>
                     {results.loading && <Loader size="small"/>}
                     <div className={styles.spacer}/>
-                    {details && (
+                    {details && canFixErrors && (
                         // Remounted when the results or the filters change, so that the outcome of a fix all is not shown for other errors
                         <FixAllAction key={`${resultsId}|${filterArgs.join('|')}`}
                                       resultsId={resultsId}
@@ -254,7 +256,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                                 </TableBodyCell>
                                             ))}
                                             <TableBodyCell width="140px">
-                                                <RowActions error={error} state={fixStates[error.id]} onFix={fix} onOpenDetails={setDetailsId}/>
+                                                <RowActions error={error} state={fixStates[error.id]} canFixErrors={canFixErrors} onFix={fix} onOpenDetails={setDetailsId}/>
                                             </TableBodyCell>
                                         </TableRow>
                                     ))}
@@ -282,6 +284,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                 <ErrorDetailsDialog errorId={detailsId}
                                     resultsId={resultsId}
                                     fixState={fixStates[detailsId]}
+                                    canFixErrors={canFixErrors}
                                     onFix={fix}
                                     onClose={() => setDetailsId(null)}/>
             )}

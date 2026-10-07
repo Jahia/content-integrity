@@ -7,9 +7,9 @@ import styles from '../ContentIntegrity.scss';
 
 /**
  * The actions on an error of the results table, in a menu opened from the 3 dots of its row: its details, and its fix when
- * the check which has detected it provides one. The outcome of a fix stays displayed in the row.
+ * the check which has detected it provides one and the user may fix the errors. The outcome of a fix stays displayed in the row.
  */
-export const RowActions = ({error, state, onFix, onOpenDetails}) => {
+export const RowActions = ({error, state, canFixErrors, onFix, onOpenDetails}) => {
     const {t} = useTranslation('content-integrity');
     const anchorEl = useRef(null);
     const [isOpen, setOpen] = useState(false);
@@ -33,7 +33,7 @@ export const RowActions = ({error, state, onFix, onOpenDetails}) => {
 
     const isFixed = error.fixed || state === FIX_STATES.FIXED;
     const isFixing = state === FIX_STATES.FIXING;
-    const canFix = error.fixable && !isFixed && !isFixing && state !== FIX_STATES.FAILED;
+    const canFix = canFixErrors && error.fixable && !isFixed && !isFixing && state !== FIX_STATES.FAILED;
 
     const run = action => event => {
         event.stopPropagation();
@@ -98,6 +98,7 @@ RowActions.propTypes = {
         fixWithValues: PropTypes.bool
     }).isRequired,
     state: PropTypes.oneOf(Object.values(FIX_STATES)),
+    canFixErrors: PropTypes.bool,
     onFix: PropTypes.func.isRequired,
     onOpenDetails: PropTypes.func.isRequired
 };

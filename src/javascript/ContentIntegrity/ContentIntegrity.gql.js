@@ -122,6 +122,7 @@ export const GET_SCAN_RESULTS_LIST = gql`
 export const GET_SCAN_RESULTS = gql`
     query ContentIntegrityScanResults($id: String!, $offset: Int!, $size: Int!, $filters: [String]!, $filterColumns: [String]) {
         integrity: contentIntegrity {
+            canFixErrors
             results: scanResultsDetails(id: $id, filters: $filters) {
                 errorCount
                 totalErrorCount

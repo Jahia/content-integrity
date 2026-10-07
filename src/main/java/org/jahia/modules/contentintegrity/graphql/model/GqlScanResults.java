@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
+import graphql.ErrorType;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
@@ -12,6 +13,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,9 +121,11 @@ public class GqlScanResults {
     }
 
     @GraphQLField
-    @GraphQLDescription("Fixes the error with the fix of the check which has detected it, and returns the error. Its field 'fixed' tells if the fix has succeeded")
+    @GraphQLDescription("Fixes the error with the fix of the check which has detected it, and returns the error. Its field 'fixed' tells if the fix has succeeded. " +
+            "Requires the permission adminContentIntegrityFix")
     public GqlScanResultsError fixError(@GraphQLName("id") @GraphQLNonNull String id,
                                         @GraphQLName("values") @GraphQLDescription("The values to fix the error with, when its field 'fixWithValues' is true") List<String> values) {
+        checkFixPermission();
         final ContentIntegrityError error = allErrors.stream()
                 .filter(e -> StringUtils.equals(e.getErrorID(), id))
                 .findFirst().orElse(null);
@@ -145,8 +149,10 @@ public class GqlScanResults {
 
     @GraphQLField
     @GraphQLDescription("Fixes all the errors matching the filters of these results, each with the fix of the check which has detected it. " +
-            "The errors whose check provides no fix, and the ones fixed with values typed by an administrator, are skipped")
+            "The errors whose check provides no fix, and the ones fixed with values typed by an administrator, are skipped. " +
+            "Requires the permission adminContentIntegrityFix")
     public GqlFixAllErrorsResult fixAllErrors() {
+        checkFixPermission();
         final GqlFixAllErrorsResult result = new GqlFixAllErrorsResult();
         if (filteredErrors == null) return result;
 
@@ -171,6 +177,12 @@ public class GqlScanResults {
         // The fixed status is part of the results, which are stored in a cache
         if (result.getFixed() > 0) service.storeErrorsInCache(results);
         return result;
+    }
+
+    private static void checkFixPermission() {
+        if (!Utils.canFixErrors()) {
+            throw new BaseGqlClientException("The current user is not allowed to fix the errors: the permission " + Utils.FIX_PERMISSION + " is required", ErrorType.DataFetchingException);
+        }
     }
 
     @GraphQLField

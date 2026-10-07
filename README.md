@@ -24,9 +24,14 @@ Jahia module that provides an extensible service to test the integrity of the co
 
 ### Configuration
 
-Users require to be granted the permission `adminContentIntegrity` at server level to be able to run an integrity scan.
+Two permissions, granted at server level, control the feature:
 
-By default, this permission is added to the role `server-administrator`, thus any server administrator is able to use the feature.
+* `adminContentIntegrity` allows to run an integrity scan, to configure the checks and to read the results.
+* `adminContentIntegrityFix` allows to fix the errors, one at a time or all the errors matching the filters. A fix writes to the repository with a system session, whatever the ACL of the fixed node, so this permission is not granted by `adminContentIntegrity`. Without it, the administration screen offers no fix, and the GraphQL fields `fixError` and `fixAllErrors` are refused.
+
+By default, both permissions are added to the role `server-administrator`, thus any server administrator is able to use the feature and to fix the errors. To delegate the scans only, grant a server role holding `adminContentIntegrity`, plus `administrationAccess` to open the administration.
+
+The command `jcr:integrity-fix` of the Karaf console is not controlled by these permissions, since the access to the console already requires to be a system administrator.
 
 ### <a name="how-to-use-ui"></a>UI
 

@@ -4,5 +4,7 @@
              xmlns:jnt="http://www.jahia.org/jahia/nt/1.0">
     <admin jcr:primaryType="jnt:permission">
         <adminContentIntegrity jcr:primaryType="jnt:permission"/>
+        <!-- Not a child of adminContentIntegrity, so that granting the access to the module does not grant the fix of the errors -->
+        <adminContentIntegrityFix jcr:primaryType="jnt:permission"/>
     </admin>
 </permissions>
