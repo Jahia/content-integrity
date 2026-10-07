@@ -109,6 +109,7 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                             child.getProperty(HOME_PAGE_FLAG).remove();
                     }
                 }
+                site.getSession().save();
                 return true;
             } else {
                 final JCRSessionWrapper session_default = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);

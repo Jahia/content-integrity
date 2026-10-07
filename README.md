@@ -18,6 +18,7 @@ Jahia module that provides an extensible service to test the integrity of the co
 * [How to extend it](docs/how-to-extend.md#summary) 
 * [Groovy scripts](docs/groovy-scripts.md#summary)
 * [Release notes](docs/release-notes.md#summary) 
+* [Cypress tests](tests/README.md)
 
 ## <a name="how-to-use"></a>How to use?
 

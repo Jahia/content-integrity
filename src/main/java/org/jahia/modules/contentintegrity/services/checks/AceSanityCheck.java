@@ -443,20 +443,24 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private void checkAceNodeName(JCRNodeWrapper ace, boolean isExternal, ContentIntegrityErrorList errors) {
-        final String expectedNodeName;
+        final String principal = ace.getPropertyAsString(J_PRINCIPAL);
+        final String aceType = ace.getPropertyAsString(J_ACE_TYPE);
+        // Without these properties, the expected name can't be calculated. Their absence is reported by NO_PRINCIPAL and NO_ACE_TYPE_PROP
+        if (principal == null || (!isExternal && aceType == null)) return;
 
+        final String expectedNodeName;
         if (isExternal) {
             expectedNodeName = new StringBuilder(EXTERNAL_ACE_NODENAME_PREFIX)
                     .append(ace.getPropertyAsString(J_ROLES))
                     .append(UNDERSCORE)
                     .append(ace.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME))
                     .append(UNDERSCORE)
-                    .append(JCRContentUtils.replaceColon(ace.getPropertyAsString(J_PRINCIPAL)).replaceAll(SLASH, UNDERSCORE))
+                    .append(JCRContentUtils.replaceColon(principal).replaceAll(SLASH, UNDERSCORE))
                     .toString();
         } else {
-            expectedNodeName = new StringBuilder(ace.getPropertyAsString(J_ACE_TYPE))
+            expectedNodeName = new StringBuilder(aceType)
                     .append(UNDERSCORE)
-                    .append(JCRContentUtils.replaceColon(ace.getPropertyAsString(J_PRINCIPAL)).replaceAll(SLASH, UNDERSCORE))
+                    .append(JCRContentUtils.replaceColon(principal).replaceAll(SLASH, UNDERSCORE))
                     .toString();
         }
 

@@ -3,7 +3,9 @@ package org.jahia.modules.contentintegrity.services.util;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.NodeImpl;
 import org.apache.jackrabbit.core.PropertyImpl;
+import org.apache.jackrabbit.core.SessionImpl;
 import org.apache.jackrabbit.core.id.NodeId;
+import org.apache.jackrabbit.core.state.NodeState;
 import org.apache.jackrabbit.spi.Name;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
@@ -19,10 +21,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
+import javax.jcr.Property;
 import javax.jcr.RepositoryException;
+import javax.jcr.Value;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Operations shared by the fixError() implementations of the integrity checks. They come from the fix scripts
@@ -102,6 +108,43 @@ public final class RepairUtils {
     }
 
     /**
+     * Removes a mixin at the Jackrabbit level, then saves. Jackrabbit refuses to remove a mixin whose type is not
+     * registered anymore, since it is not part of the effective type of the node: the node state is updated the way
+     * Jackrabbit's RemoveMixinOperation does it, without resolving the type.
+     *
+     * @return false if the node has no such mixin
+     */
+    public static boolean removeMixinRaw(JCRNodeWrapper node, String mixin) throws RepositoryException {
+        final Node realNode = node.getRealNode();
+        if (!(realNode instanceof NodeImpl)) {
+            node.removeMixin(mixin);
+            node.saveSession();
+            return true;
+        }
+        final NodeImpl nodeImpl = (NodeImpl) realNode;
+        final Name name = ((SessionImpl) nodeImpl.getSession()).getQName(mixin);
+        // When the mixin type is not registered, Jackrabbit leaves it out of the node state, but jcr:mixinTypes still lists it
+        final Set<Name> mixins = new HashSet<>(nodeImpl.getMixinTypeNames());
+        final boolean inState = mixins.remove(name);
+        boolean inProperty = false;
+        if (realNode.hasProperty(Property.JCR_MIXIN_TYPES)) {
+            for (Value value : realNode.getProperty(Property.JCR_MIXIN_TYPES).getValues()) {
+                if (StringUtils.equals(value.getString(), mixin)) inProperty = true;
+            }
+        }
+        if (!inState && !inProperty) return false;
+        if (inState) {
+            final NodeState state = (NodeState) invoke(nodeImpl, "getOrCreateTransientItemState");
+            state.setMixinTypeNames(mixins);
+        }
+        // Rewrites jcr:mixinTypes from the remaining mixins
+        invoke(nodeImpl, "setMixinTypesProperty", Set.class, mixins);
+        realNode.getSession().save();
+        node.getSession().refresh(false);
+        return true;
+    }
+
+    /**
      * Publishes some nodes as root, from a workspace to the other one.
      */
     public static void publishAsRoot(List<String> uuids, String sourceWorkspace, String destinationWorkspace) throws RepositoryException {
@@ -143,17 +186,37 @@ public final class RepairUtils {
         }
     }
 
-    // NodeImpl.removeChildNode() and NodeImpl.removeChildProperty() are protected
-    private static void invoke(Object target, String methodName, Class<?> parameterType, Object parameter) throws RepositoryException {
+    // NodeImpl.removeChildNode(), removeChildProperty(), getOrCreateTransientItemState() and setMixinTypesProperty() are not public
+    private static Object invoke(Object target, String methodName, Class<?> parameterType, Object parameter) throws RepositoryException {
+        return invoke(target, methodName, new Class<?>[]{parameterType}, new Object[]{parameter});
+    }
+
+    private static Object invoke(Object target, String methodName) throws RepositoryException {
+        return invoke(target, methodName, new Class<?>[0], new Object[0]);
+    }
+
+    private static Object invoke(Object target, String methodName, Class<?>[] parameterTypes, Object[] parameters) throws RepositoryException {
         try {
-            final Method method = NodeImpl.class.getDeclaredMethod(methodName, parameterType);
+            final Method method = findMethod(methodName, parameterTypes);
             method.setAccessible(true);
-            method.invoke(target, parameter);
+            return method.invoke(target, parameters);
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof RepositoryException) throw (RepositoryException) e.getCause();
             throw new RepositoryException(e.getCause());
         } catch (ReflectiveOperationException e) {
             throw new RepositoryException(String.format("Impossible to call NodeImpl.%s()", methodName), e);
         }
+    }
+
+    // Some methods are declared by a superclass of NodeImpl
+    private static Method findMethod(String methodName, Class<?>[] parameterTypes) throws NoSuchMethodException {
+        for (Class<?> type = NodeImpl.class; type != null; type = type.getSuperclass()) {
+            try {
+                return type.getDeclaredMethod(methodName, parameterTypes);
+            } catch (NoSuchMethodException ignored) {
+                // Looked up in the superclass
+            }
+        }
+        throw new NoSuchMethodException(methodName);
     }
 }

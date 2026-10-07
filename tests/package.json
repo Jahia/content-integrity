@@ -1,0 +1,25 @@
+{
+    "name": "content-integrity-cypress",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Cypress tests for the content-integrity module",
+    "scripts": {
+        "e2e:ci": "cypress run",
+        "e2e:local": "cypress run",
+        "e2e:debug": "cypress open",
+        "e2e:checks": "cypress run --spec 'cypress/e2e/checks/**/*.cy.ts'",
+        "e2e:ui": "cypress run --spec 'cypress/e2e/ui/**/*.cy.ts'",
+        "lint": "tsc --noEmit -p ."
+    },
+    "devDependencies": {
+        "@apollo/client": "^3.14.0",
+        "@jahia/cypress": "^8.6.1",
+        "cross-fetch": "3.1.6",
+        "cypress": "15.13.0",
+        "graphql": "^15.10.1",
+        "graphql-tag": "^2.12.6",
+        "mochawesome": "^7.1.3",
+        "typescript": "^5.6.3"
+    },
+    "license": "SEE LICENSE IN LICENSE.txt"
+}

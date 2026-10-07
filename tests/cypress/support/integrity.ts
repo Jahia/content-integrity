@@ -1,0 +1,229 @@
+import {createSite, deleteSite} from '@jahia/cypress';
+
+/**
+ * Helpers to drive the content-integrity GraphQL API: run a scan, read its errors, fix them and configure the checks.
+ * The scans run in the background on the server, so a scan is polled until it ends.
+ */
+
+export type Workspace = 'EDIT' | 'LIVE' | 'BOTH';
+
+export type IntegrityError = {
+    id: string;
+    checkName: string;
+    errorType: string;
+    workspace: string;
+    nodePath: string;
+    nodeId: string;
+    locale: string;
+    message: string;
+    fixed: boolean;
+    fixable: boolean;
+    fixWithValues: boolean;
+    extraInfos: { label: string; value: string }[];
+};
+
+export type ScanResults = {
+    resultsId: string | null;
+    errors: IntegrityError[];
+};
+
+export type FixResult = {
+    fixed: boolean;
+    message?: string;
+};
+
+export type PathMatcher = string | RegExp;
+
+const SCAN_POLLING_INTERVAL = 500;
+const SCAN_POLLING_ATTEMPTS = 240;
+
+const ERROR_FIELDS = 'id checkName errorType workspace nodePath nodeId locale message fixed fixable fixWithValues extraInfos { label value }';
+
+const request = (query: string, variables: Record<string, unknown> = {}): Cypress.Chainable<Cypress.Response<any>> => cy.request({
+    method: 'POST',
+    url: '/modules/graphql',
+    auth: {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')},
+    headers: {Origin: Cypress.config().baseUrl},
+    body: {query, variables},
+    log: false
+});
+
+/**
+ * Runs a GraphQL query as root, and fails the test if the response carries errors.
+ */
+export const graphql = (query: string, variables: Record<string, unknown> = {}): Cypress.Chainable<any> =>
+    request(query, variables).then(response => {
+        expect(response.body.errors, `GraphQL errors: ${JSON.stringify(response.body.errors)}`).to.be.undefined;
+        return response.body.data;
+    });
+
+/**
+ * Runs the fixtures script of the test, with the replacements, and fails the test if the script fails.
+ */
+export const runFixture = (script: string, replacements: Record<string, string> = {}): void => {
+    cy.executeGroovy(`groovy/${script}`, replacements).then((result: unknown) => {
+        expect(result, `Result of the script ${script}`).to.equal('.installed');
+    });
+};
+
+/**
+ * Creates the site used by the tests of a check: the default template set, with the languages en and fr.
+ */
+export const createTestSite = (siteKey: string): void => {
+    deleteSite(siteKey);
+    createSite(siteKey, {templateSet: 'templates-system', serverName: 'localhost', locale: 'en', languages: 'en,fr'});
+};
+
+export const deleteTestSite = (siteKey: string): void => {
+    deleteSite(siteKey);
+};
+
+const waitForScan = (executionId: string, attempt = 0): Cypress.Chainable<string | null> =>
+    graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { status resultsID logs } } }', {id: executionId})
+        .then(data => {
+            const {status, resultsID, logs} = data.integrity.scan;
+            if (status === 'running') {
+                expect(attempt, `The scan ${executionId} is still running`).to.be.lessThan(SCAN_POLLING_ATTEMPTS);
+                cy.wait(SCAN_POLLING_INTERVAL, {log: false});
+                return waitForScan(executionId, attempt + 1);
+            }
+
+            expect(status, `Status of the scan ${executionId}. Logs: ${(logs || []).join(' | ')}`).to.equal('finished');
+            return cy.wrap(resultsID as string | null, {log: false});
+        });
+
+/**
+ * Reads all the errors of scan results.
+ */
+export const getErrors = (resultsId: string): Cypress.Chainable<IntegrityError[]> =>
+    graphql(`query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errorCount errors(offset: 0, pageSize: 10000) { ${ERROR_FIELDS} } } } }`, {id: resultsId})
+        .then(data => data.integrity.results.errors as IntegrityError[]);
+
+/**
+ * Scans the subtree of a node with the given checks, waits for the end of the scan and returns its errors.
+ * The checks are run even when they are disabled by default.
+ */
+export const scan = (startNode: string, checks: string[], workspace: Workspace = 'EDIT'): Cypress.Chainable<ScanResults> => {
+    cy.log(`Scan of ${startNode} in ${workspace} with ${checks.join(', ')}`);
+    return graphql('query($workspace: WorkspaceToScan!, $startNode: String, $checks: [String]) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, checksToRun: $checks) } } }',
+        {workspace, startNode, checks})
+        .then(data => waitForScan(data.integrity.scan.id))
+        .then(resultsId => {
+            if (!resultsId) {
+                return cy.wrap({resultsId: null, errors: []} as ScanResults, {log: false});
+            }
+
+            return getErrors(resultsId).then(errors => ({resultsId, errors} as ScanResults));
+        });
+};
+
+const matchesPath = (error: IntegrityError, path?: PathMatcher): boolean => {
+    if (path === undefined) {
+        return true;
+    }
+
+    return typeof path === 'string' ? error.nodePath === path : path.test(error.nodePath);
+};
+
+/**
+ * The errors of a type, optionally on a node.
+ */
+export const errorsOf = (results: ScanResults, errorType: string, path?: PathMatcher): IntegrityError[] =>
+    results.errors.filter(e => e.errorType === errorType && matchesPath(e, path));
+
+const describeErrors = (results: ScanResults): string => results.errors.map(e => `${e.errorType} on ${e.nodePath}`).join(', ') || 'no error';
+
+/**
+ * Asserts that the scan has detected an error of the type on the node, and returns it.
+ */
+export const expectError = (results: ScanResults, errorType: string, path: PathMatcher): IntegrityError => {
+    const errors = errorsOf(results, errorType, path);
+    expect(errors, `${errorType} on ${path}, among: ${describeErrors(results)}`).to.have.length.greaterThan(0);
+    return errors[0];
+};
+
+/**
+ * Asserts that the scan has not detected any error of the type on the node.
+ */
+export const expectNoError = (results: ScanResults, errorType: string, path: PathMatcher): void => {
+    expect(errorsOf(results, errorType, path), `${errorType} on ${path}, among: ${describeErrors(results)}`).to.have.length(0);
+};
+
+/**
+ * Asserts that the error carries the extra information, with the value when one is given.
+ */
+export const expectExtraInfo = (error: IntegrityError, label: string, value?: string | RegExp): void => {
+    const info = error.extraInfos.find(i => i.label === label);
+    expect(info, `Extra information ${label} of ${error.errorType}`).to.not.be.undefined;
+    if (value instanceof RegExp) {
+        expect(info.value).to.match(value);
+    } else if (value !== undefined) {
+        expect(info.value).to.equal(value);
+    }
+};
+
+/**
+ * Fixes an error of scan results, with the fix of the check which has detected it. The values are the ones typed by
+ * an administrator, for the errors fixed with values. A rejected value is returned as a message, not as a test failure.
+ */
+export const fixError = (resultsId: string, errorId: string, values?: string[]): Cypress.Chainable<FixResult> =>
+    request('query($resultsId: String, $id: String!, $values: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id, values: $values) { fixed } } } }',
+        {resultsId, id: errorId, values})
+        .then(response => {
+            if (response.body.errors?.length) {
+                return {fixed: false, message: response.body.errors.map((e: { message: string }) => e.message).join(', ')};
+            }
+
+            return {fixed: response.body.data.integrity.results.error.fixed === true};
+        });
+
+/**
+ * Scans, fixes the error of the type on the node, then scans again to check that the error is gone.
+ */
+export const fixAndVerify = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
+    scan(startNode, checks, workspace).then(results => {
+        const error = expectError(results, errorType, path);
+        expect(error.fixable, `${errorType} is fixable`).to.be.true;
+        fixError(results.resultsId, error.id).then(result => {
+            expect(result.fixed, `Fix of ${errorType} on ${error.nodePath}${result.message ? ': ' + result.message : ''}`).to.be.true;
+        });
+    });
+    scan(startNode, checks, workspace).then(results => expectNoError(results, errorType, path));
+};
+
+/**
+ * Asserts that the fix of the check does not fix the error, because the right value can't be guessed.
+ */
+export const expectFixFails = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
+    scan(startNode, checks, workspace).then(results => {
+        const error = expectError(results, errorType, path);
+        fixError(results.resultsId, error.id).then(result => expect(result.fixed, `Fix of ${errorType} on ${error.nodePath}`).to.be.false);
+    });
+    scan(startNode, checks, workspace).then(results => expectError(results, errorType, path));
+};
+
+export const configureCheck = (checkId: string, name: string, value: string): void => {
+    graphql('query($id: String, $name: String!, $value: String!) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { configure(name: $name, value: $value) } } }',
+        {id: checkId, name, value})
+        .then(data => expect(data.integrity.check.configure, `Configuration ${name}=${value} of ${checkId}`).to.be.true);
+};
+
+export const resetCheckConfiguration = (checkId: string): void => {
+    graphql('query($id: String) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { resetAllConfigurations } } }', {id: checkId});
+};
+
+/**
+ * Asserts that the check which has detected the error does not provide any fix.
+ */
+export const expectNotFixable = (results: ScanResults, errorType: string, path: PathMatcher): void => {
+    const error = expectError(results, errorType, path);
+    expect(error.fixable, `${errorType} is fixable`).to.be.false;
+};
+
+/**
+ * Asserts the status of a check: the checks disabled by default are run only when they are explicitly selected.
+ */
+export const expectCheckEnabled = (checkId: string, enabled: boolean): void => {
+    graphql('query($id: String) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { id enabled } } }', {id: checkId})
+        .then(data => expect(data.integrity.check.enabled, `${checkId} is enabled`).to.equal(enabled));
+};

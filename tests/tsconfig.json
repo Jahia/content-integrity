@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "es2019",
+        "lib": ["es2019", "dom"],
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "strict": false,
+        "skipLibCheck": true,
+        "types": ["cypress", "node"]
+    },
+    "include": ["cypress/**/*.ts", "cypress.config.ts"]
+}

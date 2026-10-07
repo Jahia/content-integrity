@@ -19,7 +19,6 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.Arrays;
@@ -165,13 +164,9 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck impl
 
         final Object mixin = error.getExtraInfo("mixin type");
         if (mixin != null) {
-            RepairUtils.runWithListenersDisabled(() -> {
-                final Node realNode = node.getRealNode();
-                realNode.removeMixin((String) mixin);
-                realNode.getSession().save();
-                node.getSession().refresh(false);
-            });
-            return true;
+            final boolean[] removed = new boolean[1];
+            RepairUtils.runWithListenersDisabled(() -> removed[0] = RepairUtils.removeMixinRaw(node, (String) mixin));
+            return removed[0];
         }
         if (error.getExtraInfo("primary type") != null) {
             RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeNodeRaw(node));

@@ -583,7 +583,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         final List<String> keys = getTestIDs();
         if (CollectionUtils.isEmpty(keys)) return null;
         if (StringUtils.isNotBlank(testDate)) {
-            return (ContentIntegrityResults) errorsCache.get(testDate).getObjectValue();
+            final Element element = errorsCache.get(testDate);
+            return element == null ? null : (ContentIntegrityResults) element.getObjectValue();
         }
         final TreeMap<Long, String> testDates = keys.stream().collect(Collectors.toMap(k -> ((ContentIntegrityResults) errorsCache.get(k).getObjectValue()).getTestDate(), Function.identity(), throwingMerger(), TreeMap::new));
         return (ContentIntegrityResults) errorsCache.get(testDates.lastEntry().getValue()).getObjectValue();
