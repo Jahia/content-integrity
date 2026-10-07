@@ -1,24 +1,7 @@
-import {createTestSite, deleteTestSite, getErrors, graphql, runFixture, scan} from '../../support/integrity';
+import {createTestSite, deleteTestSite, getErrors, graphql, readExecution, runFixture, scan, startScan, waitForExecution} from '../../support/integrity';
 
 const SITE = 'ciApiScan';
 const LOCKS = `/sites/${SITE}/contents/locks`;
-
-const startScan = (variables: Record<string, unknown>): Cypress.Chainable<string> =>
-    graphql('query($workspace: WorkspaceToScan!, $startNode: String, $checks: [String], $upload: Boolean) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, checksToRun: $checks, uploadResults: $upload) } } }',
-        variables).then(data => data.integrity.scan.id);
-
-const readScan = (id: string): Cypress.Chainable<any> =>
-    graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { status resultsID logs reports { name extension uri } } } }', {id})
-        .then(data => data.integrity.scan);
-
-const waitForEnd = (id: string): Cypress.Chainable<any> => readScan(id).then(execution => {
-    if (execution.status === 'running') {
-        cy.wait(500, {log: false});
-        return waitForEnd(id);
-    }
-
-    return cy.wrap(execution, {log: false});
-});
 
 describe('Scan API', () => {
     before(() => {
@@ -29,7 +12,7 @@ describe('Scan API', () => {
     after(() => deleteTestSite(SITE));
 
     it('does nothing when no check is selected', () => {
-        startScan({workspace: 'EDIT', startNode: LOCKS, checks: []}).then(id => waitForEnd(id)).then(execution => {
+        startScan({startNode: LOCKS, checks: []}).then(id => waitForExecution(id)).then(execution => {
             expect(execution.status).to.equal('finished');
             expect(execution.resultsID).to.be.null;
             expect(execution.logs).to.include('No check selected');
@@ -37,7 +20,7 @@ describe('Scan API', () => {
     });
 
     it('reports a scan without error', () => {
-        startScan({workspace: 'EDIT', startNode: `${LOCKS}/not-locked`, checks: ['LockSanityCheck']}).then(id => waitForEnd(id)).then(execution => {
+        startScan({startNode: `${LOCKS}/not-locked`, checks: ['LockSanityCheck']}).then(id => waitForExecution(id)).then(execution => {
             expect(execution.status).to.equal('finished');
             expect(execution.resultsID).to.be.null;
             expect(execution.logs.join('\n')).to.contain('No error found');
@@ -67,6 +50,50 @@ describe('Scan API', () => {
         });
     });
 
+    it('pages the errors of scan results', () => {
+        scan(LOCKS, ['LockSanityCheck']).then(results => {
+            expect(results.errors).to.have.length.at.least(3);
+            const page = (offset: number, pageSize: number): Cypress.Chainable<string[]> =>
+                graphql('query($id: String, $offset: Int!, $size: Int!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errors(offset: $offset, pageSize: $size) { id } } } }',
+                    {id: results.resultsId, offset, size: pageSize}).then(data => data.integrity.results.errors.map((e: { id: string }) => e.id));
+            page(0, 2).then(ids => expect(ids).to.deep.equal(results.errors.slice(0, 2).map(e => e.id)));
+            page(2, 2).then(ids => expect(ids).to.deep.equal(results.errors.slice(2, 4).map(e => e.id)));
+        });
+    });
+
+    it('counts the values of the columns, each one ignoring its own filter', () => {
+        scan(LOCKS, ['LockSanityCheck']).then(results => {
+            const countsByType: Record<string, number> = {};
+            results.errors.forEach(e => {
+                countsByType[e.errorType] = (countsByType[e.errorType] || 0) + 1;
+            });
+            graphql('query($id: String, $filters: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { possibleValues(names: ["errorType", "checkName"], withErrorsOnly: true) { name values { name count } } } } }',
+                {id: results.resultsId, filters: ['errorType;DELETION_LOCK_ON_I18N']}).then(data => {
+                const columns: Record<string, Record<string, number>> = {};
+                data.integrity.results.possibleValues.forEach((c: { name: string; values: { name: string; count: number }[] }) => {
+                    columns[c.name] = Object.fromEntries(c.values.map(v => [v.name, v.count]));
+                });
+                // The filter on the error type does not restrict the values offered for the error type
+                expect(columns.errorType).to.deep.equal(countsByType);
+                expect(columns.checkName).to.deep.equal({LockSanityCheck: 1});
+            });
+        });
+    });
+
+    it('skips the excluded paths', () => {
+        startScan({startNode: LOCKS, checks: ['LockSanityCheck'], excludedPaths: [`${LOCKS}/inconsistent-lock/`]})
+            .then(id => waitForExecution(id))
+            .then(execution => {
+                expect(execution.status).to.equal('finished');
+                expect(execution.logs).to.include(`Skipping node ${LOCKS}/inconsistent-lock`);
+                getErrors(execution.resultsID).then(errors => {
+                    const paths = errors.map(e => e.nodePath);
+                    expect(paths.filter(p => p.startsWith(`${LOCKS}/inconsistent-lock`))).to.be.empty;
+                    expect(paths).to.include(`${LOCKS}/deletion-lock-on-translation/j:translation_en`);
+                });
+            });
+    });
+
     it('scans both workspaces', () => {
         scan(LOCKS, ['LockSanityCheck'], 'BOTH').then(results => {
             expect(results.resultsId).to.not.be.null;
@@ -75,14 +102,14 @@ describe('Scan API', () => {
     });
 
     it('writes the reports of a scan in the JCR when requested', () => {
-        startScan({workspace: 'EDIT', startNode: LOCKS, checks: ['LockSanityCheck'], upload: true}).then(id => waitForEnd(id)).then(execution => {
+        startScan({startNode: LOCKS, checks: ['LockSanityCheck'], upload: true}).then(id => waitForExecution(id)).then(execution => {
             expect(execution.status).to.equal('finished');
-            expect(execution.reports.map((r: { extension: string }) => r.extension)).to.include.members(['csv']);
+            expect(execution.reports.map(r => r.extension)).to.include.members(['csv']);
         });
     });
 
     it('answers for an unknown execution or unknown results', () => {
-        readScan('unknown-execution').then(execution => expect(execution.status).to.equal('Unknown execution ID'));
+        readExecution('unknown-execution').then(execution => expect(execution.status).to.equal('Unknown execution ID'));
         graphql('{ integrity: contentIntegrity { results: scanResultsDetails(id: "unknown-results") { errorCount } } }')
             .then(data => expect(data.integrity.results).to.be.null);
     });

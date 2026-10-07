@@ -54,3 +54,39 @@ export const clearFilters = (): void => {
     getFilters().within(() => cy.contains('button', 'Clear the filters').click());
     getFilters().contains('button', 'Clear the filters').should('not.exist');
 };
+
+/**
+ * The Moonstone dropdown displayed under a label, such as a filter of the results table or a field of a dialog.
+ */
+export const getDropdown = (label: string): Cypress.Chainable<JQuery<HTMLElement>> =>
+    cy.contains('label', new RegExp(`^${label}$`)).parent().find('[role=listbox]').first();
+
+/**
+ * Opens the menu of a dropdown from its chevron, on its right: the middle of a multiple dropdown holds its tags, which
+ * are buttons of their own.
+ */
+export const openDropdown = (label: string): void => {
+    getDropdown(label).click('right');
+};
+
+/**
+ * Closes the opened menu of a dropdown. Escape does not close it, a click outside of the menu does.
+ */
+export const closeMenu = (): void => {
+    cy.get('.moonstone-menu_overlay').click({force: true});
+    cy.get('.moonstone-menu_overlay').should('not.exist');
+};
+
+/**
+ * Selects an item of a dropdown. The items are displayed above the page, outside of the dropdown.
+ */
+export const selectInDropdown = (label: string, item: string | RegExp): void => {
+    openDropdown(label);
+    getMenuItem(item).click();
+};
+
+/**
+ * The labels of the header of the results table, without the column of the actions.
+ */
+export const getColumnLabels = (): Cypress.Chainable<string[]> =>
+    getResultsTable().find('thead th').then(cells => cells.toArray().map(c => c.innerText.trim()).filter(l => l !== 'Actions'));

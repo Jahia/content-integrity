@@ -92,6 +92,57 @@ const waitForScan = (executionId: string, attempt = 0): Cypress.Chainable<string
             return cy.wrap(resultsID as string | null, {log: false});
         });
 
+export type Execution = {
+    id: string;
+    status: string;
+    resultsID: string | null;
+    logs: string[];
+    reports: { name: string; extension: string; location: string; uri: string }[] | null;
+};
+
+export type ScanParameters = {
+    startNode: string;
+    checks: string[];
+    workspace?: Workspace;
+    excludedPaths?: string[];
+    upload?: boolean;
+};
+
+/**
+ * Starts a scan, without waiting for its end, and returns the ID of its execution.
+ */
+export const startScan = ({startNode, checks, workspace = 'EDIT', excludedPaths, upload}: ScanParameters): Cypress.Chainable<string> =>
+    graphql('query($workspace: WorkspaceToScan!, $startNode: String, $excludedPaths: [String], $checks: [String], $upload: Boolean) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, excludedPaths: $excludedPaths, checksToRun: $checks, uploadResults: $upload) } } }',
+        {workspace, startNode, excludedPaths, checks, upload}).then(data => data.integrity.scan.id);
+
+/**
+ * Reads an execution. Without ID, the API returns the scan which runs, or else the last one.
+ */
+export const readExecution = (id?: string): Cypress.Chainable<Execution> =>
+    graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { id status resultsID logs reports { name extension location uri } } } }', {id})
+        .then(data => data.integrity.scan as Execution);
+
+/**
+ * Waits for the end of an execution, whatever its outcome, and returns it.
+ */
+export const waitForExecution = (id: string, attempt = 0): Cypress.Chainable<Execution> => readExecution(id).then(execution => {
+    if (execution.status === 'running') {
+        expect(attempt, `The scan ${id} is still running`).to.be.lessThan(SCAN_POLLING_ATTEMPTS);
+        cy.wait(SCAN_POLLING_INTERVAL, {log: false});
+        return waitForExecution(id, attempt + 1);
+    }
+
+    return cy.wrap(execution, {log: false});
+});
+
+/**
+ * Registers CiSlowCheck, a check which finds no error but waits on every node: a scan with it lasts as long as a test
+ * needs to act while it runs. Scanning /sites/systemsite with a delay of 200 ms lasts about 15 seconds.
+ */
+export const registerSlowCheck = (delayMs = 200): void => runFixture('scan/slowCheck.groovy', {DELAY: String(delayMs)});
+
+export const unregisterSlowCheck = (): void => runFixture('scan/slowCheck-cleanup.groovy');
+
 /**
  * Reads all the errors of scan results.
  */

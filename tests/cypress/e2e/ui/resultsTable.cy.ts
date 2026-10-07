@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {clearFilters, getDialog, getFilters, getResultsTable, getRow, visitAdmin} from '../../support/adminPage';
+import {clearFilters, closeMenu, getColumnLabels, getDialog, getDropdown, getFilters, getMenuItem, getResultsTable, getRow, openDropdown, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiResultsTable';
 const CHECKS = ['JCRLanguagePropertyCheck', 'LockSanityCheck', 'PagesSanityCheck'];
@@ -21,9 +21,13 @@ describe('Results table', () => {
 
     after(() => deleteTestSite(SITE));
 
+    let resultsId: string;
+
     // The page displays the latest scan results
     beforeEach(() => {
-        scan(`/sites/${SITE}`, CHECKS);
+        scan(`/sites/${SITE}`, CHECKS).then(results => {
+            resultsId = results.resultsId;
+        });
         visitAdmin();
     });
 
@@ -33,6 +37,67 @@ describe('Results table', () => {
             const labels = cells.toArray().map(c => c.innerText.trim());
             expect(labels).to.deep.equal(['Check name', 'Error type', 'Workspace', 'Path', 'Message', 'Actions']);
         });
+        getDropdown('Scan').should('contain.text', resultsId);
+    });
+
+    it('adds and removes columns, which keep their order', () => {
+        // The menu stays open, so that several columns are toggled at once
+        openDropdown('Columns');
+        getMenuItem('Site').click();
+        getMenuItem('Primary type').click();
+        // A displayed column is removed from the menu, or from its tag
+        getMenuItem('Workspace').click();
+        closeMenu();
+        getDropdown('Columns').contains('button', 'Message').click();
+        getColumnLabels().should('deep.equal', ['Check name', 'Error type', 'Site', 'Path', 'Primary type']);
+        getRow(MISSING_TEMPLATE).should('contain.text', SITE).and('contain.text', 'jnt:page');
+    });
+
+    it('filters the errors on the value of a column, and counts the errors of each value', () => {
+        selectInDropdown('Check name', 'PagesSanityCheck (1)');
+        cy.contains(/^Errors: 1 \(total: \d+\)$/).should('be.visible');
+        getRow(MISSING_TEMPLATE).should('exist');
+        getResultsTable().find(`[title="${MISSING_LANGUAGE}"]`).should('not.exist');
+        // The values of the other columns are counted on the filtered errors
+        openDropdown('Error type');
+        getMenuItem('MISSING_TEMPLATE (1)');
+        getMenuItem('MISSING_JCR_LANGUAGE_PROP (0)');
+        closeMenu();
+
+        clearFilters();
+        getDropdown('Check name').should('contain.text', 'All');
+        getDropdown('Impact on XML import').should('contain.text', 'All');
+    });
+
+    it('lists the results of a new scan once the page is refreshed', () => {
+        getResultsTable().should('be.visible');
+        scan(`/sites/${SITE}/contents/locks`, ['LockSanityCheck']).then(results => {
+            openDropdown('Scan');
+            getMenuItem(resultsId);
+            cy.contains('li.moonstone-menuItem', results.resultsId).should('not.exist');
+            closeMenu();
+            cy.contains('button', 'Refresh').click();
+            // The new results are listed, the displayed ones stay selected
+            getDropdown('Scan').should('contain.text', resultsId);
+            selectInDropdown('Scan', results.resultsId);
+            getDropdown('Scan').should('contain.text', results.resultsId);
+            // The default filter applies again to other results, and hides the lock errors
+            clearFilters();
+            getRow(INCONSISTENT_LOCK).should('exist');
+        });
+    });
+
+    it('opens the node of an error in the JCR browser', () => {
+        // The JCR browser opens in a new window, with a tool access token issued for the current user
+        const popup = {location: {href: ''}, opener: {}, close: cy.stub()};
+        cy.window().then(win => {
+            cy.stub(win, 'open').as('open').returns(popup);
+        });
+        getRow(MISSING_TEMPLATE).find('button[title="Open in the JCR browser"]').first().click();
+        cy.get('@open').should('have.been.calledWith', 'about:blank', '_blank');
+        cy.wrap(popup.location).its('href').should('match', /\/modules\/tools\/jcrBrowser\.jsp\?workspace=default&uuid=[0-9a-f-]+&toolAccessToken=.+/)
+            .then(href => cy.request(href).its('body').should('contain', 'missing-template'));
+        cy.wrap(popup.close).should('not.have.been.called');
     });
 
     it('always displays the filters, and displays only the errors which block an XML import by default', () => {
