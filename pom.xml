@@ -55,13 +55,10 @@
     <name>Content Integrity</name>
     <version>4.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
-    <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
+    <description>Scans the JCR repository of a Jahia server to detect the inconsistent content, and fixes it</description>
 
     <properties>
-        <!-- TODO: clean when we drop the support of Jahia 7
-        dependency to serverSettings because we override the declaration of system-health in the admin navigation,
-        required to load the label from the resources bundle of this module
-        -->
+        <!-- serverSettings: the node which issues the tools token of the JCR browser links is declared in its templates -->
         <jahia-depends>default,graphql-dxm-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
@@ -77,8 +74,9 @@
     <scm>
         <connection>scm:git:git@github.com:Jahia/content-integrity</connection>
         <developerConnection>scm:git:git@github.com:Jahia/content-integrity</developerConnection>
-      <tag>HEAD</tag>
-  </scm>
+        <url>https://github.com/Jahia/content-integrity</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <repositories>
         <repository>
@@ -108,6 +106,7 @@
 
     <build>
         <plugins>
+            <!-- Removes the built React application, which is generated in the sources -->
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>3.1.0</version>
@@ -129,6 +128,7 @@
                 <configuration>
                     <instructions>
                         <Karaf-Commands>*</Karaf-Commands>
+                        <!-- Read at runtime: the version is logged with each scan and stored on the scan reports -->
                         <Content-Integrity-Version>${project.version}</Content-Integrity-Version>
                     </instructions>
                 </configuration>
@@ -157,23 +157,13 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>yarn post-install</id>
+                        <id>yarn build</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>yarn</goal>
                         </goals>
                         <configuration>
                             <arguments>${yarn.arguments}</arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>sync-pom</id>
-                        <phase>none</phase>
-                        <goals>
-                            <goal>yarn</goal>
-                        </goals>
-                        <configuration>
-                            <arguments>sync-pom</arguments>
                         </configuration>
                     </execution>
                 </executions>
