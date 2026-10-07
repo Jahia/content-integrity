@@ -20,6 +20,7 @@ import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRAutoSplitUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.jahia.modules.contentintegrity.services.impl.Constants.ACE_TYPE_DENY;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_SITE_PATH_PREFIX;
@@ -55,6 +58,9 @@ public class Utils {
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
     private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
+    private static final String REPORTS_FOLDER_PARENT_PATH = "/sites/systemsite/files";
+    private static final String PRIVILEGED_GROUP_PRINCIPAL = "g:" + JahiaGroupManagerService.PRIVILEGED_GROUPNAME;
+    private static final String PRIVILEGED_ROLE = "privileged";
     private static final String ALL_WORKSPACES = "all-workspaces";
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
     private static final List<Report> reportGenerators = Arrays.asList(new CsvReport(), new ExcelReport());
@@ -167,14 +173,55 @@ public class Utils {
         }
     }
 
+    /**
+     * Restricts the reports folder, created before this protection existed, to the server administrators. Run when the
+     * module starts, so that the reports written by a previous version are protected without waiting for a new scan.
+     */
+    public static void restrictReportsFolderAccess() {
+        try {
+            JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+                final String path = REPORTS_FOLDER_PARENT_PATH + JCR_PATH_SEPARATOR_CHAR + JCR_REPORTS_FOLDER_NAME;
+                if (session.nodeExists(path) && restrictReportsFolderAccess(session.getNode(path))) {
+                    session.save();
+                    logger.info("Restricted the access to the reports folder {}", path);
+                }
+                return null;
+            });
+        } catch (RepositoryException e) {
+            logger.error("Impossible to restrict the access to the reports folder", e);
+        }
+    }
+
+    /**
+     * A report describes the whole scanned repository, while the API of the module is restricted to the server
+     * administrators. In every site but the system site, the core denies the role privileged, granted at the root of the
+     * repository to the group privileged, which every editor of every site belongs to (JahiaSitesService). The reports
+     * folder is under the system site: the role is denied on it the same way, so that only the server administrators,
+     * through their own role, read the reports.
+     *
+     * @return true if the ACL has been changed, and the session has to be saved
+     */
+    static boolean restrictReportsFolderAccess(JCRNodeWrapper reportsFolder) throws RepositoryException {
+        final String folderPath = reportsFolder.getPath();
+        final boolean alreadyDenied = Optional.ofNullable(reportsFolder.getAclEntries().get(PRIVILEGED_GROUP_PRINCIPAL))
+                .map(entries -> entries.stream().anyMatch(entry -> StringUtils.equals(entry[0], folderPath)
+                        && StringUtils.equals(entry[1], ACE_TYPE_DENY)
+                        && StringUtils.equals(entry[2], PRIVILEGED_ROLE)))
+                .orElse(false);
+        if (alreadyDenied) return false;
+        reportsFolder.denyRoles(PRIVILEGED_GROUP_PRINCIPAL, Collections.singleton(PRIVILEGED_ROLE));
+        return true;
+    }
+
     public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, ExternalLogger externalLogger) {
         try {
             return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final String resultsSignature = results.getSignature(excludeFixedErrors);
                 final JCRNodeWrapper outputDir;
                 try {
-                    final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
+                    final JCRNodeWrapper filesFolder = session.getNode(REPORTS_FOLDER_PARENT_PATH);
                     final JCRNodeWrapper reportsFolder = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER);
+                    restrictReportsFolderAccess(reportsFolder);
                     final String splitConfig = FastDateFormat.getInstance("'constant,'yyyy';constant,'MM").format(results.getTestDate());
                     outputDir = JCRAutoSplitUtils.addNodeWithAutoSplitting(reportsFolder, resultsSignature, Constants.JAHIANT_FOLDER, splitConfig, Constants.JAHIANT_FOLDER, null);
                     outputDir.addMixin(Constants.JAHIAMIX_NOLIVE);

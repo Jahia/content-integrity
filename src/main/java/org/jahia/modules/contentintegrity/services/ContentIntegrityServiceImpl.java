@@ -91,6 +91,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             }
         }
 
+        Utils.restrictReportsFolderAccess();
         logger.info("Content integrity service started ({})", Utils.getContentIntegrityVersion());
     }
 

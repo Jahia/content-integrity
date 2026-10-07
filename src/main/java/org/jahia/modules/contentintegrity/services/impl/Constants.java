@@ -45,6 +45,7 @@ public class Constants extends org.jahia.api.Constants {
     public static final String EXTERNAL_ACE_NODENAME_PREFIX = "REF";
     public static final String J_ACE_TYPE = "j:aceType";
     public static final String ACE_TYPE_GRANT = "GRANT";
+    public static final String ACE_TYPE_DENY = "DENY";
     public static final String GUEST_USER_KEY = "u:guest";
     public static final String ROLE_OWNER = "owner";
     public static final String J_PRIVILEGED_ACCESS = "j:privilegedAccess";

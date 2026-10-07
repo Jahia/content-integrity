@@ -56,7 +56,7 @@ Virtual nodes (e.g. exposed by an EDP connector) can be excluded from the scan. 
 
 While a scan runs, its logs are displayed above the results, and **Stop** interrupts it. The scan is run in background, and leaving the page will have no impact on its execution: when coming back to the page, the running scan is displayed again.
 
-When the scan is over, its results are displayed, and its reports can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`). The page always displays the last scan, with its status, its logs and its reports.
+When the scan is over, its results are displayed, and its reports can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`). A report describes the whole scanned repository, so the reports folder is readable by the server administrators only: the role `privileged`, which every editor of every site holds on the system site, is denied on it. The page always displays the last scan, with its status, its logs and its reports.
 
 #### Explore the results
 
