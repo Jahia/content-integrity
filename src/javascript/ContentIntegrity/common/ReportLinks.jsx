@@ -27,7 +27,7 @@ export const ReportLinks = ({reports}) => {
                            target="_blank"
                            rel="noopener noreferrer"
                         >
-                            <Download size="small"/>
+                            <Download/>
                             <Typography variant="body" component="span">{file.name}</Typography>
                         </a>
                     </li>

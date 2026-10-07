@@ -8,7 +8,6 @@ import {
     Close,
     Filter,
     Dropdown,
-    Information,
     Loader,
     Paper,
     Reload,
@@ -24,7 +23,7 @@ import {
 import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST} from '../ContentIntegrity.gql';
 import {COLUMNS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
 import {ErrorDetailsDialog} from './ErrorDetailsDialog';
-import {FixAction} from './FixAction';
+import {RowActions} from './RowActions';
 import {useFixError} from './useFixError';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {ReportLinks} from '../common/ReportLinks';
@@ -215,7 +214,6 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                     label={t('label.results.clearFilters')}
                                     icon={<Close/>}
                                     variant="ghost"
-                                    size="small"
                                     onClick={() => {
                                         setFilters({});
                                         setPage(1);
@@ -240,7 +238,7 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                 <TableHead>
                                     <TableRow>
                                         {columns.map(c => <TableHeadCell key={c.key} width={c.width}>{t(`label.column.${c.key}`)}</TableHeadCell>)}
-                                        <TableHeadCell width="160px"><span className={styles.srOnly}>{t('label.results.actions')}</span></TableHeadCell>
+                                        <TableHeadCell width="140px"><span className={styles.srOnly}>{t('label.results.actions')}</span></TableHeadCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -255,16 +253,8 @@ export const ResultsPanel = ({requestedResultsId, isScanLocked, onRequestConsume
                                                     ) : formatCell(error[c.key])}
                                                 </TableBodyCell>
                                             ))}
-                                            <TableBodyCell width="160px">
-                                                <div className={styles.rowActions}>
-                                                    <FixAction error={error} state={fixStates[error.id]} onFix={fix} onOpenValues={setDetailsId}/>
-                                                    <Button variant="ghost"
-                                                            size="small"
-                                                            icon={<Information/>}
-                                                            title={t('label.results.details')}
-                                                            aria-label={t('label.results.details')}
-                                                            onClick={() => setDetailsId(error.id)}/>
-                                                </div>
+                                            <TableBodyCell width="140px">
+                                                <RowActions error={error} state={fixStates[error.id]} onFix={fix} onOpenDetails={setDetailsId}/>
                                             </TableBodyCell>
                                         </TableRow>
                                     ))}

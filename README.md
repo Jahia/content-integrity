@@ -62,7 +62,7 @@ When the scan is over, its results are displayed, and its reports can be downloa
 
 Select the scan to display, and choose the columns to display. Use **Filters** to filter the errors on the check, the error type, the workspace, the site, the node type, the locale, the message or the impact on the XML import. Each filter value shows its number of errors, and the button shows the number of active filters.
 
-Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. Click on the details button of an error to display all its information, including the extra information provided by the check.
+Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. The actions on an error are in the menu of the 3 dots at the end of its row: **Error details** displays all its information, including the extra information provided by the check, and **Fix** runs the fix of the check which has detected it, when the check provides one. **Fix…** opens the details of an error which is fixed with a value to type, such as a missing mandatory property. The outcome of a fix stays displayed in the row.
 
 The results are kept in memory: they are lost when the module or the server restarts. The reports uploaded to the JCR remain available.
 

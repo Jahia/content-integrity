@@ -67,7 +67,7 @@ export const ErrorDetailsDialog = ({errorId, resultsId, fixState, onFix, onClose
                 size="large"
                 actions={(
                     <>
-                        {details && (!details.fixWithValues || fixState === FIX_STATES.FIXED) && <FixAction error={details} state={fixState} size="default" onFix={onFix}/>}
+                        {details && (!details.fixWithValues || fixState === FIX_STATES.FIXED) && <FixAction error={details} state={fixState} onFix={onFix}/>}
                         <Button label={t('label.close')} variant="outlined" onClick={onClose}/>
                     </>
                 )}

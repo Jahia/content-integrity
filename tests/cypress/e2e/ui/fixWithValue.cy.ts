@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {getDialog, getRow, visitAdmin} from '../../support/adminPage';
+import {getDialog, getMenuItem, getRow, openRowMenu, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiFixWithValue';
 const ROOT = `/sites/${SITE}/contents/property-definitions`;
@@ -19,8 +19,9 @@ describe('Fix of a missing mandatory property with a typed value', () => {
 
     beforeEach(() => visitAdmin());
 
-    it('opens the details of the error from its fix button', () => {
-        getRow(MISSING_MANDATORY).within(() => cy.contains('button', 'Fix…').click());
+    it('opens the details of the error from the fix of its menu', () => {
+        openRowMenu(MISSING_MANDATORY);
+        getMenuItem('Fix…').click();
         getDialog('Error details').within(() => {
             cy.contains('Fix with a value').should('be.visible');
             cy.contains('The mandatory property width has no value').should('be.visible');
@@ -31,7 +32,8 @@ describe('Fix of a missing mandatory property with a typed value', () => {
     });
 
     it('displays why a value is rejected, and fixes the error with a valid value', () => {
-        getRow(MISSING_MANDATORY).within(() => cy.contains('button', 'Fix…').click());
+        openRowMenu(MISSING_MANDATORY);
+        getMenuItem('Fix…').click();
         getDialog('Error details').within(() => {
             cy.get('input[aria-label="width"]').type('not a number');
             cy.contains('button', 'Set the value and fix').click();

@@ -50,12 +50,13 @@ export const ChecksSelector = ({checks, selected, onChange, isDisabled}) => {
                                    title={t('label.checks.documentation', {check: check.id})}
                                    aria-label={t('label.checks.documentation', {check: check.id})}
                                 >
-                                    <HelpOutline size="small"/>
+                                    <HelpOutline/>
                                 </a>
                             )}
+                            {/* Without a configuration, its place is kept so that the icons line up in columns */}
+                            {!check.configurable && <span className={styles.iconSlot}/>}
                             {check.configurable && (
                                 <Button variant="ghost"
-                                        size="small"
                                         icon={<Tune/>}
                                         title={t('label.checks.configure', {check: check.id})}
                                         aria-label={t('label.checks.configure', {check: check.id})}

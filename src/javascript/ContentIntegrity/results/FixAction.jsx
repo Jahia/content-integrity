@@ -5,10 +5,9 @@ import {Build, Button, Chip} from '@jahia/moonstone';
 import {FIX_STATES} from './useFixError';
 
 /**
- * The fix of an error: a button when the check which has detected it provides a fix, then the outcome.
- * When the fix takes values, the button opens the details of the error, where the values are typed.
+ * The fix of an error in its details dialog: a button when the check which has detected it provides a fix, then the outcome.
  */
-export const FixAction = ({error, state, onFix, onOpenValues, size}) => {
+export const FixAction = ({error, state, onFix}) => {
     const {t} = useTranslation('content-integrity');
 
     if (error.fixed || state === FIX_STATES.FIXED) {
@@ -23,25 +22,10 @@ export const FixAction = ({error, state, onFix, onOpenValues, size}) => {
     }
     if (!error.fixable) return null;
 
-    if (error.fixWithValues && onOpenValues) {
-        return (
-            <Button label={t('label.fix.withValues')}
-                    icon={<Build/>}
-                    variant="outlined"
-                    size={size}
-                    title={t('label.fix.withValuesHelper')}
-                    onClick={event => {
-                        event.stopPropagation();
-                        onOpenValues(error.id);
-                    }}/>
-        );
-    }
-
     return (
         <Button label={t('label.fix.fix')}
                 icon={<Build/>}
                 variant="outlined"
-                size={size}
                 isLoading={state === FIX_STATES.FIXING}
                 isDisabled={state === FIX_STATES.FIXING}
                 title={t('label.fix.helper', {check: error.checkName})}
@@ -57,15 +41,8 @@ FixAction.propTypes = {
         id: PropTypes.string.isRequired,
         checkName: PropTypes.string,
         fixed: PropTypes.bool,
-        fixable: PropTypes.bool,
-        fixWithValues: PropTypes.bool
+        fixable: PropTypes.bool
     }).isRequired,
     state: PropTypes.oneOf(Object.values(FIX_STATES)),
-    onFix: PropTypes.func.isRequired,
-    onOpenValues: PropTypes.func,
-    size: PropTypes.oneOf(['small', 'default', 'big'])
-};
-
-FixAction.defaultProps = {
-    size: 'small'
+    onFix: PropTypes.func.isRequired
 };

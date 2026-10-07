@@ -19,3 +19,16 @@ export const getResultsTable = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.
  */
 export const getRow = (path: string): Cypress.Chainable<JQuery<HTMLElement>> =>
     getResultsTable().find(`[title="${path}"]`).first().closest('tr');
+
+/**
+ * Opens the menu of the 3 dots of a row, which carries the actions on its error.
+ */
+export const openRowMenu = (path: string): void => {
+    getRow(path).within(() => cy.get('button[aria-label="Actions"]').click());
+};
+
+/**
+ * An item of the opened menu of a row. The menu is displayed above the page, outside of the row.
+ */
+export const getMenuItem = (label: string | RegExp): Cypress.Chainable<JQuery<HTMLElement>> =>
+    cy.contains('li.moonstone-menuItem', label).should('be.visible');

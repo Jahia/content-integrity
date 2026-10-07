@@ -51,7 +51,6 @@ export const ExecutionCard = ({execution, isRunning, error, displayedResultsId, 
                             <Button label={t(logsExpanded ? 'label.execution.hideLogs' : 'label.execution.showLogs')}
                                     icon={logsExpanded ? <ChevronDown/> : <ChevronRight/>}
                                     variant="ghost"
-                                    size="small"
                                     aria-expanded={logsExpanded}
                                     aria-controls="ci-scan-logs"
                                     onClick={() => setLogsExpanded(v => !v)}/>

@@ -85,14 +85,17 @@
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
+    gap: var(--spacing-nano);
 }
 
-.iconLink {
+// Same box as a Moonstone ghost icon button, so that the icons of a row line up
+.iconLink,
+.iconSlot {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
     color: var(--color-gray);
     border-radius: var(--radius);
 
