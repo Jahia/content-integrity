@@ -22,7 +22,7 @@ export const NewScanDialog = ({isOpen, onClose, onRun}) => {
     const [selected, setSelected] = useState(null);
     const [rootPath, setRootPath] = useState('/');
     const [excludedPaths, setExcludedPaths] = useState([]);
-    const [workspace, setWorkspace] = useState('EDIT');
+    const [workspace, setWorkspace] = useState('BOTH');
     const [includeVirtualNodes, setIncludeVirtualNodes] = useState(true);
 
     // Sorted alphabetically on their identifier, which is not translated: the order is the same in every UI language.
