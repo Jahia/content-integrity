@@ -14,7 +14,7 @@ import styles from './ContentIntegrity.scss';
  */
 export const ContentIntegrityAdmin = () => {
     const {t} = useTranslation('content-integrity');
-    const {execution, isRunning, isStarting, error, start, stop} = useScanExecution();
+    const {execution, isRunning, isStarting, isStopping, error, start, stop} = useScanExecution();
     const [isDialogOpen, setDialogOpen] = useState(false);
     const [requestedResultsId, setRequestedResultsId] = useState(null);
     const [refreshCount, setRefreshCount] = useState(0);
@@ -52,7 +52,14 @@ export const ContentIntegrityAdmin = () => {
                                         size="big"
                                         onClick={() => setRefreshCount(c => c + 1)}/>
                                 {isRunning && (
-                                    <Button label={t('label.scan.stop')} icon={<Cancel/>} color="danger" variant="outlined" size="big" onClick={stop}/>
+                                    <Button label={t(isStopping ? 'label.scan.stopping' : 'label.scan.stop')}
+                                            icon={<Cancel/>}
+                                            color="danger"
+                                            variant="outlined"
+                                            size="big"
+                                            isLoading={isStopping}
+                                            isDisabled={isStopping}
+                                            onClick={stop}/>
                                 )}
                                 <Button label={t('label.scan.newScan')}
                                         icon={<Add/>}
@@ -67,7 +74,7 @@ export const ContentIntegrityAdmin = () => {
             content={(
                 <div className={styles.root}>
                     <div className={styles.panel}>
-                        {isRunning && <CurrentScanCard execution={execution}/>}
+                        {isRunning && <CurrentScanCard execution={execution} isStopping={isStopping}/>}
                         {error && <Typography className={styles.error} role="alert">{error}</Typography>}
                         <ResultsPanel requestedResultsId={requestedResultsId}
                                       refreshCount={refreshCount}

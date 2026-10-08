@@ -42,6 +42,7 @@
       "includeVirtualNodesHelper": "Uncheck to skip the nodes exposed by an external data provider, such as an EDP or LDAP connector.",
       "run": "Run the scan",
       "stop": "Stop",
+      "stopping": "Stopping…",
       "logs": "Scan logs",
       "newScan": "New scan",
       "newScanTitle": "New integrity scan"
@@ -99,6 +100,8 @@
     },
     "execution": {
       "current": "Scan in progress",
+      "stopping": "Stopping the scan",
+      "stoppingHelper": "The scan stops at the end of its current step.",
       "startedOn": "Started on {{date}}",
       "background": "It continues in the background if you leave this page.",
       "showLogs": "Show the logs",

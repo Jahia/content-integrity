@@ -52,7 +52,10 @@ class FailingWebSocket {
  * its errors.
  */
 const stopFromThePage = (isScanInProgress = false): void => {
-    cy.contains('button', 'Stop').click();
+    cy.contains('button', /^Stop$/).click();
+    // The scan stops at the end of its current step: until then, the page tells it is stopping, and Stop is disabled
+    cy.contains('button', 'Stopping…').should('be.disabled');
+    cy.get('#ci-exec-title').should('have.text', 'Stopping the scan');
     cy.get('#ci-exec-title', {timeout: 30000}).should('not.exist');
     if (isScanInProgress) {
         cy.get('#ci-scan-status').should('have.text', 'Interrupted');
@@ -61,12 +64,13 @@ const stopFromThePage = (isScanInProgress = false): void => {
         cy.get('[aria-label="Integrity errors"]').should('not.exist');
     }
 
-    cy.contains('button', 'Stop').should('not.exist');
+    cy.contains('button', /^Stop/).should('not.exist');
     cy.contains('button', 'New scan').should('not.be.disabled');
 };
 
 describe('Scan execution in the administration page', () => {
-    before(() => registerSlowCheck());
+    // One second per node: the end of the step a stop waits for is long enough to see the page stopping
+    before(() => registerSlowCheck(1000));
 
     after(() => unregisterSlowCheck());
 

@@ -7,7 +7,7 @@ import {ScanLogs} from './ScanLogs';
 import styles from '../ContentIntegrity.scss';
 
 // The scan which runs, started from this page or found running when it opened. Once it is over, the results card displays its outcome.
-export const CurrentScanCard = ({execution}) => {
+export const CurrentScanCard = ({execution, isStopping}) => {
     const {t, i18n} = useTranslation('content-integrity');
     const [logsExpanded, setLogsExpanded] = useState(true);
     const startDate = execution.startDate ? new Date(execution.startDate).toLocaleString(i18n.language) : null;
@@ -17,7 +17,7 @@ export const CurrentScanCard = ({execution}) => {
             <section className={styles.section} aria-labelledby="ci-exec-title">
                 <div className={styles.sectionHeader}>
                     <div className={styles.titleWithStatus}>
-                        <Typography id="ci-exec-title" variant="subheading" weight="bold">{t('label.execution.current')}</Typography>
+                        <Typography id="ci-exec-title" variant="subheading" weight="bold">{t(isStopping ? 'label.execution.stopping' : 'label.execution.current')}</Typography>
                         <Loader size="small"/>
                     </div>
                     <Button label={t(logsExpanded ? 'label.execution.hideLogs' : 'label.execution.showLogs')}
@@ -28,7 +28,7 @@ export const CurrentScanCard = ({execution}) => {
                             onClick={() => setLogsExpanded(v => !v)}/>
                 </div>
                 {startDate && <Typography variant="caption" className={styles.helper}>{t('label.execution.startedOn', {date: startDate})}</Typography>}
-                <Typography variant="caption" className={styles.helper}>{t('label.execution.background')}</Typography>
+                <Typography variant="caption" className={styles.helper}>{t(isStopping ? 'label.execution.stoppingHelper' : 'label.execution.background')}</Typography>
                 {logsExpanded && <div id="ci-scan-logs"><ScanLogs logs={execution.logs}/></div>}
             </section>
         </Card>
@@ -39,5 +39,6 @@ CurrentScanCard.propTypes = {
     execution: PropTypes.shape({
         startDate: PropTypes.string,
         logs: PropTypes.arrayOf(PropTypes.string)
-    }).isRequired
+    }).isRequired,
+    isStopping: PropTypes.bool
 };

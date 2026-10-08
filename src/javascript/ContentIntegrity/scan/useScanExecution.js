@@ -36,6 +36,8 @@ export const useScanExecution = () => {
     const [execution, setExecution] = useState({id: null, status: null, startDate: null, logs: [], resultsID: null});
     const [error, setError] = useState(null);
     const [isStarting, setStarting] = useState(false);
+    // From the click on Stop until the scan has ended: the scan stops once the node it checks is done
+    const [isStopping, setStopping] = useState(false);
     const timer = useRef(null);
     const unsubscribe = useRef(null);
     const previousStatus = useRef(null);
@@ -166,16 +168,26 @@ export const useScanExecution = () => {
             .finally(() => mounted.current && setStarting(false));
     }, [client, follow]);
 
+    useEffect(() => {
+        if (execution.status !== RUNNING) {
+            setStopping(false);
+        }
+    }, [execution.status]);
+
     const stop = useCallback(() => {
-        if (!execution.id) {
+        if (!execution.id || isStopping) {
             return;
         }
 
+        setStopping(true);
         // The subscription delivers the end of the scan. Without one, the scan is polled
         runQuery(client, STOP_SCAN, {id: execution.id})
             .then(() => !unsubscribe.current && poll(execution.id))
-            .catch(e => setError(e.message));
-    }, [client, execution.id, poll]);
+            .catch(e => {
+                setStopping(false);
+                setError(e.message);
+            });
+    }, [client, execution.id, isStopping, poll]);
 
-    return {execution, isRunning: execution.status === RUNNING, isStarting, error, start, stop};
+    return {execution, isRunning: execution.status === RUNNING, isStarting, isStopping, error, start, stop};
 };

@@ -42,6 +42,7 @@
       "includeVirtualNodesHelper": "Décochez cette case pour ignorer les nœuds exposés par un fournisseur de données externe, comme un connecteur EDP.",
       "run": "Lancer l'analyse",
       "stop": "Arrêter",
+      "stopping": "Arrêt…",
       "logs": "Journal de l'analyse",
       "newScan": "Nouvelle analyse",
       "newScanTitle": "Nouvelle analyse d'intégrité"
@@ -99,6 +100,8 @@
     },
     "execution": {
       "current": "Analyse en cours",
+      "stopping": "Arrêt de l'analyse",
+      "stoppingHelper": "L'analyse s'arrête à la fin de son étape en cours.",
       "startedOn": "Lancée le {{date}}",
       "background": "Elle se poursuit en arrière-plan si vous quittez cette page.",
       "showLogs": "Afficher le journal",
