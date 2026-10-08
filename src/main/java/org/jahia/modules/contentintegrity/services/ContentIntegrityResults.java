@@ -9,8 +9,30 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class ContentIntegrityResults {
+
+    /**
+     * The status of the scan which produced the results. They are stored in the JCR from the start of the scan.
+     */
+    public enum Status {
+        RUNNING, FINISHED,
+        // Stopped before its end: the errors are those found until then
+        INTERRUPTED,
+        FAILED;
+
+        public String getValue() {
+            return name().toLowerCase(Locale.ENGLISH);
+        }
+
+        public static Status fromValue(String value) {
+            for (Status status : values()) {
+                if (status.getValue().equals(value)) return status;
+            }
+            return null;
+        }
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityResults.class);
 
@@ -23,8 +45,7 @@ public class ContentIntegrityResults {
     private String executionID;
     private final List<String> executionLog;
     private final List<ContentIntegrityReport> reports;
-    // True when the scan was stopped before its end: the errors are those found until then
-    private boolean interrupted;
+    private Status status = Status.FINISHED;
 
     public ContentIntegrityResults(Long testDate, Long testDuration, String workspace, List<ContentIntegrityError> errors, List<String> executionLog) {
         this.testDate = testDate;
@@ -74,13 +95,21 @@ public class ContentIntegrityResults {
         return this;
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
+    public ContentIntegrityResults setStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
     public boolean isInterrupted() {
-        return interrupted;
+        return status == Status.INTERRUPTED;
     }
 
     public ContentIntegrityResults setInterrupted(boolean interrupted) {
-        this.interrupted = interrupted;
-        return this;
+        return setStatus(interrupted ? Status.INTERRUPTED : Status.FINISHED);
     }
 
     public String getSignature(boolean excludeFixedErrors) {
@@ -98,7 +127,6 @@ public class ContentIntegrityResults {
     private void addReport(String name, String path, String extension, ContentIntegrityReport.LOCATION location) {
         final ContentIntegrityReport report = new ContentIntegrityReport(name, location, path, extension);
         reports.add(report);
-        Utils.getContentIntegrityService().storeErrorsInCache(this);
     }
 
     public List<ContentIntegrityReport> getReports() {

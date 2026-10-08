@@ -121,6 +121,14 @@ export const GET_SCAN_RESULTS_LIST = gql`
     }
 `;
 
+export const GET_SCAN_RESULTS_LOGS = gql`
+    query ContentIntegrityScanResultsLogs($id: String!) {
+        integrity: contentIntegrity {
+            logs: scanResultsLogs(id: $id)
+        }
+    }
+`;
+
 export const GET_SCAN_RESULTS = gql`
     query ContentIntegrityScanResults($id: String!, $offset: Int!, $size: Int!, $filters: [String]!, $filterColumns: [String]) {
         integrity: contentIntegrity {

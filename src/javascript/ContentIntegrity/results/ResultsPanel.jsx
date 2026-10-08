@@ -5,6 +5,8 @@ import {useTranslation} from 'react-i18next';
 import {
     Add,
     Button,
+    ChevronDown,
+    ChevronRight,
     Chip,
     Close,
     Dropdown,
@@ -19,7 +21,8 @@ import {
     Typography
 } from '@jahia/moonstone';
 import {Card} from '../common/Card';
-import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST} from '../ContentIntegrity.gql';
+import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST, GET_SCAN_RESULTS_LOGS} from '../ContentIntegrity.gql';
+import {ScanLogs} from '../scan/ScanLogs';
 import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
 import {ErrorDetailsDialog} from './ErrorDetailsDialog';
 import {RowActions} from './RowActions';
@@ -31,7 +34,9 @@ import styles from '../ContentIntegrity.scss';
 
 const ALL = '__all__';
 const ALL_WORKSPACES = 'all-workspaces';
-const STATUS_COLORS = {finished: 'success', interrupted: 'warning'};
+const STATUS_COLORS = {running: 'accent', finished: 'success', interrupted: 'warning', failed: 'danger'};
+// The message which replaces the errors of the results of a scan which is not finished
+const STATUS_MESSAGES = {running: 'label.results.runningScan', interrupted: 'label.results.interruptedScan', failed: 'label.results.failedScan'};
 const NO_FILTERS = {};
 const DATE_WITH_MILLISECONDS = {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3};
 // The default filter shows only the errors which block an XML import, when there are some: otherwise it would hide all of them
@@ -101,7 +106,9 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
             setResultsId(requestedResultsId);
             onRequestConsumed();
         } else if (!ids.includes(resultsId)) {
-            setResultsId(ids.length > 0 ? ids[ids.length - 1] : null);
+            // The latest results of a scan which is over: the card of a running scan already follows it
+            const latest = [...summaries].reverse().find(s => s.status !== 'running') || summaries[summaries.length - 1];
+            setResultsId(latest ? latest.id : null);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ids, requestedResultsId]);
@@ -113,11 +120,15 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
     const selectedSummary = summaries.find(s => s.id === resultsId);
     const filters = filterState.resultsId === resultsId ? filterState.filters : defaultFiltersOf(selectedSummary);
     const setFilters = update => setFilterState({resultsId, filters: typeof update === 'function' ? update(filters) : update});
-    // The errors of an interrupted scan do not cover all the content: they are not displayed, so not read.
-    // A scan without error has nothing to filter: only its outcome is displayed.
-    const isInterrupted = selectedSummary?.status === 'interrupted';
+    // Only the errors of a finished scan are displayed, so read: those of an interrupted scan do not cover all the
+    // content, and a running or failed scan has none. A scan without error has nothing to filter: only its outcome is displayed.
+    // The log stored with the results, read when displayed. It tells why a scan failed, so it is open for one
+    const [logsState, setLogsState] = useState({resultsId: null, isExpanded: false});
+    const isLogsExpanded = logsState.resultsId === resultsId ? logsState.isExpanded : selectedSummary?.status === 'failed';
+    const logs = useQuery(GET_SCAN_RESULTS_LOGS, {skip: !resultsId || !isLogsExpanded, fetchPolicy: 'network-only', variables: {id: resultsId}});
+    const statusMessage = STATUS_MESSAGES[selectedSummary?.status];
     const hasErrors = selectedSummary?.errorCount > 0;
-    const showErrors = !isInterrupted && hasErrors;
+    const showErrors = !statusMessage && hasErrors;
     const filterArgs = useMemo(() => toFilterArgs(filters), [filters]);
     const results = useQuery(GET_SCAN_RESULTS, {
         skip: !resultsId || !showErrors,
@@ -215,6 +226,14 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                                       label={t(`label.results.status.${selectedSummary.status}`, selectedSummary.status)}
                                       color={STATUS_COLORS[selectedSummary.status] || 'default'}/>
                             )}
+                            {selectedSummary && (
+                                <Button label={t(isLogsExpanded ? 'label.execution.hideLogs' : 'label.execution.showLogs')}
+                                        icon={isLogsExpanded ? <ChevronDown/> : <ChevronRight/>}
+                                        variant="ghost"
+                                        aria-expanded={isLogsExpanded}
+                                        aria-controls="ci-results-logs"
+                                        onClick={() => setLogsState({resultsId, isExpanded: !isLogsExpanded})}/>
+                            )}
                         </div>
                     </div>
                     {showErrors && details && <ReportLinks reports={details.reports}/>}
@@ -232,8 +251,14 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                         </div>
                     )}
                 </div>
-                {isInterrupted && <Typography className={styles.noError}>{t('label.results.interruptedScan')}</Typography>}
-                {!isInterrupted && !hasErrors && <Typography className={styles.noError}>{t('label.results.noError')}</Typography>}
+                {isLogsExpanded && (
+                    <div id="ci-results-logs" className={styles.resultsLogs}>
+                        {logs.loading && !logs.data ? <Loader size="small"/> : <ScanLogs logs={logs.data?.integrity?.logs || []}/>}
+                        {logs.error && <Typography className={styles.error}>{logs.error.message}</Typography>}
+                    </div>
+                )}
+                {statusMessage && <Typography className={styles.noError}>{t(statusMessage)}</Typography>}
+                {!statusMessage && !hasErrors && <Typography className={styles.noError}>{t('label.results.noError')}</Typography>}
                 {showErrors && (
                     <>
                     <div id="ci-filters">

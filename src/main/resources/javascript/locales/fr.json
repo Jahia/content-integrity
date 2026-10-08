@@ -52,8 +52,10 @@
       "scanOption": "{{date}} · {{workspace}}",
       "allWorkspaces": "Tous les espaces de travail",
       "status": {
+        "running": "En cours",
         "finished": "Terminée",
-        "interrupted": "Interrompue"
+        "interrupted": "Interrompue",
+        "failed": "En échec"
       },
       "columns": "Colonnes",
       "columnsCount": "Colonnes affichées : {{count}}",
@@ -65,6 +67,8 @@
       "errorCountFiltered": "Erreurs : {{count}} (sur {{total}})",
       "noError": "Cette analyse n'a trouvé aucune erreur.",
       "interruptedScan": "L'analyse a été interrompue avant la fin, ses erreurs ne sont donc pas affichées. Lancez une nouvelle analyse pour vérifier tout le contenu.",
+      "runningScan": "L'analyse est en cours : ses erreurs s'affichent une fois terminée.",
+      "failedScan": "L'analyse a échoué, elle n'a donc aucune erreur à afficher.",
       "tableLabel": "Erreurs d'intégrité",
       "details": "Détails de l'erreur",
       "rowsPerPage": "Erreurs par page",

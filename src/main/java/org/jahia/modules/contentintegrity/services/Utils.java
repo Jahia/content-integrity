@@ -58,8 +58,8 @@ public class Utils {
 
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
-    private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
-    private static final String REPORTS_FOLDER_PARENT_PATH = "/sites/systemsite/files";
+    static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
+    static final String REPORTS_FOLDER_PARENT_PATH = "/sites/systemsite/files";
     private static final String PRIVILEGED_GROUP_PRINCIPAL = "g:" + JahiaGroupManagerService.PRIVILEGED_GROUPNAME;
     private static final String PRIVILEGED_ROLE = "privileged";
     public static final String ALL_WORKSPACES = "all-workspaces";
@@ -234,14 +234,8 @@ public class Utils {
                 final String resultsSignature = results.getSignature(excludeFixedErrors);
                 final JCRNodeWrapper outputDir;
                 try {
-                    final JCRNodeWrapper filesFolder = session.getNode(REPORTS_FOLDER_PARENT_PATH);
-                    final JCRNodeWrapper reportsFolder = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER);
-                    restrictReportsFolderAccess(reportsFolder);
-                    final String splitConfig = FastDateFormat.getInstance("'constant,'yyyy';constant,'MM").format(results.getTestDate());
-                    outputDir = JCRAutoSplitUtils.addNodeWithAutoSplitting(reportsFolder, resultsSignature, Constants.JAHIANT_FOLDER, splitConfig, Constants.JAHIANT_FOLDER, null);
-                    outputDir.addMixin(Constants.JAHIAMIX_NOLIVE);
-                    outputDir.getParent().addMixin(Constants.JAHIAMIX_NOLIVE);
-                    outputDir.getParent().getParent().addMixin(Constants.JAHIAMIX_NOLIVE);
+                    // The full reports go to the report node of the scan, stored since its start
+                    outputDir = ResultsStore.getOrCreateReportNode(session, results, resultsSignature);
                     writeReportMetadata(outputDir, results);
                 } catch (RepositoryException re) {
                     logger.error("Impossible to retrieve the reports folder", re);
@@ -325,7 +319,7 @@ public class Utils {
         return reportsCount.get() == reportGenerators.size();
     }
 
-    private static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
+    static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
         reportNode.addMixin("integrity:scanReport");
         reportNode.setProperty("integrity:errorsCount", results.getErrors().size());
         final String workspace = results.getWorkspace();
@@ -396,28 +390,23 @@ public class Utils {
         return false;
     }
 
-    public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {
-        if (CollectionUtils.isEmpty(results)) return null;
-        if (results.size() == 1) return results.iterator().next();
-
-        final ContentIntegrityService contentIntegrityService = Utils.getContentIntegrityService();
-        final Long testDate = results.stream()
-                .map(ContentIntegrityResults::getTestDate)
-                .sorted().findFirst().orElse(0L);
+    /**
+     * Merges the results of the workspaces scanned by one scan into the results of the scan, which keep the date of its
+     * start, so that they keep the identifier of its report. The results of the scan are interrupted if those of one
+     * workspace are.
+     *
+     * @param testDate  the date of the start of the scan
+     * @param workspace the scanned workspace, or ALL_WORKSPACES when the scan covered several
+     */
+    public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results, long testDate, String workspace) {
         final Long duration = results.stream().map(ContentIntegrityResults::getTestDuration).reduce(0L, Long::sum);
-        final Set<String> workspaces = results.stream().map(ContentIntegrityResults::getWorkspace).collect(Collectors.toSet());
-        final String workspace = workspaces.size() == 1 ? workspaces.stream().findAny().get() : ALL_WORKSPACES;
         final List<ContentIntegrityError> errors = results.stream()
-                .peek(contentIntegrityService::removeErrorsFromCache)
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
         final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).flatMap(List::stream).collect(Collectors.toList());
-
         final boolean interrupted = results.stream().anyMatch(ContentIntegrityResults::isInterrupted);
-        final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog).setInterrupted(interrupted);
-        contentIntegrityService.storeErrorsInCache(mergedResults);
-        return mergedResults;
+        return new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog).setInterrupted(interrupted);
     }
 
     public static ContentIntegrityErrorList mergeErrorLists(ContentIntegrityErrorList... errorLists) {

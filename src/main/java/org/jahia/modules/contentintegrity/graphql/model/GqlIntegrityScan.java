@@ -15,6 +15,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityReport;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
+import org.jahia.modules.contentintegrity.services.ScanReportLogger;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
@@ -128,42 +129,53 @@ public class GqlIntegrityScan {
             return id;
         }
 
+        final ContentIntegrityService service = getService();
+        // A single scan runs at a time: a scan started while another one runs fails, and has no report
+        if (service.isScanRunning()) {
+            output.add(new ConcurrentExecutionException().getMessage());
+            executionStatus.put(id, Status.FAILED);
+            return id;
+        }
+
+        final List<String> workspaces = workspace.getWorkspaces();
+        final String scannedWorkspace = workspaces.size() == 1 ? workspaces.get(0) : Utils.ALL_WORKSPACES;
+        final long testDate = executionStart.get(id).toEpochMilli();
+        // The report of the scan is stored from its start, then updated with its log until its end
+        final ScanReportLogger reportLogger = new ScanReportLogger(console, new ContentIntegrityResults(testDate, 0L, scannedWorkspace, new ArrayList<>(), new ArrayList<>())
+                .setStatus(ContentIntegrityResults.Status.RUNNING).setExecutionID(id));
+        reportLogger.flush();
+        scanResults.put(id, reportLogger.getReport().getID());
+
         final JahiaUser currentUser = JCRSessionFactory.getInstance().getCurrentUser();
         Executors.newSingleThreadExecutor().execute(() -> {
             Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
 
             JCRSessionFactory.getInstance().setCurrentUser(currentUser);
-            final ContentIntegrityService service = getService();
-            final List<String> checksToExecute = Utils.getChecksToExecute(service, checksToRun, null, console);
-            final List<String> workspaces = workspace.getWorkspaces();
+            boolean isOver = false;
             try {
+                final List<String> checksToExecute = Utils.getChecksToExecute(service, checksToRun, null, reportLogger);
                 final List<ContentIntegrityResults> results = new ArrayList<>(workspaces.size());
                 for (String ws : workspaces) {
                     if (stopRequests.contains(id)) break;
-                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse(Constants.ROOT_NODE_PATH), excludedPaths, skipMountPointsValue, ws, checksToExecute, console);
+                    // The results of the workspaces are stored once merged
+                    final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse(Constants.ROOT_NODE_PATH),
+                            excludedPaths, skipMountPointsValue, ws, checksToExecute, reportLogger, false);
                     if (contentIntegrityResults != null)
                         results.add(contentIntegrityResults.setExecutionID(id));
                 }
-                ContentIntegrityResults mergedResults = Utils.mergeResults(results);
-                if (mergedResults == null && stopRequests.contains(id)) {
-                    // Stopped before its first workspace was scanned: the results record the interrupted scan
-                    final String scannedWorkspace = workspaces.size() == 1 ? workspaces.get(0) : Utils.ALL_WORKSPACES;
-                    mergedResults = new ContentIntegrityResults(executionStart.get(id).toEpochMilli(), 0L, scannedWorkspace, new ArrayList<>(), new ArrayList<>())
-                            .setInterrupted(true).setExecutionID(id);
-                    service.storeErrorsInCache(mergedResults);
+                final boolean isStopped = stopRequests.contains(id);
+                if (results.isEmpty() && !isStopped) {
+                    // No workspace could be scanned: its log tells why
+                    return;
                 }
-                // Results without error are stored too: the client displays them as the outcome of the scan
-                if (mergedResults != null) {
-                    // Stopped between two workspaces, the scan has not covered the next ones
-                    if (stopRequests.contains(id) && !mergedResults.isInterrupted()) {
-                        service.storeErrorsInCache(mergedResults.setInterrupted(true));
-                    }
-                    scanResults.put(id, mergedResults.getID());
-                }
-                final boolean interrupted = mergedResults != null && mergedResults.isInterrupted();
-                if (mergedResults == null || CollectionUtils.isEmpty(mergedResults.getErrors())) {
+
+                final ContentIntegrityResults mergedResults = Utils.mergeResults(results, testDate, scannedWorkspace).setExecutionID(id);
+                // Stopped between two workspaces, or before the first one, the scan has not covered them all
+                if (isStopped) mergedResults.setInterrupted(true);
+                final boolean interrupted = mergedResults.isInterrupted();
+                if (CollectionUtils.isEmpty(mergedResults.getErrors())) {
                     // An interrupted scan has not checked all the content: finding no error proves nothing
-                    if (!interrupted) console.logLine(NO_ERROR_FOUND);
+                    if (!interrupted) reportLogger.logLine(NO_ERROR_FOUND);
                 } else {
                     final int nbErrors = mergedResults.getErrors().size();
                     final String details = workspaces.size() == 1 ?
@@ -172,22 +184,31 @@ public class GqlIntegrityScan {
                                     .map(r -> r.getWorkspace() + " : " + r.getErrors().size())
                                     .collect(Collectors.joining(" , ", " [", "]"));
 
-                    console.logLine(String.format("%d error%s found%s", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s", details));
+                    reportLogger.logLine(String.format("%d error%s found%s", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s", details));
 
-                    if (uploadResultsValue && Utils.writeDumpInTheJCR(mergedResults, false, console)) {
+                    if (uploadResultsValue && Utils.writeDumpInTheJCR(mergedResults, false, reportLogger)) {
                         executionReports.put(id, mergedResults.getReports());
                     }
                 }
-                executionStatus.put(id, stopRequests.contains(id) ? Status.INTERRUPTED : Status.FINISHED);
+                // The results are stored before the status changes, so that a client which reads it finds them
+                service.saveResults(mergedResults, reportLogger.getLines(), true);
+                isOver = true;
+                executionStatus.put(id, interrupted ? Status.INTERRUPTED : Status.FINISHED);
             } catch (ConcurrentExecutionException cee) {
                 logger.error("", cee);
-                output.add(cee.getMessage());
-                executionStatus.put(id, Status.FAILED);
+                reportLogger.logLine(cee.getMessage());
+            } catch (RuntimeException e) {
+                logger.error("The scan {} failed", id, e);
+                reportLogger.logLine(String.format("The scan failed: %s", e.getMessage()));
             } finally {
+                if (!isOver) {
+                    reportLogger.getReport().setStatus(ContentIntegrityResults.Status.FAILED);
+                    service.saveResults(reportLogger.getReport(), reportLogger.getLines(), false);
+                    executionStatus.put(id, Status.FAILED);
+                }
                 stopRequests.remove(id);
                 JcrSessionFilter.endRequest();
             }
-
         });
         return id;
     }
@@ -284,6 +305,7 @@ public class GqlIntegrityScan {
 
     @GraphQLField
     @GraphQLName("resultsID")
+    @GraphQLDescription("The identifier of the results of the scan, which are stored from its start")
     public String getResultsIdentifier() {
         return scanResults.get(id);
     }

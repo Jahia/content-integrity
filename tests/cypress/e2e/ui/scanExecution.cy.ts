@@ -1,5 +1,5 @@
 import {graphql, readExecution, registerSlowCheck, startScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
-import {ADMIN_URL, getCurrentScanCard, getDialog, visitAdmin} from '../../support/adminPage';
+import {ADMIN_URL, getCurrentScanCard, getDialog, getDropdown, getScanLabel, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 // About 15 seconds with CiSlowCheck: long enough to act while the scan runs
 const SLOW_ROOT = '/sites/systemsite';
@@ -128,6 +128,21 @@ describe('Scan execution in the administration page', () => {
             getCurrentScanCard().within(() => cy.get('[role=log]').should('contain.text', 'Scan progress'));
             countScanPolls().should('be.greaterThan', 0);
             stopFromThePage();
+        });
+    });
+
+    it('lists a running scan, but selects the latest results of a scan which is over', () => {
+        startScan({startNode: '/sites/systemsite/home', checks: ['LockSanityCheck']}).then(id => waitForExecution(id)).then(over => {
+            startScan({startNode: SLOW_ROOT, checks: ['CiSlowCheck']}).then(id => readExecution(id)).then(running => {
+                visitAdmin();
+                getCurrentScanCard().should('exist');
+                // The card of the scan follows it: the results card displays the results of the last scan which is over
+                getScanLabel(over.resultsID as string).then(label => getDropdown('Scan').should('contain.text', label));
+                getScanLabel(running.resultsID as string).then(label => selectInDropdown('Scan', label));
+                cy.get('#ci-scan-status').should('have.text', 'Running');
+                cy.contains('The scan is running: its errors are displayed once it ends.').should('be.visible');
+                stopFromThePage();
+            });
         });
     });
 

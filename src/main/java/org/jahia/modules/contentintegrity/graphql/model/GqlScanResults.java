@@ -141,8 +141,8 @@ public class GqlScanResults {
                     throw new GqlJcrWrongInputException(e.getMessage());
                 }
             }
-            // The fixed status is part of the results, which are stored in a cache
-            if (error.isFixed()) service.storeErrorsInCache(results);
+            // The fixed status is stored with the results, in the JCR
+            if (error.isFixed()) service.saveFixedErrors(results);
         }
         return new GqlScanResultsError(error);
     }
@@ -174,8 +174,8 @@ public class GqlScanResults {
             if (error.isFixed()) result.addFixed();
             else result.addFailed();
         }
-        // The fixed status is part of the results, which are stored in a cache
-        if (result.getFixed() > 0) service.storeErrorsInCache(results);
+        // The fixed status is stored with the results, in the JCR
+        if (result.getFixed() > 0) service.saveFixedErrors(results);
         return result;
     }
 

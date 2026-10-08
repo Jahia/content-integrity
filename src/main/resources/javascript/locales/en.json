@@ -52,8 +52,10 @@
       "scanOption": "{{date}} · {{workspace}}",
       "allWorkspaces": "All workspaces",
       "status": {
+        "running": "Running",
         "finished": "Finished",
-        "interrupted": "Interrupted"
+        "interrupted": "Interrupted",
+        "failed": "Failed"
       },
       "columns": "Columns",
       "columnsCount": "Displayed columns: {{count}}",
@@ -65,6 +67,8 @@
       "errorCountFiltered": "Errors: {{count}} (total: {{total}})",
       "noError": "No error found by this scan.",
       "interruptedScan": "The scan was interrupted before its end, so its errors are not displayed. Run a new scan to check all the content.",
+      "runningScan": "The scan is running: its errors are displayed once it ends.",
+      "failedScan": "The scan failed, so it has no errors to display.",
       "tableLabel": "Integrity errors",
       "details": "Error details",
       "rowsPerPage": "Errors per page",

@@ -76,6 +76,8 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
                 fixSingleError(error, errorIdx, contentIntegrityService);
             }
         }
+        // The fixed status is stored with the results, in the JCR
+        contentIntegrityService.saveFixedErrors(results);
 
         return null;
     }

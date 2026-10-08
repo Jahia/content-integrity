@@ -171,6 +171,12 @@ describe('New scan', () => {
         // The card of the scan is displayed only while it runs, its status is displayed next to its results
         cy.get('#ci-exec-title').should('not.exist');
         cy.get('#ci-scan-status').should('have.text', 'Finished');
+        // The log of the scan is stored with its results, and displayed on demand
+        cy.get('#ci-results-logs').should('not.exist');
+        cy.contains('button', 'Show the logs').click();
+        cy.get('#ci-results-logs [role=log]').should('contain.text', 'Starting to check the integrity under').and('contain.text', 'errors found');
+        cy.contains('button', 'Hide the logs').click();
+        cy.get('#ci-results-logs').should('not.exist');
 
         readExecution().then(execution => {
             const resultsId = execution.resultsID;

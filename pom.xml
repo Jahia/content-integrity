@@ -218,6 +218,14 @@
             <version>1.0.2</version>
             <scope>provided</scope>
         </dependency>
+        <!-- The stored errors are written and read as a stream. The version of the parent is the one Jahia 8.1.5 provides,
+             Jahia 8.2 provides a later 2.x -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.core.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>javax.servlet.jsp</groupId>
             <artifactId>jsp-api</artifactId>

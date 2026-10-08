@@ -481,6 +481,11 @@
     gap: var(--spacing-small);
 }
 
+// The log stored with the selected results, under the scan selector.
+.resultsLogs {
+    margin-bottom: var(--spacing-medium);
+}
+
 // The scan selector and the status of the selected scan, on one line.
 .scanSelector {
     display: flex;

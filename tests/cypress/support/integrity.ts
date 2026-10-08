@@ -189,6 +189,29 @@ export const followScan = (id: string, timeoutMs = 120000): Cypress.Chainable<Su
         };
     }));
 
+export type StoredReport = {
+    path: string;
+    status: string | null;
+    files: string[];
+    fixedErrors: string[];
+};
+
+/**
+ * The report node of results in the JCR, found by their identifier, or null.
+ */
+export const readStoredReport = (resultsId: string): Cypress.Chainable<StoredReport | null> =>
+    graphql(`{ jcr { nodesByQuery(query: "SELECT * FROM [integrity:scanReport] WHERE [integrity:resultsId] = '${resultsId}'", queryLanguage: SQL2) {
+        nodes { path status: property(name: "integrity:status") { value } fixed: property(name: "integrity:fixedErrors") { values } children { nodes { name } } } } } }`)
+        .then(data => {
+            const node = data.jcr.nodesByQuery.nodes[0];
+            return node ? {
+                path: node.path,
+                status: node.status?.value ?? null,
+                files: node.children.nodes.map((c: { name: string }) => c.name),
+                fixedErrors: node.fixed?.values ?? []
+            } : null;
+        });
+
 export const registerSlowCheck = (delayMs = 200): void => runFixture('scan/slowCheck.groovy', {DELAY: String(delayMs)});
 
 export const unregisterSlowCheck = (): void => runFixture('scan/slowCheck-cleanup.groovy');

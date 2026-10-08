@@ -62,6 +62,13 @@ describe('Access to the scan reports', () => {
         download(reportUri, EDITOR).its('status').should('eq', 404);
     });
 
+    it('does not let an editor download the stored errors of a scan, next to its reports', () => {
+        // The CSV report is named <resultsId>-full.csv, the stored errors <resultsId>-full-errors.json.gz
+        const errorsUri = reportUri.replace(/\.csv$/, '-errors.json.gz');
+        download(errorsUri, {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')}).its('status').should('eq', 200);
+        download(errorsUri, EDITOR).its('status').should('eq', 404);
+    });
+
     it('does not let an editor list the reports', () => {
         cy.request({
             method: 'POST',

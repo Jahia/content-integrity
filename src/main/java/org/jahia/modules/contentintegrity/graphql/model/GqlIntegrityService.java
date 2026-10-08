@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.graphql.model;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
@@ -100,26 +101,25 @@ public class GqlIntegrityService {
     }
 
     @GraphQLField
+    @GraphQLDescription("The identifiers of the stored results, from the oldest scan to the latest")
     public Collection<String> getScanResults() {
-        final ContentIntegrityService integrityService = Utils.getContentIntegrityService();
-        return integrityService.getTestIDs().stream()
-                .map(integrityService::getTestResults)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(ContentIntegrityResults::getTestDate))
-                .map(ContentIntegrityResults::getID)
+        return Utils.getContentIntegrityService().getTestIDs();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The stored results, from the oldest scan to the latest, with their date, their status and their number of errors. " +
+            "They are read from the JCR, without their errors")
+    public Collection<GqlScanResultsSummary> getScanResultsSummaries() {
+        return Utils.getContentIntegrityService().getResultsSummaries().stream()
+                .map(GqlScanResultsSummary::new)
                 .collect(Collectors.toList());
     }
 
     @GraphQLField
-    @GraphQLDescription("The stored results, from the oldest to the latest, with their date and their number of errors")
-    public Collection<GqlScanResultsSummary> getScanResultsSummaries() {
-        final ContentIntegrityService integrityService = Utils.getContentIntegrityService();
-        return integrityService.getTestIDs().stream()
-                .map(integrityService::getTestResults)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(ContentIntegrityResults::getTestDate))
-                .map(GqlScanResultsSummary::new)
-                .collect(Collectors.toList());
+    @GraphQLDescription("The log of the scan of the stored results, whatever their status, or null if no results have this identifier. " +
+            "The log of a running scan is the one of its last update, at most a few seconds old")
+    public List<String> getScanResultsLogs(@GraphQLName("id") @GraphQLNonNull String id) {
+        return Utils.getContentIntegrityService().getExecutionLog(id);
     }
 
     @GraphQLField

@@ -1,7 +1,5 @@
 package org.jahia.modules.contentintegrity.services;
 
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.bin.Jahia;
@@ -18,8 +16,6 @@ import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutio
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
-import org.jahia.registries.ServicesRegistry;
-import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.DateUtils;
@@ -38,12 +34,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -65,11 +60,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private static final String INTERRUPT_PROP_NAME = "modules.contentIntegrity.interrupt";
 
     private final List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
-    private Cache errorsCache;
-    private EhCacheProvider ehCacheProvider;
-    private static final String BIG_CACHE_PROVIDER = "bigcache";
-    private final String errorsCacheName = "ContentIntegrityService-errors";
-    private final long errorsCacheTti = 5L * 7L * 24L * 3600L; // 5 weeks;
+    // The results are stored in the JCR. The last ones read are kept in memory, as browsing them reads them page by page
+    private static final int LOADED_RESULTS_MAX_SIZE = 3;
+    private final Map<String, ContentIntegrityResults> loadedResults = Collections.synchronizedMap(new LinkedHashMap<String, ContentIntegrityResults>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, ContentIntegrityResults> eldest) {
+            return size() > LOADED_RESULTS_MAX_SIZE;
+        }
+    });
     private long nbNodesToScanCalculationDuration = 0L;
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
@@ -78,26 +76,16 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Activate
     public void start() throws JahiaInitializationException {
-        // The "bigcache" provider is the bigEhCacheProvider of the core. It is not published as an OSGi service
-        // (the only published CacheProvider is the default one), so it is read from the cache service.
-        if (ehCacheProvider == null)
-            ehCacheProvider = (EhCacheProvider) ServicesRegistry.getInstance().getCacheService().getCacheProviders().get(BIG_CACHE_PROVIDER);
-        if (errorsCache == null) {
-            errorsCache = ehCacheProvider.getCacheManager().getCache(errorsCacheName);
-            if (errorsCache == null) {
-                ehCacheProvider.getCacheManager().addCache(errorsCacheName);
-                errorsCache = ehCacheProvider.getCacheManager().getCache(errorsCacheName);
-                errorsCache.getCacheConfiguration().setTimeToIdleSeconds(errorsCacheTti);
-            }
-        }
-
         Utils.restrictReportsFolderAccess();
+        // A scan this server was running when it stopped will never end
+        final int abandonedScans = ResultsStore.interruptAbandonedScans();
+        if (abandonedScans > 0) logger.info("{} scan(s) running when the server stopped marked as interrupted", abandonedScans);
         logger.info("Content integrity service started ({})", Utils.getContentIntegrityVersion());
     }
 
     @Deactivate
     public void stop() throws JahiaException {
-        if (errorsCache != null) errorsCache.flush();
+        loadedResults.clear();
 
         logger.info("Content integrity service stopped ({})", Utils.getContentIntegrityVersion());
     }
@@ -142,20 +130,34 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Override
     public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger externalLogger) throws ConcurrentExecutionException {
-        return validateIntegrity(path, excludedPaths, skipMountPoints, workspace, checksToExecute, externalLogger, false);
+        return validateIntegrity(path, excludedPaths, skipMountPoints, workspace, checksToExecute, externalLogger, true);
     }
 
-    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger externalLogger, boolean fixErrors) throws ConcurrentExecutionException {
+    @Override
+    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger externalLogger, boolean persistResults) throws ConcurrentExecutionException {
+        return validateIntegrity(path, excludedPaths, skipMountPoints, workspace, checksToExecute, externalLogger, false, persistResults);
+    }
+
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger callerLogger, boolean fixErrors, boolean persistResults) throws ConcurrentExecutionException {
         if (!semaphore.tryAcquire()) {
             throw new ConcurrentExecutionException();
         }
 
+        ScanReportLogger reportLogger = null;
+        ContentIntegrityResults finalResults = null;
         try {
             JcrSessionFilter.endRequest();
             final JCRSessionWrapper session = JCRUtils.getSystemSession(workspace);
             if (session == null) return null;
 
             final long start = System.currentTimeMillis();
+            if (persistResults) {
+                // The report of the scan is stored from its start, then updated with its log until its end
+                reportLogger = new ScanReportLogger(callerLogger, new ContentIntegrityResults(start, 0L, workspace, new ArrayList<>(), new ArrayList<>())
+                        .setStatus(ContentIntegrityResults.Status.RUNNING));
+                reportLogger.flush();
+            }
+            final ExternalLogger externalLogger = reportLogger != null ? reportLogger : callerLogger;
             try {
                 if (!session.nodeExists(path)) {
                     Utils.log(String.format("The node %s does not exist in the workspace %s", path, session.getWorkspace().getName()), logger, externalLogger);
@@ -208,24 +210,29 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 Utils.log(msg, logger, externalLogger, summaryLogger);
                 final List<ExternalLogger> externalLoggers = new ArrayList<>();
                 externalLoggers.add(summaryLogger);
-                if (externalLogger.includeSummary()) externalLoggers.add(externalLogger);
+                if (externalLogger != null && externalLogger.includeSummary()) externalLoggers.add(externalLogger);
                 final ExternalLogger[] externalLoggersArray = externalLoggers.toArray(new ExternalLogger[0]);
                 printChecksDuration(testDuration, activeChecks, externalLoggersArray);
                 Utils.validateImportCompatibility(errors, logger, externalLoggersArray);
                 Utils.detectLegacyErrorTypes(errors, logger, externalLoggersArray);
-                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors, summary).setInterrupted(interrupted);
-                storeErrorsInCache(results);
-                return results;
+                finalResults = new ContentIntegrityResults(start, testDuration, workspace, errors, summary).setInterrupted(interrupted);
+                if (reportLogger != null) saveResults(finalResults, reportLogger.getLines(), true);
+                return finalResults;
             } catch (RepositoryException e) {
                 Utils.log("", Utils.LOG_LEVEL.ERROR, logger, e, externalLogger);
             } catch (InterruptedScanException e) {
                 Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
                 // Stopped while the nodes to scan were counted, so before any node was checked: the results record the interrupted scan
-                final ContentIntegrityResults results = new ContentIntegrityResults(start, System.currentTimeMillis() - start, workspace, new ArrayList<>(), new ArrayList<>()).setInterrupted(true);
-                storeErrorsInCache(results);
-                return results;
+                finalResults = new ContentIntegrityResults(start, System.currentTimeMillis() - start, workspace, new ArrayList<>(), new ArrayList<>()).setInterrupted(true);
+                if (reportLogger != null) saveResults(finalResults, reportLogger.getLines(), true);
+                return finalResults;
             }
         } finally {
+            // A scan which ended without results failed: its report keeps the log which tells why
+            if (reportLogger != null && finalResults == null) {
+                reportLogger.getReport().setStatus(ContentIntegrityResults.Status.FAILED);
+                reportLogger.flush();
+            }
             JcrSessionFilter.endRequest();
             System.clearProperty(INTERRUPT_PROP_NAME);
             semaphore.release();
@@ -569,14 +576,32 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public void storeErrorsInCache(ContentIntegrityResults results) {
-        final Element element = new Element(results.getID(), results);
-        errorsCache.put(element);
+    public boolean saveResults(ContentIntegrityResults results, List<String> executionLog, boolean withErrors) {
+        final boolean saved = ResultsStore.save(results, executionLog, withErrors);
+        if (withErrors) loadedResults.put(results.getID(), results);
+        return saved;
     }
 
     @Override
+    public void saveFixedErrors(ContentIntegrityResults results) {
+        ResultsStore.saveFixedErrors(results);
+    }
+
+    @Override
+    @Deprecated
+    public void storeErrorsInCache(ContentIntegrityResults results) {
+        saveFixedErrors(results);
+    }
+
+    @Override
+    @Deprecated
     public void removeErrorsFromCache(ContentIntegrityResults results) {
-        errorsCache.remove(results.getID());
+        loadedResults.remove(results.getID());
+    }
+
+    @Override
+    public List<ContentIntegrityResultsSummary> getResultsSummaries() {
+        return ResultsStore.list();
     }
 
     @Override
@@ -585,24 +610,42 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public ContentIntegrityResults getTestResults(String testDate) {
-        final List<String> keys = getTestIDs();
-        if (CollectionUtils.isEmpty(keys)) return null;
-        if (StringUtils.isNotBlank(testDate)) {
-            final Element element = errorsCache.get(testDate);
-            return element == null ? null : (ContentIntegrityResults) element.getObjectValue();
+    public ContentIntegrityResults getTestResults(String testID) {
+        final String id;
+        if (StringUtils.isNotBlank(testID)) {
+            id = testID;
+        } else {
+            // The latest results with errors to read: those of a scan which is over
+            final List<ContentIntegrityResultsSummary> summaries = getResultsSummaries();
+            id = summaries.stream()
+                    .filter(s -> s.getStatus() == ContentIntegrityResults.Status.FINISHED || s.getStatus() == ContentIntegrityResults.Status.INTERRUPTED)
+                    .reduce((a, b) -> b)
+                    .map(ContentIntegrityResultsSummary::getID)
+                    .orElse(null);
+            if (id == null) return null;
         }
-        final TreeMap<Long, String> testDates = keys.stream().collect(Collectors.toMap(k -> ((ContentIntegrityResults) errorsCache.get(k).getObjectValue()).getTestDate(), Function.identity(), throwingMerger(), TreeMap::new));
-        return (ContentIntegrityResults) errorsCache.get(testDates.lastEntry().getValue()).getObjectValue();
+
+        final ContentIntegrityResults loaded = loadedResults.get(id);
+        if (loaded != null) {
+            // Another server may have fixed some errors since they were read
+            final Set<String> fixedErrors = ResultsStore.loadFixedErrors(id);
+            loaded.getErrors().stream().filter(e -> !e.isFixed() && fixedErrors.contains(e.getErrorID())).forEach(e -> e.setFixed(true));
+            return loaded;
+        }
+        final ContentIntegrityResults results = ResultsStore.load(id, this::getContentIntegrityCheck);
+        // The results of a scan which runs change until its end
+        if (results != null && results.getStatus() != ContentIntegrityResults.Status.RUNNING) loadedResults.put(id, results);
+        return results;
     }
 
-    private static <T> BinaryOperator<T> throwingMerger() {
-        return (u, v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); };
+    @Override
+    public List<String> getExecutionLog(String testID) {
+        return ResultsStore.loadExecutionLog(testID);
     }
 
     @Override
     public List<String> getTestIDs() {
-        return errorsCache.getKeys();
+        return getResultsSummaries().stream().map(ContentIntegrityResultsSummary::getID).collect(Collectors.toList());
     }
 
     @Override

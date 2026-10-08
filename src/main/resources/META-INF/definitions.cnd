@@ -11,5 +11,10 @@
 - integrity:duration (string) protected
 - integrity:countByErrorType (string, textarea) protected
 - integrity:executionLog (string, textarea) protected
+- integrity:resultsId (string) protected
+- integrity:status (string) protected < 'running', 'finished', 'interrupted', 'failed'
+- integrity:serverId (string) protected
+- integrity:importErrorsCount (long) protected
+- integrity:fixedErrors (string) protected multiple
 
 [jnt:contentIntegrityAdminPanel] > jnt:content, jmix:structuredContent, jmix:studioOnly
