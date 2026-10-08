@@ -1,3 +1,5 @@
+import {graphql} from './integrity';
+
 /**
  * The administration page of the module, and its dialogs. The labels are the English ones.
  */
@@ -19,6 +21,12 @@ export const visitAdmin = (user?: { username: string; password: string }): void 
 
 export const getDialog = (title: string): Cypress.Chainable<JQuery<HTMLElement>> =>
     cy.contains('[role=dialog]', title).should('be.visible');
+
+/**
+ * The card of the scan which runs. It is displayed only while a scan runs.
+ */
+export const getCurrentScanCard = (): Cypress.Chainable<JQuery<HTMLElement>> =>
+    cy.contains('#ci-exec-title', 'Scan in progress', {timeout: 30000}).closest('section');
 
 export const getResultsTable = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.get('[aria-label="Integrity errors"]', {timeout: 30000});
 
@@ -81,6 +89,19 @@ export const closeMenu = (): void => {
 /**
  * Selects an item of a dropdown. The items are displayed above the page, outside of the dropdown.
  */
+/**
+ * The label of results in the Scan dropdown: the date of their scan and its workspace. The date is
+ * formatted by this browser, as the page does.
+ */
+export const getScanLabel = (resultsId: string): Cypress.Chainable<string> =>
+    graphql('{ integrity: contentIntegrity { scanResults: scanResultsSummaries { id startDate workspace } } }')
+        .then(data => {
+            const summary = data.integrity.scanResults.find((s: { id: string }) => s.id === resultsId);
+            expect(summary, `Results ${resultsId}`).to.exist;
+            const workspace = summary.workspace === 'all-workspaces' ? 'All workspaces' : summary.workspace;
+            return `${new Date(summary.startDate).toLocaleString('en')} · ${workspace}`;
+        });
+
 export const selectInDropdown = (label: string, item: string | RegExp): void => {
     openDropdown(label);
     getMenuItem(item).click();

@@ -62,7 +62,7 @@ public class Utils {
     private static final String REPORTS_FOLDER_PARENT_PATH = "/sites/systemsite/files";
     private static final String PRIVILEGED_GROUP_PRINCIPAL = "g:" + JahiaGroupManagerService.PRIVILEGED_GROUPNAME;
     private static final String PRIVILEGED_ROLE = "privileged";
-    private static final String ALL_WORKSPACES = "all-workspaces";
+    public static final String ALL_WORKSPACES = "all-workspaces";
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
     private static final List<Report> reportGenerators = Arrays.asList(new CsvReport(), new ExcelReport());
     public static final String JAVA_ERROR_PREFIX = "[java error]";
@@ -414,7 +414,8 @@ public class Utils {
                 .collect(Collectors.toList());
         final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).flatMap(List::stream).collect(Collectors.toList());
 
-        final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
+        final boolean interrupted = results.stream().anyMatch(ContentIntegrityResults::isInterrupted);
+        final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog).setInterrupted(interrupted);
         contentIntegrityService.storeErrorsInCache(mergedResults);
         return mergedResults;
     }

@@ -1,22 +1,24 @@
 import {graphql, readExecution, registerSlowCheck, startScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
-import {getDialog, visitAdmin} from '../../support/adminPage';
+import {getCurrentScanCard, getDialog, visitAdmin} from '../../support/adminPage';
 
 // About 15 seconds with CiSlowCheck: long enough to act while the scan runs
 const SLOW_ROOT = '/sites/systemsite';
 
-const getExecutionCard = (title: string): Cypress.Chainable<JQuery<HTMLElement>> =>
-    cy.contains('#ci-exec-title', title, {timeout: 30000}).closest('section');
-
 /**
- * Stops the scan and expects the page to display it as stopped, with the end of its logs.
+ * Stops the scan and expects the page to remove its card, which is displayed only while a scan runs. A scan stopped
+ * once its progress is logged has stored the errors found until then: the page displays it as interrupted, without
+ * its errors.
  */
-const stopFromThePage = (): void => {
+const stopFromThePage = (isScanInProgress = false): void => {
     cy.contains('button', 'Stop').click();
-    getExecutionCard('Last scan').within(() => {
-        cy.contains('Stopped', {timeout: 30000}).should('be.visible');
-        cy.contains('button', 'Show the logs').click();
-        cy.get('[role=log]').should('contain.text', 'Scan interrupted before the end');
-    });
+    cy.get('#ci-exec-title', {timeout: 30000}).should('not.exist');
+    if (isScanInProgress) {
+        cy.get('#ci-scan-status').should('have.text', 'Interrupted');
+        cy.contains('The scan was interrupted before its end, so its errors are not displayed.').should('be.visible');
+        cy.get('#ci-filters').should('not.exist');
+        cy.get('[aria-label="Integrity errors"]').should('not.exist');
+    }
+
     cy.contains('button', 'Stop').should('not.exist');
     cy.contains('button', 'New scan').should('not.be.disabled');
 };
@@ -45,26 +47,28 @@ describe('Scan execution in the administration page', () => {
             cy.get('#ci-check-CiSlowCheck').click({force: true});
             cy.contains('button', 'Run the scan').click();
         });
-        getExecutionCard('Scan in progress').within(() => {
-            cy.contains('Running').should('be.visible');
+        getCurrentScanCard().within(() => {
+            cy.contains(/^Started on /).should('be.visible');
             cy.contains('It continues in the background if you leave this page').should('be.visible');
             // The logs are displayed while the scan runs, and follow its progress
             cy.get('[role=log]').should('contain.text', 'Scan progress');
         });
         // A single scan can run at a time
         cy.contains('button', 'New scan').should('be.disabled');
-        stopFromThePage();
+        stopFromThePage(true);
     });
 
     it('follows the scan which runs when the page is opened', () => {
         startScan({startNode: SLOW_ROOT, checks: ['CiSlowCheck']}).then(id => {
             visitAdmin();
-            getExecutionCard('Scan in progress').within(() => {
-                cy.contains('Running').should('be.visible');
-                cy.contains(id).should('be.visible');
+            getCurrentScanCard().within(() => {
+                cy.contains(/^Started on /).should('be.visible');
             });
             stopFromThePage();
-            readExecution(id).its('status').should('equal', 'interrupted');
+            readExecution(id).then(execution => {
+                expect(execution.status).to.equal('interrupted');
+                expect(execution.logs.join('\n')).to.contain('Scan interrupted before the end');
+            });
         });
     });
 });

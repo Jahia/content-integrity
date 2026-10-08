@@ -23,6 +23,7 @@ import org.jahia.services.usermanager.JahiaUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ public class GqlIntegrityScan {
     private static final Map<String, List<String>> executionLog = new HashMap<>();
     private static final Map<String, List<ContentIntegrityReport>> executionReports = new HashMap<>();
     private static final Map<String, String> scanResults = new HashMap<>();
+    private static final Map<String, Instant> executionStart = new HashMap<>();
     // The executions asked to stop: they stay RUNNING until their scan has actually ended
     private static final Set<String> stopRequests = ConcurrentHashMap.newKeySet();
     private static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
@@ -107,6 +109,7 @@ public class GqlIntegrityScan {
         final boolean skipMountPointsValue = Boolean.TRUE.equals(skipMountPoints);
         final boolean uploadResultsValue = Boolean.TRUE.equals(uploadResults);
         id = generateExecutionID();
+        executionStart.put(id, Instant.now());
         executionStatus.put(id, Status.RUNNING);
         final List<String> output = new ArrayList<>();
         executionLog.put(id, output);
@@ -134,11 +137,27 @@ public class GqlIntegrityScan {
                     if (contentIntegrityResults != null)
                         results.add(contentIntegrityResults.setExecutionID(id));
                 }
-                final ContentIntegrityResults mergedResults = Utils.mergeResults(results);
-                if (mergedResults == null || CollectionUtils.isEmpty(mergedResults.getErrors())) {
-                    console.logLine(NO_ERROR_FOUND);
-                } else {
+                ContentIntegrityResults mergedResults = Utils.mergeResults(results);
+                if (mergedResults == null && stopRequests.contains(id)) {
+                    // Stopped before its first workspace was scanned: the results record the interrupted scan
+                    final String scannedWorkspace = workspaces.size() == 1 ? workspaces.get(0) : Utils.ALL_WORKSPACES;
+                    mergedResults = new ContentIntegrityResults(executionStart.get(id).toEpochMilli(), 0L, scannedWorkspace, new ArrayList<>(), new ArrayList<>())
+                            .setInterrupted(true).setExecutionID(id);
+                    service.storeErrorsInCache(mergedResults);
+                }
+                // Results without error are stored too: the client displays them as the outcome of the scan
+                if (mergedResults != null) {
+                    // Stopped between two workspaces, the scan has not covered the next ones
+                    if (stopRequests.contains(id) && !mergedResults.isInterrupted()) {
+                        service.storeErrorsInCache(mergedResults.setInterrupted(true));
+                    }
                     scanResults.put(id, mergedResults.getID());
+                }
+                final boolean interrupted = mergedResults != null && mergedResults.isInterrupted();
+                if (mergedResults == null || CollectionUtils.isEmpty(mergedResults.getErrors())) {
+                    // An interrupted scan has not checked all the content: finding no error proves nothing
+                    if (!interrupted) console.logLine(NO_ERROR_FOUND);
+                } else {
                     final int nbErrors = mergedResults.getErrors().size();
                     final String details = workspaces.size() == 1 ?
                             StringUtils.EMPTY :
@@ -192,6 +211,13 @@ public class GqlIntegrityScan {
     @GraphQLName("id")
     public String getID() {
         return id;
+    }
+
+    @GraphQLField
+    @GraphQLName("startDate")
+    @GraphQLDescription("Date at which the scan was started, in the ISO-8601 format")
+    public String getStartDate() {
+        return Optional.ofNullable(executionStart.get(id)).map(Instant::toString).orElse(null);
     }
 
     @GraphQLField

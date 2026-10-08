@@ -1,30 +1,34 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Add, Button, Cancel, Header, Reload} from '@jahia/moonstone';
+import {Add, Button, Cancel, Header, Reload, Typography} from '@jahia/moonstone';
 import {PageLayout} from './common/PageLayout';
 import {NewScanDialog} from './scan/NewScanDialog';
-import {ExecutionCard} from './scan/ExecutionCard';
+import {CurrentScanCard} from './scan/CurrentScanCard';
 import {RUNNING, useScanExecution} from './scan/useScanExecution';
 import {ResultsPanel} from './results/ResultsPanel';
 import styles from './ContentIntegrity.scss';
 
 /*
  * One page, no tabs: the results are the main content, a scan is configured in a dialog opened from
- * the header, and the scan of this session is followed in a card above the results.
+ * the header, and a scan which runs is followed in a card above the results.
  */
 export const ContentIntegrityAdmin = () => {
     const {t} = useTranslation('content-integrity');
     const {execution, isRunning, isStarting, error, start, stop} = useScanExecution();
     const [isDialogOpen, setDialogOpen] = useState(false);
     const [requestedResultsId, setRequestedResultsId] = useState(null);
-    const [displayedResultsId, setDisplayedResultsId] = useState(null);
     const [refreshCount, setRefreshCount] = useState(0);
 
-    // When the followed scan ends, display its results.
+    // When the followed scan ends, display its results. A scan which stored none (failed, or no check
+    // selected) still refreshes the results card, so that it never shows a state older than the scan.
     const previousStatus = useRef(execution.status);
     useEffect(() => {
-        if (previousStatus.current === RUNNING && execution.status !== RUNNING && execution.resultsID) {
-            setRequestedResultsId(execution.resultsID);
+        if (previousStatus.current === RUNNING && execution.status !== RUNNING) {
+            if (execution.resultsID) {
+                setRequestedResultsId(execution.resultsID);
+            } else {
+                setRefreshCount(c => c + 1);
+            }
         }
 
         previousStatus.current = execution.status;
@@ -63,16 +67,12 @@ export const ContentIntegrityAdmin = () => {
             content={(
                 <div className={styles.root}>
                     <div className={styles.panel}>
-                        <ExecutionCard execution={execution}
-                                       isRunning={isRunning}
-                                       error={error}
-                                       displayedResultsId={displayedResultsId}
-                                       onShowResults={setRequestedResultsId}/>
+                        {isRunning && <CurrentScanCard execution={execution}/>}
+                        {error && <Typography className={styles.error} role="alert">{error}</Typography>}
                         <ResultsPanel requestedResultsId={requestedResultsId}
                                       refreshCount={refreshCount}
                                       isScanLocked={locked}
                                       onRequestConsumed={clearRequest}
-                                      onResultsChange={setDisplayedResultsId}
                                       onNewScan={openDialog}/>
                     </div>
                     <NewScanDialog isOpen={isDialogOpen}

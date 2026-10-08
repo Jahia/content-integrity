@@ -1,4 +1,7 @@
+const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
+const {DefinePlugin} = require('webpack');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -22,6 +25,14 @@ Object.entries({
 // Jahia 8.1 shares react-apollo 3 for its UI and Jahia 8.2 @apollo/client 3: the module bundles @apollo/client and
 // provides its own client (src/javascript/ContentIntegrity/common/apolloClient.js).
 delete moduleFederationConfig.shared['@apollo/client'];
+
+// The checksum of each locale file. The app-shell requests a namespace listed in window.jahia.localeFiles as
+// locales/<lang>.v<checksum>.json, which its URL rewriting serves as locales/<lang>.json: an upgrade of the module
+// changes the URL, so a browser never keeps the labels of the previous version in its cache.
+const localesDir = path.resolve(__dirname, 'src/main/resources/javascript/locales');
+const localeFiles = Object.fromEntries(fs.readdirSync(localesDir)
+    .filter(file => file.endsWith('.json'))
+    .map(file => [file, crypto.createHash('md5').update(fs.readFileSync(path.join(localesDir, file))).digest('hex')]));
 
 module.exports = (env, argv) => {
     const config = {
@@ -80,6 +91,7 @@ module.exports = (env, argv) => {
             // React, Moonstone and i18next are shared singletons provided by the running Jahia (import: false),
             // never bundled here. Apollo is not: see moduleFederationConfig below.
             new ModuleFederationPlugin(moduleFederationConfig),
+            new DefinePlugin({CONTENT_INTEGRITY_LOCALE_FILES: JSON.stringify(localeFiles)}),
             new CopyWebpackPlugin({
                 patterns: [
                     {from: 'package.json', to: ''}

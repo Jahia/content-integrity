@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, runFixture, scan, ScanResults} from '../../support/integrity';
-import {getResultsTable, getRow, openRowMenu, getMenuItem, clearFilters, visitAdmin} from '../../support/adminPage';
+import {getResultsTable, getRow, openRowMenu, getMenuItem, visitAdmin} from '../../support/adminPage';
 
 // The access to the module, adminContentIntegrity, allows to scan and to read the results. Fixing the errors writes to the
 // repository with a system session, so it requires its own permission, adminContentIntegrityFix, which the first one
@@ -82,7 +82,6 @@ describe('Permission to fix the errors', () => {
 
     it('offers no fix in the administration page to a user without the permission', () => {
         visitAdmin(VIEWER);
-        clearFilters();
         getResultsTable().should('be.visible');
         cy.contains('button', 'Fix all').should('not.exist');
         openRowMenu(`${LOCKS}/inconsistent-lock`);
@@ -97,7 +96,6 @@ describe('Permission to fix the errors', () => {
 
     it('offers the fix in the administration page to a user with the permission', () => {
         visitAdmin(FIXER);
-        clearFilters();
         cy.contains('button', 'Fix all').should('be.visible');
         openRowMenu(`${LOCKS}/inconsistent-lock`);
         getMenuItem(/^Fix$/).click();

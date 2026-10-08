@@ -48,6 +48,12 @@
     },
     "results": {
       "scan": "Scan",
+      "scanOption": "{{date}} · {{workspace}}",
+      "allWorkspaces": "All workspaces",
+      "status": {
+        "finished": "Finished",
+        "interrupted": "Interrupted"
+      },
       "columns": "Columns",
       "columnsCount": "Displayed columns: {{count}}",
       "refresh": "Refresh",
@@ -56,6 +62,8 @@
       "noResults": "Run a scan to check the integrity of the content. Its results are displayed here.",
       "errorCount": "Errors: {{count}}",
       "errorCountFiltered": "Errors: {{count}} (total: {{total}})",
+      "noError": "No error found by this scan.",
+      "interruptedScan": "The scan was interrupted before its end, so its errors are not displayed. Run a new scan to check all the content.",
       "tableLabel": "Integrity errors",
       "details": "Error details",
       "rowsPerPage": "Errors per page",
@@ -91,16 +99,8 @@
     },
     "execution": {
       "current": "Scan in progress",
-      "last": "Last scan",
-      "runningHelper": "Scan {{id}}. It continues in the background if you leave this page.",
-      "id": "Scan {{id}}",
-      "showResults": "Show its results",
-      "status": {
-        "running": "Running",
-        "finished": "Finished",
-        "interrupted": "Stopped",
-        "failed": "Failed"
-      },
+      "startedOn": "Started on {{date}}",
+      "background": "It continues in the background if you leave this page.",
       "showLogs": "Show the logs",
       "hideLogs": "Hide the logs"
     },

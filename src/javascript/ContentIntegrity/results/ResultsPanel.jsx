@@ -5,6 +5,7 @@ import {useTranslation} from 'react-i18next';
 import {
     Add,
     Button,
+    Chip,
     Close,
     Dropdown,
     Loader,
@@ -29,6 +30,11 @@ import {ReportLinks} from '../common/ReportLinks';
 import styles from '../ContentIntegrity.scss';
 
 const ALL = '__all__';
+const ALL_WORKSPACES = 'all-workspaces';
+const STATUS_COLORS = {finished: 'success', interrupted: 'warning'};
+const NO_FILTERS = {};
+// The default filter shows only the errors which block an XML import, when there are some: otherwise it would hide all of them
+const defaultFiltersOf = summary => (summary?.importErrorCount > 0 ? DEFAULT_FILTERS : NO_FILTERS);
 const EMPTY = '__empty__';
 const toOptionValue = name => (name === null || name === undefined || name === '' ? EMPTY : String(name));
 const fromOptionValue = value => (value === EMPTY ? '' : value);
@@ -66,15 +72,17 @@ FilterDropdown.propTypes = {
     onChange: PropTypes.func.isRequired
 };
 
-export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, onRequestConsumed, onResultsChange, onNewScan}) => {
-    const {t} = useTranslation('content-integrity');
+export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, onRequestConsumed, onNewScan}) => {
+    const {t, i18n} = useTranslation('content-integrity');
     const list = useQuery(GET_SCAN_RESULTS_LIST, {fetchPolicy: 'network-only'});
-    const ids = useMemo(() => list.data?.integrity?.scanResults || [], [list.data]);
+    const summaries = useMemo(() => list.data?.integrity?.scanResults || [], [list.data]);
+    const ids = useMemo(() => summaries.map(s => s.id), [summaries]);
 
     const [resultsId, setResultsId] = useState(null);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
-    const [filters, setFilters] = useState(DEFAULT_FILTERS);
+    // The filters belong to the displayed results: other results start again from their own default filters
+    const [filterState, setFilterState] = useState({resultsId: null, filters: NO_FILTERS});
     const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
     const [detailsId, setDetailsId] = useState(null);
 
@@ -99,13 +107,19 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
 
     useEffect(() => {
         setPage(1);
-        setFilters(DEFAULT_FILTERS);
-        onResultsChange(resultsId);
-    }, [resultsId, onResultsChange]);
+    }, [resultsId]);
 
+    const selectedSummary = summaries.find(s => s.id === resultsId);
+    const filters = filterState.resultsId === resultsId ? filterState.filters : defaultFiltersOf(selectedSummary);
+    const setFilters = update => setFilterState({resultsId, filters: typeof update === 'function' ? update(filters) : update});
+    // The errors of an interrupted scan do not cover all the content: they are not displayed, so not read.
+    // A scan without error has nothing to filter: only its outcome is displayed.
+    const isInterrupted = selectedSummary?.status === 'interrupted';
+    const hasErrors = selectedSummary?.errorCount > 0;
+    const showErrors = !isInterrupted && hasErrors;
     const filterArgs = useMemo(() => toFilterArgs(filters), [filters]);
     const results = useQuery(GET_SCAN_RESULTS, {
-        skip: !resultsId,
+        skip: !resultsId || !showErrors,
         fetchPolicy: 'network-only',
         variables: {
             id: resultsId,
@@ -167,7 +181,14 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
         );
     }
 
-    const resultsData = [...ids].reverse().map(id => ({value: id, label: id}));
+    // The latest results first, named by the date of their scan, which the ID only encodes
+    const resultsData = [...summaries].reverse().map(s => ({
+        value: s.id,
+        label: t('label.results.scanOption', {
+            date: new Date(s.startDate).toLocaleString(i18n.language),
+            workspace: s.workspace === ALL_WORKSPACES ? t('label.results.allWorkspaces') : s.workspace
+        })
+    }));
     const errorCount = details?.errorCount ?? 0;
     const totalErrorCount = details?.totalErrorCount ?? 0;
 
@@ -178,107 +199,123 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                 <div className={styles.toolbar}>
                     <div className={styles.filter}>
                         <Typography variant="caption" weight="semiBold" component="label">{t('label.results.scan')}</Typography>
-                        <Dropdown data={resultsData}
-                                  value={resultsId || undefined}
-                                  variant="outlined"
-                                  hasSearch={resultsData.length > 10}
-                                  onChange={(e, item) => setResultsId(item.value)}/>
-                    </div>
-                    {details && <ReportLinks isCompact reports={details.reports}/>}
-                    <div className={styles.spacer}/>
-                    <div className={styles.filter}>
-                        <Typography variant="caption" weight="semiBold" component="label">{t('label.results.columns')}</Typography>
-                        <Dropdown data={columnsData}
-                                  values={visibleColumns}
-                                  placeholder={t('label.results.columnsCount', {count: visibleColumns.length})}
-                                  variant="outlined"
-                                  onChange={(e, item) => setVisibleColumns(prev => (prev.includes(item.value) ?
-                                      prev.filter(k => k !== item.value) :
-                                      COLUMNS.map(c => c.key).filter(k => prev.includes(k) || k === item.value)))}/>
-                    </div>
-                </div>
-                <div id="ci-filters">
-                    <div className={styles.filters}>
-                        {FILTERABLE_COLUMNS.map(column => (
-                            <FilterDropdown key={column}
-                                            column={column}
-                                            values={possibleValues[column]}
-                                            active={filters[column]}
-                                            onChange={onFilterChange}/>
-                        ))}
-                    </div>
-                    {activeFilterCount > 0 && (
-                        <Button className={styles.clearFilters}
-                                label={t('label.results.clearFilters')}
-                                icon={<Close/>}
-                                variant="ghost"
-                                onClick={() => {
-                                    setFilters({});
-                                    setPage(1);
-                                }}/>
-                    )}
-                </div>
-
-                <div className={`${styles.sectionHeader} ${styles.resultsHeader}`}>
-                    <Typography variant="subheading" weight="bold">
-                        {errorCount === totalErrorCount ?
-                            t('label.results.errorCount', {count: errorCount}) :
-                            t('label.results.errorCountFiltered', {count: errorCount, total: totalErrorCount})}
-                    </Typography>
-                    {results.loading && <Loader size="small"/>}
-                    <div className={styles.spacer}/>
-                    {details && canFixErrors && (
-                        // Remounted when the results or the filters change, so that the outcome of a fix all is not shown for other errors
-                        <FixAllAction key={`${resultsId}|${filterArgs.join('|')}`}
-                                      resultsId={resultsId}
-                                      filterArgs={filterArgs}
-                                      errorCount={errorCount}
-                                      onFixed={refetchResults}/>
-                    )}
-                </div>
-                {results.error && <Typography className={styles.error}>{results.error.message}</Typography>}
-                {details && (
-                    <>
-                        <div className={styles.tableWrapper}>
-                            <Table className={styles.table} aria-label={t('label.results.tableLabel')}>
-                                <TableHead>
-                                    <TableRow>
-                                        {columns.map(c => <TableHeadCell key={c.key} width={c.width}>{t(`label.column.${c.key}`)}</TableHeadCell>)}
-                                        <TableHeadCell width="140px"><span className={styles.srOnly}>{t('label.results.actions')}</span></TableHeadCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {(details.errors || []).map(error => (
-                                        <TableRow key={error.id} hasMultipleLines>
-                                            {columns.map(c => (
-                                                <TableBodyCell key={c.key} className={styles.cell} width={c.width} title={String(formatCell(error[c.key]))}>
-                                                    {c.jcrLink ? (
-                                                        <JcrBrowserLink uuid={error.nodeId} workspace={error.workspace}>
-                                                            {formatCell(error[c.key])}
-                                                        </JcrBrowserLink>
-                                                    ) : formatCell(error[c.key])}
-                                                </TableBodyCell>
-                                            ))}
-                                            <TableBodyCell width="140px">
-                                                <RowActions error={error} state={fixStates[error.id]} canFixErrors={canFixErrors} onFix={fix} onOpenDetails={setDetailsId}/>
-                                            </TableBodyCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                        <div className={styles.scanSelector}>
+                            <Dropdown className={styles.scanDropdown}
+                                      data={resultsData}
+                                      value={resultsId || undefined}
+                                      variant="outlined"
+                                      hasSearch={resultsData.length > 10}
+                                      onChange={(e, item) => setResultsId(item.value)}/>
+                            {selectedSummary && (
+                                <Chip id="ci-scan-status"
+                                      label={t(`label.results.status.${selectedSummary.status}`, selectedSummary.status)}
+                                      color={STATUS_COLORS[selectedSummary.status] || 'default'}/>
+                            )}
                         </div>
-                        {errorCount > 0 && (
-                            <TablePagination totalNumberOfRows={errorCount}
-                                             currentPage={page}
-                                             rowsPerPage={pageSize}
-                                             rowsPerPageOptions={PAGE_SIZES}
-                                             label={{rowsPerPage: t('label.results.rowsPerPage'), of: t('label.results.of')}}
-                                             onPageChange={setPage}
-                                             onRowsPerPageChange={size => {
-                                                 setPageSize(size);
-                                                 setPage(1);
-                                             }}/>
+                    </div>
+                    {showErrors && details && <ReportLinks reports={details.reports}/>}
+                    <div className={styles.spacer}/>
+                    {showErrors && (
+                        <div className={styles.filter}>
+                            <Typography variant="caption" weight="semiBold" component="label">{t('label.results.columns')}</Typography>
+                            <Dropdown data={columnsData}
+                                      values={visibleColumns}
+                                      placeholder={t('label.results.columnsCount', {count: visibleColumns.length})}
+                                      variant="outlined"
+                                      onChange={(e, item) => setVisibleColumns(prev => (prev.includes(item.value) ?
+                                          prev.filter(k => k !== item.value) :
+                                          COLUMNS.map(c => c.key).filter(k => prev.includes(k) || k === item.value)))}/>
+                        </div>
+                    )}
+                </div>
+                {isInterrupted && <Typography className={styles.noError}>{t('label.results.interruptedScan')}</Typography>}
+                {!isInterrupted && !hasErrors && <Typography className={styles.noError}>{t('label.results.noError')}</Typography>}
+                {showErrors && (
+                    <>
+                    <div id="ci-filters">
+                        <div className={styles.filters}>
+                            {FILTERABLE_COLUMNS.map(column => (
+                                <FilterDropdown key={column}
+                                                column={column}
+                                                values={possibleValues[column]}
+                                                active={filters[column]}
+                                                onChange={onFilterChange}/>
+                            ))}
+                        </div>
+                        {activeFilterCount > 0 && (
+                            <Button className={styles.clearFilters}
+                                    label={t('label.results.clearFilters')}
+                                    icon={<Close/>}
+                                    variant="ghost"
+                                    onClick={() => {
+                                        setFilters({});
+                                        setPage(1);
+                                    }}/>
                         )}
+                    </div>
+
+                    <div className={`${styles.sectionHeader} ${styles.resultsHeader}`}>
+                        <Typography variant="subheading" weight="bold">
+                            {errorCount === totalErrorCount ?
+                                t('label.results.errorCount', {count: errorCount}) :
+                                t('label.results.errorCountFiltered', {count: errorCount, total: totalErrorCount})}
+                        </Typography>
+                        {results.loading && <Loader size="small"/>}
+                        <div className={styles.spacer}/>
+                        {details && canFixErrors && (
+                            // Remounted when the results or the filters change, so that the outcome of a fix all is not shown for other errors
+                            <FixAllAction key={`${resultsId}|${filterArgs.join('|')}`}
+                                          resultsId={resultsId}
+                                          filterArgs={filterArgs}
+                                          errorCount={errorCount}
+                                          onFixed={refetchResults}/>
+                        )}
+                    </div>
+                    {results.error && <Typography className={styles.error}>{results.error.message}</Typography>}
+                    {details && (
+                        <>
+                            <div className={styles.tableWrapper}>
+                                <Table className={styles.table} aria-label={t('label.results.tableLabel')}>
+                                    <TableHead>
+                                        <TableRow>
+                                            {columns.map(c => <TableHeadCell key={c.key} width={c.width}>{t(`label.column.${c.key}`)}</TableHeadCell>)}
+                                            <TableHeadCell width="140px"><span className={styles.srOnly}>{t('label.results.actions')}</span></TableHeadCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {(details.errors || []).map(error => (
+                                            <TableRow key={error.id} hasMultipleLines>
+                                                {columns.map(c => (
+                                                    <TableBodyCell key={c.key} className={styles.cell} width={c.width} title={String(formatCell(error[c.key]))}>
+                                                        {c.jcrLink ? (
+                                                            <JcrBrowserLink uuid={error.nodeId} workspace={error.workspace}>
+                                                                {formatCell(error[c.key])}
+                                                            </JcrBrowserLink>
+                                                        ) : formatCell(error[c.key])}
+                                                    </TableBodyCell>
+                                                ))}
+                                                <TableBodyCell width="140px">
+                                                    <RowActions error={error} state={fixStates[error.id]} canFixErrors={canFixErrors} onFix={fix} onOpenDetails={setDetailsId}/>
+                                                </TableBodyCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                            {errorCount > 0 && (
+                                <TablePagination totalNumberOfRows={errorCount}
+                                                 currentPage={page}
+                                                 rowsPerPage={pageSize}
+                                                 rowsPerPageOptions={PAGE_SIZES}
+                                                 label={{rowsPerPage: t('label.results.rowsPerPage'), of: t('label.results.of')}}
+                                                 onPageChange={setPage}
+                                                 onRowsPerPageChange={size => {
+                                                     setPageSize(size);
+                                                     setPage(1);
+                                                 }}/>
+                            )}
+                        </>
+                    )}
                     </>
                 )}
             </Card>
@@ -300,6 +337,5 @@ ResultsPanel.propTypes = {
     refreshCount: PropTypes.number.isRequired,
     isScanLocked: PropTypes.bool,
     onRequestConsumed: PropTypes.func.isRequired,
-    onResultsChange: PropTypes.func.isRequired,
     onNewScan: PropTypes.func.isRequired
 };

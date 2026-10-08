@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {clearFilters, closeMenu, getColumnLabels, getDialog, getDropdown, getFilters, getMenuItem, getResultsTable, getRow, openDropdown, selectInDropdown, visitAdmin} from '../../support/adminPage';
+import {clearFilters, closeMenu, getColumnLabels, getDialog, getDropdown, getFilters, getMenuItem, getResultsTable, getRow, getScanLabel, openDropdown, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiResultsTable';
 const CHECKS = ['JCRLanguagePropertyCheck', 'LockSanityCheck', 'PagesSanityCheck'];
@@ -37,7 +37,7 @@ describe('Results table', () => {
             const labels = cells.toArray().map(c => c.innerText.trim());
             expect(labels).to.deep.equal(['Check name', 'Error type', 'Workspace', 'Path', 'Message', 'Actions']);
         });
-        getDropdown('Scan').should('contain.text', resultsId);
+        getScanLabel(resultsId).then(label => getDropdown('Scan').should('contain.text', label));
     });
 
     it('adds and removes columns, which keep their order', () => {
@@ -72,17 +72,19 @@ describe('Results table', () => {
     it('lists the results of a new scan once the page is refreshed', () => {
         getResultsTable().should('be.visible');
         scan(`/sites/${SITE}/contents/locks`, ['LockSanityCheck']).then(results => {
-            openDropdown('Scan');
-            getMenuItem(resultsId);
-            cy.contains('li.moonstone-menuItem', results.resultsId).should('not.exist');
-            closeMenu();
-            cy.contains('button', 'Refresh').click();
-            // The new results are listed, the displayed ones stay selected
-            getDropdown('Scan').should('contain.text', resultsId);
-            selectInDropdown('Scan', results.resultsId);
-            getDropdown('Scan').should('contain.text', results.resultsId);
-            // The default filter applies again to other results, and hides the lock errors
-            clearFilters();
+            getScanLabel(resultsId).then(displayed => getScanLabel(results.resultsId).then(added => {
+                openDropdown('Scan');
+                getMenuItem(displayed);
+                cy.contains('li.moonstone-menuItem', added).should('not.exist');
+                closeMenu();
+                cy.contains('button', 'Refresh').click();
+                // The new results are listed, the displayed ones stay selected
+                getDropdown('Scan').should('contain.text', displayed);
+                selectInDropdown('Scan', added);
+                getDropdown('Scan').should('contain.text', added);
+            }));
+            // Other results start from their own default filters: no lock error blocks an XML import, so none applies
+            getDropdown('Impact on XML import').should('contain.text', 'All');
             getRow(INCONSISTENT_LOCK).should('exist');
         });
     });

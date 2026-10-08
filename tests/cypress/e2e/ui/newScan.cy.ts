@@ -1,10 +1,11 @@
 import {createTestSite, deleteTestSite, graphql, readExecution, resetCheckConfiguration, runFixture, scan} from '../../support/integrity';
-import {clearFilters, getDialog, getDropdown, getMenuItem, getResultsTable, selectInDropdown, visitAdmin} from '../../support/adminPage';
+import {getDialog, getDropdown, getMenuItem, getResultsTable, getScanLabel, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiNewScan';
 const ROOT = `/sites/${SITE}/contents/locks`;
 const INCONSISTENT_LOCK = `${ROOT}/inconsistent-lock`;
 const LOCKED_TRANSLATION = `${ROOT}/deletion-lock-on-translation/j:translation_en`;
+const NOT_LOCKED = `${ROOT}/not-locked`;
 
 const openNewScanDialog = (): void => {
     cy.contains('button', 'New scan').click();
@@ -145,16 +146,16 @@ describe('New scan', () => {
                 skipMP: true
             });
         });
-        // The lock errors do not block an XML import, so the default filter hides them
-        cy.contains('Errors: 0 (total: 2)', {timeout: 60000}).should('be.visible');
-        clearFilters();
+        // No lock error blocks an XML import, so the default filter on the impact on XML import does not apply
+        cy.contains(/^Errors: 2$/, {timeout: 60000}).should('be.visible');
+        getDropdown('Impact on XML import').should('contain.text', 'All');
         getResultsTable().within(() => {
             cy.contains(LOCKED_TRANSLATION).should('exist');
             cy.contains(INCONSISTENT_LOCK).should('not.exist');
         });
     });
 
-    it('runs a scan, displays its results and its reports, then displays them again from the last scan', () => {
+    it('runs a scan, displays its results and its reports, then other results', () => {
         openNewScanDialog();
         getDialog('New integrity scan').within(() => {
             cy.get('#ci-root-node').clear().type(ROOT);
@@ -162,22 +163,18 @@ describe('New scan', () => {
             cy.get('#ci-check-LockSanityCheck').click({force: true});
             cy.contains('button', 'Run the scan').click();
         });
-        cy.contains('Errors: 0 (total: 3)', {timeout: 60000}).should('be.visible');
-        clearFilters();
-        cy.contains('Errors: 3').should('be.visible');
+        cy.contains(/^Errors: 3$/, {timeout: 60000}).should('be.visible');
         getResultsTable().within(() => {
             cy.contains(INCONSISTENT_LOCK).should('exist');
             cy.contains(LOCKED_TRANSLATION).should('exist');
         });
-        cy.contains('Last scan').parents('section').first().within(() => {
-            cy.contains('Finished').should('be.visible');
-            // The results card displays this scan, so its card does not repeat the reports
-            cy.contains('button', 'Show its results').should('not.exist');
-        });
+        // The card of the scan is displayed only while it runs, its status is displayed next to its results
+        cy.get('#ci-exec-title').should('not.exist');
+        cy.get('#ci-scan-status').should('have.text', 'Finished');
 
         readExecution().then(execution => {
             const resultsId = execution.resultsID;
-            getDropdown('Scan').should('contain.text', resultsId);
+            getScanLabel(resultsId).then(label => getDropdown('Scan').should('contain.text', label));
             // The reports of the displayed results are offered next to the scan selector, and can be downloaded
             ['csv', 'xlsx'].forEach(extension => {
                 cy.contains('a', extension.toUpperCase())
@@ -186,14 +183,34 @@ describe('New scan', () => {
                     .then(href => cy.request(href as string).its('status').should('equal', 200));
             });
 
-            selectInDropdown('Scan', previousResultsId);
-            getDropdown('Scan').should('contain.text', previousResultsId);
-            cy.contains('Last scan').parents('section').first().within(() => {
-                cy.contains('a', `${resultsId}-full.csv`).should('be.visible');
-                cy.contains('button', 'Show its results').click();
+            getScanLabel(previousResultsId).then(label => {
+                selectInDropdown('Scan', label);
+                getDropdown('Scan').should('contain.text', label);
             });
-            getDropdown('Scan').should('contain.text', resultsId);
-            cy.contains('button', 'Show its results').should('not.exist');
+            // The reports are those of the displayed results
+            cy.get(`a[title="${resultsId}-full.csv"]`).should('not.exist');
+        });
+    });
+
+    it('displays a scan without error in place of the results displayed before', () => {
+        // The results displayed when the page opens are those of a scan with errors
+        getResultsTable().should('be.visible');
+        openNewScanDialog();
+        getDialog('New integrity scan').within(() => {
+            cy.get('#ci-root-node').clear().type(NOT_LOCKED);
+            cy.contains('button', 'Unselect all').click();
+            cy.get('#ci-check-LockSanityCheck').click({force: true});
+            cy.contains('button', 'Run the scan').click();
+        });
+        cy.contains('No error found by this scan.', {timeout: 60000}).should('be.visible');
+        cy.get('#ci-exec-title').should('not.exist');
+        // Nothing to filter: the default filter on the impact on XML import is not offered
+        cy.get('#ci-filters').should('not.exist');
+        cy.contains('label', 'Columns').should('not.exist');
+        getResultsTable().should('not.exist');
+        readExecution().then(execution => {
+            expect(execution.resultsID).to.not.be.null;
+            getScanLabel(execution.resultsID as string).then(label => getDropdown('Scan').should('contain.text', label));
         });
     });
 

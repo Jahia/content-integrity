@@ -111,6 +111,18 @@ public class GqlIntegrityService {
     }
 
     @GraphQLField
+    @GraphQLDescription("The stored results, from the oldest to the latest, with their date and their number of errors")
+    public Collection<GqlScanResultsSummary> getScanResultsSummaries() {
+        final ContentIntegrityService integrityService = Utils.getContentIntegrityService();
+        return integrityService.getTestIDs().stream()
+                .map(integrityService::getTestResults)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(ContentIntegrityResults::getTestDate))
+                .map(GqlScanResultsSummary::new)
+                .collect(Collectors.toList());
+    }
+
+    @GraphQLField
     public GqlScanResults getScanResultsDetails(@GraphQLName("id") String id, @GraphQLName("filters") Collection<String> filters) {
         final GqlScanResults results = new GqlScanResults(id, filters);
         return results.isValid() ? results : null;

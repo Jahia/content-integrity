@@ -48,6 +48,12 @@
     },
     "results": {
       "scan": "Analyse",
+      "scanOption": "{{date}} · {{workspace}}",
+      "allWorkspaces": "Tous les espaces de travail",
+      "status": {
+        "finished": "Terminée",
+        "interrupted": "Interrompue"
+      },
       "columns": "Colonnes",
       "columnsCount": "Colonnes affichées : {{count}}",
       "refresh": "Actualiser",
@@ -56,6 +62,8 @@
       "noResults": "Lancez une analyse pour vérifier l'intégrité du contenu. Ses résultats s'affichent ici.",
       "errorCount": "Erreurs : {{count}}",
       "errorCountFiltered": "Erreurs : {{count}} (sur {{total}})",
+      "noError": "Cette analyse n'a trouvé aucune erreur.",
+      "interruptedScan": "L'analyse a été interrompue avant la fin, ses erreurs ne sont donc pas affichées. Lancez une nouvelle analyse pour vérifier tout le contenu.",
       "tableLabel": "Erreurs d'intégrité",
       "details": "Détails de l'erreur",
       "rowsPerPage": "Erreurs par page",
@@ -91,16 +99,8 @@
     },
     "execution": {
       "current": "Analyse en cours",
-      "last": "Dernière analyse",
-      "runningHelper": "Analyse {{id}}. Elle se poursuit en arrière-plan si vous quittez cette page.",
-      "id": "Analyse {{id}}",
-      "showResults": "Afficher ses résultats",
-      "status": {
-        "running": "En cours",
-        "finished": "Terminée",
-        "interrupted": "Arrêtée",
-        "failed": "En échec"
-      },
+      "startedOn": "Lancée le {{date}}",
+      "background": "Elle se poursuit en arrière-plan si vous quittez cette page.",
       "showLogs": "Afficher le journal",
       "hideLogs": "Masquer le journal"
     },

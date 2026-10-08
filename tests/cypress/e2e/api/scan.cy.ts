@@ -19,11 +19,13 @@ describe('Scan API', () => {
         });
     });
 
-    it('reports a scan without error', () => {
+    it('reports a scan without error, and stores its empty results', () => {
         startScan({startNode: `${LOCKS}/not-locked`, checks: ['LockSanityCheck']}).then(id => waitForExecution(id)).then(execution => {
             expect(execution.status).to.equal('finished');
-            expect(execution.resultsID).to.be.null;
             expect(execution.logs.join('\n')).to.contain('No error found');
+            expect(execution.resultsID).to.not.be.null;
+            getErrors(execution.resultsID).should('be.empty');
+            graphql('{ integrity: contentIntegrity { scanResults } }').its('integrity.scanResults').should('include', execution.resultsID);
         });
     });
 
@@ -31,6 +33,16 @@ describe('Scan API', () => {
         scan(LOCKS, ['LockSanityCheck']).then(results => {
             expect(results.resultsId).to.match(/^default_/);
             graphql('{ integrity: contentIntegrity { scanResults } }').then(data => expect(data.integrity.scanResults).to.include(results.resultsId));
+            // The summaries carry the date of the scan, its workspace, its status and its number of errors
+            graphql('{ integrity: contentIntegrity { summaries: scanResultsSummaries { id startDate workspace status errorCount importErrorCount } } }').then(data => {
+                const summary = data.integrity.summaries.find((s: { id: string }) => s.id === results.resultsId);
+                expect(summary.workspace).to.equal('default');
+                expect(summary.status).to.equal('finished');
+                expect(summary.errorCount).to.equal(results.errors.length);
+                // No lock error blocks an XML import
+                expect(summary.importErrorCount).to.equal(0);
+                expect(Date.parse(summary.startDate)).to.be.within(Date.now() - 300000, Date.now() + 1000);
+            });
             graphql('query($id: String, $error: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errorCount totalErrorCount error: errorById(id: $error) { id errorType } } } }',
                 {id: results.resultsId, error: results.errors[0].id}).then(data => {
                 expect(data.integrity.results.errorCount).to.equal(results.errors.length);

@@ -155,6 +155,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             final JCRSessionWrapper session = JCRUtils.getSystemSession(workspace);
             if (session == null) return null;
 
+            final long start = System.currentTimeMillis();
             try {
                 if (!session.nodeExists(path)) {
                     Utils.log(String.format("The node %s does not exist in the workspace %s", path, session.getWorkspace().getName()), logger, externalLogger);
@@ -165,7 +166,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                         excludedPaths.stream().collect(Collectors.joining(" , ", " (excluded paths: ", " )")) : StringUtils.EMPTY;
                 Utils.log(String.format("Starting to check the integrity under %s in the workspace %s%s with %s", path, workspace, excludedPathsDesc, Utils.getContentIntegrityVersion()), logger, externalLogger);
                 final List<ContentIntegrityError> errors = new ArrayList<>();
-                final long start = System.currentTimeMillis();
                 resetCounters();
                 final Set<String> trimmedExcludedPaths = new HashSet<>();
                 if (CollectionUtils.isNotEmpty(excludedPaths)) {
@@ -193,7 +193,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     return null;
                 }
                 validateIntegrity(node, trimmedExcludedPaths, skipMountPoints, activeChecks, errors, externalLogger, fixErrors);
-                if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
+                final boolean interrupted = System.getProperty(INTERRUPT_PROP_NAME) != null;
+                if (interrupted) {
                     Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
                 }
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
@@ -212,13 +213,17 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 printChecksDuration(testDuration, activeChecks, externalLoggersArray);
                 Utils.validateImportCompatibility(errors, logger, externalLoggersArray);
                 Utils.detectLegacyErrorTypes(errors, logger, externalLoggersArray);
-                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors, summary);
+                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors, summary).setInterrupted(interrupted);
                 storeErrorsInCache(results);
                 return results;
             } catch (RepositoryException e) {
                 Utils.log("", Utils.LOG_LEVEL.ERROR, logger, e, externalLogger);
             } catch (InterruptedScanException e) {
                 Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
+                // Stopped while the nodes to scan were counted, so before any node was checked: the results record the interrupted scan
+                final ContentIntegrityResults results = new ContentIntegrityResults(start, System.currentTimeMillis() - start, workspace, new ArrayList<>(), new ArrayList<>()).setInterrupted(true);
+                storeErrorsInCache(results);
+                return results;
             }
         } finally {
             JcrSessionFilter.endRequest();

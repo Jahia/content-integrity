@@ -12,8 +12,8 @@ const extension = name => {
 };
 
 // Only the reports uploaded to the JCR can be downloaded from the browser.
-// The compact variant sits next to the scan selector, which already names the scan, so it shows only the format.
-export const ReportLinks = ({reports, isCompact}) => {
+// The links sit next to the scan selector, which already names the scan, so they show only the format.
+export const ReportLinks = ({reports}) => {
     const {t} = useTranslation('content-integrity');
     const files = (reports || []).filter(r => r.location === 'JCR' && r.uri);
     if (files.length === 0) {
@@ -21,11 +21,11 @@ export const ReportLinks = ({reports, isCompact}) => {
     }
 
     return (
-        <div className={isCompact ? styles.filter : styles.reports}>
-            <Typography variant={isCompact ? 'caption' : 'body'} weight="semiBold">
+        <div className={styles.filter}>
+            <Typography variant="caption" weight="semiBold">
                 {t('label.reports', {count: files.length})}
             </Typography>
-            <ul className={isCompact ? styles.reportListCompact : styles.reportList}>
+            <ul className={styles.reportList}>
                 {files.map(file => (
                     <li key={file.uri}>
                         <a className={styles.reportLink}
@@ -35,7 +35,7 @@ export const ReportLinks = ({reports, isCompact}) => {
                            title={file.name}
                         >
                             <Download/>
-                            <Typography variant="body" component="span">{isCompact ? extension(file.name) : file.name}</Typography>
+                            <Typography variant="body" component="span">{extension(file.name)}</Typography>
                         </a>
                     </li>
                 ))}
@@ -49,6 +49,5 @@ ReportLinks.propTypes = {
         name: PropTypes.string,
         location: PropTypes.string,
         uri: PropTypes.string
-    })),
-    isCompact: PropTypes.bool
+    }))
 };

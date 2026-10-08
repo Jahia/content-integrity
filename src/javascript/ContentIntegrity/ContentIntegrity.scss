@@ -254,20 +254,7 @@
     margin-top: var(--spacing-small);
 }
 
-.reports {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-nano);
-    margin-top: var(--spacing-small);
-}
-
 .reportList {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.reportListCompact {
     display: flex;
     align-items: center;
     gap: var(--spacing-medium);
@@ -492,6 +479,24 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-small);
+}
+
+// The scan selector and the status of the selected scan, on one line.
+.scanSelector {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+}
+
+// The menu of a dropdown is as wide as the dropdown: wide enough for the longest label, 'All workspaces' in French.
+.scanDropdown {
+    min-width: 26rem;
+}
+
+.noError {
+    padding: var(--spacing-large) 0;
+    color: var(--color-gray);
+    text-align: center;
 }
 
 .emptyState {

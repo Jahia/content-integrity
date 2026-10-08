@@ -95,6 +95,7 @@ const waitForScan = (executionId: string, attempt = 0): Cypress.Chainable<string
 export type Execution = {
     id: string;
     status: string;
+    startDate: string | null;
     resultsID: string | null;
     logs: string[];
     reports: { name: string; extension: string; location: string; uri: string }[] | null;
@@ -119,7 +120,7 @@ export const startScan = ({startNode, checks, workspace = 'EDIT', excludedPaths,
  * Reads an execution. Without ID, the API returns the scan which runs, or else the last one.
  */
 export const readExecution = (id?: string): Cypress.Chainable<Execution> =>
-    graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { id status resultsID logs reports { name extension location uri } } } }', {id})
+    graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { id status startDate resultsID logs reports { name extension location uri } } } }', {id})
         .then(data => data.integrity.scan as Execution);
 
 /**

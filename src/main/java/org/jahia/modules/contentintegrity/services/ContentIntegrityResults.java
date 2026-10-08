@@ -23,6 +23,8 @@ public class ContentIntegrityResults {
     private String executionID;
     private final List<String> executionLog;
     private final List<ContentIntegrityReport> reports;
+    // True when the scan was stopped before its end: the errors are those found until then
+    private boolean interrupted;
 
     public ContentIntegrityResults(Long testDate, Long testDuration, String workspace, List<ContentIntegrityError> errors, List<String> executionLog) {
         this.testDate = testDate;
@@ -69,6 +71,15 @@ public class ContentIntegrityResults {
 
     public ContentIntegrityResults setExecutionID(String executionID) {
         this.executionID = executionID;
+        return this;
+    }
+
+    public boolean isInterrupted() {
+        return interrupted;
+    }
+
+    public ContentIntegrityResults setInterrupted(boolean interrupted) {
+        this.interrupted = interrupted;
         return this;
     }
 

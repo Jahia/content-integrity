@@ -88,14 +88,9 @@ export const GET_SCAN = gql`
             scan: integrityScan(id: $id) {
                 id
                 status
+                startDate
                 resultsID
                 logs
-                reports {
-                    name
-                    location
-                    uri
-                    extension
-                }
             }
         }
     }
@@ -114,7 +109,14 @@ export const STOP_SCAN = gql`
 export const GET_SCAN_RESULTS_LIST = gql`
     query ContentIntegrityScanResultsList {
         integrity: contentIntegrity {
-            scanResults
+            scanResults: scanResultsSummaries {
+                id
+                startDate
+                workspace
+                status
+                errorCount
+                importErrorCount
+            }
         }
     }
 `;

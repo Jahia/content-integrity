@@ -91,7 +91,8 @@ public class JCRCommandSupport {
         System.out.println(String.format("Content integrity tested in %s", results.getFormattedTestDuration()));
         final List<ContentIntegrityError> errors = results.getErrors();
         if (CollectionUtils.isEmpty(errors)) {
-            System.out.println("No error found");
+            // An interrupted scan has not checked all the content: finding no error proves nothing
+            if (!results.isInterrupted()) System.out.println("No error found");
             return;
         }
         final Terminal term = session.getTerminal();
