@@ -33,6 +33,7 @@ const ALL = '__all__';
 const ALL_WORKSPACES = 'all-workspaces';
 const STATUS_COLORS = {finished: 'success', interrupted: 'warning'};
 const NO_FILTERS = {};
+const DATE_WITH_MILLISECONDS = {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3};
 // The default filter shows only the errors which block an XML import, when there are some: otherwise it would hide all of them
 const defaultFiltersOf = summary => (summary?.importErrorCount > 0 ? DEFAULT_FILTERS : NO_FILTERS);
 const EMPTY = '__empty__';
@@ -182,13 +183,16 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
     }
 
     // The latest results first, named by the date of their scan, which the ID only encodes
-    const resultsData = [...summaries].reverse().map(s => ({
+    const labelOf = (s, withMilliseconds) => t('label.results.scanOption', {
+        date: new Date(s.startDate).toLocaleString(i18n.language, withMilliseconds ? DATE_WITH_MILLISECONDS : undefined),
+        workspace: s.workspace === ALL_WORKSPACES ? t('label.results.allWorkspaces') : s.workspace
+    });
+    const labels = summaries.map(s => labelOf(s, false));
+    // Two scans started within the same second would have the same label: their milliseconds tell them apart
+    const resultsData = summaries.map((s, i) => ({
         value: s.id,
-        label: t('label.results.scanOption', {
-            date: new Date(s.startDate).toLocaleString(i18n.language),
-            workspace: s.workspace === ALL_WORKSPACES ? t('label.results.allWorkspaces') : s.workspace
-        })
-    }));
+        label: labels.indexOf(labels[i]) === labels.lastIndexOf(labels[i]) ? labels[i] : labelOf(s, true)
+    })).reverse();
     const errorCount = details?.errorCount ?? 0;
     const totalErrorCount = details?.totalErrorCount ?? 0;
 

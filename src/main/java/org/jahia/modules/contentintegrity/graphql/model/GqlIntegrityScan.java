@@ -5,6 +5,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import io.reactivex.Flowable;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -21,6 +22,7 @@ import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
 import org.slf4j.Logger;
+import org.reactivestreams.Publisher;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
@@ -35,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,11 +45,12 @@ public class GqlIntegrityScan {
 
     private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityScan.class);
 
-    private static final Map<String, Status> executionStatus = new LinkedHashMap<>();
-    private static final Map<String, List<String>> executionLog = new HashMap<>();
-    private static final Map<String, List<ContentIntegrityReport>> executionReports = new HashMap<>();
-    private static final Map<String, String> scanResults = new HashMap<>();
-    private static final Map<String, Instant> executionStart = new HashMap<>();
+    // Written by the thread of each scan, read by the queries and the subscriptions
+    private static final Map<String, Status> executionStatus = Collections.synchronizedMap(new LinkedHashMap<>());
+    private static final Map<String, List<String>> executionLog = new ConcurrentHashMap<>();
+    private static final Map<String, List<ContentIntegrityReport>> executionReports = new ConcurrentHashMap<>();
+    private static final Map<String, String> scanResults = new ConcurrentHashMap<>();
+    private static final Map<String, Instant> executionStart = new ConcurrentHashMap<>();
     // The executions asked to stop: they stay RUNNING until their scan has actually ended
     private static final Set<String> stopRequests = ConcurrentHashMap.newKeySet();
     private static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
@@ -56,6 +60,7 @@ public class GqlIntegrityScan {
     public static final String ABBREVIATED_LINE_SUFFIX = " [...]";
     public static final String NO_CHECK_SELECTED = "No check selected";
     public static final String NO_ERROR_FOUND = "No error found";
+    private static final long PROGRESS_INTERVAL_MS = 1000L;
 
     private String id;
 
@@ -73,9 +78,11 @@ public class GqlIntegrityScan {
         } else if (MapUtils.isEmpty(executionStatus)) {
             id = null;
         } else {
-            id = executionStatus.entrySet().stream().filter(e -> e.getValue() == Status.RUNNING).map(Map.Entry::getKey).reduce((a, b) -> b).orElse(null);
-            if (id == null)
-                id = executionStatus.keySet().stream().reduce((a, b) -> b).orElse(null);
+            synchronized (executionStatus) {
+                id = executionStatus.entrySet().stream().filter(e -> e.getValue() == Status.RUNNING).map(Map.Entry::getKey).reduce((a, b) -> b).orElse(null);
+                if (id == null)
+                    id = executionStatus.keySet().stream().reduce((a, b) -> b).orElse(null);
+            }
         }
     }
 
@@ -111,7 +118,7 @@ public class GqlIntegrityScan {
         id = generateExecutionID();
         executionStart.put(id, Instant.now());
         executionStatus.put(id, Status.RUNNING);
-        final List<String> output = new ArrayList<>();
+        final List<String> output = Collections.synchronizedList(new ArrayList<>());
         executionLog.put(id, output);
         final GqlExternalLogger console = e -> output.add(WordUtils.abbreviate(e, 200, 250, ABBREVIATED_LINE_SUFFIX));
 
@@ -192,13 +199,59 @@ public class GqlIntegrityScan {
             return Collections.singletonList(Status.UNKNOWN.getDescription());
         }
 
-        final List<String> logs = executionLog.get(id);
+        return limitLogs(new ArrayList<>(executionLog.get(id)));
+    }
+
+    private static List<String> limitLogs(List<String> logs) {
         final int size = logs.size();
-        if (size < LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE) return new ArrayList<>(logs);
+        if (size < LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE) return logs;
 
         final Stream<String> limitMsg = Stream.of(StringUtils.EMPTY, String.format("Limit reached. Displaying the last %d lines", LOGS_LIMIT_CLIENT_SIDE_END_SIZE), StringUtils.EMPTY);
         final Stream<String> logsBeginning = Stream.concat(logs.stream().limit(LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE), limitMsg);
         return Stream.concat(logsBeginning, logs.stream().skip(size - LOGS_LIMIT_CLIENT_SIDE_END_SIZE)).collect(Collectors.toList());
+    }
+
+    // The lines written since the previous event: beyond the limit, only the last ones are sent
+    private static List<String> limitNewLogs(List<String> lines) {
+        final int size = lines.size();
+        if (size <= LOGS_LIMIT_CLIENT_SIDE_END_SIZE) return lines;
+
+        final List<String> limited = new ArrayList<>(LOGS_LIMIT_CLIENT_SIDE_END_SIZE + 1);
+        limited.add(String.format("[%d lines skipped]", size - LOGS_LIMIT_CLIENT_SIDE_END_SIZE));
+        limited.addAll(lines.subList(size - LOGS_LIMIT_CLIENT_SIDE_END_SIZE, size));
+        return limited;
+    }
+
+    /**
+     * Follows an execution: an event when it has written new log lines, at most every second, then a last one once it
+     * is over. The first event carries the lines written so far, so that a client which subscribes to a running scan
+     * receives all its logs, once each.
+     */
+    public static Publisher<GqlIntegrityScanProgress> follow(String executionID) {
+        return Flowable.defer(() -> {
+            // The number of lines already sent to this subscriber, -1 before its first event
+            final int[] sentLines = {-1};
+            return Flowable.interval(0L, PROGRESS_INTERVAL_MS, TimeUnit.MILLISECONDS)
+                    .concatMap(tick -> {
+                        final GqlIntegrityScanProgress progress = readProgress(executionID, sentLines);
+                        return progress == null ? Flowable.<GqlIntegrityScanProgress>empty() : Flowable.just(progress);
+                    })
+                    .takeUntil(progress -> !Status.RUNNING.getDescription().equals(progress.getStatus()));
+        });
+    }
+
+    private static GqlIntegrityScanProgress readProgress(String executionID, int[] sentLines) {
+        // The status first: the scan writes its last lines before its final status, so none can be missed
+        final Status status = Optional.ofNullable(executionStatus.get(executionID)).orElse(Status.UNKNOWN);
+        final List<String> output = executionLog.get(executionID);
+        final List<String> logs = output == null ? Collections.emptyList() : new ArrayList<>(output);
+        final boolean isFirst = sentLines[0] < 0;
+        final List<String> newLines = isFirst ? limitLogs(logs) : limitNewLogs(logs.subList(Math.min(sentLines[0], logs.size()), logs.size()));
+        sentLines[0] = logs.size();
+        if (!isFirst && newLines.isEmpty() && status == Status.RUNNING) return null;
+
+        final String startDate = Optional.ofNullable(executionStart.get(executionID)).map(Instant::toString).orElse(null);
+        return new GqlIntegrityScanProgress(executionID, status.getDescription(), startDate, scanResults.get(executionID), new ArrayList<>(newLines));
     }
 
     @GraphQLField

@@ -89,17 +89,31 @@ export const closeMenu = (): void => {
 /**
  * Selects an item of a dropdown. The items are displayed above the page, outside of the dropdown.
  */
+type ScanSummary = { id: string; startDate: string; workspace: string };
+
+// fractionalSecondDigits is newer than the TypeScript library of the tests
+const DATE_WITH_MILLISECONDS = {
+    year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3
+} as Intl.DateTimeFormatOptions;
+
+const labelOf = (summary: ScanSummary, withMilliseconds: boolean): string => {
+    const workspace = summary.workspace === 'all-workspaces' ? 'All workspaces' : summary.workspace;
+    return `${new Date(summary.startDate).toLocaleString('en', withMilliseconds ? DATE_WITH_MILLISECONDS : undefined)} · ${workspace}`;
+};
+
 /**
- * The label of results in the Scan dropdown: the date of their scan and its workspace. The date is
- * formatted by this browser, as the page does.
+ * The label of results in the Scan dropdown: the date of their scan and its workspace, with the milliseconds when another
+ * scan of the same workspace started within the same second. The date is formatted by this browser, as the page does.
  */
 export const getScanLabel = (resultsId: string): Cypress.Chainable<string> =>
     graphql('{ integrity: contentIntegrity { scanResults: scanResultsSummaries { id startDate workspace } } }')
         .then(data => {
-            const summary = data.integrity.scanResults.find((s: { id: string }) => s.id === resultsId);
+            const summaries: ScanSummary[] = data.integrity.scanResults;
+            const summary = summaries.find(s => s.id === resultsId);
             expect(summary, `Results ${resultsId}`).to.exist;
-            const workspace = summary.workspace === 'all-workspaces' ? 'All workspaces' : summary.workspace;
-            return `${new Date(summary.startDate).toLocaleString('en')} · ${workspace}`;
+            const label = labelOf(summary as ScanSummary, false);
+            const isShared = summaries.filter(s => labelOf(s, false) === label).length > 1;
+            return isShared ? labelOf(summary as ScanSummary, true) : label;
         });
 
 export const selectInDropdown = (label: string, item: string | RegExp): void => {

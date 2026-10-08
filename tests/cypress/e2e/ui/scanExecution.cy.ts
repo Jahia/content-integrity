@@ -1,8 +1,50 @@
 import {graphql, readExecution, registerSlowCheck, startScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
-import {getCurrentScanCard, getDialog, visitAdmin} from '../../support/adminPage';
+import {ADMIN_URL, getCurrentScanCard, getDialog, visitAdmin} from '../../support/adminPage';
 
 // About 15 seconds with CiSlowCheck: long enough to act while the scan runs
 const SLOW_ROOT = '/sites/systemsite';
+
+// The query with which the page polls a scan
+const POLL_OPERATION = 'ContentIntegrityScan';
+
+// Apollo batches the queries, so a request carries one or several operations
+const operationsOf = (body: unknown): string[] => (Array.isArray(body) ? body : [body]).map(o => o?.operationName);
+
+/**
+ * Records the GraphQL requests of the page, as @graphql. The alias is static, so that it exists even when no request
+ * polls the scan.
+ */
+const interceptGraphql = (): void => {
+    cy.intercept('POST', '**/modules/graphql').as('graphql');
+};
+
+const countScanPolls = (): Cypress.Chainable<number> =>
+    cy.get<{ request: { body: unknown } }[]>('@graphql.all').then(calls => calls.filter(c => operationsOf(c.request.body).includes(POLL_OPERATION)).length);
+
+/**
+ * A WebSocket whose connection fails at once, as behind a proxy which does not let WebSockets through.
+ */
+class FailingWebSocket {
+    static OPEN = 1;
+    readyState = 3;
+    onclose: ((event: { code: number }) => void) | null = null;
+    onerror: (() => void) | null = null;
+
+    constructor() {
+        setTimeout(() => {
+            this.onerror?.();
+            this.onclose?.({code: 1006});
+        });
+    }
+
+    send(): void {
+        // Never connected: nothing to send
+    }
+
+    close(): void {
+        // Already closed
+    }
+}
 
 /**
  * Stops the scan and expects the page to remove its card, which is displayed only while a scan runs. A scan stopped
@@ -56,6 +98,33 @@ describe('Scan execution in the administration page', () => {
         // A single scan can run at a time
         cy.contains('button', 'New scan').should('be.disabled');
         stopFromThePage(true);
+    });
+
+    it('receives the logs of the scan through the subscription, without polling it', () => {
+        interceptGraphql();
+        startScan({startNode: SLOW_ROOT, checks: ['CiSlowCheck']}).then(() => {
+            visitAdmin();
+            // A polling page reads the scan as soon as it opens, long before its progress is logged
+            getCurrentScanCard().within(() => cy.get('[role=log]').should('contain.text', 'Scan progress'));
+            countScanPolls().should('equal', 0);
+            stopFromThePage();
+        });
+    });
+
+    it('polls the scan when the WebSocket connection fails', () => {
+        interceptGraphql();
+        startScan({startNode: SLOW_ROOT, checks: ['CiSlowCheck']}).then(() => {
+            cy.login();
+            cy.visit(ADMIN_URL, {
+                onBeforeLoad: win => {
+                    (win as unknown as { WebSocket: unknown }).WebSocket = FailingWebSocket;
+                }
+            });
+            // The logs come from the polling
+            getCurrentScanCard().within(() => cy.get('[role=log]').should('contain.text', 'Scan progress'));
+            countScanPolls().should('be.greaterThan', 0);
+            stopFromThePage();
+        });
     });
 
     it('follows the scan which runs when the page is opened', () => {

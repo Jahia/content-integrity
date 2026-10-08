@@ -71,21 +71,29 @@ describe('Results table', () => {
 
     it('lists the results of a new scan once the page is refreshed', () => {
         getResultsTable().should('be.visible');
-        scan(`/sites/${SITE}/contents/locks`, ['LockSanityCheck']).then(results => {
-            getScanLabel(resultsId).then(displayed => getScanLabel(results.resultsId).then(added => {
+        openDropdown('Scan');
+        cy.get('li.moonstone-menuItem').its('length').then(listed => {
+            closeMenu();
+            scan(`/sites/${SITE}/contents/locks`, ['LockSanityCheck']).then(results => {
+                // The page lists the new results only once refreshed
                 openDropdown('Scan');
-                getMenuItem(displayed);
-                cy.contains('li.moonstone-menuItem', added).should('not.exist');
+                cy.get('li.moonstone-menuItem').should('have.length', listed);
                 closeMenu();
                 cy.contains('button', 'Refresh').click();
-                // The new results are listed, the displayed ones stay selected
-                getDropdown('Scan').should('contain.text', displayed);
-                selectInDropdown('Scan', added);
-                getDropdown('Scan').should('contain.text', added);
-            }));
-            // Other results start from their own default filters: no lock error blocks an XML import, so none applies
-            getDropdown('Impact on XML import').should('contain.text', 'All');
-            getRow(INCONSISTENT_LOCK).should('exist');
+                openDropdown('Scan');
+                cy.get('li.moonstone-menuItem').should('have.length', listed + 1);
+                closeMenu();
+                // The displayed results stay selected. Both labels are read once the new results exist: two scans
+                // started within the same second are told apart by their milliseconds
+                getScanLabel(resultsId).then(displayed => getDropdown('Scan').should('contain.text', displayed));
+                getScanLabel(results.resultsId).then(added => {
+                    selectInDropdown('Scan', added);
+                    getDropdown('Scan').should('contain.text', added);
+                });
+                // Other results start from their own default filters: no lock error blocks an XML import, so none applies
+                getDropdown('Impact on XML import').should('contain.text', 'All');
+                getRow(INCONSISTENT_LOCK).should('exist');
+            });
         });
     });
 

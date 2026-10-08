@@ -140,6 +140,55 @@ export const waitForExecution = (id: string, attempt = 0): Cypress.Chainable<Exe
  * Registers CiSlowCheck, a check which finds no error but waits on every node: a scan with it lasts as long as a test
  * needs to act while it runs. Scanning /sites/systemsite with a delay of 200 ms lasts about 15 seconds.
  */
+export type ScanProgress = {
+    id: string;
+    status: string;
+    startDate: string | null;
+    resultsID: string | null;
+    logs: string[];
+};
+
+export type SubscriptionOutcome = {
+    events: ScanProgress[];
+    completed: boolean;
+    errors: string[];
+};
+
+/**
+ * Follows a scan through the subscription contentIntegrityScan, as the administration page does: over the GraphQL
+ * WebSocket endpoint, with the protocol of subscriptions-transport-ws and the session of the page. Resolves once the
+ * server ends the subscription, refuses it, or after the timeout. A page of the server must be opened first.
+ */
+export const followScan = (id: string, timeoutMs = 120000): Cypress.Chainable<SubscriptionOutcome> =>
+    cy.window({log: false}).then({timeout: timeoutMs + 5000}, win => new Cypress.Promise<SubscriptionOutcome>(resolve => {
+        const outcome: SubscriptionOutcome = {events: [], completed: false, errors: []};
+        const socket = new win.WebSocket(`${Cypress.config().baseUrl.replace(/^http/, 'ws')}/modules/graphqlws`, 'graphql-ws');
+        const timer = setTimeout(() => socket.close(), timeoutMs);
+        socket.onopen = () => socket.send(JSON.stringify({type: 'connection_init', payload: {}}));
+        socket.onmessage = message => {
+            const data = JSON.parse(message.data);
+            if (data.type === 'connection_ack') {
+                socket.send(JSON.stringify({
+                    id: '1',
+                    type: 'start',
+                    payload: {query: 'subscription($id: String!) { contentIntegrityScan(id: $id) { id status startDate resultsID logs } }', variables: {id}}
+                }));
+            } else if (data.type === 'data' && data.payload?.data?.contentIntegrityScan) {
+                outcome.events.push(data.payload.data.contentIntegrityScan);
+            } else if (data.type === 'data' || data.type === 'error') {
+                outcome.errors.push(...(data.payload?.errors || [data.payload]).map((e: { message?: string }) => e?.message || JSON.stringify(e)));
+                socket.close();
+            } else if (data.type === 'complete') {
+                outcome.completed = true;
+                socket.close();
+            }
+        };
+        socket.onclose = () => {
+            clearTimeout(timer);
+            resolve(outcome);
+        };
+    }));
+
 export const registerSlowCheck = (delayMs = 200): void => runFixture('scan/slowCheck.groovy', {DELAY: String(delayMs)});
 
 export const unregisterSlowCheck = (): void => runFixture('scan/slowCheck-cleanup.groovy');

@@ -205,6 +205,19 @@
             <version>${graphql-java-annotations.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- The scan subscription is a Publisher. Jahia 8.1.5 and 8.2 both provide RxJava 2.1.5 and Reactive Streams 1.0.2 -->
+        <dependency>
+            <groupId>io.reactivex.rxjava2</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>2.1.5</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.reactivestreams</groupId>
+            <artifactId>reactive-streams</artifactId>
+            <version>1.0.2</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>javax.servlet.jsp</groupId>
             <artifactId>jsp-api</artifactId>
