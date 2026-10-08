@@ -81,6 +81,7 @@
     "details": {
       "title": "Détails de l'erreur",
       "unknown": "Cette erreur ne figure plus dans les résultats de l'analyse.",
+      "virtualNode": "Le nœud est virtuel, servi par un fournisseur externe comme un point de montage : ses erreurs ne sont pas corrigées ici.",
       "node": "Nœud",
       "check": "Détection",
       "extraInfos": "Informations complémentaires",

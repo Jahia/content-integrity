@@ -20,6 +20,7 @@ import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRAutoSplitUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.osgi.framework.Bundle;
@@ -226,6 +227,17 @@ public class Utils {
         if (alreadyDenied) return false;
         reportsFolder.denyRoles(PRIVILEGED_GROUP_PRINCIPAL, Collections.singleton(PRIVILEGED_ROLE));
         return true;
+    }
+
+    /**
+     * True if the node of the error is virtual: served by an external provider, such as a mount point, and not stored in
+     * the JCR. Its errors are not fixed, as a fix would change the external source, for example delete a file.
+     */
+    public static boolean isOnVirtualNode(ContentIntegrityError error) {
+        final String path = error.getPath();
+        if (StringUtils.isBlank(path)) return false;
+        final JCRStoreProvider provider = JCRSessionFactory.getInstance().getProvider(path, false);
+        return provider != null && !provider.isDefault();
     }
 
     public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, ExternalLogger externalLogger) {

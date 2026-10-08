@@ -78,6 +78,7 @@ export const ErrorDetailsDialog = ({errorId, resultsId, fixState, canFixErrors, 
             {loading && <div className={styles.centered}><Loader size="big"/></div>}
             {error && <Typography className={styles.error}>{error.message}</Typography>}
             {!loading && !error && !details && <Typography>{t('label.details.unknown')}</Typography>}
+            {details?.virtualNode && !details.fixed && <Typography className={styles.helper}>{t('label.details.virtualNode')}</Typography>}
             {details && (
                 <div className={styles.details}>
                     <div className={styles.detailsSummary}>

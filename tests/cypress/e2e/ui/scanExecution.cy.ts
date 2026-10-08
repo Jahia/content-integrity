@@ -1,8 +1,5 @@
-import {graphql, readExecution, registerSlowCheck, startScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
+import {readExecution, registerSlowCheck, REPORTS_PATH, SLOW_SCAN, startScan, stopRunningScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
 import {ADMIN_URL, getCurrentScanCard, getDialog, getDropdown, getScanLabel, selectInDropdown, visitAdmin} from '../../support/adminPage';
-
-// About 15 seconds with CiSlowCheck: long enough to act while the scan runs
-const SLOW_ROOT = '/sites/systemsite';
 
 // The query with which the page polls a scan
 const POLL_OPERATION = 'ContentIntegrityScan';
@@ -74,21 +71,14 @@ describe('Scan execution in the administration page', () => {
 
     after(() => unregisterSlowCheck());
 
-    // A test which fails while a scan runs must not leave it running for the next one
-    afterEach(() => {
-        readExecution().then(execution => {
-            if (execution?.status === 'running') {
-                graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { stopRunningScan } } }', {id: execution.id});
-                waitForExecution(execution.id);
-            }
-        });
-    });
+    afterEach(() => stopRunningScan());
 
     it('follows the scan it starts, with its logs, and stops it', () => {
         visitAdmin();
         cy.contains('button', 'New scan').click();
         getDialog('New integrity scan').within(() => {
-            cy.get('#ci-root-node').clear().type(SLOW_ROOT);
+            cy.get('#ci-root-node').clear().type(SLOW_SCAN.startNode);
+            cy.get('#ci-excluded-paths').type(`${REPORTS_PATH}{enter}`);
             cy.contains('button', 'Unselect all').click();
             cy.get('#ci-check-CiSlowCheck').click({force: true});
             cy.contains('button', 'Run the scan').click();
@@ -106,7 +96,7 @@ describe('Scan execution in the administration page', () => {
 
     it('receives the logs of the scan through the subscription, without polling it', () => {
         interceptGraphql();
-        startScan({startNode: SLOW_ROOT, checks: ['CiSlowCheck']}).then(() => {
+        startScan(SLOW_SCAN).then(() => {
             visitAdmin();
             // A polling page reads the scan as soon as it opens, long before its progress is logged
             getCurrentScanCard().within(() => cy.get('[role=log]').should('contain.text', 'Scan progress'));
@@ -117,7 +107,7 @@ describe('Scan execution in the administration page', () => {
 
     it('polls the scan when the WebSocket connection fails', () => {
         interceptGraphql();
-        startScan({startNode: SLOW_ROOT, checks: ['CiSlowCheck']}).then(() => {
+        startScan(SLOW_SCAN).then(() => {
             cy.login();
             cy.visit(ADMIN_URL, {
                 onBeforeLoad: win => {
@@ -133,7 +123,7 @@ describe('Scan execution in the administration page', () => {
 
     it('lists a running scan, but selects the latest results of a scan which is over', () => {
         startScan({startNode: '/sites/systemsite/home', checks: ['LockSanityCheck']}).then(id => waitForExecution(id)).then(over => {
-            startScan({startNode: SLOW_ROOT, checks: ['CiSlowCheck']}).then(id => readExecution(id)).then(running => {
+            startScan(SLOW_SCAN).then(id => readExecution(id)).then(running => {
                 visitAdmin();
                 getCurrentScanCard().should('exist');
                 // The card of the scan follows it: the results card displays the results of the last scan which is over
@@ -147,7 +137,7 @@ describe('Scan execution in the administration page', () => {
     });
 
     it('follows the scan which runs when the page is opened', () => {
-        startScan({startNode: SLOW_ROOT, checks: ['CiSlowCheck']}).then(id => {
+        startScan(SLOW_SCAN).then(id => {
             visitAdmin();
             getCurrentScanCard().within(() => {
                 cy.contains(/^Started on /).should('be.visible');

@@ -149,7 +149,7 @@ public class GqlScanResults {
 
     @GraphQLField
     @GraphQLDescription("Fixes all the errors matching the filters of these results, each with the fix of the check which has detected it. " +
-            "The errors whose check provides no fix, and the ones fixed with values typed by an administrator, are skipped. " +
+            "The errors whose check provides no fix, the ones fixed with values typed by an administrator, and the ones of a virtual node are skipped. " +
             "Requires the permission adminContentIntegrityFix")
     public GqlFixAllErrorsResult fixAllErrors() {
         checkFixPermission();
@@ -165,7 +165,7 @@ public class GqlScanResults {
             final ContentIntegrityCheck check = service.getContentIntegrityCheck(error.getIntegrityCheckID());
             final boolean fixedWithValues = check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues
                     && ((ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) check).isFixWithValues(error);
-            if (!(check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix) || fixedWithValues) {
+            if (!(check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix) || fixedWithValues || Utils.isOnVirtualNode(error)) {
                 result.addSkipped();
                 continue;
             }

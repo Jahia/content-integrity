@@ -136,10 +136,28 @@ export const waitForExecution = (id: string, attempt = 0): Cypress.Chainable<Exe
     return cy.wrap(execution, {log: false});
 });
 
+// The scan reports are stored under the system site, and their number grows with every scan
+export const REPORTS_PATH = '/sites/systemsite/files/content-integrity-reports';
+
 /**
- * Registers CiSlowCheck, a check which finds no error but waits on every node: a scan with it lasts as long as a test
- * needs to act while it runs. Scanning /sites/systemsite with a delay of 200 ms lasts about 15 seconds.
+ * A scan which lasts while a test acts, once CiSlowCheck is registered. It excludes the stored reports, so that its length
+ * does not grow with the number of scans run before.
  */
+export const SLOW_SCAN: ScanParameters = {startNode: '/sites/systemsite', checks: ['CiSlowCheck'], excludedPaths: [REPORTS_PATH]};
+
+/**
+ * Stops the scan which runs, if any, and waits for its end: a test which fails while a scan runs must not leave it
+ * running, as no other scan could start.
+ */
+export const stopRunningScan = (): void => {
+    readExecution().then(execution => {
+        if (execution?.status === 'running') {
+            graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { stopRunningScan } } }', {id: execution.id});
+            waitForExecution(execution.id);
+        }
+    });
+};
+
 export type ScanProgress = {
     id: string;
     status: string;
@@ -212,6 +230,10 @@ export const readStoredReport = (resultsId: string): Cypress.Chainable<StoredRep
             } : null;
         });
 
+/**
+ * Registers CiSlowCheck, a check which finds no error but waits on every node: a scan with it lasts as long as a test
+ * needs to act while it runs. SLOW_SCAN with a delay of 200 ms lasts about 15 seconds.
+ */
 export const registerSlowCheck = (delayMs = 200): void => runFixture('scan/slowCheck.groovy', {DELAY: String(delayMs)});
 
 export const unregisterSlowCheck = (): void => runFixture('scan/slowCheck-cleanup.groovy');

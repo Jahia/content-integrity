@@ -1,13 +1,12 @@
-import {followScan, readExecution, registerSlowCheck, startScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
+import {followScan, readExecution, registerSlowCheck, SLOW_SCAN, startScan, stopRunningScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
 import {visitAdmin} from '../../support/adminPage';
-
-// About 15 seconds with CiSlowCheck: long enough for several events
-const SLOW_SCAN = {startNode: '/sites/systemsite', checks: ['CiSlowCheck']};
 
 describe('Scan subscription', () => {
     before(() => registerSlowCheck());
 
     after(() => unregisterSlowCheck());
+
+    afterEach(() => stopRunningScan());
 
     it('pushes the logs of a scan until its end, each line once', () => {
         visitAdmin();

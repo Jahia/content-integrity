@@ -38,9 +38,15 @@ public class GqlScanResultsError {
     }
 
     @GraphQLField
-    @GraphQLDescription("True if the check which has detected the error provides a fix, and the error is not fixed yet")
+    @GraphQLDescription("True if the node of the error is virtual: served by an external provider, such as a mount point. Its errors are not fixed")
+    public boolean isVirtualNode() {
+        return Utils.isOnVirtualNode(error);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the check which has detected the error provides a fix, the error is not fixed yet, and its node is not virtual")
     public boolean isFixable() {
-        if (error.isFixed()) return false;
+        if (error.isFixed() || isVirtualNode()) return false;
         final ContentIntegrityCheck check = Utils.getContentIntegrityService().getContentIntegrityCheck(error.getIntegrityCheckID());
         return check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix;
     }
@@ -48,7 +54,7 @@ public class GqlScanResultsError {
     @GraphQLField
     @GraphQLDescription("True if the fix of the error takes values, which are described by the field 'fixValues'")
     public boolean isFixWithValues() {
-        if (error.isFixed()) return false;
+        if (error.isFixed() || isVirtualNode()) return false;
         final ContentIntegrityCheck check = Utils.getContentIntegrityService().getContentIntegrityCheck(error.getIntegrityCheckID());
         return check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues
                 && ((ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) check).isFixWithValues(error);

@@ -81,6 +81,7 @@
     "details": {
       "title": "Error details",
       "unknown": "This error no longer exists in the scan results.",
+      "virtualNode": "The node is virtual, served by an external provider such as a mount point: its errors are not fixed here.",
       "node": "Node",
       "check": "Detection",
       "extraInfos": "Additional information",

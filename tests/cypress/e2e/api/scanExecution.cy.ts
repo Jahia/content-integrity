@@ -1,7 +1,4 @@
-import {graphql, readExecution, registerSlowCheck, startScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
-
-// About 15 seconds with CiSlowCheck: long enough to act while the scan runs
-const SLOW_SCAN = {startNode: '/sites/systemsite', checks: ['CiSlowCheck']};
+import {graphql, readExecution, registerSlowCheck, SLOW_SCAN, startScan, stopRunningScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
 
 const stopExecution = (id: string): Cypress.Chainable<boolean> =>
     graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { stopRunningScan } } }', {id})
@@ -26,15 +23,7 @@ describe('Scan execution', () => {
 
     after(() => unregisterSlowCheck());
 
-    // A test which fails while a scan runs must not leave it running for the next one
-    afterEach(() => {
-        readExecution().then(execution => {
-            if (execution?.status === 'running') {
-                stopExecution(execution.id);
-                waitForExecution(execution.id);
-            }
-        });
-    });
+    afterEach(() => stopRunningScan());
 
     it('returns the scan which runs when no execution is given, with its start date', () => {
         const before = Date.now();

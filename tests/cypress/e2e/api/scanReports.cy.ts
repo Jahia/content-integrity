@@ -7,15 +7,15 @@ import {
     registerSlowCheck,
     runFixture,
     scan,
+    SLOW_SCAN,
     startScan,
+    stopRunningScan,
     unregisterSlowCheck,
     waitForExecution
 } from '../../support/integrity';
 
 const SITE = 'ciApiScanReports';
 const LOCKS = `/sites/${SITE}/contents/locks`;
-// About 15 seconds with CiSlowCheck: long enough to read the report while the scan runs
-const SLOW_SCAN = {startNode: '/sites/systemsite', checks: ['CiSlowCheck']};
 
 // null when the results are not listed: a callback of then() which returns undefined yields its subject again
 const readSummary = (resultsId: string): Cypress.Chainable<{ status: string; errorCount: number } | null> =>
@@ -41,6 +41,8 @@ describe('Scan reports stored in the JCR', () => {
         runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});
         registerSlowCheck();
     });
+
+    afterEach(() => stopRunningScan());
 
     after(() => {
         unregisterSlowCheck();

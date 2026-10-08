@@ -492,6 +492,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 continue;
             }
             if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
+            if (Utils.isOnVirtualNode(error)) {
+                logger.warn("The error {} is not fixed: its node is virtual", error.getErrorID());
+                continue;
+            }
 
             final String workspace = error.getWorkspace();
             final JCRSessionWrapper session = JCRUtils.getSystemSession(workspace);
@@ -518,6 +522,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = (ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) integrityCheck;
         if (!check.isFixWithValues(error)) {
             throw new RepositoryException("This error is not fixed with values");
+        }
+        if (Utils.isOnVirtualNode(error)) {
+            throw new RepositoryException("The errors of a virtual node, served by an external provider, are not fixed");
         }
         final JCRNodeWrapper node = getErrorNode(error);
         if (check.fixError(node, error, values)) {

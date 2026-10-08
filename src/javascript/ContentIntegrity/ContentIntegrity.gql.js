@@ -191,6 +191,7 @@ export const GET_ERROR_DETAILS = gql`
                     importError
                     fixed
                     fixable
+                    virtualNode
                     fixWithValues
                     fixValues {
                         name
