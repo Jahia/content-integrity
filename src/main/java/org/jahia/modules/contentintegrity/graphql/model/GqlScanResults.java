@@ -172,7 +172,7 @@ public class GqlScanResults {
             // A fix can make another error of the list unfixable, for example when it removes its node: it is then counted as failed
             service.fixError(error);
             if (error.isFixed()) result.addFixed();
-            else result.addFailed();
+            else result.addFailed(error.getErrorID());
         }
         // The fixed status is stored with the results, in the JCR
         if (result.getFixed() > 0) service.saveFixedErrors(results);

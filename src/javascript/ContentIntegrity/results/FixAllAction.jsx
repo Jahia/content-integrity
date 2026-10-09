@@ -9,7 +9,8 @@ import styles from '../ContentIntegrity.scss';
 
 /**
  * Fixes all the errors matching the active filters, each with the fix of the check which has detected it. A fix can
- * remove content, so the administrator confirms first. The outcome stays displayed until the next fix or filter change.
+ * remove content, so the administrator confirms first. The outcome stays displayed until the next fix or filter change,
+ * and is passed to onFixed, which tags the errors not fixed.
  */
 export const FixAllAction = ({resultsId, filterArgs, errorCount, onFixed}) => {
     const {t} = useTranslation('content-integrity');
@@ -23,8 +24,9 @@ export const FixAllAction = ({resultsId, filterArgs, errorCount, onFixed}) => {
         setOutcome(null);
         client.query({query: FIX_ALL_ERRORS, variables: {resultsID: resultsId, filters: filterArgs}, fetchPolicy: 'no-cache'})
             .then(({data}) => {
-                setOutcome({result: data?.integrity?.results?.fixAll});
-                onFixed();
+                const result = data?.integrity?.results?.fixAll;
+                setOutcome({result});
+                onFixed(result);
             })
             .catch(e => setOutcome({error: e.message}))
             .finally(() => {

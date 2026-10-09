@@ -58,5 +58,16 @@ export const useFixError = (resultsId, onFixed) => {
             });
     }, [client, resultsId, onFixed, states]);
 
-    return {fix, states};
+    // The errors whose fix has failed during a fix all: the ones fixed since keep their state
+    const markFailed = useCallback(ids => setStates(prev => {
+        const next = {...prev};
+        (ids || []).forEach(id => {
+            if (next[id] !== FIX_STATES.FIXED) {
+                next[id] = FIX_STATES.FAILED;
+            }
+        });
+        return next;
+    }), []);
+
+    return {fix, states, markFailed};
 };

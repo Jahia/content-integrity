@@ -148,7 +148,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
     const canFixErrors = (results.data ?? results.previousData)?.integrity?.canFixErrors === true;
     // After a fix, the errors are read again: their 'fixed' and 'fixable' fields have changed
     const {refetch: refetchResults} = results;
-    const {fix, states: fixStates} = useFixError(resultsId, useCallback(() => refetchResults(), [refetchResults]));
+    const {fix, states: fixStates, markFailed} = useFixError(resultsId, useCallback(() => refetchResults(), [refetchResults]));
     // The refresh button is in the page header: each click increments refreshCount.
     useEffect(() => {
         if (refreshCount > 0) {
@@ -315,7 +315,10 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                                           resultsId={resultsId}
                                           filterArgs={filterArgs}
                                           errorCount={errorCount}
-                                          onFixed={refetchResults}/>
+                                          onFixed={result => {
+                                              markFailed(result?.failedIds);
+                                              refetchResults();
+                                          }}/>
                         )}
                     </div>
                     {results.error && <Typography className={styles.error}>{results.error.message}</Typography>}

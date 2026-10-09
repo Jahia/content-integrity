@@ -248,6 +248,7 @@ export const FIX_ALL_ERRORS = gql`
                 fixAll: fixAllErrors {
                     fixed
                     failed
+                    failedIds
                     skipped
                     alreadyFixed
                 }
