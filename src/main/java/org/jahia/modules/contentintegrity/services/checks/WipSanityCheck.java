@@ -10,8 +10,6 @@ import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
@@ -35,8 +33,6 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINP
         ContentIntegrityCheck.ValidityCondition.APPLY_ON_VERSION_GTE + "=7.2.3.1"
 })
 public class WipSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
-
-    private static final Logger logger = LoggerFactory.getLogger(WipSanityCheck.class);
 
     private static final List<String> UNEXPECTED_PROPS_ON_I18N = Arrays.asList(WORKINPROGRESS, WORKINPROGRESS_STATUS, WORKINPROGRESS_LANGUAGES);
     public static final ContentIntegrityErrorType WIP_ON_TRANSLATION_NODE = createErrorType("WIP_ON_TRANSLATION_NODE", "Unexpected WIP property on a translation node");

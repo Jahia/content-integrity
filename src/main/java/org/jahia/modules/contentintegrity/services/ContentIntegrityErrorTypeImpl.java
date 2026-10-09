@@ -1,12 +1,8 @@
 package org.jahia.modules.contentintegrity.services;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ContentIntegrityErrorTypeImpl implements ContentIntegrityErrorType {
-
-    private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityErrorTypeImpl.class);
 
     private final String key;
     private final boolean isBlockingImport;

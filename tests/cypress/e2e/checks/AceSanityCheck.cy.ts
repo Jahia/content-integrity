@@ -4,8 +4,11 @@ import {
     deleteTestSite,
     expectError,
     expectExtraInfo,
-    expectFixFails,
+    expectNoError,
+    expectNoFix,
     fixAndVerify,
+    fixError,
+    graphql,
     resetCheckConfiguration,
     runFixture,
     scan,
@@ -120,8 +123,8 @@ describe('AceSanityCheck', () => {
         // These errors need an analysis: the check provides no fix for them
         ['INVALID_NODENAME', 'NO_ROLES_PROP', 'ROLE_DOESNT_EXIST', 'MISSING_SITE_PRIVILEGED_GRP_MEMBER', 'ACE_NON_GRANT_WITH_EXTERNAL_ACE',
             'INVALID_EXTERNAL_PERMISSIONS', 'DUPLICATED_REF_SRC_ACE', 'INVALID_ROLES_PROP'].forEach(errorType => {
-            it(`does not fix ${errorType}`, () => {
-                expectFixFails(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
+            it(`provides no fix for ${errorType}`, () => {
+                expectNoFix(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
             });
         });
 
@@ -130,6 +133,60 @@ describe('AceSanityCheck', () => {
             it(`fixes ${errorType}`, () => {
                 fixAndVerify(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
             });
+        });
+    });
+
+    describe('Roles chosen to fill the missing j:roles of an ACE', () => {
+        const NO_ROLES = ace('NO_ROLES_PROP', user('ace'));
+        const DEFINITIONS = ['PropertyDefinitionsSanityCheck'];
+
+        type FixValues = { name: string; multiple: boolean; choices: string[]; choiceLabels: string[]; description: string };
+        const readFixValues = (resultsId: string, errorId: string): Cypress.Chainable<FixValues> =>
+            graphql('query($r: String, $id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $r) { error: errorById(id: $id) { fixValues { name multiple choices choiceLabels description } } } } }',
+                {r: resultsId, id: errorId}).then(data => data.integrity.results.error.fixValues as FixValues);
+
+        before(() => runFixture('checks/AceSanityCheck.groovy', {SITEKEY: SITE}));
+
+        it('offers the roles which can be given on content, with a description of what they grant', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => {
+                const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES);
+                expect(error.fixable).to.be.true;
+                readFixValues(results.resultsId, error.id).then(fixValues => {
+                    expect(fixValues.name).to.equal('j:roles');
+                    expect(fixValues.multiple).to.be.true;
+                    expect(fixValues.choices).to.include.members(['editor', 'reader', 'owner']);
+                    // A hidden role is set by the platform, a site or server role is not given on content
+                    expect(fixValues.choices).to.not.include.members(['privileged']);
+                    expect(fixValues.choices).to.not.include('site-administrator');
+                    expect(fixValues.choices).to.not.include('server-administrator');
+                    expect(fixValues.choiceLabels).to.have.length(fixValues.choices.length);
+                    expect(fixValues.choiceLabels).to.include('Editor (editor)');
+                    expect(fixValues.description).to.contain(`Choose the roles to grant to the user ${user('ace')} on this node and its sub-nodes`);
+                });
+            });
+        });
+
+        it('refuses a role which can not be given on content', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => {
+                const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES);
+                ['server-administrator', 'ci-role-which-does-not-exist'].forEach(role => {
+                    fixError(results.resultsId, error.id, [role]).then(result => {
+                        expect(result.fixed).to.be.false;
+                        expect(result.message).to.contain(`The role ${role} can't be given on this access control entry`);
+                    });
+                });
+            });
+        });
+
+        it('fixes the ACE with the chosen roles', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => {
+                const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES);
+                fixError(results.resultsId, error.id, ['reader', 'editor']).then(result => expect(result.fixed, result.message).to.be.true);
+            });
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => expectNoError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES));
+            scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => expectNoError(results, 'NO_ROLES_PROP', NO_ROLES));
+            graphql(`{ jcr { nodeByPath(path: "${NO_ROLES}") { property(name: "j:roles") { values } } } }`)
+                .its('jcr.nodeByPath.property.values').should('deep.equal', ['reader', 'editor']);
         });
     });
 });

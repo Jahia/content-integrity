@@ -4,6 +4,7 @@ import {
     expectError,
     expectExtraInfo,
     expectFixFails,
+    expectNoFix,
     fixAndVerify,
     fixError,
     graphql,
@@ -81,14 +82,18 @@ describe('PropertyDefinitionsSanityCheck', () => {
             fixAndVerify(ROOT, CHECKS, 'EDIT', 'UNDECLARED_PROPERTY', INVALID_VALUES);
         });
 
-        ['INVALID_VALUE_TYPE', 'INVALID_MULTI_VALUE_STATUS', 'INVALID_VALUE_CONSTRAINT'].forEach(errorType => {
-            it(`does not fix ${errorType}, whose right value can't be guessed`, () => {
-                expectFixFails(ROOT, CHECKS, 'EDIT', errorType, INVALID_VALUES);
+        ['INVALID_VALUE_TYPE', 'INVALID_MULTI_VALUE_STATUS'].forEach(errorType => {
+            it(`provides no fix for ${errorType}, whose right value can't be guessed`, () => {
+                expectNoFix(ROOT, CHECKS, 'EDIT', errorType, INVALID_VALUES);
             });
         });
 
-        it('does not fix INVALID_NODE_VALIDATION', () => {
-            expectFixFails(MOUNT_POINT, CHECKS, 'EDIT', 'INVALID_NODE_VALIDATION', MOUNT_POINT);
+        it('does not fix INVALID_VALUE_CONSTRAINT without value, when the definition has no default value', () => {
+            expectFixFails(ROOT, CHECKS, 'EDIT', 'INVALID_VALUE_CONSTRAINT', INVALID_VALUES);
+        });
+
+        it('provides no fix for INVALID_NODE_VALIDATION', () => {
+            expectNoFix(MOUNT_POINT, CHECKS, 'EDIT', 'INVALID_NODE_VALIDATION', MOUNT_POINT);
         });
 
         it('does not fix EMPTY_MANDATORY_PROPERTY without value, when the definition has no default value', () => {

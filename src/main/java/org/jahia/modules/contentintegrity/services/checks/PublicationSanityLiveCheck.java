@@ -17,8 +17,6 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Property;
@@ -47,8 +45,6 @@ import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityC
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_EXTERNAL_NODES + "=true"
 })
 public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
-
-    private static final Logger logger = LoggerFactory.getLogger(PublicationSanityLiveCheck.class);
 
     private static final String DEEP_COMPARE_PUBLISHED_NODES = "deep-compare-published-nodes";
     private static final String REPORT_LIVE_ONLY_UNDEFINED_UGC_NODES = "report-live-only-undefined-ugc-nodes";
@@ -86,6 +82,9 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     public static final ContentIntegrityErrorType DIFFERENT_MIXINS = createErrorType("DIFFERENT_MIXINS", "Different mixins on a published node");
     public static final ContentIntegrityErrorType INCONSISTENT_UGC = createErrorType("INCONSISTENT_UGC", "Missing jmix:originWS property");
     public static final ContentIntegrityErrorType UNEXPECTED_UGC = createErrorType("UNEXPECTED_UGC", "Node flagged as UGC, while it exists in the default workspace");
+
+    // The differences between a published node and its live node need an analysis: they are not fixed
+    private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(NO_DEFAULT_NODE, INCONSISTENT_UGC, UNEXPECTED_UGC);
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -337,6 +336,11 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
                 .map(ExtendedNodeType::getName)
                 .filter(m -> CollectionUtils.isEmpty(ignoredMixins) || !ignoredMixins.contains(m))
                 .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return FIXABLE_ERRORS.contains(error.getErrorType());
     }
 
     /*

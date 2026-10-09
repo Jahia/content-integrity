@@ -15,8 +15,6 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.Item;
 import javax.jcr.Node;
@@ -28,6 +26,7 @@ import javax.jcr.Value;
 import javax.jcr.nodetype.PropertyDefinition;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -38,13 +37,15 @@ import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityC
 @Component(service = ContentIntegrityCheck.class, immediate = true)
 public class ReferencesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReferencesSanityCheck.class);
     private static final String VALIDATE_REFS = "validate-refs";
     private static final String VALIDATE_BACK_REFS = "validate-back-refs";
     private static final String VALIDATE_VERSION_HISTORY = "validate-version-history";
     public static final ContentIntegrityErrorType INVALID_BACK_REF = createErrorType("INVALID_BACK_REF", "Missing referencing node");
     public static final ContentIntegrityErrorType BROKEN_REF = createErrorType("BROKEN_REF", "Broken reference");
     public static final ContentIntegrityErrorType BROKEN_REF_TO_VN = createErrorType("BROKEN_REF_TO_VN", "Broken reference to a virtual node");
+
+    // A reference to a virtual node, and an invalid back reference, are not fixed
+    private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(BROKEN_REF);
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -164,6 +165,11 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
         return errors;
     }
 
+    @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return FIXABLE_ERRORS.contains(error.getErrorType());
+    }
+
     /*
      * From the jcr-scripts fix: the broken reference is removed. On a multi-valued property, only the broken
      * value is removed, and the property is removed when no value remains. A broken reference to a virtual
@@ -175,7 +181,9 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
         final String propertyName = (String) error.getExtraInfo("property-name");
         final String missingUuid = (String) error.getExtraInfo("missing-uuid");
         final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
-        if (StringUtils.isBlank(propertyName) || !target.hasProperty(propertyName)) return false;
+        if (StringUtils.isBlank(propertyName)) return false;
+        // A property already removed, for example by the fix of another error, is fixed
+        if (!target.hasProperty(propertyName)) return true;
 
         RepairUtils.runWithListenersDisabled(() -> {
             final JCRPropertyWrapper property = target.getProperty(propertyName);

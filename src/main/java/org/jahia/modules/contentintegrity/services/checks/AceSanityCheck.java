@@ -117,6 +117,12 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public static final ContentIntegrityErrorType MISSING_SITE_PRIVILEGED_GRP_MEMBER = createErrorType("MISSING_SITE_PRIVILEGED_GRP_MEMBER", "Missing member in the site privileged group");
     public static final ContentIntegrityErrorType TOO_MANY_ACE = createErrorType("TOO_MANY_ACE", "Too many ACE nodes");
 
+    // The other errors of the ACL need an analysis, such as a role which does not exist: they are not fixed
+    private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(
+            NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
+            NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, INVALID_EXTERNAL_ACE_PATH,
+            SOURCE_ACE_NOT_TYPE_GRANT, MISSING_EXTERNAL_ACE, ROLES_DIFFER_ON_SOURCE_ACE);
+
     private final ContentIntegrityCheckConfiguration configurations;
     private final Map<String, Role> roles = new HashMap<>();
     private final Set<String> privilegedAccessRoles = new HashSet<>();
@@ -509,6 +515,11 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 }
             }
         }
+    }
+
+    @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return FIXABLE_ERRORS.contains(error.getErrorType());
     }
 
     /*

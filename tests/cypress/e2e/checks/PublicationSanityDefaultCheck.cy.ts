@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectFixFails, fixAndVerify, runFixture, scan, ScanResults} from '../../support/integrity';
+import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoFix, fixAndVerify, runFixture, scan, ScanResults} from '../../support/integrity';
 
 const SITE = 'ciPublicationDefaultCheck';
 const ROOT = `/sites/${SITE}/contents/publication-default`;
@@ -43,8 +43,8 @@ describe('PublicationSanityDefaultCheck', () => {
     describe('Fix', () => {
         ['DIFFERENT_PATH:moved-in-live', 'PATH_CONFLICT:path-conflict', 'DIFFERENT_PT:different-primary-type'].forEach(entry => {
             const [errorType, name] = entry.split(':');
-            it(`does not fix ${errorType}`, () => {
-                expectFixFails(ROOT, CHECKS, 'EDIT', errorType, `${ROOT}/${name}`);
+            it(`provides no fix for ${errorType}`, () => {
+                expectNoFix(ROOT, CHECKS, 'EDIT', errorType, `${ROOT}/${name}`);
             });
         });
 

@@ -25,7 +25,6 @@ import javax.jcr.RepositoryException;
 import javax.jcr.ValueFormatException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -123,13 +122,13 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
     }
 
     @Override
-    public boolean isFixWithValues(ContentIntegrityError error) {
+    public boolean isFixable(ContentIntegrityError error) {
         return MISSING_TEMPLATE.equals(error.getErrorType());
     }
 
     @Override
     public FixValuesDefinition getFixValuesDefinition(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
-        if (!isFixWithValues(error)) return null;
+        if (!isFixable(error)) return null;
         final String propertyName = getTemplateProperty(node);
         final Map<String, String> templates = getAvailableTemplates(node, propertyName);
         final List<String> names = new ArrayList<>(templates.keySet());
@@ -147,7 +146,7 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
      */
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error, List<String> values) throws RepositoryException {
-        if (!isFixWithValues(error)) return false;
+        if (!isFixable(error)) return false;
         final List<String> typedValues = values == null ? Collections.emptyList() : values.stream()
                 .filter(StringUtils::isNotBlank)
                 .map(String::trim)

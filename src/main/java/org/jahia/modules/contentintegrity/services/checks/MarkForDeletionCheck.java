@@ -11,8 +11,6 @@ import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
@@ -22,7 +20,6 @@ import javax.jcr.RepositoryException;
 })
 public class MarkForDeletionCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
-    private static final Logger logger = LoggerFactory.getLogger(MarkForDeletionCheck.class);
     public static final ContentIntegrityErrorType NO_ROOT_DELETION = createErrorType("NO_ROOT_DELETION", "The node is flagged as deleted, but the root of the deletion can't be found", true);
     public static final ContentIntegrityErrorType DELETION_MARK_IN_LIVE = createErrorType("DELETION_MARK_IN_LIVE", "The node is flagged as deleted in the live workspace", true);
     public static final ContentIntegrityErrorType DELETION_MARK_UNDER_USERS = createErrorType("DELETION_MARK_UNDER_USERS", "A node under /users is flagged as deleted", true);

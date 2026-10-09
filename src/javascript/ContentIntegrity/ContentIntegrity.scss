@@ -246,14 +246,6 @@
     border-radius: var(--radius);
 }
 
-.finished {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-medium);
-    margin-top: var(--spacing-small);
-}
-
 .reportList {
     display: flex;
     align-items: center;
@@ -288,12 +280,6 @@
     margin-top: var(--spacing-large);
     padding-top: var(--spacing-medium);
     border-top: 1px solid var(--color-gray40);
-}
-
-.executionActions {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-small);
 }
 
 .clearFilters {
@@ -640,7 +626,6 @@
     flex: 1;
     min-width: 0;
 }
-
 
 .fixAll {
     display: flex;

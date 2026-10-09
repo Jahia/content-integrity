@@ -38,7 +38,6 @@ public class JCRUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(JCRUtils.class);
 
-
     public enum UGC_STATE {UGC, NON_UGC, UNDEFINED, INCONSISTENT}
 
     /**

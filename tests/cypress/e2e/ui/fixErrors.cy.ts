@@ -2,10 +2,9 @@ import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/in
 import {clearFilters, closeDetailsPanel, getDetailsPanel, getDialog, getResultsTable, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiFixErrors';
+const SITE_PATH = `/sites/${SITE}`;
 const LOCKS = `/sites/${SITE}/contents/locks`;
 const MISSING_TEMPLATE = `/sites/${SITE}/home/missing-template`;
-// A value which does not match the type of its definition: its check can't guess the right one, so its fix fails
-const INVALID_VALUES = `/sites/${SITE}/contents/property-definitions/invalid-values`;
 const CHECKS = ['LockSanityCheck', 'PagesSanityCheck', 'PropertyDefinitionsSanityCheck'];
 
 describe('Fix of the errors', () => {
@@ -72,16 +71,22 @@ describe('Fix of the errors', () => {
     });
 
     it('tags the errors that a fix all has not fixed', () => {
-        selectInDropdown('Error type', /^INVALID_VALUE_TYPE \(1\)$/);
+        // A site without page: its check flags a page as home, and finds none
+        runFixture('checks/HomePageDeclarationCheck.groovy', {SITEKEY: SITE, SCENARIO: 'NO_PAGE'});
+        scan(`/sites/${SITE}`, [...CHECKS, 'HomePageDeclarationCheck']);
+        cy.reload();
+        clearFilters();
+        selectInDropdown('Error type', /^NO_HOME \(1\)$/);
         cy.contains('button', 'Fix all').click();
         getDialog('Fix all the displayed errors').within(() => cy.contains('button', 'Fix 1 errors').click());
         cy.contains('[role=status]', '0 fixed, 1 not fixed, 0 skipped, 0 already fixed', {timeout: 30000}).should('be.visible');
-        getRow(INVALID_VALUES).within(() => cy.contains('Not fixed').should('be.visible'));
-        openErrorDetails(INVALID_VALUES);
+        getRow(SITE_PATH).within(() => cy.contains('Not fixed').should('be.visible'));
+        openErrorDetails(SITE_PATH);
         getDetailsPanel().within(() => {
             cy.contains('Not fixed').should('be.visible');
             cy.contains('The fix of the check has not fixed this error').should('be.visible');
         });
+        runFixture('checks/HomePageDeclarationCheck.groovy', {SITEKEY: SITE, SCENARIO: 'RESTORE'});
     });
 
     it('fixes a page without template with a template chosen in a dropdown', () => {

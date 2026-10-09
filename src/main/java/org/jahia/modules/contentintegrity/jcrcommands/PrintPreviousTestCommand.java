@@ -12,14 +12,10 @@ import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Command(scope = "jcr", name = "integrity-printTestResults", description = "Reprints the result of some previous test")
 @Service
 public class PrintPreviousTestCommand extends JCRCommandSupport implements Action {
-
-    private static final Logger logger = LoggerFactory.getLogger(PrintPreviousTestCommand.class);
 
     public static final String LAST_PRINTED_TEST = "lastPrintedTest";
 

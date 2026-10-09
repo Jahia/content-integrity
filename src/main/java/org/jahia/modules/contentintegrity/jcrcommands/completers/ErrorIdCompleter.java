@@ -10,8 +10,6 @@ import org.apache.karaf.shell.support.completers.StringsCompleter;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,8 +18,6 @@ import static org.jahia.modules.contentintegrity.jcrcommands.PrintPreviousTestCo
 
 @Service
 public class ErrorIdCompleter implements Completer {
-
-    private static final Logger logger = LoggerFactory.getLogger(ErrorIdCompleter.class);
 
     private static final String OPTION = "-t";
     private static final String ALIAS = "--test";

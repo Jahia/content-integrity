@@ -16,6 +16,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.AclRoles;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.modules.external.ExternalNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -644,7 +645,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         final String errorLocale;
         if (StringUtils.isNotBlank(propertyName)) {
             final String finalPropertyName = propertyName;
-            propertyValue = JCRUtils.runJcrSupplierCallBack(() -> getPrintableValue(node.getProperty(finalPropertyName).getValue(), errors, node));
+            // A validator can report a missing property: it has no value to print
+            propertyValue = JCRUtils.runJcrSupplierCallBack(() -> node.hasProperty(finalPropertyName) ?
+                    getPrintableValue(node.getProperty(finalPropertyName).getValue(), errors, node) : null);
             try {
                 propertyDefinition = node.getApplicablePropertyDefinition(propertyName);
                 if (propertyDefinition == null) {
@@ -803,9 +806,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
 
         if (error.getErrorType().equals(UNDECLARED_PROPERTY)) {
-            final boolean[] removed = new boolean[1];
-            RepairUtils.runWithListenersDisabled(() -> removed[0] = RepairUtils.removePropertyRaw(target, propertyName));
-            return removed[0];
+            // A property already removed, for example by the fix of another error, is fixed
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removePropertyRaw(target, propertyName));
+            return true;
         }
         if (error.getErrorType().equals(EMPTY_MANDATORY_PROPERTY) || error.getErrorType().equals(INVALID_VALUE_CONSTRAINT)) {
             if (StringUtils.startsWith(target.getPath(), "/modules/")) return false;
@@ -826,17 +829,25 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     /*
+     * The right value of a value of the wrong type, or of a property whose single or multiple status changed, can't be guessed,
+     * and a node validator tells no value: these errors are not fixable.
+     */
+    @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return UNDECLARED_PROPERTY.equals(error.getErrorType()) || takesValues(error);
+    }
+
+    /*
      * An empty mandatory property, and a value which breaks the constraints of its definition, take the values chosen or
      * typed by an administrator: the constraints which list the accepted values are offered as choices.
      */
-    @Override
-    public boolean isFixWithValues(ContentIntegrityError error) {
+    private boolean takesValues(ContentIntegrityError error) {
         return EMPTY_MANDATORY_PROPERTY.equals(error.getErrorType()) || INVALID_VALUE_CONSTRAINT.equals(error.getErrorType());
     }
 
     @Override
     public FixValuesDefinition getFixValuesDefinition(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
-        if (!isFixWithValues(error)) return null;
+        if (!takesValues(error)) return null;
         final String propertyName = (String) error.getExtraInfo("property-name");
         if (StringUtils.isBlank(propertyName)) return null;
         final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
@@ -856,6 +867,12 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             }
         } catch (RepositoryException e) {
             logger.debug("Impossible to read the default values of the property {}", propertyName, e);
+        }
+        if (AclRoles.isAceRoles(target, propertyName)) {
+            // A role of an ACE gives permissions: it is chosen among the roles which can be given at the place of the ACE
+            final Map<String, String> roles = AclRoles.getGrantableRoles(target);
+            return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), new ArrayList<>(roles.keySet()),
+                    constraints, Collections.emptyList(), new ArrayList<>(roles.values()), AclRoles.describe(target));
         }
         if (!INVALID_VALUE_CONSTRAINT.equals(error.getErrorType())) {
             return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), choices, constraints, defaultValues);
@@ -892,7 +909,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
      */
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error, List<String> values) throws RepositoryException {
-        if (!isFixWithValues(error)) return false;
+        if (!takesValues(error)) return false;
         final String propertyName = (String) error.getExtraInfo("property-name");
         if (StringUtils.isBlank(propertyName)) return false;
         final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
@@ -910,6 +927,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         if (typedValues.isEmpty()) throw new ValueFormatException("A value is required");
         if (!definition.isMultiple() && typedValues.size() > 1) {
             throw new ValueFormatException(String.format("The property %s takes a single value", propertyName));
+        }
+        if (AclRoles.isAceRoles(target, propertyName)) {
+            final Map<String, String> roles = AclRoles.getGrantableRoles(target);
+            for (String role : typedValues) {
+                if (!roles.containsKey(role.trim())) {
+                    throw new ConstraintViolationException(String.format("The role %s can't be given on this access control entry", role));
+                }
+            }
         }
         final int type = getFixValueType(definition);
         final Value[] jcrValues = new Value[typedValues.size()];

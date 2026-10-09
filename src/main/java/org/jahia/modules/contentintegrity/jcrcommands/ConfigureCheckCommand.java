@@ -14,14 +14,10 @@ import org.jahia.modules.contentintegrity.jcrcommands.completers.BooleanComplete
 import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckConfigParamCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckIdCompleter;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Command(scope = "jcr", name = "integrity-configureCheck", description = "Configures a registered check")
 @Service
 public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
-
-    private static final Logger logger = LoggerFactory.getLogger(ConfigureCheckCommand.class);
 
     @Reference
     Session session;

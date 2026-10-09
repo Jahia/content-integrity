@@ -9,8 +9,6 @@ import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
@@ -25,8 +23,6 @@ import java.util.List;
         ContentIntegrityCheck.ENABLED + "=false"
 })
 public class LivePropertiesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
-
-    private static final Logger logger = LoggerFactory.getLogger(LivePropertiesCheck.class);
 
     static final String JMIX_LIVE_PROPERTIES = "jmix:liveProperties";
     private static final String J_LIVE_PROPERTIES = "j:liveProperties";

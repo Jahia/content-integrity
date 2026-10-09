@@ -6,6 +6,7 @@ import {
     expectExtraInfo,
     expectNoError,
     fixAndVerify,
+    fixFromTwoScans,
     resetCheckConfiguration,
     runFixture,
     scan
@@ -66,8 +67,9 @@ describe('WorkspaceSpecificDefinitionsCheck', () => {
             });
         });
 
-        it('fixes UNEXPECTED_PROP', () => {
-            fixAndVerify(ROOT, CHECKS, 'EDIT', 'UNEXPECTED_PROP', `${ROOT}/unexpected-property`);
+        it('fixes UNEXPECTED_PROP, and reports it fixed from other results', () => {
+            // Fixed from the first results, then from the second ones, where it is already fixed
+            fixFromTwoScans(ROOT, CHECKS, 'EDIT', 'UNEXPECTED_PROP', `${ROOT}/unexpected-property`);
         });
     });
 });

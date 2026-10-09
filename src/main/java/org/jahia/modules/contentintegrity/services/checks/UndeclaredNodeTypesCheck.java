@@ -16,13 +16,10 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.utils.Patterns;
 import org.osgi.framework.Bundle;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,8 +33,6 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PRI
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
 public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
-
-    private static final Logger logger = LoggerFactory.getLogger(UndeclaredNodeTypesCheck.class);
 
     public static final ContentIntegrityErrorType UNDECLARED_NODE_TYPE = createErrorType("UNDECLARED_NODE_TYPE", "Undeclared type", true);
     public static final ContentIntegrityErrorType GHOST_NODE_TYPE = createErrorType("GHOST_NODE_TYPE", "Ghost type", true);
@@ -164,9 +159,9 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck impl
 
         final Object mixin = error.getExtraInfo("mixin type");
         if (mixin != null) {
-            final boolean[] removed = new boolean[1];
-            RepairUtils.runWithListenersDisabled(() -> removed[0] = RepairUtils.removeMixinRaw(node, (String) mixin));
-            return removed[0];
+            // A mixin already removed, for example by the fix of another error, is fixed
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeMixinRaw(node, (String) mixin));
+            return true;
         }
         if (error.getExtraInfo("primary type") != null) {
             RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeNodeRaw(node));

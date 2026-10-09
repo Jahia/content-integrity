@@ -319,6 +319,8 @@ The script should be run with the listeners deactivated, and should be run on ea
 
 **Fix**: in the details of the error, in the administration screen, type the value, or choose it in a dropdown when the definition lists the accepted values, then click **Fix**. The value is converted to the type of the property and checked against its constraints. **Fix all** skips this error.
 
+On an access control entry (`jnt:ace`), the missing `j:roles` gives permissions: the roles are chosen in dropdowns, among the roles which can be given at the place of the entry. On content, these are the roles of the groups `edit-role` and `live-role`, on a site node the roles of the group `site-role` too, and out of the sites the roles of every group. The hidden roles are not offered. The details tell to which principal the roles are granted, or denied, and on which node.
+
 #### Invalid value type
 
 `Error code: INVALID_VALUE_TYPE`

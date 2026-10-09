@@ -10,8 +10,6 @@ import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.query.QueryResultWrapper;
 import org.jahia.services.query.QueryWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
@@ -23,8 +21,6 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PAT
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/modules"
 })
 public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
-
-    private static final Logger logger = LoggerFactory.getLogger(TemplatesIndexationCheck.class);
 
     public static final ContentIntegrityErrorType NOT_INDEXED_TEMPLATE = createErrorType("NOT_INDEXED_TEMPLATE", "The template is not correctly indexed");
 

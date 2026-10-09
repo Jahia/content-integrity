@@ -10,8 +10,6 @@ import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 
@@ -21,7 +19,6 @@ import javax.jcr.RepositoryException;
 })
 public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
-    private static final Logger logger = LoggerFactory.getLogger(NodeNameInfoSanityCheck.class);
     public static final ContentIntegrityErrorType INVALID_FULLPATH = createErrorType("INVALID_FULLPATH", "Unexpected property value");
     public static final ContentIntegrityErrorType MISSING_NODENAME = createErrorType("MISSING_NODENAME", "Missing property");
     public static final ContentIntegrityErrorType INVALID_NODENAME = createErrorType("INVALID_NODENAME", "Unexpected property value");

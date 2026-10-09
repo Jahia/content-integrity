@@ -16,16 +16,12 @@ import org.jahia.modules.contentintegrity.jcrcommands.completers.ErrorIdComplete
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Command(scope = "jcr", name = "integrity-printError", description = "Prints out an error identified by an integrity check with full details")
 @Service
 public class PrintErrorCommand extends JCRCommandSupport implements Action {
-
-    private static final Logger logger = LoggerFactory.getLogger(PrintErrorCommand.class);
 
     @Reference
     Session session;

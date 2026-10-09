@@ -10,8 +10,6 @@ import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.ConstraintViolationException;
@@ -24,8 +22,6 @@ import java.util.stream.Collectors;
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=rep:root"
 })
 public class ChildNodeDefinitionsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
-
-    private static final Logger logger = LoggerFactory.getLogger(ChildNodeDefinitionsSanityCheck.class);
 
     public static final ContentIntegrityErrorType NOT_ALLOWED_BY_PARENT_DEF = createErrorType("NOT_ALLOWED_BY_PARENT_DEF",
             "The node is not allowed as a child node of its current parent node", true);

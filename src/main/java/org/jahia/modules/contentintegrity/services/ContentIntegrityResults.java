@@ -3,8 +3,6 @@ package org.jahia.modules.contentintegrity.services;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.utils.DateUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,15 +32,12 @@ public class ContentIntegrityResults {
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityResults.class);
-
     private final Long testDate;
     private final String formattedTestDate;
     private final Long testDuration;
     private final String formattedTestDuration;
     private final String workspace;
     private final List<ContentIntegrityError> errors;
-    private String executionID;
     private final List<String> executionLog;
     private final List<ContentIntegrityReport> reports;
     private Status status = Status.FINISHED;
@@ -82,17 +77,8 @@ public class ContentIntegrityResults {
         return workspace;
     }
 
-    public String getExecutionID() {
-        return executionID;
-    }
-
     public List<String> getExecutionLog() {
         return Collections.unmodifiableList(executionLog);
-    }
-
-    public ContentIntegrityResults setExecutionID(String executionID) {
-        this.executionID = executionID;
-        return this;
     }
 
     public Status getStatus() {

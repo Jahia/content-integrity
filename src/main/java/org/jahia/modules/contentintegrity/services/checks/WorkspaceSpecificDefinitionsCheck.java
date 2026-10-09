@@ -214,7 +214,9 @@ public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityC
                 });
                 return true;
             }
-            if (!node.isNodeType(type) || node.getPrimaryNodeTypeName().equals(type)) return false;
+            if (node.getPrimaryNodeTypeName().equals(type)) return false;
+            // A mixin already removed, for example by the fix of another error, is fixed
+            if (!node.isNodeType(type)) return true;
             RepairUtils.runWithListenersDisabled(() -> {
                 node.removeMixin(type);
                 node.saveSession();
@@ -224,9 +226,9 @@ public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityC
         if (errorType.equals(UNEXPECTED_PROP)) {
             final String property = (String) error.getExtraInfo("unexpected-prop");
             if (property == null) return false;
-            final boolean[] removed = new boolean[1];
-            RepairUtils.runWithListenersDisabled(() -> removed[0] = RepairUtils.removePropertyRaw(node, property));
-            return removed[0];
+            // A property already removed, for example by the fix of another error, is fixed
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removePropertyRaw(node, property));
+            return true;
         }
         if (errorType.equals(UNEXPECTED_PROP_VALUE)) {
             final String property = (String) error.getExtraInfo("unexpected-prop");

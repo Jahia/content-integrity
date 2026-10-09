@@ -11,8 +11,6 @@ import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.util.Collection;
@@ -29,7 +27,6 @@ import static org.jahia.services.usermanager.JahiaGroupManagerService.SITE_PRIVI
 })
 public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck {
 
-    private static final Logger logger = LoggerFactory.getLogger(SiteLevelSystemGroupsCheck.class);
     private static final String EXTRA_MSG_PRIVILEGED_GROUP_NOT_EXIST = String.format("The '%s' group is created at server installation time, at server level, and should never be deleted", PRIVILEGED_GROUPNAME);
     private static final String EXTRA_MSG_SITE_PRIVILEGED_GROUP_NOT_EXIST = String.format("The '%s' group is created at site creation time, at site level, and should never be deleted", SITE_PRIVILEGED_GROUPNAME);
     private static final String EXTRA_MSG_SITE_PRIVILEGED_NOT_MEMBER_PRIVILEGED_GROUP = String.format("The '%s' group of each site must be member of the server level group '%s", SITE_PRIVILEGED_GROUPNAME, PRIVILEGED_GROUPNAME);

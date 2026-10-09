@@ -1,9 +1,11 @@
 package org.jahia.modules.contentintegrity.graphql;
 
+import graphql.ErrorType;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.contentintegrity.graphql.model.GqlIntegrityService;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.DXGraphQLProvider;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
@@ -19,13 +21,14 @@ public class QueryExtensions {
 
     @GraphQLField
     @GraphQLName("contentIntegrity")
-    public static GqlIntegrityService getService() throws IllegalAccessException {
+    public static GqlIntegrityService getService() {
         try {
             if (JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission("adminContentIntegrity"))
                 return BundleUtils.getOsgiService(GqlIntegrityService.class, null);
         } catch (RepositoryException e) {
             logger.error("", e);
         }
-        throw new IllegalAccessException("The current user is not allowed to access the API");
+        // A client error: it is returned to the caller, and not logged as a failure of the server
+        throw new BaseGqlClientException("The current user is not allowed to access the API", ErrorType.DataFetchingException);
     }
 }

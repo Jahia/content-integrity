@@ -7,7 +7,6 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
@@ -15,8 +14,6 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
@@ -30,8 +27,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class GqlScanResults {
-
-    private static final Logger logger = LoggerFactory.getLogger(GqlScanResults.class);
 
     private static final int MAX_PAGE_SIZE = 100;
 
@@ -162,10 +157,8 @@ public class GqlScanResults {
                 result.addAlreadyFixed();
                 continue;
             }
-            final ContentIntegrityCheck check = service.getContentIntegrityCheck(error.getIntegrityCheckID());
-            final boolean fixedWithValues = check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues
-                    && ((ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) check).isFixWithValues(error);
-            if (!(check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix) || fixedWithValues || Utils.isOnVirtualNode(error)) {
+            // An error whose fix takes values is fixed with values chosen by an administrator
+            if (!service.isFixable(error) || service.getFixValuesDefinition(error) != null) {
                 result.addSkipped();
                 continue;
             }

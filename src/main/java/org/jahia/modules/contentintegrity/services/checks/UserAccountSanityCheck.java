@@ -8,8 +8,6 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -18,8 +16,6 @@ import java.util.Map;
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_USER
 })
 public class UserAccountSanityCheck extends AbstractContentIntegrityCheck {
-
-    private static final Logger logger = LoggerFactory.getLogger(UserAccountSanityCheck.class);
 
     public static final ContentIntegrityErrorType NOT_OWNER = createErrorType("NOT_OWNER", "The user is not owner of his account node");
 

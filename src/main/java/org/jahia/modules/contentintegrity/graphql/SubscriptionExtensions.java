@@ -16,7 +16,7 @@ public class SubscriptionExtensions {
     @GraphQLField
     @GraphQLName("contentIntegrityScan")
     @GraphQLDescription("Follows a scan: its status and its new log lines, until it is over. Requires the permission adminContentIntegrity")
-    public static Publisher<GqlIntegrityScanProgress> getScan(@GraphQLName("id") @GraphQLNonNull String executionID) throws IllegalAccessException {
+    public static Publisher<GqlIntegrityScanProgress> getScan(@GraphQLName("id") @GraphQLNonNull String executionID) {
         // The same check as the queries: on the WebSocket transport, the provider sets the user of the connection
         QueryExtensions.getService();
         return GqlIntegrityScan.follow(executionID);

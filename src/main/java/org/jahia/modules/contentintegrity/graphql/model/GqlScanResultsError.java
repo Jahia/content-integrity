@@ -5,12 +5,9 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -19,9 +16,10 @@ import java.util.stream.Collectors;
 
 public class GqlScanResultsError {
 
-    private static final Logger logger = LoggerFactory.getLogger(GqlScanResultsError.class);
-
     private final ContentIntegrityError error;
+    // Read once: the description of the values reads the node of the error
+    private boolean fixValuesRead = false;
+    private GqlFixValuesDefinition fixValues;
 
     public GqlScanResultsError(ContentIntegrityError error) {
         this.error = error;
@@ -44,29 +42,27 @@ public class GqlScanResultsError {
     }
 
     @GraphQLField
-    @GraphQLDescription("True if the check which has detected the error provides a fix, the error is not fixed yet, and its node is not virtual")
+    @GraphQLDescription("True if the check which has detected the error provides a fix for it, the error is not fixed yet, and its node is not virtual")
     public boolean isFixable() {
-        if (error.isFixed() || isVirtualNode()) return false;
-        final ContentIntegrityCheck check = Utils.getContentIntegrityService().getContentIntegrityCheck(error.getIntegrityCheckID());
-        return check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix;
+        return !error.isFixed() && Utils.getContentIntegrityService().isFixable(error);
     }
 
     @GraphQLField
-    @GraphQLDescription("True if the fix of the error takes values, which are described by the field 'fixValues'")
+    @GraphQLDescription("True if the fix of the error takes values, which are described by the field 'fixValues'. Reads the node of the error")
     public boolean isFixWithValues() {
-        if (error.isFixed() || isVirtualNode()) return false;
-        final ContentIntegrityCheck check = Utils.getContentIntegrityService().getContentIntegrityCheck(error.getIntegrityCheckID());
-        return check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues
-                && ((ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) check).isFixWithValues(error);
+        return getFixValues() != null;
     }
 
     @GraphQLField
-    @GraphQLDescription("The values to provide to fix the error, null if its fix doesn't take values")
+    @GraphQLDescription("The values to provide to fix the error, null if its fix doesn't take values. Reads the node of the error")
     public GqlFixValuesDefinition getFixValues() {
-        if (!isFixWithValues()) return null;
-        return Optional.ofNullable(Utils.getContentIntegrityService().getFixValuesDefinition(error))
-                .map(GqlFixValuesDefinition::new)
-                .orElse(null);
+        if (!fixValuesRead) {
+            fixValuesRead = true;
+            fixValues = error.isFixed() ? null : Optional.ofNullable(Utils.getContentIntegrityService().getFixValuesDefinition(error))
+                    .map(GqlFixValuesDefinition::new)
+                    .orElse(null);
+        }
+        return fixValues;
     }
 
     @GraphQLField

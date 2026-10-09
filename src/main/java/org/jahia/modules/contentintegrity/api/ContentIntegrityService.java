@@ -37,7 +37,13 @@ public interface ContentIntegrityService {
     void fixError(ContentIntegrityError error, List<String> values) throws RepositoryException;
 
     /**
-     * @return the description of the values to provide to fix the error, null if its fix doesn't take values
+     * @return true if the check which has detected the error provides a fix for it, and its node still exists and is not virtual
+     */
+    boolean isFixable(ContentIntegrityError error);
+
+    /**
+     * @return the description of the values to provide to fix the error, null if it is not fixable or if its fix doesn't take
+     * values. Reads the node of the error
      */
     FixValuesDefinition getFixValuesDefinition(ContentIntegrityError error);
 
@@ -55,19 +61,6 @@ public interface ContentIntegrityService {
      * Stores the errors of the results fixed since they were stored.
      */
     void saveFixedErrors(ContentIntegrityResults results);
-
-    /**
-     * @deprecated the results are stored in the JCR: use {@link #saveResults} or {@link #saveFixedErrors}. Stores the
-     * errors fixed since the results were stored.
-     */
-    @Deprecated
-    void storeErrorsInCache(ContentIntegrityResults results);
-
-    /**
-     * @deprecated the results are stored in the JCR. Forgets the copy of the results kept in memory.
-     */
-    @Deprecated
-    void removeErrorsFromCache(ContentIntegrityResults results);
 
     /**
      * @return the stored results, from the oldest scan to the latest, without their errors

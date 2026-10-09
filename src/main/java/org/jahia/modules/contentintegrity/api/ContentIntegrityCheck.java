@@ -51,7 +51,16 @@ public interface ContentIntegrityCheck {
 
     interface SupportsIntegrityErrorFix {
         /**
-         * Fix a single error identified during a previous scan.
+         * @param error an error detected by this check
+         * @return true if this check provides a fix for this error, for example for its type. Only reads the error, so it is
+         * cheap to call on every error of a scan. True by default: a check which fixes only some of its errors overrides it
+         */
+        default boolean isFixable(ContentIntegrityError error) {
+            return true;
+        }
+
+        /**
+         * Fix a single error identified during a previous scan. Only called on an error which is fixable.
          *
          * @param node the node on which the error has been identified.
          * @param error the error to fix
@@ -66,14 +75,10 @@ public interface ContentIntegrityCheck {
      */
     interface SupportsIntegrityErrorFixWithValues extends SupportsIntegrityErrorFix {
         /**
-         * @param error the error to fix
-         * @return true if the fix of this error takes values. Only reads the error, so it is cheap to call on every error of a scan
-         */
-        boolean isFixWithValues(ContentIntegrityError error);
-
-        /**
+         * Tells if the fix of a fixable error takes values: an error takes values if this method returns a description of them.
+         *
          * @param node  the node on which the error has been identified
-         * @param error the error to fix
+         * @param error the error to fix, which is fixable
          * @return the description of the values to provide, null if the fix of this error doesn't take values
          * @throws RepositoryException
          */

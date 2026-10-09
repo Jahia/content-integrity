@@ -6,14 +6,10 @@ import org.apache.karaf.shell.api.console.CommandLine;
 import org.apache.karaf.shell.api.console.Completer;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.completers.StringsCompleter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public abstract class SimpleCompleter implements Completer {
-
-    private static final Logger logger = LoggerFactory.getLogger(SimpleCompleter.class);
 
     @Override
     public int complete(Session session, CommandLine commandLine, List<String> candidates) {

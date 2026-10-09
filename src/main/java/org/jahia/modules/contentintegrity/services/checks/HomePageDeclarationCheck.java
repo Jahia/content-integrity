@@ -18,6 +18,7 @@ import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
@@ -37,6 +38,9 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
     public static final ContentIntegrityErrorType MULTIPLE_HOMES = createErrorType("MULTIPLE_HOMES", "The site has several pages flagged as home");
     public static final ContentIntegrityErrorType FALLBACK_ON_NAME = createErrorType("FALLBACK_ON_NAME", String.format("The site has no page flagged as home, but one is named '%s'", HOME_PAGE_FALLBACK_NAME));
     public static final ContentIntegrityErrorType FALLBACK_ON_NAME_WRONG_TYPE = createErrorType("FALLBACK_ON_NAME_WRONG_TYPE", String.format("The site has no page flagged as home. It has a sub-node named '%s', but this node is not of type %s", HOME_PAGE_FALLBACK_NAME, JAHIANT_PAGE));
+
+    // A sub-node named home which is not a page needs an analysis: it is not fixed
+    private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME);
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
@@ -74,6 +78,11 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
             return createSingleError(createFrameworkError(node, e));
         }
         return null;
+    }
+
+    @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return FIXABLE_ERRORS.contains(error.getErrorType());
     }
 
     @Override

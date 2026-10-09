@@ -1,8 +1,6 @@
 package org.jahia.modules.contentintegrity.services.impl;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,8 +10,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 public class ContentIntegrityCheckConfigurationImpl implements ContentIntegrityCheckConfiguration {
-
-    private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityCheckConfigurationImpl.class);
 
     private final Map<String, DefaultConfiguration> defaultParameters = new HashMap<>();
     private final Map<String, Object> customParameters = new HashMap<>();

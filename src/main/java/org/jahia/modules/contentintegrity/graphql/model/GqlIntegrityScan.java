@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +141,7 @@ public class GqlIntegrityScan {
         final long testDate = executionStart.get(id).toEpochMilli();
         // The report of the scan is stored from its start, then updated with its log until its end
         final ScanReportLogger reportLogger = new ScanReportLogger(console, new ContentIntegrityResults(testDate, 0L, scannedWorkspace, new ArrayList<>(), new ArrayList<>())
-                .setStatus(ContentIntegrityResults.Status.RUNNING).setExecutionID(id));
+                .setStatus(ContentIntegrityResults.Status.RUNNING));
         reportLogger.flush();
         scanResults.put(id, reportLogger.getReport().getID());
 
@@ -161,7 +160,7 @@ public class GqlIntegrityScan {
                     final ContentIntegrityResults contentIntegrityResults = service.validateIntegrity(Optional.ofNullable(path).orElse(Constants.ROOT_NODE_PATH),
                             excludedPaths, skipMountPointsValue, ws, checksToExecute, reportLogger, false);
                     if (contentIntegrityResults != null)
-                        results.add(contentIntegrityResults.setExecutionID(id));
+                        results.add(contentIntegrityResults);
                 }
                 final boolean isStopped = stopRequests.contains(id);
                 if (results.isEmpty() && !isStopped) {
@@ -169,7 +168,7 @@ public class GqlIntegrityScan {
                     return;
                 }
 
-                final ContentIntegrityResults mergedResults = Utils.mergeResults(results, testDate, scannedWorkspace).setExecutionID(id);
+                final ContentIntegrityResults mergedResults = Utils.mergeResults(results, testDate, scannedWorkspace);
                 // Stopped between two workspaces, or before the first one, the scan has not covered them all
                 if (isStopped) mergedResults.setInterrupted(true);
                 final boolean interrupted = mergedResults.isInterrupted();

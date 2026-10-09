@@ -15,8 +15,6 @@ import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.Binary;
 import javax.jcr.Property;
@@ -32,7 +30,6 @@ import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityC
 @Component(service = ContentIntegrityCheck.class, immediate = true)
 public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
-    private static final Logger logger = LoggerFactory.getLogger(BinaryPropertiesSanityCheck.class);
     private static final String DOWNLOAD_STREAM = "download-stream";
     private static final String ACCEPT_ZERO_BYTE_BINARIES = "accept-zero-byte-binaries";
     private static final String EXTRA_MSG_ZERO_LENGTH_BINARY = "Warning: the binary length is zero byte. This can be a false positive if an empty file has been uploaded";

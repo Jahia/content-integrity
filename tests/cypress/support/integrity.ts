@@ -367,6 +367,34 @@ export const expectNotFixable = (results: ScanResults, errorType: string, path: 
 };
 
 /**
+ * Scans twice, then fixes the error from both results: from the second ones, it is already fixed, as when it was fixed from
+ * other results or by the fix of another error. Both fixes report it fixed, then a scan checks that the error is gone.
+ */
+export const fixFromTwoScans = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
+    scan(startNode, checks, workspace).then(first => {
+        scan(startNode, checks, workspace).then(second => {
+            fixError(first.resultsId, expectError(first, errorType, path).id).then(result => expect(result.fixed, `Fix of ${errorType}: ${result.message}`).to.be.true);
+            fixError(second.resultsId, expectError(second, errorType, path).id).then(result => {
+                expect(result.fixed, `Fix of ${errorType} already fixed: ${result.message}`).to.be.true;
+            });
+        });
+    });
+    scan(startNode, checks, workspace).then(results => expectNoError(results, errorType, path));
+};
+
+/**
+ * Scans, checks that the error of the type on the node is not fixable, that a fix does not change it, then scans again to
+ * check that the error is still there.
+ */
+export const expectNoFix = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
+    scan(startNode, checks, workspace).then(results => {
+        expectNotFixable(results, errorType, path);
+        fixError(results.resultsId, expectError(results, errorType, path).id).its('fixed').should('be.false');
+    });
+    scan(startNode, checks, workspace).then(results => expectError(results, errorType, path));
+};
+
+/**
  * Asserts the status of a check: the checks disabled by default are run only when they are explicitly selected.
  */
 export const expectCheckEnabled = (checkId: string, enabled: boolean): void => {

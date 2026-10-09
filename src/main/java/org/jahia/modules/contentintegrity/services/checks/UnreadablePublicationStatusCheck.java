@@ -8,8 +8,6 @@ import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
@@ -23,8 +21,6 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.TRANSLA
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + JAHIA_MIX_I18N
 })
 public class UnreadablePublicationStatusCheck extends AbstractContentIntegrityCheck {
-
-    private static final Logger logger = LoggerFactory.getLogger(UnreadablePublicationStatusCheck.class);
 
     public static final ContentIntegrityErrorType UNREADABLE_PUBLICATION_STATUS =
             createErrorType("UNREADABLE_PUBLICATION_STATUS",

@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -466,7 +465,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private void handleResult(ContentIntegrityErrorList checkResult, JCRNodeWrapper node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors, ExternalLogger externalLogger) {
         if (checkResult == null || !checkResult.hasErrors()) return;
         for (ContentIntegrityError integrityError : checkResult.getNestedErrors()) {
-            if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
+            if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix
+                    && ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).isFixable(integrityError))
                 try {
                     integrityError.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, integrityError));
                 } catch (RepositoryException e) {
@@ -492,6 +492,10 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 continue;
             }
             if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
+            if (!((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).isFixable(error)) {
+                logger.info("The error {} is not fixed: its check provides no fix for {}", error.getErrorID(), error.getErrorType());
+                continue;
+            }
             if (Utils.isOnVirtualNode(error)) {
                 logger.warn("The error {} is not fixed: its node is virtual", error.getErrorID());
                 continue;
@@ -506,7 +510,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
                 final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error);
                 if (fixed) error.setFixed(true);
-                else logger.error(String.format("Failed to fix the error %s", error.toJSON()));
+                else logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
             } catch (RepositoryException e) {
                 logger.error(String.format("Failed to fix the error %s", error.toJSON()), e);
             }
@@ -520,26 +524,46 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             throw new RepositoryException("The check which has detected the error doesn't fix it with values");
         }
         final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = (ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) integrityCheck;
-        if (!check.isFixWithValues(error)) {
-            throw new RepositoryException("This error is not fixed with values");
-        }
         if (Utils.isOnVirtualNode(error)) {
             throw new RepositoryException("The errors of a virtual node, served by an external provider, are not fixed");
         }
+        if (!check.isFixable(error)) {
+            throw new RepositoryException("The check which has detected the error provides no fix for it");
+        }
         final JCRNodeWrapper node = getErrorNode(error);
+        if (check.getFixValuesDefinition(node, error) == null) {
+            throw new RepositoryException("This error is not fixed with values");
+        }
         if (check.fixError(node, error, values)) {
             error.setFixed(true);
         } else {
-            logger.error(String.format("Failed to fix the error %s", error.toJSON()));
+            logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
         }
+    }
+
+    @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+        return integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix
+                && ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).isFixable(error)
+                && !Utils.isOnVirtualNode(error)
+                && errorNodeExists(error);
+    }
+
+    /*
+     * A node removed since the scan, for example by the fix of another error, leaves nothing to fix. Without its node, an
+     * error can't tell either whether its fix takes values: it would be fixed without them.
+     */
+    private boolean errorNodeExists(ContentIntegrityError error) {
+        final JCRSessionWrapper session = JCRUtils.getSystemSession(error.getWorkspace(), false);
+        return session != null && StringUtils.isNotBlank(error.getUuid()) && JCRUtils.nodeExists(error.getUuid(), session);
     }
 
     @Override
     public FixValuesDefinition getFixValuesDefinition(ContentIntegrityError error) {
         final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
-        if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues)) return null;
+        if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) || !isFixable(error)) return null;
         final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = (ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) integrityCheck;
-        if (!check.isFixWithValues(error)) return null;
         try {
             return check.getFixValuesDefinition(getErrorNode(error), error);
         } catch (RepositoryException e) {
@@ -592,18 +616,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     @Override
     public void saveFixedErrors(ContentIntegrityResults results) {
         ResultsStore.saveFixedErrors(results);
-    }
-
-    @Override
-    @Deprecated
-    public void storeErrorsInCache(ContentIntegrityResults results) {
-        saveFixedErrors(results);
-    }
-
-    @Override
-    @Deprecated
-    public void removeErrorsFromCache(ContentIntegrityResults results) {
-        loadedResults.remove(results.getID());
     }
 
     @Override

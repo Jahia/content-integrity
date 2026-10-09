@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectFixFails, expectNoError, fixAndVerify, runFixture, scan} from '../../support/integrity';
+import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoFix, expectNoError, fixAndVerify, runFixture, scan} from '../../support/integrity';
 
 const SITE = 'ciHomePageCheck';
 const SITE_PATH = `/sites/${SITE}`;
@@ -64,9 +64,9 @@ describe('HomePageDeclarationCheck', () => {
             fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'NO_HOME', SITE_PATH);
         });
 
-        it('does not fix FALLBACK_ON_NAME_WRONG_TYPE', () => {
+        it('provides no fix for FALLBACK_ON_NAME_WRONG_TYPE', () => {
             scenario('FALLBACK_ON_NAME_WRONG_TYPE');
-            expectFixFails(SITE_PATH, CHECKS, 'EDIT', 'FALLBACK_ON_NAME_WRONG_TYPE', SITE_PATH);
+            expectNoFix(SITE_PATH, CHECKS, 'EDIT', 'FALLBACK_ON_NAME_WRONG_TYPE', SITE_PATH);
         });
     });
 });

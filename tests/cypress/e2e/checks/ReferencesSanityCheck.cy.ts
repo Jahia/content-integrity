@@ -4,7 +4,7 @@ import {
     deleteTestSite,
     expectError,
     expectExtraInfo,
-    expectFixFails,
+    expectNoFix,
     expectNoError,
     fixAndVerify,
     resetCheckConfiguration,
@@ -58,8 +58,8 @@ describe('ReferencesSanityCheck', () => {
     // The back references are read with the system session of the scan, which can always read the referencing node
     it.skip('detects INVALID_BACK_REF (not reproducible)');
 
-    it('does not fix BROKEN_REF_TO_VN', () => {
-        expectFixFails(ROOT, CHECKS, 'EDIT', 'BROKEN_REF_TO_VN', `${ROOT}/broken-reference-to-virtual-node`);
+    it('provides no fix for BROKEN_REF_TO_VN', () => {
+        expectNoFix(ROOT, CHECKS, 'EDIT', 'BROKEN_REF_TO_VN', `${ROOT}/broken-reference-to-virtual-node`);
     });
 
     it('fixes BROKEN_REF by removing the broken value', () => {

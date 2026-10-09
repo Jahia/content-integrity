@@ -11,8 +11,6 @@ import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import java.util.Collection;
@@ -28,8 +26,6 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.NT_VERS
         ContentIntegrityCheck.ENABLED + "=false"
 })
 public class VersionSanityCheck extends AbstractContentIntegrityCheck {
-
-    private static final Logger logger = LoggerFactory.getLogger(VersionSanityCheck.class);
 
     public static final ContentIntegrityErrorType ORPHAN_IN_SUBTREE = createErrorType("ORPHAN_IN_SUBTREE", "Orphaned version histories found in the subtree");
     public static final ContentIntegrityErrorType ORPHANED_HISTORY = createErrorType("ORPHANED_HISTORY", "Orphaned version history");

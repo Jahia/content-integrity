@@ -92,7 +92,8 @@ public class GqlIntegrityCheck {
             configurations.setParameter(name, value);
             return true;
         } catch (IllegalArgumentException iae) {
-            logger.error("", iae);
+            // An invalid value typed by an administrator: the configuration is refused, the server has no failure to log
+            logger.warn("Configuration of {} refused: {}", getId(), iae.getMessage());
             return false;
         }
     }
@@ -106,7 +107,8 @@ public class GqlIntegrityCheck {
             configurations.setParameter(name, null);
             return true;
         } catch (IllegalArgumentException iae) {
-            logger.error("", iae);
+            // An invalid value typed by an administrator: the configuration is refused, the server has no failure to log
+            logger.warn("Configuration of {} refused: {}", getId(), iae.getMessage());
             return false;
         }
     }

@@ -11,8 +11,6 @@ import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 
@@ -22,8 +20,6 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LAN
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_TRANSLATION
 })
 public class JCRLanguagePropertyCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
-
-    private static final Logger logger = LoggerFactory.getLogger(JCRLanguagePropertyCheck.class);
 
     public static final ContentIntegrityErrorType MISSING_JCR_LANGUAGE_PROP = createErrorType("MISSING_JCR_LANGUAGE_PROP", String.format("The %s property is missing", JCR_LANGUAGE), true);
     public static final ContentIntegrityErrorType INCONSISTENT_JCR_LANGUAGE_PROP = createErrorType("INCONSISTENT_JCR_LANGUAGE_PROP", String.format("The value of the property %s is inconsistent with the node name", JCR_LANGUAGE), true);

@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, expectError, expectExtraInfo, fixAndVerify, runFixture, scan, ScanResults} from '../../support/integrity';
+import {createTestSite, deleteTestSite, expectError, expectExtraInfo, fixAndVerify, fixFromTwoScans, runFixture, scan, ScanResults} from '../../support/integrity';
 
 const SITE = 'ciUndeclaredTypesCheck';
 const ROOT = `/sites/${SITE}/contents/undeclared-node-types`;
@@ -37,6 +37,11 @@ describe('UndeclaredNodeTypesCheck', () => {
     describe('Fix', () => {
         it('fixes UNDECLARED_NODE_TYPE on a mixin by removing the mixin', () => {
             fixAndVerify(ROOT, CHECKS, 'EDIT', 'UNDECLARED_NODE_TYPE', `${ROOT}/undeclared-mixin`);
+        });
+
+        it('reports an undeclared mixin already removed as fixed', () => {
+            runFixture('checks/UndeclaredNodeTypesCheck.groovy', {SITEKEY: SITE});
+            fixFromTwoScans(ROOT, CHECKS, 'EDIT', 'UNDECLARED_NODE_TYPE', `${ROOT}/undeclared-mixin`);
         });
 
         it('fixes UNDECLARED_NODE_TYPE on a primary type by removing the node', () => {

@@ -4,7 +4,7 @@ import {
     deleteTestSite,
     expectError,
     expectExtraInfo,
-    expectFixFails,
+    expectNoFix,
     expectNoError,
     fixAndVerify,
     resetCheckConfiguration,
@@ -90,8 +90,8 @@ describe('PublicationSanityLiveCheck', () => {
         });
 
         DEEP_COMPARISON.forEach(([errorType, name]) => {
-            it(`does not fix ${errorType}`, () => {
-                expectFixFails(ROOT, CHECKS, 'LIVE', errorType, `${ROOT}/${name}`);
+            it(`provides no fix for ${errorType}`, () => {
+                expectNoFix(ROOT, CHECKS, 'LIVE', errorType, `${ROOT}/${name}`);
             });
         });
     });

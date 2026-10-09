@@ -4,6 +4,8 @@
 // - FALLBACK_ON_NAME: no page flagged as home, but a page named home
 // - NO_HOME: no page flagged as home, and no page named home
 // - FALLBACK_ON_NAME_WRONG_TYPE: no page flagged as home, and a sub-node named home which is not a page
+// - NO_PAGE: no page right under the site, its only page being moved under a menu label: NO_HOME can't be fixed
+// Another scenario name, such as RESTORE, only restores the site
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
@@ -19,6 +21,8 @@ try {
     // Restores the regular declaration
     if (site.hasNode("home") && !site.getNode("home").isNodeType("jnt:page")) site.getNode("home").remove()
     if (site.hasNode("former-home")) session.move(SITE + "/former-home", SITE + "/home")
+    if (site.hasNode("ci-menu/former-home")) session.move(SITE + "/ci-menu/former-home", SITE + "/home")
+    if (site.hasNode("ci-menu")) site.getNode("ci-menu").remove()
     if (site.hasNode("second-home")) site.getNode("second-home").remove()
     site.getNode("home").setProperty("j:isHomePage", true)
     session.save()
@@ -35,6 +39,11 @@ try {
         case "NO_HOME":
             site.getNode("home").getProperty("j:isHomePage").remove()
             session.move(SITE + "/home", SITE + "/former-home")
+            break
+        case "NO_PAGE":
+            site.getNode("home").getProperty("j:isHomePage").remove()
+            site.addNode("ci-menu", "jnt:navMenuText")
+            session.move(SITE + "/home", SITE + "/ci-menu/former-home")
             break
         case "FALLBACK_ON_NAME_WRONG_TYPE":
             site.getNode("home").getProperty("j:isHomePage").remove()

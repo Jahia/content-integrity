@@ -4,8 +4,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.settings.SettingsBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -14,8 +12,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class CsvReport extends Report {
-
-    private static final Logger logger = LoggerFactory.getLogger(CsvReport.class);
 
     private static final String REPORT_COLUMN_NAMES_CONF = "modules.contentIntegrity.csv.header";
     private static final String CSV_SEPARATOR = ";";
