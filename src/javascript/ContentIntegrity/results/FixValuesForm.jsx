@@ -40,18 +40,20 @@ export const FixValuesForm = ({errorId, definition, values, message, isDisabled,
 
     const setValue = (index, value) => onChange(values.map((v, i) => (i === index ? value : v)));
 
+    // The type tells how to write a value: a choice needs no such help
     const helper = [
-        t('label.fixValues.type', {type: definition.type}),
+        choices ? null : t('label.fixValues.type', {type: definition.type}),
         definition.constraints?.length && !definition.choices?.length ? t('label.fixValues.constraints', {constraints: definition.constraints.join(', ')}) : null
     ].filter(Boolean).join(' · ');
 
     const renderValue = (value, index) => {
         const label = definition.multiple ? t('label.fixValues.valueAt', {index: index + 1}) : definition.name;
         const editor = choices ? (
-            <Dropdown data={choices.map(choice => ({label: choice, value: choice}))}
+            <Dropdown data={choices.map((choice, i) => ({label: definition.choiceLabels?.[i] || choice, value: choice}))}
                       value={value || undefined}
                       placeholder={t('label.fixValues.choose')}
                       variant="outlined"
+                      hasSearch={choices.length > 10}
                       isDisabled={isDisabled}
                       className={styles.fixValuesInput}
                       onChange={(e, item) => setValue(index, item.value)}/>
@@ -90,7 +92,7 @@ export const FixValuesForm = ({errorId, definition, values, message, isDisabled,
         <section className={styles.fixValuesSection}>
             <div>
                 <Typography variant="subheading" weight="bold">{t('label.fixValues.title')}</Typography>
-                <Typography variant="body" className={styles.helper}>{t('label.fixValues.description', {property: definition.name})}</Typography>
+                <Typography variant="body" className={styles.helper}>{definition.description || t('label.fixValues.description', {property: definition.name})}</Typography>
             </div>
             <FormField id={`${fieldId}-field`}
                        className={styles.fixValuesField}
@@ -124,6 +126,8 @@ FixValuesForm.propTypes = {
         type: PropTypes.string.isRequired,
         multiple: PropTypes.bool,
         choices: PropTypes.arrayOf(PropTypes.string),
+        choiceLabels: PropTypes.arrayOf(PropTypes.string),
+        description: PropTypes.string,
         constraints: PropTypes.arrayOf(PropTypes.string),
         defaultValues: PropTypes.arrayOf(PropTypes.string)
     }).isRequired,

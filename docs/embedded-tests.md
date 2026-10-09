@@ -289,6 +289,8 @@ On UGC nodes, the property needs to be modified using a script.
 If the template is implemented in a module which is mistakenly missing, then installing this module back will fix the error.  
 Otherwise, the page has to be edited to select another template. Note: the new template might use some different areas, and those related to the former template might need to be renamed or deleted.
 
+**Fix**: in the details of the error, in the administration screen, choose the template in a dropdown, then click **Fix**. The dropdown lists the templates an editor can choose for the page: the page templates of the template set of the site and of its modules, which apply on the type of the page, are not hidden and are allowed on the site. The right template can't be guessed, so **Fix all** skips this error.
+
 ## PropertyDefinitionsSanityCheck
 
 Checks the validity of the content against the property definitions. 

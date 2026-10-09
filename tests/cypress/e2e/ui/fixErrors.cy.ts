@@ -37,8 +37,6 @@ describe('Fix of the errors', () => {
             cy.contains('MISSING_TEMPLATE').should('be.visible');
             cy.contains('PagesSanityCheck').should('be.visible');
             cy.contains('ci-template-which-does-not-exist').should('be.visible');
-            // The check provides no fix for this error
-            cy.contains('button', /^Fix/).should('not.exist');
         });
         // A click on another row displays the details of its error in the same panel
         openErrorDetails(`${LOCKS}/inconsistent-lock`);
@@ -84,6 +82,24 @@ describe('Fix of the errors', () => {
             cy.contains('Not fixed').should('be.visible');
             cy.contains('The fix of the check has not fixed this error').should('be.visible');
         });
+    });
+
+    it('fixes a page without template with a template chosen in a dropdown', () => {
+        openErrorDetails(MISSING_TEMPLATE);
+        getDetailsPanel().within(() => {
+            cy.contains('The template ci-template-which-does-not-exist does not exist').should('be.visible');
+            cy.contains('button', /^Fix$/).should('be.disabled');
+        });
+        // The menu of the dropdown is displayed above the page, outside of the panel
+        getDetailsPanel().find('.moonstone-dropdown').click();
+        cy.contains('li.moonstone-menuItem', /^home$/).click();
+        getDetailsPanel().within(() => {
+            cy.contains('button', /^Fix$/).click();
+            cy.contains('Fixed').should('be.visible');
+        });
+        getRow(MISSING_TEMPLATE).within(() => cy.contains('Fixed').should('be.visible'));
+        scan(`/sites/${SITE}`, CHECKS).then(results => expect(results.errors.filter(e => e.nodePath === MISSING_TEMPLATE)).to.have.length(0));
+        runFixture('checks/PagesSanityCheck.groovy', {SITEKEY: SITE});
     });
 
     it('keeps the fixed status of an error once the page is reloaded', () => {

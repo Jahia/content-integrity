@@ -40,6 +40,18 @@ public class GqlFixValuesDefinition {
     }
 
     @GraphQLField
+    @GraphQLDescription("The labels of the choices, in the same order, empty if the choices are displayed as they are")
+    public List<String> getChoiceLabels() {
+        return definition.getChoiceLabels();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("What the values are for, null for a missing mandatory property")
+    public String getDescription() {
+        return definition.getDescription();
+    }
+
+    @GraphQLField
     @GraphQLDescription("The constraints the values have to match")
     public List<String> getConstraints() {
         return definition.getConstraints();

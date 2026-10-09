@@ -198,6 +198,8 @@ export const GET_ERROR_DETAILS = gql`
                         type
                         multiple
                         choices
+                        choiceLabels
+                        description
                         constraints
                         defaultValues
                     }

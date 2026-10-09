@@ -136,7 +136,7 @@ describe('Results table', () => {
         getResultsTable().contains('Fixed').should('not.exist');
     });
 
-    it('fixes all the errors matching the filters, and skips the ones its check can not fix', () => {
+    it('fixes all the errors matching the filters, and skips the ones fixed with a chosen value', () => {
         cy.contains('button', 'Fix all').click();
         getDialog('Fix all the displayed errors').within(() => cy.contains('button', 'Fix 3 errors').click());
         cy.contains('[role=status]', '2 fixed, 0 not fixed, 1 skipped, 0 already fixed', {timeout: 30000}).should('be.visible');

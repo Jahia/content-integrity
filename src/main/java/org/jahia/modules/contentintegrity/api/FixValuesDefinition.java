@@ -14,6 +14,8 @@ public class FixValuesDefinition {
     private final List<String> choices;
     private final List<String> constraints;
     private final List<String> defaultValues;
+    private final List<String> choiceLabels;
+    private final String description;
 
     /**
      * @param name          the name of the value, for example a property name
@@ -24,12 +26,24 @@ public class FixValuesDefinition {
      * @param defaultValues the values suggested by default
      */
     public FixValuesDefinition(String name, String type, boolean multiple, List<String> choices, List<String> constraints, List<String> defaultValues) {
+        this(name, type, multiple, choices, constraints, defaultValues, null, null);
+    }
+
+    /**
+     * @param choiceLabels the labels of the choices, in the same order, to display instead of the values, empty to display the values
+     * @param description  what the values are for, displayed with the fields, null for the default description of a missing mandatory property
+     * @see #FixValuesDefinition(String, String, boolean, List, List, List)
+     */
+    public FixValuesDefinition(String name, String type, boolean multiple, List<String> choices, List<String> constraints, List<String> defaultValues,
+                               List<String> choiceLabels, String description) {
         this.name = name;
         this.type = type;
         this.multiple = multiple;
         this.choices = choices == null ? Collections.emptyList() : choices;
         this.constraints = constraints == null ? Collections.emptyList() : constraints;
         this.defaultValues = defaultValues == null ? Collections.emptyList() : defaultValues;
+        this.choiceLabels = choiceLabels == null || choiceLabels.size() != this.choices.size() ? Collections.emptyList() : choiceLabels;
+        this.description = description;
     }
 
     public String getName() {
@@ -54,5 +68,13 @@ public class FixValuesDefinition {
 
     public List<String> getDefaultValues() {
         return defaultValues;
+    }
+
+    public List<String> getChoiceLabels() {
+        return choiceLabels;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }
