@@ -35,7 +35,7 @@ The command `jcr:integrity-fix` of the Karaf console is not controlled by these 
 
 ### <a name="how-to-use-ui"></a>UI
 
-The module adds a page to the administration, under **Server > System > Content Integrity**. The page displays the last scan and the scan results. Use **New scan** to run a scan.
+The module adds a page to the administration, under **Server > System > Content Integrity**. The page displays the scan which runs, if any, and the results of the stored scans. Use **New scan** to run a scan.
 
 ![Content Integrity page](./docs/img/ui-overview.png)
 
@@ -59,19 +59,19 @@ Virtual nodes (e.g. exposed by an EDP connector) can be excluded from the scan. 
 
 #### Follow the scan
 
-While a scan runs, its logs are displayed above the results, and **Stop** interrupts it. The scan is run in background, and leaving the page will have no impact on its execution: when coming back to the page, the running scan is displayed again.
+While a scan runs, a card displays it above the results, with its start date and its logs, and **Stop** interrupts it at the end of its current step. The scan is run in background, and leaving the page will have no impact on its execution: when coming back to the page, the running scan is displayed again.
 
-When the scan is over, its results are displayed, and its reports can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`). A report describes the whole scanned repository, so the reports folder is readable by the server administrators only: the role `privileged`, which every editor of every site holds on the system site, is denied on it. The page always displays the last scan, with its status, its logs and its reports.
+When the scan is over, its results are displayed, and its reports can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`). A report describes the whole scanned repository, so the reports folder is readable by the server administrators only: the role `privileged`, which every editor of every site holds on the system site, is denied on it. Each scan of the results tells its status, finished, interrupted or failed, and keeps its log, displayed with **Show the logs**. The errors of a scan which did not finish are not displayed, since they do not cover the whole tree.
 
 #### Explore the results
 
-Select the scan to display, and choose the columns to display: the check name, the error type, the workspace, the path and the message are displayed by default. The filters are always displayed, and filter the errors on the check, the error type, the workspace, the site, the node type, the locale, the message or the impact on the XML import. Each filter value shows its number of errors. By default, only the errors which make the XML import fail are displayed: **Clear the filters** displays all of them.
+Select the scan to display, by its date and its workspace, and choose the columns to display: the check name, the error type, the workspace, the path and the message are displayed by default. The filters are always displayed, and filter the errors on the check, the error type, the workspace, the site, the node type, the locale, the message or the impact on the XML import. Each filter value shows its number of errors. By default, only the errors which make the XML import fail are displayed: **Clear the filters** displays all of them.
 
-**Fix all** runs the fix of every error matching the filters, after a confirmation, then displays how many errors were fixed, not fixed, skipped and already fixed. Each error fixed or not fixed is tagged as such in its row. The errors whose check provides no fix, and the ones fixed with a typed value, are skipped. Some fixes remove content, so narrow the filters to the errors to fix first.
+**Fix all** runs the fix of every error matching the filters, after a confirmation, then displays how many errors were fixed, not fixed, skipped and already fixed. Each error fixed or not fixed is tagged as such in its row. The errors whose check provides no fix, the ones fixed with a chosen or typed value, and the ones whose node does not exist anymore are skipped. Some fixes remove content, so narrow the filters to the errors to fix first.
 
-Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. A click on the row of an error, or Enter on it, opens its details in a side panel: all its information, including the extra information provided by the check, and **Fix**, which runs the fix of the check which has detected it, when the check provides one. A click on another row displays its error in the same panel, and Escape closes it. An error fixed with a value to type, such as a missing mandatory property, has the field of the value in the panel, and **Fix** sends the typed value. The outcome of a fix, **Fixed** or **Not fixed**, stays displayed in the first column of the row.
+Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. A click on the row of an error, or Enter on it, opens its details in a side panel: all its information, including the extra information provided by the check, and **Fix**, which runs the fix of the check which has detected it, when the check provides one. A click on another row displays its error in the same panel, and Escape closes it. An error fixed with a value has the field of the value in the panel, and **Fix** sends it: a missing mandatory property, a value which breaks the constraints of its definition, chosen among the accepted values, a missing template, chosen among the templates available to the page, or the missing roles of an access control entry, chosen among the roles which can be given at its place. The outcome of a fix, **Fixed** or **Not fixed**, stays displayed in the first column of the row.
 
-The results are kept in memory: they are lost when the module or the server restarts. The reports uploaded to the JCR remain available.
+The results are stored in the JCR, under `/sites/systemsite/files/content-integrity-reports`, from the start of their scan: they remain available after a restart. The reports older than 30 days are deleted by a background job, configured by `org.jahia.modules.contentintegrity.reports` (`retentionDays`, 0 to keep them all, and `cleanupIntervalHours`).
 
 ### Karaf Shell commands
 The content integrity service is available through the [Karaf console](https://academy.jahia.com/documentation/system-administrator/jahia/8/installing-and-configuring-jahia/installing-configuring-and-troubleshooting-jahia/configuring-jahia-features#osgi-ssh-console).
