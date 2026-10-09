@@ -3,6 +3,7 @@
 // - EMPTY_MANDATORY_PROPERTY: jnt:frame without its mandatory width
 // - INVALID_VALUE_TYPE / INVALID_MULTI_VALUE_STATUS / INVALID_VALUE_CONSTRAINT / UNDECLARED_PROPERTY: values written with a definition,
 //   which is then replaced by an incompatible one (Jackrabbit refuses to write such values)
+// - INVALID_VALUE_CONSTRAINT on a multiple property: the second of three values, on the node invalid-choices
 // - INVALID_NODE_VALIDATION: a jnt:vfsMountPoint without j:rootPath, which MountPointAvailabilityValidator requires
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.services.content.JCRObservationManager
@@ -49,12 +50,15 @@ register("""
  - ciTestList (string)
  - ciTestChoice (string)
  - ciTestRemoved (string)
+ - ciTestChoices (string) multiple
 """)
 def typed = folder.addNode("invalid-values", "jnt:ciTestTypedValues")
 typed.setProperty("ciTestNumber", "not a number")
 typed.setProperty("ciTestList", "single value")
 typed.setProperty("ciTestChoice", "not-a-choice")
 typed.setProperty("ciTestRemoved", "removed from the definition")
+def choices = folder.addNode("invalid-choices", "jnt:ciTestTypedValues")
+choices.setProperty("ciTestChoices", ["first", "not-a-choice", "second"] as String[])
 session.save()
 
 withoutListeners {
@@ -69,6 +73,7 @@ register("""
  - ciTestNumber (long)
  - ciTestList (string) multiple
  - ciTestChoice (string) < 'first', 'second'
+ - ciTestChoices (string) multiple < 'first', 'second'
 """)
 
 // The validator applies to the mount points, which live under /mounts

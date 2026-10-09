@@ -825,9 +825,13 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         return false;
     }
 
+    /*
+     * An empty mandatory property, and a value which breaks the constraints of its definition, take the values chosen or
+     * typed by an administrator: the constraints which list the accepted values are offered as choices.
+     */
     @Override
     public boolean isFixWithValues(ContentIntegrityError error) {
-        return EMPTY_MANDATORY_PROPERTY.equals(error.getErrorType());
+        return EMPTY_MANDATORY_PROPERTY.equals(error.getErrorType()) || INVALID_VALUE_CONSTRAINT.equals(error.getErrorType());
     }
 
     @Override
@@ -835,7 +839,8 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         if (!isFixWithValues(error)) return null;
         final String propertyName = (String) error.getExtraInfo("property-name");
         if (StringUtils.isBlank(propertyName)) return null;
-        final ExtendedPropertyDefinition definition = getFixedPropertyDefinition(RepairUtils.getErrorTarget(node, error), propertyName);
+        final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
+        final ExtendedPropertyDefinition definition = getFixedPropertyDefinition(target, propertyName);
         if (definition == null) return null;
 
         final int type = getFixValueType(definition);
@@ -852,7 +857,34 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         } catch (RepositoryException e) {
             logger.debug("Impossible to read the default values of the property {}", propertyName, e);
         }
-        return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), choices, constraints, defaultValues);
+        if (!INVALID_VALUE_CONSTRAINT.equals(error.getErrorType())) {
+            return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), choices, constraints, defaultValues);
+        }
+
+        final String description = String.format("The value %s of the property %s does not match the constraints of its definition. %s",
+                error.getExtraInfo("invalid-value"), propertyName,
+                choices.isEmpty() ? "Type a value which matches them instead." : "Choose one of the accepted values instead.");
+        return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), choices, constraints,
+                getValuesToCorrect(target, propertyName, definition, defaultValues), null, description);
+    }
+
+    /*
+     * The values suggested to correct a value which breaks the constraints: on a multiple property, its other values are
+     * kept, and the ones which break the constraints are left empty, to be chosen. An empty value is not set.
+     */
+    private List<String> getValuesToCorrect(JCRNodeWrapper target, String propertyName, ExtendedPropertyDefinition definition, List<String> defaultValues) {
+        if (!definition.isMultiple()) return defaultValues.isEmpty() ? Collections.emptyList() : defaultValues.subList(0, 1);
+        try {
+            if (!target.hasProperty(propertyName)) return defaultValues;
+            final List<String> values = new ArrayList<>();
+            for (Value value : target.getProperty(propertyName).getValues()) {
+                values.add(constraintIsValid(value, definition, createEmptyErrorsList(), target) ? value.getString() : "");
+            }
+            return values;
+        } catch (RepositoryException e) {
+            logger.debug("Impossible to read the values of the property {} on {}", propertyName, target.getPath(), e);
+            return defaultValues;
+        }
     }
 
     /*

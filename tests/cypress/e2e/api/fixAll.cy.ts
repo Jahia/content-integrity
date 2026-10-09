@@ -69,13 +69,18 @@ describe('Fix of all the errors matching filters', () => {
     });
 
     it('returns the identifiers of the errors whose fix has failed', () => {
-        // The right value of an invalid value can't be guessed: its check does not fix it
+        // The right value of a value of the wrong type can't be guessed: its check does not fix it. A value which breaks the
+        // constraints is fixed with a chosen value, so fix all skips it
         scan(`/sites/${SITE}/contents/property-definitions`, ['PropertyDefinitionsSanityCheck']).then(results => {
-            const failing = results.errors.filter(e => ['INVALID_VALUE_TYPE', 'INVALID_VALUE_CONSTRAINT'].includes(e.errorType));
-            expect(failing).to.have.length(2);
+            const failing = results.errors.filter(e => e.errorType === 'INVALID_VALUE_TYPE');
+            const chosen = results.errors.filter(e => e.errorType === 'INVALID_VALUE_CONSTRAINT');
+            expect(failing).to.have.length(1);
+            expect(chosen).to.have.length(2);
             fixAll(results.resultsId, ['nodePrimaryType;jnt:ciTestTypedValues']).then(outcome => {
                 expect(outcome.failed).to.equal(outcome.failedIds.length);
                 expect(outcome.failedIds).to.include.members(failing.map(e => e.id));
+                expect(outcome.failedIds).to.not.include.members(chosen.map(e => e.id));
+                expect(outcome.skipped).to.be.at.least(chosen.length);
             });
         });
     });

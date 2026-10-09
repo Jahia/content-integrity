@@ -317,6 +317,8 @@ If a few nodes are impacted, you should provide the list of nodes to the editors
 If an important number of nodes are impacted, then you should consider writing a script. The main difficulty is to define the appropriate value to set on those properties, without altering the output of the pages (a unique value might not be enough to cover all the cases). If the definitions file declares a default value, then this one is usually a good candidate, but you should nevertheless evaluate if switching from a `null` value to this default value will have an impact on the pages output.  
 The script should be run with the listeners deactivated, and should be run on each workspace.
 
+**Fix**: in the details of the error, in the administration screen, type the value, or choose it in a dropdown when the definition lists the accepted values, then click **Fix**. The value is converted to the type of the property and checked against its constraints. **Fix all** skips this error.
+
 #### Invalid value type
 
 `Error code: INVALID_VALUE_TYPE`
@@ -342,6 +344,14 @@ Nevertheless, it is something pretty usual during the initial development phase.
 
 If you need to change the type of a property on some production content, you should make the property `hidden` (and not indexed if of type `string`), and declare a new property of the desired type. Then, if you need to recover the content from the former property, you will need to write a script to copy the value (after a conversion if required).  
 The script should be run with the listeners deactivated, and should be run on each workspace.
+
+#### Value breaking the constraints
+
+`Error code: INVALID_VALUE_CONSTRAINT`
+
+**Description**: A property has been detected with a value that does not match the constraints declared for the property, for example a value out of its list of accepted values.
+
+**Fix**: in the details of the error, in the administration screen, choose the value in a dropdown when the definition lists the accepted values, or type a value which matches the constraints, then click **Fix**. On a multiple property, the other values are kept, and the value which breaks the constraints is left empty: an empty value is removed. **Fix all** skips this error. Without a chosen value, the fix sets the default value of the definition, if any.
 
 #### Node validator constraint violation 
 

@@ -1,10 +1,12 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {closeDetailsPanel, getDetailsPanel, getRow, openErrorDetails, visitAdmin} from '../../support/adminPage';
+import {closeDetailsPanel, getDetailsPanel, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiFixWithValue';
 const ROOT = `/sites/${SITE}/contents/property-definitions`;
 // A jnt:frame without its mandatory width: the definition has no default value
 const MISSING_MANDATORY = `${ROOT}/missing-mandatory`;
+// ciTestChoice holds not-a-choice, and only accepts first and second
+const INVALID_VALUES = `${ROOT}/invalid-values`;
 
 describe('Fix of a missing mandatory property with a typed value', () => {
     beforeEach(() => {
@@ -56,5 +58,24 @@ describe('Fix of a missing mandatory property with a typed value', () => {
         scan(ROOT, ['PropertyDefinitionsSanityCheck']).then(results => {
             expect(results.errors.filter(e => e.errorType === 'EMPTY_MANDATORY_PROPERTY' && e.nodePath === MISSING_MANDATORY)).to.have.length(0);
         });
+    });
+
+    it('fixes a value which breaks the constraints with a value chosen among the accepted ones', () => {
+        selectInDropdown('Error type', /^INVALID_VALUE_CONSTRAINT/);
+        openErrorDetails(INVALID_VALUES);
+        getDetailsPanel().within(() => {
+            cy.contains('The value not-a-choice of the property ciTestChoice does not match').should('be.visible');
+            cy.contains('Type: String').should('not.exist');
+            cy.contains('button', /^Fix$/).should('be.disabled');
+        });
+        // The menu of the dropdown is displayed above the page, outside of the panel
+        getDetailsPanel().find('.moonstone-dropdown').click();
+        cy.get('li.moonstone-menuItem').should('have.length', 2);
+        cy.contains('li.moonstone-menuItem', /^second$/).click();
+        getDetailsPanel().within(() => {
+            cy.contains('button', /^Fix$/).click();
+            cy.contains('Fixed').should('be.visible');
+        });
+        getRow(INVALID_VALUES).within(() => cy.contains('Fixed').should('be.visible'));
     });
 });
