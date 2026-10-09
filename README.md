@@ -69,7 +69,7 @@ Select the scan to display, and choose the columns to display: the check name, t
 
 **Fix all** runs the fix of every error matching the filters, after a confirmation, then displays how many errors were fixed, not fixed, skipped and already fixed. The errors whose check provides no fix, and the ones fixed with a typed value, are skipped. Some fixes remove content, so narrow the filters to the errors to fix first.
 
-Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. The actions on an error are in the menu of the 3 dots at the end of its row: **Error details** displays all its information, including the extra information provided by the check, and **Fix** runs the fix of the check which has detected it, when the check provides one. **Fix…** opens the details of an error which is fixed with a value to type, such as a missing mandatory property. The outcome of a fix stays displayed in the row.
+Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. A click on the row of an error, or Enter on it, opens its details in a side panel: all its information, including the extra information provided by the check, and **Fix**, which runs the fix of the check which has detected it, when the check provides one. A click on another row displays its error in the same panel, and Escape closes it. An error fixed with a value to type, such as a missing mandatory property, has the field of the value in the panel, and **Fix** sends the typed value. The outcome of a fix, **Fixed** or **Not fixed**, stays displayed in the first column of the row.
 
 The results are kept in memory: they are lost when the module or the server restarts. The reports uploaded to the JCR remain available.
 

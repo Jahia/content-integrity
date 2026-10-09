@@ -37,14 +37,26 @@ export const getRow = (path: string): Cypress.Chainable<JQuery<HTMLElement>> =>
     getResultsTable().find(`[title="${path}"]`).first().closest('tr');
 
 /**
- * Opens the menu of the 3 dots of a row, which carries the actions on its error.
+ * The side panel which displays the details of the error of the selected row, and its fix.
  */
-export const openRowMenu = (path: string): void => {
-    getRow(path).within(() => cy.get('button[aria-label="Actions"]').click());
+export const getDetailsPanel = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.get('#ci-error-details').should('be.visible');
+
+/**
+ * Opens the details of the error of a row, with a click on its left end, the cell of the fix status, which is empty until
+ * a fix: the cells of the path and the UUID are links to the JCR browser.
+ */
+export const openErrorDetails = (path: string): void => {
+    getRow(path).click('left');
+    getDetailsPanel().should('contain.text', path);
+};
+
+export const closeDetailsPanel = (): void => {
+    getDetailsPanel().find('button[aria-label="Close"]').click();
+    cy.get('#ci-error-details').should('not.exist');
 };
 
 /**
- * An item of the opened menu of a row. The menu is displayed above the page, outside of the row.
+ * An item of an opened menu, such as the one of a dropdown. The menu is displayed above the page.
  */
 export const getMenuItem = (label: string | RegExp): Cypress.Chainable<JQuery<HTMLElement>> =>
     cy.contains('li.moonstone-menuItem', label).should('be.visible');
@@ -122,7 +134,7 @@ export const selectInDropdown = (label: string, item: string | RegExp): void => 
 };
 
 /**
- * The labels of the header of the results table, without the column of the actions.
+ * The labels of the header of the results table, without the column of the fix status, which is always the first one.
  */
 export const getColumnLabels = (): Cypress.Chainable<string[]> =>
-    getResultsTable().find('thead th').then(cells => cells.toArray().map(c => c.innerText.trim()).filter(l => l !== 'Actions'));
+    getResultsTable().find('thead th').then(cells => cells.toArray().map(c => c.textContent.trim()).filter(l => l !== 'Fix status'));

@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, runFixture, scan, ScanResults} from '../../support/integrity';
-import {getResultsTable, getRow, openRowMenu, getMenuItem, visitAdmin} from '../../support/adminPage';
+import {getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitAdmin} from '../../support/adminPage';
 
 // The access to the module, adminContentIntegrity, allows to scan and to read the results. Fixing the errors writes to the
 // repository with a system session, so it requires its own permission, adminContentIntegrityFix, which the first one
@@ -84,11 +84,8 @@ describe('Permission to fix the errors', () => {
         visitAdmin(VIEWER);
         getResultsTable().should('be.visible');
         cy.contains('button', 'Fix all').should('not.exist');
-        openRowMenu(`${LOCKS}/inconsistent-lock`);
-        getMenuItem('Error details');
-        cy.contains('li.moonstone-menuItem', /^Fix/).should('not.exist');
-        getMenuItem('Error details').click();
-        cy.contains('[role=dialog]', 'Error details').within(() => {
+        openErrorDetails(`${LOCKS}/inconsistent-lock`);
+        getDetailsPanel().within(() => {
             cy.contains('INCONSISTENT_LOCK').should('be.visible');
             cy.contains('button', /^Fix/).should('not.exist');
         });
@@ -97,8 +94,8 @@ describe('Permission to fix the errors', () => {
     it('offers the fix in the administration page to a user with the permission', () => {
         visitAdmin(FIXER);
         cy.contains('button', 'Fix all').should('be.visible');
-        openRowMenu(`${LOCKS}/inconsistent-lock`);
-        getMenuItem(/^Fix$/).click();
+        openErrorDetails(`${LOCKS}/inconsistent-lock`);
+        getDetailsPanel().contains('button', /^Fix$/).click();
         getRow(`${LOCKS}/inconsistent-lock`).within(() => cy.contains('Fixed').should('be.visible'));
     });
 });

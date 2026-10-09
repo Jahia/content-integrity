@@ -1,7 +1,7 @@
-import React, {useState} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
-import {Add, Build, Button, Close, Dropdown, Input, Typography} from '@jahia/moonstone';
+import {Add, Button, Close, Dropdown, Input, Typography} from '@jahia/moonstone';
 import {FormField} from '../common/FormField';
 import styles from '../ContentIntegrity.scss';
 
@@ -22,34 +22,23 @@ const getChoices = definition => {
 };
 
 /**
- * The values an administrator types to fix an error, such as the value of a missing mandatory property.
- * The server converts them to the type of the definition and checks its constraints: its message is shown on the field.
+ * The values typed by the administrator, before the default values of the definition when it has some.
  */
-export const FixValuesForm = ({errorId, definition, isFixing, onFix}) => {
+export const initialFixValues = definition => (definition?.defaultValues?.length ? definition.defaultValues : ['']);
+
+export const typedFixValues = values => values.filter(value => value.trim().length > 0);
+
+/**
+ * The values an administrator types to fix an error, such as the value of a missing mandatory property. The Fix button,
+ * passed as children, is displayed below the fields and sends them: Enter in a field does too. The server converts them to the type of the definition and
+ * checks its constraints: its message is shown on the field.
+ */
+export const FixValuesForm = ({errorId, definition, values, message, isDisabled, onChange, onSubmit, children}) => {
     const {t} = useTranslation('content-integrity');
-    const [values, setValues] = useState(() => (definition.defaultValues?.length ? definition.defaultValues : ['']));
-    const [message, setMessage] = useState(null);
     const choices = getChoices(definition);
-    const isEmpty = values.every(value => value.trim().length === 0);
     const fieldId = `ci-fix-values-${errorId}`;
 
-    const setValue = (index, value) => {
-        setMessage(null);
-        setValues(prev => prev.map((v, i) => (i === index ? value : v)));
-    };
-
-    const submit = () => {
-        if (isEmpty || isFixing) {
-            return;
-        }
-
-        setMessage(null);
-        onFix(errorId, values.filter(value => value.trim().length > 0)).then(result => {
-            if (!result.fixed) {
-                setMessage(result.message || t('label.fix.failedHelper'));
-            }
-        });
-    };
+    const setValue = (index, value) => onChange(values.map((v, i) => (i === index ? value : v)));
 
     const helper = [
         t('label.fixValues.type', {type: definition.type}),
@@ -63,7 +52,7 @@ export const FixValuesForm = ({errorId, definition, isFixing, onFix}) => {
                       value={value || undefined}
                       placeholder={t('label.fixValues.choose')}
                       variant="outlined"
-                      isDisabled={isFixing}
+                      isDisabled={isDisabled}
                       className={styles.fixValuesInput}
                       onChange={(e, item) => setValue(index, item.value)}/>
         ) : (
@@ -71,13 +60,13 @@ export const FixValuesForm = ({errorId, definition, isFixing, onFix}) => {
                    aria-label={label}
                    value={value}
                    placeholder={PLACEHOLDERS[definition.type] || ''}
-                   isDisabled={isFixing}
+                   isDisabled={isDisabled}
                    className={styles.fixValuesInput}
                    onChange={e => setValue(index, e.target.value)}
                    onKeyPress={e => {
                        if (e.key === 'Enter') {
                            e.preventDefault();
-                           submit();
+                           onSubmit();
                        }
                    }}/>
         );
@@ -90,8 +79,8 @@ export const FixValuesForm = ({errorId, definition, isFixing, onFix}) => {
                             variant="ghost"
                             title={t('label.fixValues.remove')}
                             aria-label={t('label.fixValues.remove')}
-                            isDisabled={isFixing}
-                            onClick={() => setValues(prev => prev.filter((v, i) => i !== index))}/>
+                            isDisabled={isDisabled}
+                            onClick={() => onChange(values.filter((v, i) => i !== index))}/>
                 )}
             </div>
         );
@@ -117,20 +106,13 @@ export const FixValuesForm = ({errorId, definition, isFixing, onFix}) => {
                             <Button label={t('label.fixValues.add')}
                                     icon={<Add/>}
                                     variant="ghost"
-                                    isDisabled={isFixing}
-                                    onClick={() => setValues(prev => [...prev, ''])}/>
+                                    isDisabled={isDisabled}
+                                    onClick={() => onChange([...values, ''])}/>
                         </div>
                     )}
                 </div>
             </FormField>
-            <div className={styles.fixValuesActions}>
-                <Button label={t('label.fixValues.submit')}
-                        icon={<Build/>}
-                        color="accent"
-                        isLoading={isFixing}
-                        isDisabled={isEmpty || isFixing}
-                        onClick={submit}/>
-            </div>
+            {children && <div className={styles.fixActionRow}>{children}</div>}
         </section>
     );
 };
@@ -145,6 +127,10 @@ FixValuesForm.propTypes = {
         constraints: PropTypes.arrayOf(PropTypes.string),
         defaultValues: PropTypes.arrayOf(PropTypes.string)
     }).isRequired,
-    isFixing: PropTypes.bool,
-    onFix: PropTypes.func.isRequired
+    values: PropTypes.arrayOf(PropTypes.string).isRequired,
+    message: PropTypes.string,
+    isDisabled: PropTypes.bool,
+    onChange: PropTypes.func.isRequired,
+    onSubmit: PropTypes.func.isRequired,
+    children: PropTypes.node
 };

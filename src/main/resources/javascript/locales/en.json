@@ -70,13 +70,12 @@
       "runningScan": "The scan is running: its errors are displayed once it ends.",
       "failedScan": "The scan failed, so it has no errors to display.",
       "tableLabel": "Integrity errors",
-      "details": "Error details",
       "rowsPerPage": "Errors per page",
       "of": "of",
       "title": "Scan results",
       "noResultsTitle": "No scan results yet",
       "clearFilters": "Clear the filters",
-      "actions": "Actions"
+      "fixStatus": "Fix status"
     },
     "details": {
       "title": "Error details",
@@ -118,19 +117,17 @@
       "failed": "Not fixed",
       "failedHelper": "The fix of the check has not fixed this error. It needs to be fixed by hand.",
       "helper": "Fix this error with the fix of {{check}}",
-      "withValues": "Fix…",
-      "withValuesHelper": "Type the value to fix this error with"
+      "withValuesHelper": "Fix this error with the typed value"
     },
     "fixValues": {
       "title": "Fix with a value",
-      "description": "The mandatory property {{property}} has no value. Type the value to set, then fix the error.",
+      "description": "The mandatory property {{property}} has no value. Type the value to set, then click Fix.",
       "type": "Type: {{type}}",
       "constraints": "Constraints: {{constraints}}",
       "valueAt": "Value {{index}}",
       "choose": "Choose a value",
       "add": "Add a value",
-      "remove": "Remove this value",
-      "submit": "Set the value and fix"
+      "remove": "Remove this value"
     },
     "fixAll": {
       "button": "Fix all",

@@ -33,9 +33,9 @@ describe('Results table', () => {
 
     it('displays the check name, the error type, the workspace, the path and the message by default', () => {
         getResultsTable().find('thead th').then(cells => {
-            // The last column holds the menu of the actions on each error
-            const labels = cells.toArray().map(c => c.innerText.trim());
-            expect(labels).to.deep.equal(['Check name', 'Error type', 'Workspace', 'Path', 'Message', 'Actions']);
+            // The first column holds the outcome of the fix of each error, its label is read by screen readers only
+            const labels = cells.toArray().map(c => c.textContent.trim());
+            expect(labels).to.deep.equal(['Fix status', 'Check name', 'Error type', 'Workspace', 'Path', 'Message']);
         });
         getScanLabel(resultsId).then(label => getDropdown('Scan').should('contain.text', label));
     });

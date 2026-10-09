@@ -24,8 +24,8 @@ import {Card} from '../common/Card';
 import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST, GET_SCAN_RESULTS_LOGS} from '../ContentIntegrity.gql';
 import {ScanLogs} from '../scan/ScanLogs';
 import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
-import {ErrorDetailsDialog} from './ErrorDetailsDialog';
-import {RowActions} from './RowActions';
+import {ErrorDetailsPanel} from './ErrorDetailsPanel';
+import {FixStatus} from './FixStatus';
 import {FixAllAction} from './FixAllAction';
 import {useFixError} from './useFixError';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
@@ -115,6 +115,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
 
     useEffect(() => {
         setPage(1);
+        setDetailsId(null);
     }, [resultsId]);
 
     const selectedSummary = summaries.find(s => s.id === resultsId);
@@ -170,6 +171,23 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
     };
 
     const columns = COLUMNS.filter(c => visibleColumns.includes(c.key));
+    // A click on a row, or Enter on it, displays the details of its error beside the table. A click on a link of the row
+    // does what the link does.
+    const openDetails = (event, errorId) => {
+        if (event.target.closest('a, button')) {
+            return;
+        }
+
+        setDetailsId(errorId);
+    };
+
+    const closeDetails = () => {
+        const id = detailsId;
+        setDetailsId(null);
+        // The focus goes back to the row of the error, if it is still displayed
+        document.querySelector(`tr[data-error-id="${CSS.escape(id)}"]`)?.focus();
+    };
+
     const activeFilterCount = Object.values(filters).filter(v => v !== undefined).length;
     const columnsData = COLUMNS.map(c => ({value: c.key, label: t(`label.column.${c.key}`)}));
 
@@ -307,13 +325,29 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                                 <Table className={styles.table} aria-label={t('label.results.tableLabel')}>
                                     <TableHead>
                                         <TableRow>
+                                            <TableHeadCell width="110px"><span className={styles.srOnly}>{t('label.results.fixStatus')}</span></TableHeadCell>
                                             {columns.map(c => <TableHeadCell key={c.key} width={c.width}>{t(`label.column.${c.key}`)}</TableHeadCell>)}
-                                            <TableHeadCell width="140px"><span className={styles.srOnly}>{t('label.results.actions')}</span></TableHeadCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         {(details.errors || []).map(error => (
-                                            <TableRow key={error.id} hasMultipleLines>
+                                            <TableRow key={error.id}
+                                                      hasMultipleLines
+                                                      isSelected={error.id === detailsId}
+                                                      className={styles.clickableRow}
+                                                      // Moonstone 1.6 (Jahia 8.1.5) does not make the rows focusable
+                                                      tabIndex={0}
+                                                      data-error-id={error.id}
+                                                      onClick={event => openDetails(event, error.id)}
+                                                      onKeyDown={event => {
+                                                          if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget) {
+                                                              event.preventDefault();
+                                                              setDetailsId(error.id);
+                                                          }
+                                                      }}>
+                                                <TableBodyCell width="110px" className={styles.fixStatusCell}>
+                                                    <FixStatus error={error} state={fixStates[error.id]}/>
+                                                </TableBodyCell>
                                                 {columns.map(c => (
                                                     <TableBodyCell key={c.key} className={styles.cell} width={c.width} title={String(formatCell(error[c.key]))}>
                                                         {c.jcrLink ? (
@@ -323,9 +357,6 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                                                         ) : formatCell(error[c.key])}
                                                     </TableBodyCell>
                                                 ))}
-                                                <TableBodyCell width="140px">
-                                                    <RowActions error={error} state={fixStates[error.id]} canFixErrors={canFixErrors} onFix={fix} onOpenDetails={setDetailsId}/>
-                                                </TableBodyCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -349,13 +380,13 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                 )}
             </Card>
 
-            {detailsId && resultsId && (
-                <ErrorDetailsDialog errorId={detailsId}
-                                    resultsId={resultsId}
-                                    fixState={fixStates[detailsId]}
-                                    canFixErrors={canFixErrors}
-                                    onFix={fix}
-                                    onClose={() => setDetailsId(null)}/>
+            {detailsId && resultsId && showErrors && (
+                <ErrorDetailsPanel errorId={detailsId}
+                                   resultsId={resultsId}
+                                   fixState={fixStates[detailsId]}
+                                   canFixErrors={canFixErrors}
+                                   onFix={fix}
+                                   onClose={closeDetails}/>
             )}
         </div>
     );

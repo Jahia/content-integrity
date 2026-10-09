@@ -318,11 +318,76 @@
     flex: 1;
 }
 
-.rowActions {
+// A row opens the details of its error in the side panel
+.clickableRow {
+    cursor: pointer;
+}
+
+.fixStatusCell {
+    overflow: hidden;
+}
+
+// The details of the selected error, above the right of the page: the table keeps its width, and the fix status, in its
+// first column, stays visible
+.sidePanel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 8000;
+    display: flex;
+    flex-direction: column;
+    width: 520px;
+    max-width: 100vw;
+    background-color: var(--color-white);
+    box-shadow: #0000004d -4px 0 16px;
+    outline: none;
+    animation: sidePanelIn 150ms ease-out;
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+    }
+}
+
+@keyframes sidePanelIn {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+.sidePanelHeader {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: var(--spacing-nano);
+    justify-content: space-between;
+    gap: var(--spacing-small);
+    padding: var(--spacing-medium) var(--spacing-large);
+    border-bottom: 1px solid var(--color-gray40);
+}
+
+.sidePanelBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: var(--spacing-large);
+    overflow-y: auto;
+}
+
+.fixActionRow {
+    display: flex;
+}
+
+// The fix spans the width of the panel, so that it is seen right after the summary of the error
+.fixButton {
+    flex: 1;
+    justify-content: center;
+
+    // Moonstone stretches the label, which would leave the icon alone at the left: both stay centered together
+    > span {
+        flex: 0 1 auto;
+    }
 }
 
 .tableWrapper {
@@ -336,7 +401,7 @@
 
 // Moonstone tables are flex rows: a cell with a `width` keeps it, the others share what is left.
 // A long path or message is truncated with an ellipsis (full value in the tooltip and in the
-// details dialog) instead of widening the page.
+// details panel) instead of widening the page.
 .table {
     width: 100%;
 }
@@ -369,11 +434,7 @@
 }
 
 .detailsList .linkButton {
-    word-break: break-word;
-}
-
-.breakAll {
-    word-break: break-word;
+    text-align: left;
 }
 
 .details {
@@ -386,8 +447,12 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-small);
-    padding-bottom: var(--spacing-medium);
+    padding-bottom: var(--spacing-large);
     border-bottom: 1px solid var(--color-gray40);
+}
+
+.detailsMessage {
+    line-height: 1.3;
 }
 
 .detailsChips {
@@ -397,31 +462,32 @@
 }
 
 .detailsSectionTitle {
-    margin-bottom: var(--spacing-small);
+    margin-bottom: var(--spacing-medium);
 }
 
+// Labels and values in the font and the size of the page: the labels are lighter. One label width for every section,
+// so the values line up from one section to the next, and a long value wraps on its own lines, aligned with its label.
 .detailsList {
     display: grid;
-    // One label width for every section, so the values line up from one section to the next.
-    grid-template-columns: 190px 1fr;
-    gap: var(--spacing-small) var(--spacing-large);
-    align-items: baseline;
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: var(--spacing-medium) var(--spacing-medium);
+    align-items: start;
     margin: 0;
 
     dt,
     dd {
         margin: 0;
+        line-height: 1.45;
     }
 }
 
 .detailsLabel {
-    color: var(--color-gray);
+    color: var(--color-gray_dark);
 }
 
-.code {
-    font-family: Menlo, Consolas, 'Liberation Mono', monospace;
-    // Monospace glyphs are wider than the UI font: scale them down to match its visual size.
-    font-size: 0.86em;
+// A value without a natural break, such as a UUID, still wraps instead of widening the panel
+.detailsValue {
+    overflow-wrap: anywhere;
 }
 
 .centered {
@@ -575,10 +641,6 @@
     min-width: 0;
 }
 
-.fixValuesActions {
-    display: flex;
-    justify-content: flex-end;
-}
 
 .fixAll {
     display: flex;

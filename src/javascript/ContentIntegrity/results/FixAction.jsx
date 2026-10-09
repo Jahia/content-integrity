@@ -1,38 +1,32 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
-import {Build, Button, Chip} from '@jahia/moonstone';
+import {Build, Button} from '@jahia/moonstone';
 import {FIX_STATES} from './useFixError';
+import styles from '../ContentIntegrity.scss';
 
 /**
- * The fix of an error in its details dialog: a button when the check which has detected it provides a fix, then the outcome.
+ * The fix of an error, the main action of its details: the fix of the check which has detected it, with the values typed
+ * in the details when the error is fixed with values. It is offered again after a failed fix, since the content may have
+ * changed in between.
  */
-export const FixAction = ({error, state, onFix}) => {
+export const FixAction = ({error, state, isDisabled, onClick}) => {
     const {t} = useTranslation('content-integrity');
 
-    if (error.fixed || state === FIX_STATES.FIXED) {
-        return <Chip label={t('label.fix.fixed')} color="success"/>;
+    if (!error.fixable || error.fixed || state === FIX_STATES.FIXED) {
+        return null;
     }
-    if (state === FIX_STATES.FAILED) {
-        return (
-            <span title={t('label.fix.failedHelper')}>
-                <Chip label={t('label.fix.failed')} color="danger"/>
-            </span>
-        );
-    }
-    if (!error.fixable) return null;
 
     return (
-        <Button label={t('label.fix.fix')}
+        <Button className={styles.fixButton}
+                label={t('label.fix.fix')}
                 icon={<Build/>}
-                variant="outlined"
+                size="big"
+                color="accent"
                 isLoading={state === FIX_STATES.FIXING}
-                isDisabled={state === FIX_STATES.FIXING}
-                title={t('label.fix.helper', {check: error.checkName})}
-                onClick={event => {
-                    event.stopPropagation();
-                    onFix(error.id);
-                }}/>
+                isDisabled={isDisabled || state === FIX_STATES.FIXING}
+                title={error.fixWithValues ? t('label.fix.withValuesHelper') : t('label.fix.helper', {check: error.checkName})}
+                onClick={onClick}/>
     );
 };
 
@@ -41,8 +35,10 @@ FixAction.propTypes = {
         id: PropTypes.string.isRequired,
         checkName: PropTypes.string,
         fixed: PropTypes.bool,
-        fixable: PropTypes.bool
+        fixable: PropTypes.bool,
+        fixWithValues: PropTypes.bool
     }).isRequired,
     state: PropTypes.oneOf(Object.values(FIX_STATES)),
-    onFix: PropTypes.func.isRequired
+    isDisabled: PropTypes.bool,
+    onClick: PropTypes.func.isRequired
 };

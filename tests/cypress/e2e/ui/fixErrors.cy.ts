@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {clearFilters, getDialog, getMenuItem, getRow, openRowMenu, visitAdmin} from '../../support/adminPage';
+import {clearFilters, closeDetailsPanel, getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiFixErrors';
 const LOCKS = `/sites/${SITE}/contents/locks`;
@@ -21,65 +21,60 @@ describe('Fix of the errors', () => {
         clearFilters();
     });
 
-    it('displays no fix in the menu of an error that its check can not fix', () => {
-        openRowMenu(MISSING_TEMPLATE);
-        getMenuItem('Error details');
-        cy.contains('li.moonstone-menuItem', /^Fix/).should('not.exist');
+    it('opens the details of an error on a click on its row, and offers no menu', () => {
+        getResultsTable().find('button[aria-label="Actions"]').should('not.exist');
+        openErrorDetails(MISSING_TEMPLATE);
+        getRow(MISSING_TEMPLATE).should('have.class', 'moonstone-TableRow-selected');
+        getDetailsPanel().within(() => {
+            cy.contains('Missing template').should('be.visible');
+            cy.contains('MISSING_TEMPLATE').should('be.visible');
+            cy.contains('PagesSanityCheck').should('be.visible');
+            cy.contains('ci-template-which-does-not-exist').should('be.visible');
+            // The check provides no fix for this error
+            cy.contains('button', /^Fix/).should('not.exist');
+        });
+        // A click on another row displays the details of its error in the same panel
+        openErrorDetails(`${LOCKS}/inconsistent-lock`);
+        getDetailsPanel().should('contain.text', 'INCONSISTENT_LOCK').and('not.contain.text', 'MISSING_TEMPLATE');
+        closeDetailsPanel();
     });
 
-    it('fixes an error from the menu of its row', () => {
-        openRowMenu(`${LOCKS}/inconsistent-lock`);
-        getMenuItem(/^Fix$/).click();
-        getRow(`${LOCKS}/inconsistent-lock`).within(() => cy.contains('Fixed').should('be.visible'));
-        openRowMenu(`${LOCKS}/inconsistent-lock`);
-        getMenuItem('Error details');
-        cy.contains('li.moonstone-menuItem', /^Fix$/).should('not.exist');
+    it('closes the details with Escape, and gives the focus back to the row', () => {
+        openErrorDetails(MISSING_TEMPLATE);
         cy.get('body').type('{esc}');
-        cy.get('li.moonstone-menuItem').should('not.exist');
+        cy.get('#ci-error-details').should('not.exist');
+        getRow(MISSING_TEMPLATE).should('have.focus');
+    });
+
+    it('opens the details from the keyboard', () => {
+        getRow(MISSING_TEMPLATE).focus().type('{enter}');
+        getDetailsPanel().should('contain.text', MISSING_TEMPLATE);
+    });
+
+    it('fixes an error from its details, and displays the outcome in its row', () => {
+        openErrorDetails(`${LOCKS}/inconsistent-lock`);
+        getDetailsPanel().within(() => {
+            cy.contains('button', /^Fix$/).click();
+            cy.contains('Fixed').should('be.visible');
+            cy.contains('button', /^Fix$/).should('not.exist');
+        });
+        closeDetailsPanel();
+        getRow(`${LOCKS}/inconsistent-lock`).within(() => cy.contains('Fixed').should('be.visible'));
         scan(LOCKS, ['LockSanityCheck']).then(results => {
             expect(results.errors.filter(e => e.nodePath === `${LOCKS}/inconsistent-lock`)).to.have.length(0);
         });
+        runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});
     });
 
     it('keeps the fixed status of an error once the page is reloaded', () => {
-        openRowMenu(`${LOCKS}/deletion-lock-on-translation/j:translation_en`);
-        getMenuItem(/^Fix$/).click();
+        openErrorDetails(`${LOCKS}/deletion-lock-on-translation/j:translation_en`);
+        getDetailsPanel().contains('button', /^Fix$/).click();
         getRow(`${LOCKS}/deletion-lock-on-translation/j:translation_en`).within(() => cy.contains('Fixed').should('be.visible'));
         cy.reload();
         clearFilters();
         getRow(`${LOCKS}/deletion-lock-on-translation/j:translation_en`).within(() => {
             cy.contains('Fixed').should('be.visible');
         });
-    });
-
-    it('fixes an error from its details dialog', () => {
         runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});
-        scan(`/sites/${SITE}`, ['LockSanityCheck', 'PagesSanityCheck']);
-        cy.reload();
-        clearFilters();
-        openRowMenu(`${LOCKS}/inconsistent-lock`);
-        getMenuItem('Error details').click();
-        getDialog('Error details').within(() => {
-            cy.contains('INCONSISTENT_LOCK').should('be.visible');
-            cy.contains('LockSanityCheck').should('be.visible');
-            cy.contains('button', /^Fix$/).click();
-            cy.contains('Fixed').should('be.visible');
-            cy.contains('button', 'Close').click();
-        });
-        getRow(`${LOCKS}/inconsistent-lock`).within(() => cy.contains('Fixed').should('be.visible'));
-    });
-
-    it('displays the details of an error', () => {
-        openRowMenu(MISSING_TEMPLATE);
-        getMenuItem('Error details').click();
-        getDialog('Error details').within(() => {
-            cy.contains('Missing template').should('be.visible');
-            cy.contains(MISSING_TEMPLATE).should('be.visible');
-            cy.contains('MISSING_TEMPLATE').should('be.visible');
-            cy.contains('PagesSanityCheck').should('be.visible');
-            cy.contains('ci-template-which-does-not-exist').should('be.visible');
-            cy.contains('button', /^Fix/).should('not.exist');
-            cy.contains('button', 'Close').click();
-        });
     });
 });

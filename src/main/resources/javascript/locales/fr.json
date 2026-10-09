@@ -70,13 +70,12 @@
       "runningScan": "L'analyse est en cours : ses erreurs s'affichent une fois terminée.",
       "failedScan": "L'analyse a échoué, elle n'a donc aucune erreur à afficher.",
       "tableLabel": "Erreurs d'intégrité",
-      "details": "Détails de l'erreur",
       "rowsPerPage": "Erreurs par page",
       "of": "sur",
       "title": "Résultats d'analyse",
       "noResultsTitle": "Aucun résultat d'analyse",
       "clearFilters": "Effacer les filtres",
-      "actions": "Actions"
+      "fixStatus": "Statut de la correction"
     },
     "details": {
       "title": "Détails de l'erreur",
@@ -118,19 +117,17 @@
       "failed": "Non corrigée",
       "failedHelper": "La correction du contrôle n'a pas corrigé cette erreur. Elle doit être corrigée à la main.",
       "helper": "Corriger cette erreur avec la correction de {{check}}",
-      "withValues": "Corriger…",
-      "withValuesHelper": "Saisir la valeur qui corrige cette erreur"
+      "withValuesHelper": "Corriger cette erreur avec la valeur saisie"
     },
     "fixValues": {
       "title": "Corriger avec une valeur",
-      "description": "La propriété obligatoire {{property}} n'a pas de valeur. Saisissez la valeur à définir, puis corrigez l'erreur.",
+      "description": "La propriété obligatoire {{property}} n'a pas de valeur. Saisissez la valeur à définir, puis cliquez sur Corriger.",
       "type": "Type : {{type}}",
       "constraints": "Contraintes : {{constraints}}",
       "valueAt": "Valeur {{index}}",
       "choose": "Choisir une valeur",
       "add": "Ajouter une valeur",
-      "remove": "Supprimer cette valeur",
-      "submit": "Définir la valeur et corriger"
+      "remove": "Supprimer cette valeur"
     },
     "fixAll": {
       "button": "Tout corriger",
