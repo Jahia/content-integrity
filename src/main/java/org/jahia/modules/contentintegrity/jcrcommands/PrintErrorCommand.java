@@ -12,16 +12,19 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.table.ShellTable;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.ErrorIdCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
-import org.jahia.modules.contentintegrity.services.Utils;
 
 import java.util.List;
 
 @Command(scope = "jcr", name = "integrity-printError", description = "Prints out an error identified by an integrity check with full details")
 @Service
 public class PrintErrorCommand extends JCRCommandSupport implements Action {
+
+    @Reference
+    private ContentIntegrityService integrityService;
 
     @Reference
     Session session;
@@ -40,10 +43,10 @@ public class PrintErrorCommand extends JCRCommandSupport implements Action {
         final String errorMsg;
 
         if (StringUtils.isBlank(testID)) {
-            results = Utils.getContentIntegrityService().getLatestTestResults();
+            results = integrityService.getLatestTestResults();
             errorMsg = "No previous test results found";
         } else {
-            results = Utils.getContentIntegrityService().getTestResults(testID);
+            results = integrityService.getTestResults(testID);
             errorMsg = "No previous test results found for this test ID";
         }
 

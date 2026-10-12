@@ -20,6 +20,7 @@ import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
 import org.slf4j.Logger;
@@ -62,17 +63,11 @@ public class GqlIntegrityScan {
     public static final String NO_ERROR_FOUND = "No error found";
     private static final long PROGRESS_INTERVAL_MS = 1000L;
 
+    private final ContentIntegrityService service;
     private String id;
 
-    /*
-    TODO: replace with a local field, annotated with @Reference, and delete this method
-    Requires to compile with Jahia 8.1.1.0+ , otherwise it doesn't compile because of a bug with the BND plugin version used along with previous versions
-     */
-    private ContentIntegrityService getService() {
-        return Utils.getContentIntegrityService();
-    }
-
-    public GqlIntegrityScan(String executionID) {
+    public GqlIntegrityScan(ContentIntegrityService service, String executionID) {
+        this.service = service;
         if (StringUtils.isNotBlank(executionID)) {
             id = executionID;
         } else if (MapUtils.isEmpty(executionStatus)) {
@@ -128,7 +123,6 @@ public class GqlIntegrityScan {
             return id;
         }
 
-        final ContentIntegrityService service = getService();
         // A single scan runs at a time: a scan started while another one runs fails, and has no report
         if (service.isScanRunning()) {
             output.add(new ConcurrentExecutionException().getMessage());
@@ -145,11 +139,11 @@ public class GqlIntegrityScan {
         reportLogger.flush();
         scanResults.put(id, reportLogger.getReport().getID());
 
-        final JahiaUser currentUser = JCRSessionFactory.getInstance().getCurrentUser();
+        final JahiaUser currentUser = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentUser();
         Executors.newSingleThreadExecutor().execute(() -> {
             Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
 
-            JCRSessionFactory.getInstance().setCurrentUser(currentUser);
+            BundleUtils.getOsgiService(JCRSessionFactory.class, null).setCurrentUser(currentUser);
             boolean isOver = false;
             try {
                 final List<String> checksToExecute = Utils.getChecksToExecute(service, checksToRun, null, reportLogger);
@@ -318,7 +312,6 @@ public class GqlIntegrityScan {
         }
 
         // Between two workspaces, no tree is being scanned: the scan stops before the next workspace
-        final ContentIntegrityService service = getService();
         if (service.isScanRunning()) service.stopRunningScan();
         return Boolean.TRUE;
     }

@@ -10,6 +10,7 @@ import {
     fixAndVerify,
     fixError,
     graphql,
+    nodeExists,
     resetCheckConfiguration,
     runFixture,
     scan,
@@ -128,11 +129,36 @@ describe('AceSanityCheck', () => {
 
     describe('Fix', () => {
         // These errors need an analysis: the check provides no fix for them
-        ['INVALID_NODENAME', 'ROLE_DOESNT_EXIST', 'MISSING_SITE_PRIVILEGED_GRP_MEMBER', 'ACE_NON_GRANT_WITH_EXTERNAL_ACE',
-            'INVALID_EXTERNAL_PERMISSIONS', 'DUPLICATED_REF_SRC_ACE', 'INVALID_ROLES_PROP'].forEach(errorType => {
+        ['MISSING_SITE_PRIVILEGED_GRP_MEMBER', 'ACE_NON_GRANT_WITH_EXTERNAL_ACE', 'INVALID_EXTERNAL_PERMISSIONS',
+            'DUPLICATED_REF_SRC_ACE'].forEach(errorType => {
             it(`provides no fix for ${errorType}`, () => {
                 expectNoFix(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
             });
+        });
+
+        it('fixes INVALID_NODENAME by renaming the ACE after its type and its principal', () => {
+            const acl = `${ROOT}/INVALID_NODENAME/j:acl`;
+            fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'INVALID_NODENAME', new RegExp(`^${acl}/`));
+            nodeExists(errorPath('INVALID_NODENAME')).should('be.false');
+            nodeExists(`${acl}/GRANT_u_${user('ace')}`).should('be.true');
+        });
+
+        it('does not rename an external ACE whose external permissions are unknown', () => {
+            // Its name can't be calculated from permissions its role does not declare
+            expectFixFails(SITE_PATH, CHECKS, 'EDIT', 'INVALID_NODENAME', errorPath('INVALID_EXTERNAL_PERMISSIONS'));
+        });
+
+        it('fixes ROLE_DOESNT_EXIST by removing the role, and the ACE left without role', () => {
+            fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'ROLE_DOESNT_EXIST', errorPath('ROLE_DOESNT_EXIST'));
+            nodeExists(errorPath('ROLE_DOESNT_EXIST')).should('be.false');
+        });
+
+        it('fixes INVALID_ROLES_PROP by replacing the external ACE with the ones of the roles of its source ACE', () => {
+            const source = ace('INVALID_ROLES_PROP', user('ace-9'));
+            fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'INVALID_ROLES_PROP', errorPath('INVALID_ROLES_PROP'));
+            scan(SITE_PATH, CHECKS).then(results => expectNoError(results, 'MISSING_EXTERNAL_ACE', source));
+            graphql(`{ jcr { nodeByPath(path: "${errorPath('INVALID_ROLES_PROP')}") { property(name: "j:roles") { values } } } }`)
+                .its('jcr.nodeByPath.property.values').should('deep.equal', ['editor']);
         });
 
         it('does not report MISSING_EXTERNAL_ACE as fixed while an external ACE for other permissions takes its place', () => {

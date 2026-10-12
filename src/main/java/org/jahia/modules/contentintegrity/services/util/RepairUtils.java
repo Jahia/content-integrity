@@ -9,6 +9,7 @@ import org.apache.jackrabbit.core.state.NodeState;
 import org.apache.jackrabbit.spi.Name;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRObservationManager;
 import org.jahia.services.content.JCRPublicationService;
@@ -148,18 +149,18 @@ public final class RepairUtils {
      * Publishes some nodes as root, from a workspace to the other one.
      */
     public static void publishAsRoot(List<String> uuids, String sourceWorkspace, String destinationWorkspace) throws RepositoryException {
-        runAsRoot(() -> JCRPublicationService.getInstance().publish(uuids, sourceWorkspace, destinationWorkspace, false, null));
+        runAsRoot(() -> BundleUtils.getOsgiService(JCRPublicationService.class, null).publish(uuids, sourceWorkspace, destinationWorkspace, false, null));
     }
 
     /**
      * Runs an operation as root: the publication service checks the permissions of the current user.
      */
     public static void runAsRoot(JcrOperation operation) throws RepositoryException {
-        final JCRSessionFactory sessionFactory = JCRSessionFactory.getInstance();
+        final JCRSessionFactory sessionFactory = BundleUtils.getOsgiService(JCRSessionFactory.class, null);
         final JahiaUser currentUser = sessionFactory.getCurrentUser();
         final boolean switchToRoot = currentUser == null || !currentUser.isRoot();
         if (switchToRoot) {
-            final JCRUserNode rootUser = JahiaUserManagerService.getInstance().lookupRootUser();
+            final JCRUserNode rootUser = BundleUtils.getOsgiService(JahiaUserManagerService.class, null).lookupRootUser();
             sessionFactory.setCurrentUser(rootUser.getJahiaUser());
         }
         try {

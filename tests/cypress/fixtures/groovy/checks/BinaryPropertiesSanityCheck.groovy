@@ -1,10 +1,11 @@
 // Fixtures of BinaryPropertiesSanityCheck, under /sites/SITEKEY/files/binary-properties
 // - INVALID_BINARY: a file whose binary is empty, which is invalid when the zero byte binaries are not accepted
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
 def files = session.getNode("/sites/SITEKEY/files")
 if (files.hasNode("binary-properties")) files.getNode("binary-properties").remove()
 def folder = files.addNode("binary-properties", "jnt:folder")

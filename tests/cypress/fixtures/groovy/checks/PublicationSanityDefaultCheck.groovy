@@ -5,6 +5,7 @@
 // - PATH_CONFLICT: a node of the default workspace, and another node with the same path in live
 // - DIFFERENT_PT: a published node, whose live node has another primary type
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRPublicationService
 import org.jahia.services.content.JCRSessionFactory
@@ -12,7 +13,7 @@ import org.jahia.services.usermanager.JahiaUserManagerService
 
 final String FOLDER = "/sites/SITEKEY/contents/publication-default"
 
-def factory = JCRSessionFactory.getInstance()
+def factory = BundleUtils.getOsgiService(JCRSessionFactory.class, null)
 def withoutListeners = { Closure c ->
     JCRObservationManager.setAllEventListenersDisabled(true)
     try {
@@ -34,9 +35,9 @@ def removeEverywhere = { String path ->
 }
 def publish = { String uuid ->
     def user = factory.getCurrentUser()
-    factory.setCurrentUser(JahiaUserManagerService.getInstance().lookupRootUser().getJahiaUser())
+    factory.setCurrentUser(BundleUtils.getOsgiService(JahiaUserManagerService.class, null).lookupRootUser().getJahiaUser())
     try {
-        JCRPublicationService.getInstance().publishByMainId(uuid, "default", "live", null, true, null)
+        BundleUtils.getOsgiService(JCRPublicationService.class, null).publishByMainId(uuid, "default", "live", null, true, null)
     } finally {
         factory.setCurrentUser(user)
     }

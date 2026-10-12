@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services.util;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.util.Text;
 import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -96,7 +97,7 @@ public final class AclPrincipals {
     public static Map<String, String> getPrincipals(JCRNodeWrapper ace) throws RepositoryException {
         final String siteKey = getSiteKey(ace);
         // The users and the groups are stored in the default workspace
-        final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null);
+        final JCRSessionWrapper session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null);
         final Map<String, String> users = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         final Map<String, String> groups = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         collect(session, "jnt:user", "/users", USER_PREFIX, null, users);

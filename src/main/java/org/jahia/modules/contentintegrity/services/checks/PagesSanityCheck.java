@@ -8,6 +8,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.nodetypes.ExtendedPropertyDefinition;
 import org.jahia.services.content.nodetypes.initializers.ChoiceListInitializer;
@@ -97,7 +98,7 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
         final Resource resource = new Resource(node, TEMPLATE_TYPE_HTML, null, null);
         final RenderContext renderContext = new RenderContext(null, null, null);
         try {
-            if (RenderService.getInstance().resolveTemplate(resource, renderContext) != null) {
+            if (BundleUtils.getOsgiService(RenderService.class, null).resolveTemplate(resource, renderContext) != null) {
                 templates.add(templateName);
                 return true;
             }
@@ -179,7 +180,7 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
      * allowed on its site
      */
     private Map<String, String> getAvailableTemplates(JCRNodeWrapper node, String propertyName) throws RepositoryException {
-        final ChoiceListInitializer initializer = ChoiceListInitializerService.getInstance().getInitializers().get(TEMPLATES_INITIALIZER);
+        final ChoiceListInitializer initializer = BundleUtils.getOsgiService(ChoiceListInitializerService.class, null).getInitializers().get(TEMPLATES_INITIALIZER);
         if (initializer == null) {
             logger.warn("The choice list initializer {} is not available: no template can be proposed", TEMPLATES_INITIALIZER);
             return Collections.emptyMap();

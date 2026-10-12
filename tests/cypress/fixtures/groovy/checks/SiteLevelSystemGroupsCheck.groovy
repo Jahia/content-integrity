@@ -3,6 +3,7 @@
 // - MISSING_MEMBERSHIP: the group site-privileged of the site is not a member of the server group privileged anymore
 // The scenario RESTORE recreates the group and its membership
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.services.usermanager.JahiaGroupManagerService
 
@@ -10,8 +11,8 @@ final String SITE_KEY = "SITEKEY"
 final String SCENARIO = "SCENARIO"
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
-def groupManager = JahiaGroupManagerService.getInstance()
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
+def groupManager = BundleUtils.getOsgiService(JahiaGroupManagerService.class, null)
 def privileged = groupManager.lookupGroup(null, "privileged", session)
 def sitePrivileged = groupManager.lookupGroup(SITE_KEY, "site-privileged", session)
 

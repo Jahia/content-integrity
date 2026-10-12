@@ -7,6 +7,7 @@
 // - NO_PAGE: no page right under the site, its only page being moved under a menu label: NO_HOME can't be fixed
 // Another scenario name, such as RESTORE, only restores the site
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
 
@@ -16,7 +17,7 @@ final String SCENARIO = "SCENARIO"
 JcrSessionFilter.endRequest()
 JCRObservationManager.setAllEventListenersDisabled(true)
 try {
-    def site = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null).getNode(SITE).getRealNode()
+    def site = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null).getNode(SITE).getRealNode()
     def session = site.getSession()
     // Restores the regular declaration
     if (site.hasNode("home") && !site.getNode("home").isNodeType("jnt:page")) site.getNode("home").remove()

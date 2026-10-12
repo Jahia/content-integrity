@@ -5,13 +5,14 @@
 // /jcr:system/jcr:versionStorage/0c/1e/57/0c1e57ed-0000-4000-a000-000000000001
 // HISTORY_WITHOUT_NODE_ID is not reproducible: jcr:versionableUuid is a protected property, set by the version manager
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
 
 final String IDENTIFIER = "0c1e57ed-0000-4000-a000-000000000001"
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 if (contents.hasNode("version-sanity")) contents.getNode("version-sanity").remove()
 def folder = contents.addNode("version-sanity", "jnt:contentFolder")

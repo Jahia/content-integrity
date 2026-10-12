@@ -10,14 +10,17 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.BooleanCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckConfigParamCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.CheckIdCompleter;
-import org.jahia.modules.contentintegrity.services.Utils;
 
 @Command(scope = "jcr", name = "integrity-configureCheck", description = "Configures a registered check")
 @Service
 public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
+
+    @Reference
+    private ContentIntegrityService integrityService;
 
     @Reference
     Session session;
@@ -45,7 +48,7 @@ public class ConfigureCheckCommand extends JCRCommandSupport implements Action {
 
     @Override
     public Object execute() throws Exception {
-        final ContentIntegrityCheck integrityCheck = Utils.getContentIntegrityService().getContentIntegrityCheck(checkID);
+        final ContentIntegrityCheck integrityCheck = integrityService.getContentIntegrityCheck(checkID);
         if (integrityCheck == null) {
             System.out.println(String.format("No check found for ID %s", checkID));
             return null;

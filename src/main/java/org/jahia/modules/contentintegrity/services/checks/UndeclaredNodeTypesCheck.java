@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -107,7 +108,7 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck impl
 
     private ExtendedNodeTypeWrapper getNodeType(String type) {
         try {
-            final ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(type);
+            final ExtendedNodeType nodeType = BundleUtils.getOsgiService(NodeTypeRegistry.class, null).getNodeType(type);
             final JahiaTemplatesPackage templatePackage = nodeType.getTemplatePackage();
 
             // the node type is not declared by a module, let's assume that the node type registry is always consistent with the code definitions

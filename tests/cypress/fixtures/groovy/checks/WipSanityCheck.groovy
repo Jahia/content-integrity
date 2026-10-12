@@ -7,6 +7,7 @@
 // - WIP_INCONSISTENT_STATUS_PROP: an unknown status
 // - WIP_IN_LIVE: a published node with a WIP status in the live workspace
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRPublicationService
 import org.jahia.services.content.JCRSessionFactory
@@ -17,7 +18,7 @@ import org.apache.jackrabbit.core.value.InternalValue
 JcrSessionFilter.endRequest()
 // A previous run may have published the fixtures: they are removed from both workspaces
 ["live", "default"].each { workspace ->
-    def previous = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null)
+    def previous = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession(workspace, null, null)
     if (previous.nodeExists("/sites/SITEKEY/contents/wip")) {
         JCRObservationManager.setAllEventListenersDisabled(true)
         try {
@@ -30,7 +31,7 @@ JcrSessionFilter.endRequest()
         }
     }
 }
-def factory = JCRSessionFactory.getInstance()
+def factory = BundleUtils.getOsgiService(JCRSessionFactory.class, null)
 def session = factory.getCurrentSystemSession("default", Locale.ENGLISH, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 def folder = contents.addNode("wip", "jnt:contentFolder")
@@ -38,9 +39,9 @@ def folder = contents.addNode("wip", "jnt:contentFolder")
         .each { folder.addNode(it, "jnt:text").setProperty("text", it) }
 session.save()
 def user = factory.getCurrentUser()
-factory.setCurrentUser(JahiaUserManagerService.getInstance().lookupRootUser().getJahiaUser())
+factory.setCurrentUser(BundleUtils.getOsgiService(JahiaUserManagerService.class, null).lookupRootUser().getJahiaUser())
 try {
-    JCRPublicationService.getInstance().publishByMainId(folder.getIdentifier(), "default", "live", null, true, null)
+    BundleUtils.getOsgiService(JCRPublicationService.class, null).publishByMainId(folder.getIdentifier(), "default", "live", null, true, null)
 } finally {
     factory.setCurrentUser(user)
 }

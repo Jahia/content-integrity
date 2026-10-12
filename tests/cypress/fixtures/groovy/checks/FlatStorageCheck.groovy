@@ -1,10 +1,11 @@
 // Fixtures of FlatStorageCheck, under /sites/SITEKEY/contents/flat-storage
 // - TOO_MANY_CHILD_NODES: a folder with 5 children, which is too many once the threshold of the check is configured to 3
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 if (contents.hasNode("flat-storage")) contents.getNode("flat-storage").remove()
 def folder = contents.addNode("flat-storage", "jnt:contentFolder")

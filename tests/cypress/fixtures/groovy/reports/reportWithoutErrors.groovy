@@ -2,10 +2,11 @@
 // the errors were stored in the JCR
 import org.apache.jackrabbit.util.ISO8601
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
 def folder = session.getNode("/sites/systemsite/files")
 ["content-integrity-reports", "2020", "01"].each { name ->
     folder = folder.hasNode(name) ? folder.getNode(name) : folder.addNode(name, "jnt:folder")

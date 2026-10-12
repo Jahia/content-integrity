@@ -3,6 +3,7 @@
 // - UNEXPECTED_PROP_VALUE: in live, j:workInProgressStatus=ALL_CONTENT, while only DISABLED is allowed in live (default configuration)
 // - UNEXPECTED_PROP: in default, a node with j:liveProperties, once the check is configured to allow it only in live
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRPublicationService
 import org.jahia.services.content.JCRSessionFactory
@@ -11,7 +12,7 @@ import org.jahia.services.usermanager.JahiaUserManagerService
 JcrSessionFilter.endRequest()
 // A previous run may have published the fixtures: they are removed from both workspaces
 ["live", "default"].each { workspace ->
-    def previous = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null)
+    def previous = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession(workspace, null, null)
     if (previous.nodeExists("/sites/SITEKEY/contents/workspace-specific-definitions")) {
         JCRObservationManager.setAllEventListenersDisabled(true)
         try {
@@ -24,16 +25,16 @@ JcrSessionFilter.endRequest()
         }
     }
 }
-def factory = JCRSessionFactory.getInstance()
+def factory = BundleUtils.getOsgiService(JCRSessionFactory.class, null)
 def session = factory.getCurrentSystemSession("default", Locale.ENGLISH, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 def folder = contents.addNode("workspace-specific-definitions", "jnt:contentFolder")
 ["unexpected-type", "unexpected-property-value", "unexpected-property"].each { folder.addNode(it, "jnt:text").setProperty("text", it) }
 session.save()
 def user = factory.getCurrentUser()
-factory.setCurrentUser(JahiaUserManagerService.getInstance().lookupRootUser().getJahiaUser())
+factory.setCurrentUser(BundleUtils.getOsgiService(JahiaUserManagerService.class, null).lookupRootUser().getJahiaUser())
 try {
-    JCRPublicationService.getInstance().publishByMainId(folder.getIdentifier(), "default", "live", null, true, null)
+    BundleUtils.getOsgiService(JCRPublicationService.class, null).publishByMainId(folder.getIdentifier(), "default", "live", null, true, null)
 } finally {
     factory.setCurrentUser(user)
 }

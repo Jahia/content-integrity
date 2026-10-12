@@ -1,11 +1,13 @@
 package org.jahia.modules.contentintegrity.services;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.jahia.settings.SettingsBean;
+import org.jahia.api.content.JCRTemplate;
+import org.jahia.api.settings.SettingsBean;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,10 @@ public class ReportsCleanupJob {
         thread.setPriority(Thread.MIN_PRIORITY);
         return thread;
     });
+    @Reference
+    private JCRTemplate jcrTemplate;
+    @Reference
+    private SettingsBean settingsBean;
     private ScheduledFuture<?> task;
     private volatile int retentionDays = DEFAULT_RETENTION_DAYS;
 
@@ -60,9 +66,9 @@ public class ReportsCleanupJob {
 
     private void cleanup() {
         try {
-            if (retentionDays <= 0 || !SettingsBean.getInstance().isProcessingServer()) return;
+            if (retentionDays <= 0 || !settingsBean.isProcessingServer()) return;
             final long limit = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(retentionDays);
-            final int deleted = ResultsStore.deleteReportsOlderThan(limit);
+            final int deleted = ResultsStore.deleteReportsOlderThan(jcrTemplate, limit);
             if (deleted > 0) logger.info("{} scan report(s) older than {} days deleted", deleted, retentionDays);
         } catch (RuntimeException e) {
             // The next cleanup must run anyway

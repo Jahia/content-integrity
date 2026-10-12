@@ -64,8 +64,9 @@ The Jahia API refuses to create inconsistent content, so the scripts write below
 | AceSanityCheck                   | NO_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_PRINCIPAL, MISSING_EXTERNAL_ACE                                                        |    ✅     | 🔧  |
 |                                  | INVALID_ACE_TYPE_PROP, NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF                                         |    ✅     | 🔧  |
 |                                  | SOURCE_ACE_NOT_TYPE_GRANT, INVALID_EXTERNAL_ACE_PATH, ROLES_DIFFER_ON_SOURCE_ACE                                               |    ✅     | 🔧  |
-|                                  | INVALID_NODENAME, NO_ROLES_PROP, ROLE_DOESNT_EXIST, MISSING_SITE_PRIVILEGED_GRP_MEMBER, ACE_NON_GRANT_WITH_EXTERNAL_ACE        |    ✅     | ❌  |
-|                                  | INVALID_EXTERNAL_PERMISSIONS, DUPLICATED_REF_SRC_ACE, INVALID_ROLES_PROP, TOO_MANY_ACE                                         |    ✅     | ❌  |
+|                                  | INVALID_NODENAME, ROLE_DOESNT_EXIST, INVALID_ROLES_PROP, NO_ROLES_PROP and NO_PRINCIPAL (with a chosen value)                  |    ✅     | 🔧  |
+|                                  | MISSING_SITE_PRIVILEGED_GRP_MEMBER, ACE_NON_GRANT_WITH_EXTERNAL_ACE, INVALID_EXTERNAL_PERMISSIONS, DUPLICATED_REF_SRC_ACE      |    ✅     | ➖  |
+|                                  | TOO_MANY_ACE                                                                                                                   |    ✅     | ➖  |
 | BinaryPropertiesSanityCheck      | INVALID_BINARY                                                                                                                 |    ✅     | 🔧  |
 | ChildNodeDefinitionsSanityCheck  | NOT_ALLOWED_BY_PARENT_DEF                                                                                                      |    ✅     | 🔧  |
 | FlatStorageCheck                 | TOO_MANY_CHILD_NODES                                                                                                           |    ✅     | ➖  |
@@ -76,23 +77,23 @@ The Jahia API refuses to create inconsistent content, so the scripts write below
 | LockSanityCheck                  | INCONSISTENT_LOCK, DELETION_LOCK_ON_I18N                                                                                       |    ✅     | 🔧  |
 | MarkForDeletionCheck             | NO_ROOT_DELETION, DELETION_MARK_IN_LIVE, DELETION_MARK_UNDER_USERS                                                             |    ✅     | 🔧  |
 | NodeNameInfoSanityCheck          | INVALID_FULLPATH, MISSING_NODENAME, INVALID_NODENAME                                                                           |    ✅     | 🔧  |
-| PagesSanityCheck                 | MISSING_TEMPLATE                                                                                                               |    ✅     | ➖  |
-| PropertyDefinitionsSanityCheck   | EMPTY_MANDATORY_PROPERTY (with a typed value), UNDECLARED_PROPERTY                                                             |    ✅     | 🔧  |
-|                                  | INVALID_VALUE_TYPE, INVALID_MULTI_VALUE_STATUS, INVALID_VALUE_CONSTRAINT, INVALID_NODE_VALIDATION                              |    ✅     | ❌  |
+| PagesSanityCheck                 | MISSING_TEMPLATE (with a chosen template)                                                                                      |    ✅     | 🔧  |
+| PropertyDefinitionsSanityCheck   | EMPTY_MANDATORY_PROPERTY and INVALID_VALUE_CONSTRAINT (with a chosen or typed value), UNDECLARED_PROPERTY                      |    ✅     | 🔧  |
+|                                  | INVALID_VALUE_TYPE, INVALID_MULTI_VALUE_STATUS, INVALID_NODE_VALIDATION                                                        |    ✅     | ➖  |
 | PublicationSanityDefaultCheck    | NO_LIVE_NODE                                                                                                                   |    ✅     | 🔧  |
 |                                  | DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP, PATH_CONFLICT, DIFFERENT_PT                                                       |    ✅     | ❌  |
 | PublicationSanityLiveCheck       | NO_DEFAULT_NODE, UNEXPECTED_UGC, INCONSISTENT_UGC                                                                              |    ✅     | 🔧  |
 |                                  | MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL, DIFFERENT_MIXINS                                                  |    ✅     | ❌  |
 | ReferencesSanityCheck            | BROKEN_REF                                                                                                                     |    ✅     | 🔧  |
-|                                  | BROKEN_REF_TO_VN                                                                                                               |    ✅     | ❌  |
+|                                  | BROKEN_REF_TO_VN                                                                                                               |    ✅     | ➖  |
 |                                  | INVALID_BACK_REF                                                                                                               |    ⏸     |     |
-| SiteLevelSystemGroupsCheck       | GROUP_DOES_NOT_EXIST, MISSING_MEMBERSHIP                                                                                       |    ✅     | ➖  |
+| SiteLevelSystemGroupsCheck       | GROUP_DOES_NOT_EXIST (group site-privileged), MISSING_MEMBERSHIP                                                               |    ✅     | 🔧  |
 | StaticInternalLinksCheck         | HARDCODED_DOMAIN                                                                                                               |    ✅     | ➖  |
 | TemplatesIndexationCheck         | NOT_INDEXED_TEMPLATE                                                                                                           |    ✅     | ➖  |
 | UndeclaredNodeTypesCheck         | UNDECLARED_NODE_TYPE (primary type and mixin), GHOST_NODE_TYPE                                                                 |    ✅     | 🔧  |
 | UndeployedModulesReferencesCheck | UNDEPLOYED_MODULE_ON_SITE                                                                                                      |    ✅     | 🔧  |
 | UnreadablePublicationStatusCheck | UNREADABLE_PUBLICATION_STATUS                                                                                                  |    ✅     | ➖  |
-| UserAccountSanityCheck           | NOT_OWNER                                                                                                                      |    ✅     | ➖  |
+| UserAccountSanityCheck           | NOT_OWNER                                                                                                                      |    ✅     | 🔧  |
 | VersionHistoryCheck              | TOO_MANY_VERSIONS                                                                                                              |    ✅     | 🔧  |
 | VersionSanityCheck               | ORPHANED_HISTORY, ORPHAN_IN_SUBTREE                                                                                            |    ✅     | ➖  |
 |                                  | HISTORY_WITHOUT_NODE_ID                                                                                                        |    ⏸     |     |

@@ -15,21 +15,18 @@ import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckCon
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.AclPrincipals;
 import org.jahia.modules.contentintegrity.services.util.AclRoles;
-import org.jahia.registries.ServicesRegistry;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRObservationManager;
-import org.jahia.services.content.JCRPublicationService;
-import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.decorator.JCRGroupNode;
 import org.jahia.services.content.decorator.JCRSiteNode;
-import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.sites.JahiaSitesService;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
-import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -125,7 +122,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
             NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, INVALID_EXTERNAL_ACE_PATH,
             SOURCE_ACE_NOT_TYPE_GRANT, MISSING_EXTERNAL_ACE, ROLES_DIFFER_ON_SOURCE_ACE,
-            NO_ROLES_PROP);
+            NO_ROLES_PROP, INVALID_NODENAME, INVALID_ROLES_PROP, ROLE_DOESNT_EXIST);
 
     private final ContentIntegrityCheckConfiguration configurations;
     private final Map<String, Role> roles = new HashMap<>();
@@ -158,8 +155,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     @Override
     public void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         if (!loadRoles()) setScanDurationDisabled(true);
-        if (groupService == null) groupService = ServicesRegistry.getInstance().getJahiaGroupManagerService();
-        if (userService == null) userService = ServicesRegistry.getInstance().getJahiaUserManagerService();
+        if (groupService == null) groupService = BundleUtils.getOsgiService(JahiaGroupManagerService.class, null);
+        if (userService == null) userService = BundleUtils.getOsgiService(JahiaUserManagerService.class, null);
     }
 
     private boolean loadRoles() {
@@ -180,7 +177,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 .filter(e -> e.getValue() >= getAceCountThreshold())
                 .map(e -> {
                     final JCRNodeWrapper node = Optional.ofNullable(e.getKey())
-                            .map(siteKey -> JCRUtils.runJcrSupplierCallBack((JCRUtils.JcrSupplierCallBack<JCRNodeWrapper>) () -> JahiaSitesService.getInstance().getSiteByKey(siteKey, scanRootNode.getSession())))
+                            .map(siteKey -> JCRUtils.runJcrSupplierCallBack((JCRUtils.JcrSupplierCallBack<JCRNodeWrapper>) () -> BundleUtils.getOsgiService(JahiaSitesService.class, null).getSiteByKey(siteKey, scanRootNode.getSession())))
                             .orElse(JCRUtils.runJcrSupplierCallBack(() -> scanRootNode.getSession().getNode("/")));
                     return createError(node, TOO_MANY_ACE)
                             .addExtraInfo("ace-count", e.getValue(), true)
@@ -456,31 +453,36 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private void checkAceNodeName(JCRNodeWrapper ace, boolean isExternal, ContentIntegrityErrorList errors) {
+        final String expectedNodeName = getExpectedNodeName(ace, isExternal);
+        if (expectedNodeName != null && !StringUtils.equals(ace.getName(), expectedNodeName)) {
+            errors.addError(createError(ace, INVALID_NODENAME)
+                    .addExtraInfo("expected-nodename", expectedNodeName, true));
+        }
+    }
+
+    /*
+     * The name of an ACE is calculated from its type and its principal, GRANT_u_john, and the name of an external ACE
+     * from its role, its external permissions and its principal
+     */
+    private String getExpectedNodeName(JCRNodeWrapper ace, boolean isExternal) {
         final String principal = ace.getPropertyAsString(J_PRINCIPAL);
         final String aceType = ace.getPropertyAsString(J_ACE_TYPE);
         // Without these properties, the expected name can't be calculated. Their absence is reported by NO_PRINCIPAL and NO_ACE_TYPE_PROP
-        if (principal == null || (!isExternal && aceType == null)) return;
+        if (principal == null || (!isExternal && aceType == null)) return null;
 
-        final String expectedNodeName;
         if (isExternal) {
-            expectedNodeName = new StringBuilder(EXTERNAL_ACE_NODENAME_PREFIX)
+            return new StringBuilder(EXTERNAL_ACE_NODENAME_PREFIX)
                     .append(ace.getPropertyAsString(J_ROLES))
                     .append(UNDERSCORE)
                     .append(ace.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME))
                     .append(UNDERSCORE)
                     .append(JCRContentUtils.replaceColon(principal).replaceAll(SLASH, UNDERSCORE))
                     .toString();
-        } else {
-            expectedNodeName = new StringBuilder(aceType)
-                    .append(UNDERSCORE)
-                    .append(JCRContentUtils.replaceColon(principal).replaceAll(SLASH, UNDERSCORE))
-                    .toString();
         }
-
-        if (!StringUtils.equals(ace.getName(), expectedNodeName)) {
-            errors.addError(createError(ace, INVALID_NODENAME)
-                    .addExtraInfo("expected-nodename", expectedNodeName, true));
-        }
+        return new StringBuilder(aceType)
+                .append(UNDERSCORE)
+                .append(JCRContentUtils.replaceColon(principal).replaceAll(SLASH, UNDERSCORE))
+                .toString();
     }
 
     private void checkRolesProp(JCRNodeWrapper node, boolean isExternal, ContentIntegrityErrorList errors) throws RepositoryException {
@@ -550,6 +552,15 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }
         if (errorType.equals(MISSING_EXTERNAL_ACE)) {
             return triggerAclListener(ace, error);
+        }
+        if (errorType.equals(INVALID_NODENAME)) {
+            return renameAce(ace);
+        }
+        if (errorType.equals(INVALID_ROLES_PROP)) {
+            return replaceExternalAce(ace);
+        }
+        if (errorType.equals(ROLE_DOESNT_EXIST)) {
+            return removeMissingRoles(ace);
         }
         return false;
     }
@@ -693,6 +704,94 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         return true;
     }
 
+    /*
+     * The ACE is renamed with the name calculated from its type and its principal. It is not fixed when an ACE already has
+     * this name: two entries for one principal need an analysis. The listeners are disabled, since the content of the ACE
+     * does not change, and its external ACE reference it by its identifier. The ACL is published when the ACE is.
+     */
+    private boolean renameAce(JCRNodeWrapper ace) throws RepositoryException {
+        final boolean isExternal = ace.isNodeType(JNT_EXTERNAL_ACE);
+        // The name of an external ACE is meaningful only with a single role which declares its external permissions:
+        // INVALID_ROLES_PROP, ROLE_DOESNT_EXIST and INVALID_EXTERNAL_PERMISSIONS are fixed or analyzed first
+        if (isExternal && !hasValidExternalPermissions(ace)) return false;
+        final String expectedName = getExpectedNodeName(ace, isExternal);
+        if (expectedName == null) return false;
+        if (StringUtils.equals(ace.getName(), expectedName)) return true;
+        final JCRNodeWrapper acl = ace.getParent();
+        if (acl.hasNode(expectedName)) {
+            logger.warn(String.format("Impossible to rename %s, since %s already exists", ace.getPath(), expectedName));
+            return false;
+        }
+        final String destination = acl.getPath() + JCR_PATH_SEPARATOR + expectedName;
+        if (!executeWithDisabledListeners(() -> {
+            ace.getSession().move(ace.getPath(), destination);
+            ace.saveSession();
+        })) return false;
+        if (JCRUtils.isInDefaultWorkspace(acl) && JCRUtils.nodeExists(ace.getIdentifier(), JCRUtils.getSystemSession(LIVE_WORKSPACE, true))) {
+            publish(Collections.singletonList(acl.getIdentifier()));
+        }
+        return true;
+    }
+
+    private boolean hasValidExternalPermissions(JCRNodeWrapper externalAce) throws RepositoryException {
+        if (!externalAce.hasProperty(J_ROLES)) return false;
+        final List<String> externalAceRoles = getRoleNames(externalAce, null, externalAce);
+        if (externalAceRoles.size() != 1) return false;
+        if (roles.isEmpty() && !loadRoles()) return false;
+        final Role role = roles.get(externalAceRoles.get(0));
+        return role != null && role.getExternalPermissions().containsKey(externalAce.getPropertyAsString(J_EXTERNAL_PERMISSIONS_NAME));
+    }
+
+    /*
+     * An external ACE whose j:roles has no value, or several ones, is deleted. Then its source ACE are saved again, so that
+     * the ACL listener creates the right external ACE, one per role.
+     */
+    private boolean replaceExternalAce(JCRNodeWrapper externalAce) throws RepositoryException {
+        if (!externalAce.isNodeType(JNT_EXTERNAL_ACE)) return false;
+        final List<JCRNodeWrapper> sources = new ArrayList<>();
+        if (externalAce.hasProperty(J_SOURCE_ACE)) {
+            for (JCRValueWrapper value : externalAce.getProperty(J_SOURCE_ACE).getValues()) {
+                try {
+                    sources.add(value.getNode());
+                } catch (RepositoryException ignored) {
+                    // A broken source is reported by SOURCE_ACE_BROKEN_REF
+                }
+            }
+        }
+        if (!deleteExternalAce(externalAce)) return false;
+        for (JCRNodeWrapper source : sources) {
+            if (!source.hasProperty(J_ACE_TYPE) || !ACE_TYPE_GRANT.equals(source.getPropertyAsString(J_ACE_TYPE))) continue;
+            source.setProperty(J_ACE_TYPE, ACE_TYPE_GRANT);
+            source.saveSession();
+            if (JCRUtils.isInDefaultWorkspace(source) && JCRUtils.nodeExists(source.getIdentifier(), JCRUtils.getSystemSession(LIVE_WORKSPACE, true))) {
+                publish(Collections.singletonList(source.getParent().getIdentifier()));
+            }
+        }
+        return true;
+    }
+
+    /*
+     * The roles which don't exist are removed from the ACE. An ACE left without role, and an external ACE, whose single
+     * role doesn't exist, are deleted. A role created again since the scan is kept.
+     */
+    private boolean removeMissingRoles(JCRNodeWrapper ace) throws RepositoryException {
+        if (!ace.hasProperty(J_ROLES)) return true;
+        if (roles.isEmpty() && !loadRoles()) return false;
+        final List<String> aceRoles = getRoleNames(ace, null, ace);
+        final List<String> kept = aceRoles.stream().filter(roles::containsKey).collect(Collectors.toList());
+        if (kept.size() == aceRoles.size()) return true;
+        if (ace.isNodeType(JNT_EXTERNAL_ACE)) return deleteExternalAce(ace);
+        if (kept.isEmpty()) return deleteRegularAce(ace);
+
+        final JCRNodeWrapper acl = ace.getParent();
+        final JCRNodeWrapper node = acl.getParent();
+        final boolean hadPendingModifications = hasPendingModifications(node);
+        ace.setProperty(J_ROLES, kept.toArray(new String[0]));
+        node.saveSession();
+        if (JCRUtils.isInDefaultWorkspace(node)) republish(node, acl, hadPendingModifications);
+        return true;
+    }
+
     private boolean deleteAce(JCRNodeWrapper ace) throws RepositoryException {
         return ace.isNodeType(JNT_EXTERNAL_ACE) ? deleteExternalAce(ace) : deleteRegularAce(ace);
     }
@@ -771,18 +870,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     }
 
     private void publish(List<String> uuids) throws RepositoryException {
-        final JCRSessionFactory sessionFactory = JCRSessionFactory.getInstance();
-        final JahiaUser currentUser = sessionFactory.getCurrentUser();
-        final boolean switchToRoot = currentUser == null || !currentUser.isRoot();
-        if (switchToRoot) {
-            final JCRUserNode rootUser = JahiaUserManagerService.getInstance().lookupRootUser();
-            sessionFactory.setCurrentUser(rootUser.getJahiaUser());
-        }
-        try {
-            JCRPublicationService.getInstance().publish(uuids, EDIT_WORKSPACE, LIVE_WORKSPACE, false, null);
-        } finally {
-            if (switchToRoot) sessionFactory.setCurrentUser(currentUser);
-        }
+        RepairUtils.publishAsRoot(uuids, EDIT_WORKSPACE, LIVE_WORKSPACE);
     }
 
     private boolean executeWithDisabledListeners(JcrOperation operation) {

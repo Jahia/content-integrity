@@ -14,6 +14,7 @@
 // - ROLES_DIFFER_ON_SOURCE_ACE: the role of an ACE changed, while its external ACE is still for the former role
 // - TOO_MANY_ACE: raised on the site once the threshold of the check is configured
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.services.usermanager.JahiaGroupManagerService
@@ -27,8 +28,8 @@ final String FOLDER = "/sites/" + SITE_KEY + "/contents/ace"
 final String MISSING_UUID = "0c1e57ed-0000-4000-b000-000000000000"
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
-def userManager = JahiaUserManagerService.getInstance()
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
+def userManager = BundleUtils.getOsgiService(JahiaUserManagerService.class, null)
 def contents = session.getNode("/sites/" + SITE_KEY + "/contents")
 if (contents.hasNode("ace")) contents.getNode("ace").remove()
 def folder = contents.addNode("ace", "jnt:contentFolder")
@@ -71,7 +72,7 @@ externalScenarios.eachWithIndex { scenario, idx ->
 // The ACL of this node receives the moved external ACE
 grant("external-ace-holder", regularUser, "reader")
 
-def groupManager = JahiaGroupManagerService.getInstance()
+def groupManager = BundleUtils.getOsgiService(JahiaGroupManagerService.class, null)
 def sitePrivileged = groupManager.lookupGroup(SITE_KEY, "site-privileged", session)
 sitePrivileged.removeMember(userManager.lookupUser(privilegedUser, session))
 session.save()
@@ -79,7 +80,7 @@ session.save()
 JCRObservationManager.setAllEventListenersDisabled(true)
 try {
     JcrSessionFilter.endRequest()
-    def real = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null).getNode(FOLDER).getRealNode()
+    def real = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null).getNode(FOLDER).getRealNode()
     def realSession = real.getSession()
     def values = realSession.getValueFactory()
     def ace = { String scenario, String username -> real.getNode(scenario + "/j:acl/GRANT_u_" + username) }

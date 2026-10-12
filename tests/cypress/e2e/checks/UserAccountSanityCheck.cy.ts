@@ -1,4 +1,4 @@
-import {expectNotFixable, runFixture, scan} from '../../support/integrity';
+import {fixAndVerify, runFixture, scan} from '../../support/integrity';
 
 // No site is needed: the user is created at server level. The suffix makes its name unique
 const SUFFIX = 'ciUserAccountCheck';
@@ -11,8 +11,8 @@ describe('UserAccountSanityCheck', () => {
 
     after(() => runFixture('checks/UserAccountSanityCheck-cleanup.groovy', {SITEKEY: SUFFIX}));
 
-    it('detects NOT_OWNER on a user which is not owner of its account node', () => {
-        scan('/users', CHECKS).then(results => expectNotFixable(results, 'NOT_OWNER', USER));
+    it('fixes NOT_OWNER by granting the role owner to the user on its account node', () => {
+        fixAndVerify('/users', CHECKS, 'EDIT', 'NOT_OWNER', USER);
     });
 
     it('does not report the root user', () => {

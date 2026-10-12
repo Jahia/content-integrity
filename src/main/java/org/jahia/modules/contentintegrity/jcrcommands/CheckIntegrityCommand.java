@@ -24,6 +24,9 @@ import java.util.stream.Collectors;
 @Service
 public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
 
+    @Reference
+    private ContentIntegrityService integrityService;
+
     private static final char SKIP_MARKER = ':';
     @Reference
     Session session;
@@ -48,7 +51,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     @Override
     public Object execute() throws Exception {
         final String currentPath = StringUtils.defaultString(getCurrentPath(session), "/");
-        final ContentIntegrityService service = Utils.getContentIntegrityService();
+        final ContentIntegrityService service = integrityService;
         final ContentIntegrityResults integrityResults;
         try {
             integrityResults = service.validateIntegrity(currentPath, excludedPaths, skipMP, getCurrentWorkspace(session), getChecksToExecute(service), CONSOLE);

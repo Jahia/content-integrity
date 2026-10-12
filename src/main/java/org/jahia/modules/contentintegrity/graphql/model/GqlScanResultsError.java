@@ -7,6 +7,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.Utils;
 
 import java.util.List;
@@ -16,12 +17,14 @@ import java.util.stream.Collectors;
 
 public class GqlScanResultsError {
 
+    private final ContentIntegrityService service;
     private final ContentIntegrityError error;
     // Read once: the description of the values reads the node of the error
     private boolean fixValuesRead = false;
     private GqlFixValuesDefinition fixValues;
 
-    public GqlScanResultsError(ContentIntegrityError error) {
+    public GqlScanResultsError(ContentIntegrityService service, ContentIntegrityError error) {
+        this.service = service;
         this.error = error;
     }
 
@@ -44,7 +47,7 @@ public class GqlScanResultsError {
     @GraphQLField
     @GraphQLDescription("True if the check which has detected the error provides a fix for it, the error is not fixed yet, and its node is not virtual")
     public boolean isFixable() {
-        return !error.isFixed() && Utils.getContentIntegrityService().isFixable(error);
+        return !error.isFixed() && service.isFixable(error);
     }
 
     @GraphQLField
@@ -58,7 +61,7 @@ public class GqlScanResultsError {
     public GqlFixValuesDefinition getFixValues() {
         if (!fixValuesRead) {
             fixValuesRead = true;
-            fixValues = error.isFixed() ? null : Optional.ofNullable(Utils.getContentIntegrityService().getFixValuesDefinition(error))
+            fixValues = error.isFixed() ? null : Optional.ofNullable(service.getFixValuesDefinition(error))
                     .map(GqlFixValuesDefinition::new)
                     .orElse(null);
         }

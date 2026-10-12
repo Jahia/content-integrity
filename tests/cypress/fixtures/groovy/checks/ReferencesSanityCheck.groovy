@@ -3,6 +3,7 @@
 // - BROKEN_REF_TO_VN: a reference to a virtual node, known in jahia_external_mapping, but which can't be resolved
 // - INVALID_BACK_REF is not reproducible: the referencing node is always readable with the system session of the scan
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.utils.DatabaseUtils
@@ -20,7 +21,7 @@ def deleteMapping = { conn ->
 }
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 if (contents.hasNode("references")) contents.getNode("references").remove()
 def folder = contents.addNode("references", "jnt:contentFolder")

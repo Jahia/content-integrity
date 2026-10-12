@@ -359,6 +359,13 @@ export const resetCheckConfiguration = (checkId: string): void => {
 };
 
 /**
+ * Yields whether a node exists in the default workspace: reading a missing node returns an error, not null.
+ */
+export const nodeExists = (path: string): Cypress.Chainable<boolean> =>
+    request('query($path: String!) { jcr { nodeByPath(path: $path) { uuid } } }', {path})
+        .then(response => Boolean(response.body.data?.jcr?.nodeByPath));
+
+/**
  * Asserts that the check which has detected the error does not provide any fix.
  */
 export const expectNotFixable = (results: ScanResults, errorType: string, path: PathMatcher): void => {

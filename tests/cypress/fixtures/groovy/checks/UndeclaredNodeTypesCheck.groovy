@@ -2,6 +2,7 @@
 // - UNDECLARED_NODE_TYPE: nodes created with a primary type and a mixin which are then unregistered
 // - GHOST_NODE_TYPE: a node created with a type registered for the started module content-integrity, which does not declare it
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.services.content.JCRStoreService
 import org.jahia.services.content.nodetypes.NodeTypeRegistry
@@ -11,16 +12,16 @@ final String TESTS_SYSTEM_ID = "content-integrity-tests-undeclared"
 final String GHOST_SYSTEM_ID = "content-integrity"
 final String HEADER = "<jnt = 'http://www.jahia.org/jahia/nt/1.0'>\n<jmix = 'http://www.jahia.org/jahia/mix/1.0'>\n"
 
-def registry = NodeTypeRegistry.getInstance()
+def registry = BundleUtils.getOsgiService(NodeTypeRegistry.class, null)
 def register = { String systemId, String cnd ->
     registry.addDefinitionsFile(new ByteArrayResource((HEADER + cnd).getBytes("UTF-8")) {
         String getFilename() { systemId + ".cnd" }
     }, systemId)
-    JCRStoreService.getInstance().deployDefinitions(systemId)
+    BundleUtils.getOsgiService(JCRStoreService.class, null).deployDefinitions(systemId)
 }
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 if (contents.hasNode("undeclared-node-types")) contents.getNode("undeclared-node-types").remove()
 def folder = contents.addNode("undeclared-node-types", "jnt:contentFolder")
@@ -40,6 +41,6 @@ folder.addNode("ghost-type", "jnt:ciTestGhost")
 session.save()
 
 // The ghost type stays registered, the other ones are removed so that the nodes reference undeclared types
-JCRStoreService.getInstance().undeployDefinitions(TESTS_SYSTEM_ID)
+BundleUtils.getOsgiService(JCRStoreService.class, null).undeployDefinitions(TESTS_SYSTEM_ID)
 registry.unregisterNodeTypes(TESTS_SYSTEM_ID)
 JcrSessionFilter.endRequest()

@@ -10,7 +10,6 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
@@ -46,7 +45,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
 
     @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
+        final JahiaTemplateManagerService jahiaTemplateManagerService = BundleUtils.getOsgiService(JahiaTemplateManagerService.class, null);
         jahiaTemplateManagerService.getAvailableTemplatePackages().stream()
                 .map(JahiaTemplatesPackage::getId)
                 .collect(Collectors.toCollection(() -> availableModules));
@@ -69,7 +68,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
         final JCRSiteNode site = (JCRSiteNode) node;
         final String missingModule = (String) integrityError.getExtraInfo("module");
-        final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
+        final JahiaTemplateManagerService jahiaTemplateManagerService = BundleUtils.getOsgiService(JahiaTemplateManagerService.class, null);
         final Set<Bundle> bundles = jahiaTemplateManagerService.getModuleStates().keySet();
         final Collection<String> installedModuleIDs = CollectionUtils.collect(bundles, BundleUtils::getModuleId);
         if (installedModuleIDs.contains(missingModule)) {

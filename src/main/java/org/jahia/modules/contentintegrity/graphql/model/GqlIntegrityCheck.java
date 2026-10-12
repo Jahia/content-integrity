@@ -7,7 +7,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
-import org.jahia.modules.contentintegrity.services.Utils;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,10 +22,12 @@ public class GqlIntegrityCheck {
 
     private static final String DOCUMENTATION_URL = "https://github.com/Jahia/content-integrity/blob/master/docs/embedded-tests.md#";
 
+    private final ContentIntegrityService service;
     private final ContentIntegrityCheck integrityCheck;
     private final ContentIntegrityCheckConfiguration configurations;
 
-    public GqlIntegrityCheck(ContentIntegrityCheck integrityCheck) {
+    public GqlIntegrityCheck(ContentIntegrityService service, ContentIntegrityCheck integrityCheck) {
+        this.service = service;
         this.integrityCheck = integrityCheck;
         if (isConfigurable()) {
             final ContentIntegrityCheck.IsConfigurable configurableCheck = (ContentIntegrityCheck.IsConfigurable) integrityCheck;
@@ -86,7 +88,7 @@ public class GqlIntegrityCheck {
     @GraphQLName("configure")
     public boolean setConfiguration(@GraphQLName("name") @GraphQLNonNull String name,
                                  @GraphQLName("value") @GraphQLNonNull String value) {
-        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+        if (service.isScanRunning()) return false;
 
         try {
             configurations.setParameter(name, value);
@@ -101,7 +103,7 @@ public class GqlIntegrityCheck {
     @GraphQLField
     @GraphQLName("resetConfiguration")
     public boolean resetConfiguration(@GraphQLName("name") @GraphQLNonNull String name) {
-        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+        if (service.isScanRunning()) return false;
 
         try {
             configurations.setParameter(name, null);
@@ -115,7 +117,7 @@ public class GqlIntegrityCheck {
 
     @GraphQLField
     public boolean resetAllConfigurations() {
-        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+        if (service.isScanRunning()) return false;
 
         configurations.getConfigurationNames().forEach(name -> configurations.setParameter(name, null));
         return true;

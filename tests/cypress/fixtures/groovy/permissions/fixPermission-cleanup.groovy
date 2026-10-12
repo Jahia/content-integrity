@@ -1,11 +1,12 @@
 // Deletes the users and the roles created by the fixtures of the permission to fix the errors
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.services.usermanager.JahiaUserManagerService
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
-def users = JahiaUserManagerService.getInstance()
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
+def users = BundleUtils.getOsgiService(JahiaUserManagerService.class, null)
 ["viewer", "fixer"].each { profile ->
     def name = "ci-SITEKEY-" + profile
     session.getNode("/").changeRoles("u:" + name, [(name): "REMOVE"])

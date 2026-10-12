@@ -3,6 +3,7 @@ package org.jahia.modules.contentintegrity.services;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.content.JCRTemplate;
 import org.jahia.bin.Jahia;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
@@ -18,7 +19,6 @@ import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRStoreProvider;
-import org.jahia.services.content.JCRTemplate;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -51,7 +51,7 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UN
 import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
 import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
 
-public class Utils {
+public final class Utils {
 
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
@@ -65,12 +65,11 @@ public class Utils {
     public static final String JAVA_ERROR_PREFIX = "[java error]";
     public static final String FIX_PERMISSION = "adminContentIntegrityFix";
 
-    public enum LOG_LEVEL {
-        TRACE, INFO, WARN, ERROR, DEBUG
+    private Utils() {
     }
 
-    public static ContentIntegrityService getContentIntegrityService() {
-        return BundleUtils.getOsgiService(ContentIntegrityService.class, null);
+    public enum LOG_LEVEL {
+        TRACE, INFO, WARN, ERROR, DEBUG
     }
 
     /**
@@ -79,7 +78,7 @@ public class Utils {
      */
     public static boolean canFixErrors() {
         try {
-            return JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission(FIX_PERMISSION);
+            return BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentUserSession().getNode("/").hasPermission(FIX_PERMISSION);
         } catch (RepositoryException e) {
             logger.error("Impossible to check the permission " + FIX_PERMISSION, e);
             return false;
@@ -191,7 +190,7 @@ public class Utils {
      */
     public static void restrictReportsFolderAccess() {
         try {
-            JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final String path = REPORTS_FOLDER_PARENT_PATH + JCR_PATH_SEPARATOR_CHAR + JCR_REPORTS_FOLDER_NAME;
                 if (session.nodeExists(path) && restrictReportsFolderAccess(session.getNode(path))) {
                     session.save();
@@ -232,13 +231,13 @@ public class Utils {
     public static boolean isOnVirtualNode(ContentIntegrityError error) {
         final String path = error.getPath();
         if (StringUtils.isBlank(path)) return false;
-        final JCRStoreProvider provider = JCRSessionFactory.getInstance().getProvider(path, false);
+        final JCRStoreProvider provider = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getProvider(path, false);
         return provider != null && !provider.isDefault();
     }
 
     public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, ExternalLogger externalLogger) {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final String resultsSignature = results.getSignature(excludeFixedErrors);
                 final JCRNodeWrapper outputDir;
                 try {

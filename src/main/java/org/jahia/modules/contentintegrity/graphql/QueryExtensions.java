@@ -23,7 +23,7 @@ public class QueryExtensions {
     @GraphQLName("contentIntegrity")
     public static GqlIntegrityService getService() {
         try {
-            if (JCRSessionFactory.getInstance().getCurrentUserSession().getNode("/").hasPermission("adminContentIntegrity"))
+            if (BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentUserSession().getNode("/").hasPermission("adminContentIntegrity"))
                 return BundleUtils.getOsgiService(GqlIntegrityService.class, null);
         } catch (RepositoryException e) {
             logger.error("", e);

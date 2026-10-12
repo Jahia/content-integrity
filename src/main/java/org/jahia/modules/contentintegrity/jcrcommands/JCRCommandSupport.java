@@ -7,12 +7,13 @@ import org.apache.karaf.shell.api.console.Terminal;
 import org.apache.karaf.shell.support.table.Col;
 import org.apache.karaf.shell.support.table.Row;
 import org.apache.karaf.shell.support.table.ShellTable;
+import org.jahia.api.settings.SettingsBean;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.settings.SettingsBean;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -137,7 +138,7 @@ public class JCRCommandSupport {
     }
 
     protected static String getProperty(String name) {
-        final String property = SettingsBean.getInstance().getPropertiesFile().getProperty(name);
+        final String property = BundleUtils.getOsgiService(SettingsBean.class, null).getPropertiesFile().getProperty(name);
         return property != null ? property : System.getProperty(name);
     }
 }

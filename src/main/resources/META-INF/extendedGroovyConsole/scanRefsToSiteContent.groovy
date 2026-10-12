@@ -1,10 +1,11 @@
 import org.apache.commons.lang.StringUtils
 import org.jahia.api.Constants
+import org.jahia.api.content.JCRTemplate
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRCallback
 import org.jahia.services.content.JCRContentUtils
 import org.jahia.services.content.JCRNodeWrapper
 import org.jahia.services.content.JCRSessionWrapper
-import org.jahia.services.content.JCRTemplate
 
 import javax.jcr.Property
 import javax.jcr.RepositoryException
@@ -19,7 +20,7 @@ void scanSite(String siteNodeID, String ws, boolean hideRefsToIgnore, boolean po
     log.info("Running on the workspace " + ws)
     log.info(" ------------------------------------")
 
-    JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, ws, null, new JCRCallback<Object>() {
+    BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, ws, null, new JCRCallback<Object>() {
 
         long count = 0L
         final REFRESH_INTERVAL = 1000L
@@ -31,7 +32,7 @@ void scanSite(String siteNodeID, String ws, boolean hideRefsToIgnore, boolean po
             JCRNodeWrapper siteNode = session.getNodeByIdentifier(siteNodeID)
             String sitePath = siteNode.getPath()
             if (isLive(ws)) {
-                JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<Object>() {
+                BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, new JCRCallback<Object>() {
                     @Override
                     Object doInJCR(JCRSessionWrapper defaultSession) throws RepositoryException {
                         scan(siteNode, sitePath, defaultSession)

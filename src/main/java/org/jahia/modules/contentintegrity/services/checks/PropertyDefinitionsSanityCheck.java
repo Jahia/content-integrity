@@ -20,6 +20,7 @@ import org.jahia.modules.contentintegrity.services.util.AclPrincipals;
 import org.jahia.modules.contentintegrity.services.util.AclRoles;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.modules.external.ExternalNodeImpl;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -136,14 +137,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         try {
-            jntTranslationNt = NodeTypeRegistry.getInstance().getNodeType(JAHIANT_TRANSLATION);
+            jntTranslationNt = BundleUtils.getOsgiService(NodeTypeRegistry.class, null).getNodeType(JAHIANT_TRANSLATION);
         } catch (NoSuchNodeTypeException e) {
             logger.error(String.format("Impossible to load the definition of %s", JAHIANT_TRANSLATION), e);
             setScanDurationDisabled(true);
         }
 
-        validators = JCRSessionFactory.getInstance().getDefaultProvider().getValidators();
-        validatorFactoryBean = JCRSessionFactory.getInstance().getValidatorFactoryBean();
+        validators = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getDefaultProvider().getValidators();
+        validatorFactoryBean = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getValidatorFactoryBean();
     }
 
     @Override

@@ -9,6 +9,7 @@ import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
@@ -16,6 +17,9 @@ import org.jahia.modules.contentintegrity.services.Utils;
 @Command(scope = "jcr", name = "integrity-printTestResults", description = "Reprints the result of some previous test")
 @Service
 public class PrintPreviousTestCommand extends JCRCommandSupport implements Action {
+
+    @Reference
+    private ContentIntegrityService integrityService;
 
     public static final String LAST_PRINTED_TEST = "lastPrintedTest";
 
@@ -46,10 +50,10 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
         final String errorMsg;
 
         if (StringUtils.isBlank(testDate)) {
-            results = Utils.getContentIntegrityService().getLatestTestResults();
+            results = integrityService.getLatestTestResults();
             errorMsg = "No previous test results found";
         } else {
-            results = Utils.getContentIntegrityService().getTestResults(testDate);
+            results = integrityService.getTestResults(testDate);
             errorMsg = "No previous test results found for this date";
         }
 

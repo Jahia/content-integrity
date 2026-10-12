@@ -3,6 +3,7 @@
 // - DELETION_MARK_IN_LIVE: a published node, flagged as deleted in the live workspace
 // - DELETION_MARK_UNDER_USERS: a folder of a user, marked for deletion
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRPublicationService
 import org.jahia.services.content.JCRSessionFactory
@@ -11,9 +12,9 @@ import org.jahia.services.usermanager.JahiaUserManagerService
 final String USERNAME = "ci-SITEKEY"
 
 def asRoot = { Closure c ->
-    def factory = JCRSessionFactory.getInstance()
+    def factory = BundleUtils.getOsgiService(JCRSessionFactory.class, null)
     def user = factory.getCurrentUser()
-    factory.setCurrentUser(JahiaUserManagerService.getInstance().lookupRootUser().getJahiaUser())
+    factory.setCurrentUser(BundleUtils.getOsgiService(JahiaUserManagerService.class, null).lookupRootUser().getJahiaUser())
     try {
         c.call()
     } finally {
@@ -32,7 +33,7 @@ def withoutListeners = { Closure c ->
 JcrSessionFilter.endRequest()
 // A previous run may have published the fixtures: they are removed from both workspaces
 ["live", "default"].each { workspace ->
-    def previous = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null)
+    def previous = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession(workspace, null, null)
     if (previous.nodeExists("/sites/SITEKEY/contents/mark-for-deletion")) {
         JCRObservationManager.setAllEventListenersDisabled(true)
         try {
@@ -45,18 +46,18 @@ JcrSessionFilter.endRequest()
         }
     }
 }
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", Locale.ENGLISH, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", Locale.ENGLISH, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 def folder = contents.addNode("mark-for-deletion", "jnt:contentFolder")
 folder.addNode("no-root-deletion", "jnt:text").setProperty("text", "Flagged as deleted without root")
 folder.addNode("deleted-in-live", "jnt:text").setProperty("text", "Flagged as deleted in live")
 folder.addNode("regular-deletion", "jnt:text").setProperty("text", "Regularly marked for deletion")
 session.save()
-asRoot { JCRPublicationService.getInstance().publishByMainId(folder.getIdentifier(), "default", "live", null, true, null) }
+asRoot { BundleUtils.getOsgiService(JCRPublicationService.class, null).publishByMainId(folder.getIdentifier(), "default", "live", null, true, null) }
 folder.getNode("regular-deletion").markForDeletion("Regular deletion")
 session.save()
 
-def userManager = JahiaUserManagerService.getInstance()
+def userManager = BundleUtils.getOsgiService(JahiaUserManagerService.class, null)
 def user = userManager.lookupUser(USERNAME, session)
 if (user == null) {
     user = userManager.createUser(USERNAME, "ci-SITEKEY-password", new java.util.Properties(), session)
@@ -73,7 +74,7 @@ withoutListeners {
     def noRoot = folder.getNode("no-root-deletion").getRealNode()
     noRoot.addMixin("jmix:markedForDeletion")
     noRoot.getSession().save()
-    def live = JCRSessionFactory.getInstance().getCurrentSystemSession("live", null, null)
+    def live = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("live", null, null)
     def inLive = live.getNode(folder.getPath() + "/deleted-in-live").getRealNode()
     inLive.addMixin("jmix:markedForDeletion")
     inLive.getSession().save()

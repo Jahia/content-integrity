@@ -16,13 +16,15 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.ErrorIdCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
-import org.jahia.modules.contentintegrity.services.Utils;
 
 import java.util.List;
 
 @Command(scope = "jcr", name = "integrity-fix", description = "Allows to fix an error identified by an integrity check")
 @Service
 public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Action {
+
+    @Reference
+    private ContentIntegrityService integrityService;
 
     @Reference
     Session session;
@@ -42,7 +44,7 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
             return null;
         }
 
-        final ContentIntegrityService contentIntegrityService = Utils.getContentIntegrityService();
+        final ContentIntegrityService contentIntegrityService = integrityService;
         final ContentIntegrityResults results = contentIntegrityService.getTestResults(testID);
         if (results == null) {
             if (StringUtils.isBlank(testID)) System.out.println("No test results found");

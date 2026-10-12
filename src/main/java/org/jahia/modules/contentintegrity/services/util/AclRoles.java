@@ -2,6 +2,7 @@ package org.jahia.modules.contentintegrity.services.util;
 
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -102,7 +103,7 @@ public final class AclRoles {
         final boolean onSite = onContent && securedNode.isNodeType(SITE_TYPE);
 
         // The roles are defined in the default workspace, with their titles in English
-        final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", Locale.ENGLISH, null);
+        final JCRSessionWrapper session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", Locale.ENGLISH, null);
         final Query query = session.getWorkspace().getQueryManager().createQuery("select * from [jnt:role]", Query.JCR_SQL2);
         final Map<String, String> rolesByLabel = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         final JCRNodeIteratorWrapper roles = (JCRNodeIteratorWrapper) query.execute().getNodes();

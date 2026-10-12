@@ -2,13 +2,14 @@
 // - HARDCODED_DOMAIN: a text containing the domain of a site. The domains are read on the live sites, so the domain of the
 //   site is set in both workspaces
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
 
 final String DOMAIN = "SITEKEY.content-integrity.test"
 
 JcrSessionFilter.endRequest()
-def factory = JCRSessionFactory.getInstance()
+def factory = BundleUtils.getOsgiService(JCRSessionFactory.class, null)
 JCRObservationManager.setAllEventListenersDisabled(true)
 try {
     ["default", "live"].each { workspace ->

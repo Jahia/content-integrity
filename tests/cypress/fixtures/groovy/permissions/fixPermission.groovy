@@ -2,20 +2,21 @@
 // to open the administration, and adminContentIntegrity: ci-SITEKEY-fixer holds adminContentIntegrityFix as well.
 // The permission names of a role are protected properties, set as the import of a roles.xml file sets them.
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.services.usermanager.JahiaUserManagerService
 
 import javax.jcr.Value
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", null, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
 def findPermission = { name ->
     def query = session.getWorkspace().getQueryManager().createQuery("select * from [jnt:permission] where localname() = '" + name + "' and isdescendantnode('/modules')", "JCR-SQL2")
     def it = query.execute().getNodes()
     if (!it.hasNext()) throw new IllegalStateException("Permission not found: " + name)
     return it.nextNode()
 }
-def users = JahiaUserManagerService.getInstance()
+def users = BundleUtils.getOsgiService(JahiaUserManagerService.class, null)
 ["viewer": ["administrationAccess", "adminContentIntegrity"], "fixer": ["administrationAccess", "adminContentIntegrity", "adminContentIntegrityFix"]].each { profile, names ->
     def roleName = "ci-SITEKEY-" + profile
     def roles = session.getNode("/roles")

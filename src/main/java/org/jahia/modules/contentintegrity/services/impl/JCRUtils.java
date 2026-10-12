@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.services.impl;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -194,7 +195,7 @@ public class JCRUtils {
 
     private static JCRSessionWrapper getSystemSession(String workspace, String locale, boolean refresh) {
         try {
-            final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, LanguageCodeConverters.languageCodeToLocale(locale), null);
+            final JCRSessionWrapper session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession(workspace, LanguageCodeConverters.languageCodeToLocale(locale), null);
             if (refresh) session.refresh(false);
             return session;
         } catch (RepositoryException e) {

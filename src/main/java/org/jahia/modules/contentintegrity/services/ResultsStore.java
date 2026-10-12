@@ -6,16 +6,17 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
+import org.jahia.api.content.JCRTemplate;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRAutoSplitUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,6 +92,10 @@ public final class ResultsStore {
     private ResultsStore() {
     }
 
+    private static JCRTemplate getJcrTemplate() {
+        return BundleUtils.getOsgiService(JCRTemplate.class, null);
+    }
+
     public static String getServerId() {
         return System.getProperty("cluster.node.serverId", "jahiaServer1");
     }
@@ -101,7 +106,7 @@ public final class ResultsStore {
      */
     public static boolean save(ContentIntegrityResults results, List<String> executionLog, boolean withErrors) {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final JCRNodeWrapper reportNode = getOrCreateReportNode(session, results, results.getSignature(false));
                 if (withErrors) {
                     Utils.writeReportMetadata(reportNode, results);
@@ -144,7 +149,7 @@ public final class ResultsStore {
                 .collect(Collectors.toCollection(HashSet::new));
         if (fixedErrors.isEmpty()) return;
         try {
-            JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final JCRNodeWrapper reportNode = findReportNode(session, results.getID());
                 if (reportNode == null || !reportNode.hasNode(getErrorsFileName(results))) return null;
                 fixedErrors.addAll(readFixedErrors(reportNode));
@@ -162,7 +167,7 @@ public final class ResultsStore {
      */
     public static List<ContentIntegrityResultsSummary> list() {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 if (!session.nodeExists(REPORTS_FOLDER_PATH)) return Collections.<ContentIntegrityResultsSummary>emptyList();
                 final String statement = String.format("SELECT * FROM [%s] AS report WHERE ISDESCENDANTNODE(report, '%s') AND report.[%s] IS NOT NULL ORDER BY report.[%s]",
                         REPORT_MIXIN, REPORTS_FOLDER_PATH, PROP_STATUS, PROP_EXECUTION_DATE);
@@ -197,7 +202,7 @@ public final class ResultsStore {
      */
     public static ContentIntegrityResults load(String resultsID, Function<String, ContentIntegrityCheck> checks) {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final JCRNodeWrapper reportNode = findReportNode(session, resultsID);
                 if (reportNode == null) return null;
                 final ContentIntegrityResults.Status status = ContentIntegrityResults.Status.fromValue(reportNode.getPropertyAsString(PROP_STATUS));
@@ -245,7 +250,7 @@ public final class ResultsStore {
      */
     public static List<String> loadExecutionLog(String resultsID) {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final JCRNodeWrapper reportNode = findReportNode(session, resultsID);
                 if (reportNode == null || !reportNode.hasProperty(PROP_STATUS)) return null;
                 final String log = reportNode.hasProperty(PROP_EXECUTION_LOG) ? reportNode.getProperty(PROP_EXECUTION_LOG).getString() : StringUtils.EMPTY;
@@ -262,7 +267,7 @@ public final class ResultsStore {
      */
     public static Set<String> loadFixedErrors(String resultsID) {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final JCRNodeWrapper reportNode = findReportNode(session, resultsID);
                 return reportNode == null ? Collections.<String>emptySet() : readFixedErrors(reportNode);
             });
@@ -279,7 +284,7 @@ public final class ResultsStore {
      */
     public static int interruptAbandonedScans() {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 if (!session.nodeExists(REPORTS_FOLDER_PATH)) return 0;
                 final String statement = String.format("SELECT * FROM [%s] AS report WHERE ISDESCENDANTNODE(report, '%s') AND report.[%s] = '%s' AND report.[%s] = '%s'",
                         REPORT_MIXIN, REPORTS_FOLDER_PATH, PROP_STATUS, ContentIntegrityResults.Status.RUNNING.getValue(), PROP_SERVER_ID, getServerId().replace("'", "''"));
@@ -304,9 +309,9 @@ public final class ResultsStore {
      *
      * @return the number of deleted reports
      */
-    public static int deleteReportsOlderThan(long date) {
+    public static int deleteReportsOlderThan(JCRTemplate jcrTemplate, long date) {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return jcrTemplate.doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 if (!session.nodeExists(REPORTS_FOLDER_PATH)) return 0;
                 final String statement = String.format("SELECT * FROM [%s] AS report WHERE ISDESCENDANTNODE(report, '%s') AND report.[%s] < CAST('%s' AS DATE)",
                         REPORT_MIXIN, REPORTS_FOLDER_PATH, PROP_EXECUTION_DATE, QUERY_DATE_FORMAT.format(date));

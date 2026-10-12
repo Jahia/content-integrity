@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -163,7 +164,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     node.getProperty(PUBLISHED).remove();
                     node.saveSession();
                 }
-                RepairUtils.runAsRoot(() -> JCRPublicationService.getInstance().publishByMainId(uuid));
+                RepairUtils.runAsRoot(() -> BundleUtils.getOsgiService(JCRPublicationService.class, null).publishByMainId(uuid));
             });
             return JCRUtils.nodeExists(uuid, JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, true));
         }

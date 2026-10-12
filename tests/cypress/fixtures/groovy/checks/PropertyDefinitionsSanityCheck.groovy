@@ -6,6 +6,7 @@
 // - INVALID_VALUE_CONSTRAINT on a multiple property: the second of three values, on the node invalid-choices
 // - INVALID_NODE_VALIDATION: a jnt:vfsMountPoint without j:rootPath, which MountPointAvailabilityValidator requires
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.services.content.JCRStoreService
@@ -15,17 +16,17 @@ import org.springframework.core.io.ByteArrayResource
 final String SYSTEM_ID = "content-integrity-tests-property-definitions"
 final String HEADER = "<jnt = 'http://www.jahia.org/jahia/nt/1.0'>\n<jmix = 'http://www.jahia.org/jahia/mix/1.0'>\n"
 
-def registry = NodeTypeRegistry.getInstance()
+def registry = BundleUtils.getOsgiService(NodeTypeRegistry.class, null)
 def register = { String cnd ->
     try {
-        JCRStoreService.getInstance().undeployDefinitions(SYSTEM_ID)
+        BundleUtils.getOsgiService(JCRStoreService.class, null).undeployDefinitions(SYSTEM_ID)
     } catch (ignored) {
     }
     registry.unregisterNodeTypes(SYSTEM_ID)
     registry.addDefinitionsFile(new ByteArrayResource((HEADER + cnd).getBytes("UTF-8")) {
         String getFilename() { SYSTEM_ID + ".cnd" }
     }, SYSTEM_ID)
-    JCRStoreService.getInstance().deployDefinitions(SYSTEM_ID)
+    BundleUtils.getOsgiService(JCRStoreService.class, null).deployDefinitions(SYSTEM_ID)
 }
 def withoutListeners = { Closure c ->
     JCRObservationManager.setAllEventListenersDisabled(true)
@@ -37,7 +38,7 @@ def withoutListeners = { Closure c ->
 }
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", Locale.ENGLISH, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", Locale.ENGLISH, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 if (contents.hasNode("property-definitions")) contents.getNode("property-definitions").remove()
 def folder = contents.addNode("property-definitions", "jnt:contentFolder")

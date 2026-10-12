@@ -35,10 +35,12 @@ public class GqlScanResults {
     private final int errorCount, totalErrorCount;
     private final Collection<String> currentFilters;
     private final List<GqlScanReportFile> reports;
+    private final ContentIntegrityService service;
     private final ContentIntegrityResults results;
 
-    public GqlScanResults(String id, Collection<String> filters) {
-        final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
+    public GqlScanResults(ContentIntegrityService service, String id, Collection<String> filters) {
+        this.service = service;
+        final ContentIntegrityResults all = service.getTestResults(id);
         results = all;
         if (all == null) {
             allErrors = null;
@@ -93,7 +95,7 @@ public class GqlScanResults {
         return filteredErrors.stream()
                 .skip(offset)
                 .limit(Math.min(pageSize, MAX_PAGE_SIZE))
-                .map(GqlScanResultsError::new)
+                .map(error -> new GqlScanResultsError(service, error))
                 .collect(Collectors.toList());
     }
 
@@ -111,7 +113,7 @@ public class GqlScanResults {
     public GqlScanResultsError getErrorById(@GraphQLName("id") String id) {
         return filteredErrors.stream()
                 .filter(e -> StringUtils.equals(e.getErrorID(), id))
-                .map(GqlScanResultsError::new)
+                .map(error -> new GqlScanResultsError(service, error))
                 .findFirst().orElse(null);
     }
 
@@ -126,7 +128,6 @@ public class GqlScanResults {
                 .findFirst().orElse(null);
         if (error == null) return null;
         if (!error.isFixed()) {
-            final ContentIntegrityService service = Utils.getContentIntegrityService();
             if (values == null) {
                 service.fixError(error);
             } else {
@@ -139,7 +140,7 @@ public class GqlScanResults {
             // The fixed status is stored with the results, in the JCR
             if (error.isFixed()) service.saveFixedErrors(results);
         }
-        return new GqlScanResultsError(error);
+        return new GqlScanResultsError(service, error);
     }
 
     @GraphQLField
@@ -151,7 +152,6 @@ public class GqlScanResults {
         final GqlFixAllErrorsResult result = new GqlFixAllErrorsResult();
         if (filteredErrors == null) return result;
 
-        final ContentIntegrityService service = Utils.getContentIntegrityService();
         for (ContentIntegrityError error : filteredErrors) {
             if (error.isFixed()) {
                 result.addAlreadyFixed();

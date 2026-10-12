@@ -2,11 +2,12 @@
 // - MISSING_JCR_LANGUAGE_PROP: a translation node without jcr:language
 // - INCONSISTENT_JCR_LANGUAGE_PROP: the translation node j:translation_en with jcr:language=fr
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
 
 JcrSessionFilter.endRequest()
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", Locale.ENGLISH, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", Locale.ENGLISH, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 if (contents.hasNode("jcr-language")) contents.getNode("jcr-language").remove()
 def folder = contents.addNode("jcr-language", "jnt:contentFolder")

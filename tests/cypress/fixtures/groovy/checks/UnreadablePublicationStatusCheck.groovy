@@ -1,6 +1,7 @@
 // Fixtures of UnreadablePublicationStatusCheck, under /sites/SITEKEY/contents/unreadable-publication-status
 // - UNREADABLE_PUBLICATION_STATUS: in live, a translation node in German, a language which is not active on the site
 import org.jahia.bin.filters.jcr.JcrSessionFilter
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRPublicationService
 import org.jahia.services.content.JCRSessionFactory
@@ -9,7 +10,7 @@ import org.jahia.services.usermanager.JahiaUserManagerService
 JcrSessionFilter.endRequest()
 // A previous run may have published the fixtures: they are removed from both workspaces
 ["live", "default"].each { workspace ->
-    def previous = JCRSessionFactory.getInstance().getCurrentSystemSession(workspace, null, null)
+    def previous = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession(workspace, null, null)
     if (previous.nodeExists("/sites/SITEKEY/contents/unreadable-publication-status")) {
         JCRObservationManager.setAllEventListenersDisabled(true)
         try {
@@ -22,17 +23,17 @@ JcrSessionFilter.endRequest()
         }
     }
 }
-def session = JCRSessionFactory.getInstance().getCurrentSystemSession("default", Locale.ENGLISH, null)
+def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", Locale.ENGLISH, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 def folder = contents.addNode("unreadable-publication-status", "jnt:contentFolder")
 folder.addNode("translated-in-inactive-language", "jnt:text").setProperty("text", "English")
 folder.addNode("translated-in-active-language", "jnt:text").setProperty("text", "English")
 session.save()
-def factory = JCRSessionFactory.getInstance()
+def factory = BundleUtils.getOsgiService(JCRSessionFactory.class, null)
 def user = factory.getCurrentUser()
-factory.setCurrentUser(JahiaUserManagerService.getInstance().lookupRootUser().getJahiaUser())
+factory.setCurrentUser(BundleUtils.getOsgiService(JahiaUserManagerService.class, null).lookupRootUser().getJahiaUser())
 try {
-    JCRPublicationService.getInstance().publishByMainId(folder.getIdentifier(), "default", "live", null, true, null)
+    BundleUtils.getOsgiService(JCRPublicationService.class, null).publishByMainId(folder.getIdentifier(), "default", "live", null, true, null)
 } finally {
     factory.setCurrentUser(user)
 }

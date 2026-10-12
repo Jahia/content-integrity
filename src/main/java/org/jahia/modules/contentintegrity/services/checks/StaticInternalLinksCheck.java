@@ -9,6 +9,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
@@ -71,7 +72,7 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
     protected void initializeIntegrityTestInternal(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         try {
             final JCRSessionWrapper systemSession = JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, false);
-            JahiaSitesService.getInstance().getSitesNodeList(systemSession).stream()
+            BundleUtils.getOsgiService(JahiaSitesService.class, null).getSitesNodeList(systemSession).stream()
                     .map(JCRSiteNode::getAllServerNames)
                     .flatMap(Collection::stream)
                     .filter(domain -> !(ignoreLocalhost() && "localhost".equalsIgnoreCase(domain)))
