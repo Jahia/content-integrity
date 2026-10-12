@@ -47,6 +47,8 @@ describe('Scan subscription', () => {
                 expect(outcome.events).to.be.empty;
                 expect(outcome.completed).to.equal(false);
                 expect(outcome.errors).to.not.be.empty;
+                // The module refuses it, or the security filter first from graphql-dxm-provider 3.8.0
+                expect(JSON.stringify(outcome.errors)).to.match(/not allowed to access the API|Permission denied/);
             });
         });
     });

@@ -373,7 +373,9 @@ export const expectNotFixable = (results: ScanResults, errorType: string, path: 
 export const fixFromTwoScans = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
     scan(startNode, checks, workspace).then(first => {
         scan(startNode, checks, workspace).then(second => {
-            fixError(first.resultsId, expectError(first, errorType, path).id).then(result => expect(result.fixed, `Fix of ${errorType}: ${result.message}`).to.be.true);
+            const error = expectError(first, errorType, path);
+            expect(error.fixable, `${errorType} is fixable`).to.be.true;
+            fixError(first.resultsId, error.id).then(result => expect(result.fixed, `Fix of ${errorType}: ${result.message}`).to.be.true);
             fixError(second.resultsId, expectError(second, errorType, path).id).then(result => {
                 expect(result.fixed, `Fix of ${errorType} already fixed: ${result.message}`).to.be.true;
             });

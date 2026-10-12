@@ -136,6 +136,20 @@ describe('Scan execution in the administration page', () => {
         });
     });
 
+    it('displays a scan which failed, with its log open', () => {
+        // A root node which does not exist: no workspace can be scanned
+        startScan({startNode: '/sites/systemsite/ci-node-which-does-not-exist', checks: ['LockSanityCheck']}).then(id => waitForExecution(id)).then(failed => {
+            expect(failed.status).to.equal('failed');
+            visitAdmin();
+            getScanLabel(failed.resultsID as string).then(label => selectInDropdown('Scan', label));
+            cy.get('#ci-scan-status').should('have.text', 'Failed');
+            cy.contains('The scan failed, so it has no errors to display.').should('be.visible');
+            // The log tells why the scan failed: it is open without a click
+            cy.get('#ci-results-logs').should('be.visible').and('contain.text', 'does not exist');
+            cy.get('#ci-filters').should('not.exist');
+        });
+    });
+
     it('follows the scan which runs when the page is opened', () => {
         startScan(SLOW_SCAN).then(id => {
             visitAdmin();

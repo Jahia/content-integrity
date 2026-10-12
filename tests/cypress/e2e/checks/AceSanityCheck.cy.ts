@@ -117,6 +117,12 @@ describe('AceSanityCheck', () => {
                 expectExtraInfo(expectError(results, 'TOO_MANY_ACE', SITE_PATH), 'ace-count');
             });
         });
+
+        // The number of ACE tells to review the ACL of the site: the check provides no fix for it
+        it('provides no fix for TOO_MANY_ACE', () => {
+            configureCheck(CHECK, 'ace-count-threshold', '5');
+            expectNoFix(SITE_PATH, CHECKS, 'EDIT', 'TOO_MANY_ACE', SITE_PATH);
+        });
     });
 
     describe('Fix', () => {

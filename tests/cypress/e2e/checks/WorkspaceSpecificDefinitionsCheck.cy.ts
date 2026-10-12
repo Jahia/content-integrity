@@ -48,7 +48,8 @@ describe('WorkspaceSpecificDefinitionsCheck', () => {
         });
 
         it('fixes UNEXPECTED_TYPE', () => {
-            fixAndVerify(ROOT, CHECKS, 'LIVE', 'UNEXPECTED_TYPE', `${ROOT}/unexpected-type`);
+            // Fixed from the first results, then from the second ones, where it is already fixed
+            fixFromTwoScans(ROOT, CHECKS, 'LIVE', 'UNEXPECTED_TYPE', `${ROOT}/unexpected-type`);
         });
 
         it('fixes UNEXPECTED_PROP_VALUE', () => {

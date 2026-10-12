@@ -6,7 +6,7 @@ import {
     expectExtraInfo,
     expectNoFix,
     expectNoError,
-    fixAndVerify,
+    fixFromTwoScans,
     resetCheckConfiguration,
     runFixture,
     scan,
@@ -63,6 +63,7 @@ describe('ReferencesSanityCheck', () => {
     });
 
     it('fixes BROKEN_REF by removing the broken value', () => {
-        fixAndVerify(ROOT, CHECKS, 'EDIT', 'BROKEN_REF', `${ROOT}/broken-reference`);
+        // Fixed from the first results, then from the second ones, where it is already fixed
+        fixFromTwoScans(ROOT, CHECKS, 'EDIT', 'BROKEN_REF', `${ROOT}/broken-reference`);
     });
 });

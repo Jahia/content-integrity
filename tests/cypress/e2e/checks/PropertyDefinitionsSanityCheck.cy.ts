@@ -5,7 +5,7 @@ import {
     expectExtraInfo,
     expectFixFails,
     expectNoFix,
-    fixAndVerify,
+    fixFromTwoScans,
     fixError,
     graphql,
     runFixture,
@@ -79,7 +79,8 @@ describe('PropertyDefinitionsSanityCheck', () => {
 
     describe('Fix', () => {
         it('fixes UNDECLARED_PROPERTY by removing the property', () => {
-            fixAndVerify(ROOT, CHECKS, 'EDIT', 'UNDECLARED_PROPERTY', INVALID_VALUES);
+            // Fixed from the first results, then from the second ones, where it is already fixed
+            fixFromTwoScans(ROOT, CHECKS, 'EDIT', 'UNDECLARED_PROPERTY', INVALID_VALUES);
         });
 
         ['INVALID_VALUE_TYPE', 'INVALID_MULTI_VALUE_STATUS'].forEach(errorType => {

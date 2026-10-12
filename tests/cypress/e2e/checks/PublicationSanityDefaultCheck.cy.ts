@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoFix, fixAndVerify, runFixture, scan, ScanResults} from '../../support/integrity';
+import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoFix, fixFromTwoScans, runFixture, scan, ScanResults} from '../../support/integrity';
 
 const SITE = 'ciPublicationDefaultCheck';
 const ROOT = `/sites/${SITE}/contents/publication-default`;
@@ -48,8 +48,13 @@ describe('PublicationSanityDefaultCheck', () => {
             });
         });
 
+        it('provides no fix for DIFFERENT_PATH_POTENTIAL_FP', () => {
+            expectNoFix(`${ROOT}/moved-in-live`, CHECKS, 'EDIT', 'DIFFERENT_PATH_POTENTIAL_FP', `${ROOT}/moved-in-live`);
+        });
+
         it('fixes NO_LIVE_NODE by removing the publication flag', () => {
-            fixAndVerify(ROOT, CHECKS, 'EDIT', 'NO_LIVE_NODE', `${ROOT}/flagged-as-published`);
+            // Fixed from the first results, then from the second ones, where it is already fixed
+            fixFromTwoScans(ROOT, CHECKS, 'EDIT', 'NO_LIVE_NODE', `${ROOT}/flagged-as-published`);
         });
     });
 });
