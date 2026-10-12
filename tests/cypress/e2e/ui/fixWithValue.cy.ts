@@ -102,7 +102,8 @@ describe('Fix of a missing mandatory property with a typed value', () => {
         openErrorDetails(FRAME);
         getDetailsPanel().within(() => {
             // Linked, the two errors have a single fix
-            cy.contains('The values of these errors are saved at once').should('be.visible');
+            // The panel scrolls to the error of the clicked row: the summary of the node is above it
+            cy.contains('The values of these errors are saved at once').scrollIntoView().should('be.visible');
             cy.contains('button', /^Fix$/).should('not.exist');
             cy.contains('button', /^Fix 2 errors$/).should('be.disabled');
             cy.get('input[aria-label="width"]').type('640');

@@ -65,7 +65,8 @@ const FilterDropdown = ({column, values, active, onChange}) => {
         return column === FIX_STATUS_FILTER ? t(`label.fixStatus.${name}`) : name;
     };
 
-    const options = (values || []).map(v => ({value: toOptionValue(v.name), label: `${labelOf(v.name)} (${v.count})`}));
+    // A value which matches no error with the other filters is not offered
+    const options = (values || []).filter(v => v.count > 0).map(v => ({value: toOptionValue(v.name), label: `${labelOf(v.name)} (${v.count})`}));
     // Keep the active value selectable even when the other filters leave it no match.
     if (active !== undefined && !options.some(o => o.value === toOptionValue(active))) {
         options.push({value: toOptionValue(active), label: `${labelOf(active)} (0)`});

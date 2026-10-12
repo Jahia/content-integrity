@@ -107,10 +107,10 @@ describe('Results table', () => {
         cy.contains(/^Errors: 1 \(total: \d+\)$/).should('be.visible');
         getRow(MISSING_TEMPLATE).should('exist');
         getResultsTable().find(`tr[data-node-path="${MISSING_LANGUAGE}"]`).should('not.exist');
-        // The values of the other columns are counted on the filtered errors
+        // The values of the other columns are counted on the filtered errors: a value without error is not offered
         openDropdown('Error type');
         getMenuItem('MISSING_TEMPLATE (1)');
-        getMenuItem('MISSING_JCR_LANGUAGE_PROP (0)');
+        cy.get('li.moonstone-menuItem').filter(':contains("MISSING_JCR_LANGUAGE_PROP")').should('not.exist');
         closeMenu();
 
         clearFilters();
