@@ -484,6 +484,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         fixErrors(Collections.singletonList(error));
     }
 
+    @Override
     public void fixErrors(List<ContentIntegrityError> errors) {
         for (ContentIntegrityError error : errors) {
             final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
@@ -509,9 +510,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final String uuid = error.getUuid();
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
                 final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error);
-                if (fixed) error.setFixed(true);
-                else logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
+                if (fixed) {
+                    error.setFixed(true);
+                } else {
+                    error.setFixFailed(true);
+                    logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
+                }
             } catch (RepositoryException e) {
+                error.setFixFailed(true);
                 logger.error(String.format("Failed to fix the error %s", error.toJSON()), e);
             }
         }
@@ -519,6 +525,65 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Override
     public void fixError(ContentIntegrityError error, List<String> values) throws RepositoryException {
+        final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = getCheckFixingWithValues(error);
+        final JCRNodeWrapper node = getErrorNode(error);
+        if (check.getFixValuesDefinition(node, error) == null) {
+            throw new RepositoryException("This error is not fixed with values");
+        }
+        // A value refused with an exception is corrected by the administrator: only a fix which runs without fixing has failed
+        if (check.fixError(node, error, values)) {
+            error.setFixed(true);
+        } else {
+            error.setFixFailed(true);
+            logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
+        }
+    }
+
+    /*
+     * The errors of a node can block each other: a node is saved only once all its mandatory properties are set. So the
+     * errors fixed with values are fixed first, check by check and node by node, each check writing all the values before it
+     * saves the node once. Then the other errors are fixed one by one.
+     */
+    @Override
+    public void fixErrors(List<ContentIntegrityError> errors, List<List<String>> values) throws RepositoryException {
+        final Map<String, List<Integer>> withValues = new LinkedHashMap<>();
+        final List<ContentIntegrityError> withoutValues = new ArrayList<>();
+        for (int i = 0; i < errors.size(); i++) {
+            final ContentIntegrityError error = errors.get(i);
+            if (error.isFixed()) continue;
+            if (values == null || values.get(i) == null) {
+                withoutValues.add(error);
+            } else {
+                getCheckFixingWithValues(error);
+                withValues.computeIfAbsent(String.join("|", error.getIntegrityCheckID(), error.getWorkspace(), error.getUuid()), k -> new ArrayList<>()).add(i);
+            }
+        }
+
+        for (List<Integer> indexes : withValues.values()) {
+            final ContentIntegrityError first = errors.get(indexes.get(0));
+            final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = getCheckFixingWithValues(first);
+            final JCRNodeWrapper node = getErrorNode(first);
+            final List<ContentIntegrityError> nodeErrors = new ArrayList<>(indexes.size());
+            final List<List<String>> nodeValues = new ArrayList<>(indexes.size());
+            for (int index : indexes) {
+                final ContentIntegrityError error = errors.get(index);
+                if (check.getFixValuesDefinition(node, error) == null) {
+                    throw new RepositoryException(String.format("The error %s is not fixed with values", error.getErrorType()));
+                }
+                nodeErrors.add(error);
+                nodeValues.add(values.get(index));
+            }
+            if (check.fixErrors(node, nodeErrors, nodeValues)) {
+                nodeErrors.forEach(error -> error.setFixed(true));
+            } else {
+                nodeErrors.forEach(error -> error.setFixFailed(true));
+                logger.warn("The fix of its check has not fixed the errors {}", nodeErrors.stream().map(ContentIntegrityError::toJSON).collect(Collectors.toList()));
+            }
+        }
+        fixErrors(withoutValues);
+    }
+
+    private ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues getCheckFixingWithValues(ContentIntegrityError error) throws RepositoryException {
         final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
         if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues)) {
             throw new RepositoryException("The check which has detected the error doesn't fix it with values");
@@ -530,15 +595,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         if (!check.isFixable(error)) {
             throw new RepositoryException("The check which has detected the error provides no fix for it");
         }
-        final JCRNodeWrapper node = getErrorNode(error);
-        if (check.getFixValuesDefinition(node, error) == null) {
-            throw new RepositoryException("This error is not fixed with values");
-        }
-        if (check.fixError(node, error, values)) {
-            error.setFixed(true);
-        } else {
-            logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
-        }
+        return check;
     }
 
     @Override
@@ -648,7 +705,9 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         if (loaded != null) {
             // Another server may have fixed some errors since they were read
             final Set<String> fixedErrors = ResultsStore.loadFixedErrors(id);
+            final Set<String> failedErrors = ResultsStore.loadFailedErrors(id);
             loaded.getErrors().stream().filter(e -> !e.isFixed() && fixedErrors.contains(e.getErrorID())).forEach(e -> e.setFixed(true));
+            loaded.getErrors().stream().filter(e -> !e.isFixed() && failedErrors.contains(e.getErrorID())).forEach(e -> e.setFixFailed(true));
             return loaded;
         }
         final ContentIntegrityResults results = ResultsStore.load(id, this::getContentIntegrityCheck);

@@ -37,6 +37,13 @@ public interface ContentIntegrityError {
 
     void setFixed(boolean fixed);
 
+    /**
+     * @return true if the fix of the error has run, and has not fixed it. A fixed error is not failed
+     */
+    boolean isFixFailed();
+
+    void setFixFailed(boolean fixFailed);
+
     JSONObject toJSON();
 
     Object getExtraInfo(String key);

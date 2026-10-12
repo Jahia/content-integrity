@@ -75,16 +75,19 @@
       "title": "Scan results",
       "noResultsTitle": "No scan results yet",
       "clearFilters": "Clear the filters",
-      "fixStatus": "Fix status"
+      "fixStatus": "Fix status",
+      "nodeGroup": "Errors of {{path}} in the workspace {{workspace}}",
+      "expand": "Show the errors of the node",
+      "collapse": "Hide the errors of the node"
     },
     "details": {
-      "title": "Error details",
-      "unknown": "This error no longer exists in the scan results.",
+      "title": "Errors of the node",
+      "unknown": "This node no longer has errors in the scan results.",
       "virtualNode": "The node is virtual, served by an external provider such as a mount point: its errors are not fixed here.",
-      "node": "Node",
-      "check": "Detection",
-      "extraInfos": "Additional information",
       "impactsImport": "Impacts the XML import",
+      "errors": "Errors of the node",
+      "errorCount": "Workspace {{workspace}} · errors: {{count}}",
+      "noFix": "No fix",
       "yes": "Yes",
       "no": "No"
     },
@@ -100,7 +103,8 @@
       "locale": "Locale",
       "message": "Message",
       "extraInfosString": "Extra info",
-      "importError": "Impact on XML import"
+      "importError": "Impact on XML import",
+      "fixStatus": "Fix status"
     },
     "execution": {
       "current": "Scan in progress",
@@ -116,8 +120,13 @@
       "fixed": "Fixed",
       "failed": "Not fixed",
       "failedHelper": "The fix of the check has not fixed this error. It needs to be fixed by hand.",
+      "fixCount": "Fix {{count}} errors",
+      "nodeHelper": "Fix the errors of the node together: their values are saved at once",
+      "linkedHelper": "The values of these errors are saved at once: the node is saved only once all its mandatory properties are set.",
       "helper": "Fix this error with the fix of {{check}}",
-      "withValuesHelper": "Fix this error with the typed value"
+      "withValuesHelper": "Fix this error with the typed value",
+      "fixAllNode": "Fix all ({{count}})",
+      "fixAllNodeHelper": "Fix the errors of the node which can be fixed now: an error fixed with values once they are typed"
     },
     "fixValues": {
       "title": "Fix with a value",
@@ -136,6 +145,10 @@
       "warning": "Some fixes remove content, such as a node whose type is not declared anymore. The errors whose check provides no fix, and the ones fixed with a typed value, are skipped.",
       "confirm": "Fix {{count}} errors",
       "outcome": "{{fixed}} fixed, {{failed}} not fixed, {{skipped}} skipped, {{alreadyFixed}} already fixed"
+    },
+    "fixStatus": {
+      "fixedOrSkipped": "Fixed and skipped",
+      "notFixed": "Not fixed"
     }
   }
 }

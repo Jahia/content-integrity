@@ -129,7 +129,7 @@ describe('PropertyDefinitionsSanityCheck', () => {
                     expect(result.fixed).to.be.false;
                     expect(result.message).to.contain('not a number');
                 });
-                fixError(r.resultsId, error.id, ['  ']).then(result => expect(result.message).to.contain('A value is required'));
+                fixError(r.resultsId, error.id, ['  ']).then(result => expect(result.message).to.contain('A value of the property width is required'));
                 fixError(r.resultsId, error.id, ['1', '2']).then(result => expect(result.message).to.contain('takes a single value'));
             });
         });

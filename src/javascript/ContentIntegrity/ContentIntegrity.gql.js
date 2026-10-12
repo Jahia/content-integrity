@@ -157,6 +157,7 @@ export const GET_SCAN_RESULTS = gql`
                     extraInfosString
                     importError
                     fixed
+                    fixFailed
                     fixable
                     fixWithValues
                 }
@@ -172,11 +173,12 @@ export const GET_SCAN_RESULTS = gql`
     }
 `;
 
-export const GET_ERROR_DETAILS = gql`
-    query ContentIntegrityErrorDetails($id: String!, $resultsID: String!) {
+// The errors of a node, whatever the filters: they are displayed and fixed together, since they can block each other
+export const GET_NODE_ERRORS = gql`
+    query ContentIntegrityNodeErrors($resultsID: String!, $workspace: String!, $path: String!) {
         integrity: contentIntegrity {
             results: scanResultsDetails(id: $resultsID) {
-                error: errorById(id: $id) {
+                errors: nodeErrors(workspace: $workspace, path: $path) {
                     id
                     checkName
                     workspace
@@ -190,6 +192,7 @@ export const GET_ERROR_DETAILS = gql`
                     site
                     importError
                     fixed
+                    fixFailed
                     fixable
                     virtualNode
                     fixWithValues
@@ -214,14 +217,16 @@ export const GET_ERROR_DETAILS = gql`
     }
 `;
 
-// Runs the fix of the check which has detected the error. 'fixed' tells if the fix has succeeded.
-export const FIX_ERROR = gql`
-    query ContentIntegrityFixError($resultsID: String!, $id: String!, $values: [String]) {
+// Fixes errors together, each with the fix of the check which has detected it: the values of the errors of a node are
+// saved at once. 'fixed' tells, for each error, if its fix has succeeded.
+export const FIX_ERRORS = gql`
+    query ContentIntegrityFixErrors($resultsID: String!, $ids: [String]!, $values: [[String]]) {
         integrity: contentIntegrity {
             results: scanResultsDetails(id: $resultsID) {
-                error: fixError(id: $id, values: $values) {
+                errors: fixErrors(ids: $ids, values: $values) {
                     id
                     fixed
+                    fixFailed
                     fixable
                     fixWithValues
                 }

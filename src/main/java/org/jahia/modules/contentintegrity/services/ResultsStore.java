@@ -75,6 +75,7 @@ public final class ResultsStore {
     private static final String PROP_IMPORT_ERRORS_COUNT = "integrity:importErrorsCount";
     private static final String PROP_EXECUTION_LOG = "integrity:executionLog";
     private static final String PROP_FIXED_ERRORS = "integrity:fixedErrors";
+    private static final String PROP_FAILED_ERRORS = "integrity:failedErrors";
     private static final String ERRORS_FILE_SUFFIX = "-errors.json.gz";
     private static final String ERRORS_FILE_CONTENT_TYPE = "application/gzip";
     private static final int FORMAT_VERSION = 1;
@@ -121,6 +122,7 @@ public final class ResultsStore {
                     errorsFile.addMixin(Constants.JAHIAMIX_NOLIVE);
                     // The file carries the fixed status of each error
                     if (reportNode.hasProperty(PROP_FIXED_ERRORS)) reportNode.getProperty(PROP_FIXED_ERRORS).remove();
+                    if (reportNode.hasProperty(PROP_FAILED_ERRORS)) reportNode.getProperty(PROP_FAILED_ERRORS).remove();
                     reportNode.setProperty(PROP_ERRORS_COUNT, results.getErrors().size());
                     reportNode.setProperty(PROP_IMPORT_ERRORS_COUNT, results.getErrors().stream().filter(ResultsStore::isBlockingImport).count());
                 }
@@ -140,20 +142,29 @@ public final class ResultsStore {
     }
 
     /**
-     * Records the errors of the results fixed since they were stored.
+     * Records the outcome of the fixes run since the results were stored: the errors fixed, and the ones whose fix has run
+     * without fixing them. An error fixed since its fix has failed is not failed anymore.
      */
     public static void saveFixedErrors(ContentIntegrityResults results) {
         final Set<String> fixedErrors = results.getErrors().stream()
                 .filter(ContentIntegrityError::isFixed)
                 .map(ContentIntegrityError::getErrorID)
                 .collect(Collectors.toCollection(HashSet::new));
-        if (fixedErrors.isEmpty()) return;
+        final Set<String> failedErrors = results.getErrors().stream()
+                .filter(ContentIntegrityError::isFixFailed)
+                .map(ContentIntegrityError::getErrorID)
+                .collect(Collectors.toCollection(HashSet::new));
+        if (fixedErrors.isEmpty() && failedErrors.isEmpty()) return;
         try {
             getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final JCRNodeWrapper reportNode = findReportNode(session, results.getID());
                 if (reportNode == null || !reportNode.hasNode(getErrorsFileName(results))) return null;
-                fixedErrors.addAll(readFixedErrors(reportNode));
-                reportNode.setProperty(PROP_FIXED_ERRORS, fixedErrors.toArray(new String[0]));
+                fixedErrors.addAll(readErrorIds(reportNode, PROP_FIXED_ERRORS));
+                failedErrors.addAll(readErrorIds(reportNode, PROP_FAILED_ERRORS));
+                failedErrors.removeAll(fixedErrors);
+                if (!fixedErrors.isEmpty()) reportNode.setProperty(PROP_FIXED_ERRORS, fixedErrors.toArray(new String[0]));
+                if (!failedErrors.isEmpty()) reportNode.setProperty(PROP_FAILED_ERRORS, failedErrors.toArray(new String[0]));
+                else if (reportNode.hasProperty(PROP_FAILED_ERRORS)) reportNode.getProperty(PROP_FAILED_ERRORS).remove();
                 session.save();
                 return null;
             });
@@ -212,9 +223,11 @@ public final class ResultsStore {
                 final String errorsFileName = getErrorsFileName(reportNode.getName());
                 final List<ContentIntegrityError> errors;
                 if (reportNode.hasNode(errorsFileName)) {
-                    final Set<String> fixedErrors = readFixedErrors(reportNode);
+                    final Set<String> fixedErrors = readErrorIds(reportNode, PROP_FIXED_ERRORS);
+                    final Set<String> failedErrors = readErrorIds(reportNode, PROP_FAILED_ERRORS);
                     try (InputStream in = new GZIPInputStream(reportNode.getNode(errorsFileName).getFileContent().downloadFile())) {
                         errors = readErrors(in, checks, fixedErrors);
+                        errors.stream().filter(e -> !e.isFixed() && failedErrors.contains(e.getErrorID())).forEach(e -> e.setFixFailed(true));
                     } catch (IOException e) {
                         logger.error("Impossible to read the errors of the results {}", resultsID, e);
                         return null;
@@ -266,13 +279,24 @@ public final class ResultsStore {
      * The identifiers of the errors of the stored results fixed since they were stored.
      */
     public static Set<String> loadFixedErrors(String resultsID) {
+        return loadErrorIds(resultsID, PROP_FIXED_ERRORS);
+    }
+
+    /**
+     * The identifiers of the errors of the stored results whose fix has run without fixing them.
+     */
+    public static Set<String> loadFailedErrors(String resultsID) {
+        return loadErrorIds(resultsID, PROP_FAILED_ERRORS);
+    }
+
+    private static Set<String> loadErrorIds(String resultsID, String property) {
         try {
             return getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final JCRNodeWrapper reportNode = findReportNode(session, resultsID);
-                return reportNode == null ? Collections.<String>emptySet() : readFixedErrors(reportNode);
+                return reportNode == null ? Collections.<String>emptySet() : readErrorIds(reportNode, property);
             });
         } catch (RepositoryException e) {
-            logger.error("Impossible to read the fixed errors of the results {}", resultsID, e);
+            logger.error("Impossible to read the {} of the results {}", property, resultsID, e);
             return Collections.emptySet();
         }
     }
@@ -389,13 +413,13 @@ public final class ResultsStore {
         return error.getErrorType() != null && error.getErrorType().isBlockingImport();
     }
 
-    private static Set<String> readFixedErrors(JCRNodeWrapper reportNode) throws RepositoryException {
-        if (!reportNode.hasProperty(PROP_FIXED_ERRORS)) return new HashSet<>();
-        final Set<String> fixedErrors = new HashSet<>();
-        for (Value value : reportNode.getProperty(PROP_FIXED_ERRORS).getValues()) {
-            fixedErrors.add(value.getString());
+    private static Set<String> readErrorIds(JCRNodeWrapper reportNode, String property) throws RepositoryException {
+        if (!reportNode.hasProperty(property)) return new HashSet<>();
+        final Set<String> ids = new HashSet<>();
+        for (Value value : reportNode.getProperty(property).getValues()) {
+            ids.add(value.getString());
         }
-        return fixedErrors;
+        return ids;
     }
 
     private static Calendar toCalendar(long date) {

@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, runFixture, scan, ScanResults} from '../../support/integrity';
-import {getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitAdmin} from '../../support/adminPage';
+import {closeDetailsPanel, getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitAdmin} from '../../support/adminPage';
 
 // The access to the module, adminContentIntegrity, allows to scan and to read the results. Fixing the errors writes to the
 // repository with a system session, so it requires its own permission, adminContentIntegrityFix, which the first one
@@ -20,6 +20,7 @@ const requestAs = (user: User, query: string, variables: Record<string, unknown>
 }).its('body');
 
 const FIX_ERROR = 'query($resultsId: String, $id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id) { fixed } } } }';
+const FIX_ERRORS = 'query($resultsId: String, $ids: [String]!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { errors: fixErrors(ids: $ids) { fixed } } } }';
 const FIX_ALL = 'query($resultsId: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { fixAll: fixAllErrors { fixed } } } }';
 
 const expectPermissionError = (body: any) => {
@@ -58,6 +59,7 @@ describe('Permission to fix the errors', () => {
 
     it('does not let a user without the permission fix an error', () => {
         requestAs(VIEWER, FIX_ERROR, {resultsId: results.resultsId, id: results.errors[0].id}).then(expectPermissionError);
+        requestAs(VIEWER, FIX_ERRORS, {resultsId: results.resultsId, ids: [results.errors[0].id]}).then(expectPermissionError);
         requestAs(VIEWER, FIX_ALL, {resultsId: results.resultsId}).then(expectPermissionError);
         scan(LOCKS, ['LockSanityCheck']).then(after => expect(after.errors).to.have.length(results.errors.length));
     });
@@ -96,6 +98,9 @@ describe('Permission to fix the errors', () => {
         cy.contains('button', 'Fix all').should('be.visible');
         openErrorDetails(`${LOCKS}/inconsistent-lock`);
         getDetailsPanel().contains('button', /^Fix$/).click();
+        getDetailsPanel().contains('Fixed').should('be.visible');
+        // The fix status, in the last column, is displayed once the panel is closed
+        closeDetailsPanel();
         getRow(`${LOCKS}/inconsistent-lock`).within(() => cy.contains('Fixed').should('be.visible'));
     });
 });

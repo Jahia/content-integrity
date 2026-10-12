@@ -19,6 +19,12 @@
     min-width: 0;
 }
 
+// While the errors of a node are displayed, the results leave the room of the side panel: the fix status, in the last
+// column of the table, stays visible
+.panelWithDetails {
+    margin-right: 520px;
+}
+
 // The results card takes the height left below the last scan, so the pagination stays at the bottom of the screen.
 .resultsCard {
     display: flex;
@@ -313,8 +319,46 @@
     overflow: hidden;
 }
 
-// The details of the selected error, above the right of the page: the table keeps its width, and the fix status, in its
-// first column, stays visible
+// The fix status, in the last column, stays visible at the right of the table when it scrolls, for example while the side
+// panel takes the right of the page. It takes the background of its row, which is white unless Moonstone colors the row.
+.fixStatusCell,
+.fixStatusHeadCell {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background-color: inherit;
+}
+
+:where(.table) tr {
+    background-color: var(--color-white);
+}
+
+// The row of a node in the tree of the errors, above the rows of its errors
+.nodeRow {
+    font-weight: 600;
+}
+
+// The chevron which expands or collapses the errors of a node: it keeps its size, and a long path ends with an ellipsis
+.treeToggle {
+    min-width: 0;
+    cursor: pointer;
+
+    > svg {
+        flex: 0 0 auto;
+    }
+
+    > div {
+        min-width: 0;
+        overflow: hidden;
+    }
+}
+
+// The row whose error is displayed first in the panel, among the rows of the selected node
+.focusedRow {
+    box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+// The errors of the selected node, above the right of the page
 .sidePanel {
     position: fixed;
     top: 0;
@@ -352,6 +396,14 @@
     gap: var(--spacing-small);
     padding: var(--spacing-medium) var(--spacing-large);
     border-bottom: 1px solid var(--color-gray40);
+}
+
+.sidePanelFooter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+    padding: var(--spacing-medium) var(--spacing-large);
+    border-top: 1px solid var(--color-gray40);
 }
 
 .sidePanelBody {
@@ -474,6 +526,27 @@
 // A value without a natural break, such as a UUID, still wraps instead of widening the panel
 .detailsValue {
     overflow-wrap: anywhere;
+}
+
+// The errors of the node, one after the other: the one of the clicked row is marked
+.nodeErrors {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-medium);
+}
+
+.nodeError {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+    padding: var(--spacing-medium);
+    border: 1px solid var(--color-gray40);
+    border-radius: 4px;
+}
+
+.nodeErrorFocused {
+    border-color: var(--color-accent);
+    box-shadow: inset 3px 0 0 var(--color-accent);
 }
 
 .centered {

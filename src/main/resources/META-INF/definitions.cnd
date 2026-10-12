@@ -16,5 +16,6 @@
 - integrity:serverId (string) protected
 - integrity:importErrorsCount (long) protected
 - integrity:fixedErrors (string) protected multiple
+- integrity:failedErrors (string) protected multiple
 
 [jnt:contentIntegrityAdminPanel] > jnt:content, jmix:structuredContent, jmix:studioOnly

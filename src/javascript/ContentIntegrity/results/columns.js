@@ -1,21 +1,27 @@
 // Columns of the errors table. `filterable` columns get a value filter fed by `possibleValues`,
-// `jcrLink` columns open the node in the JCR browser.
+// `jcrLink` columns open the node in the JCR browser. The errors are displayed as a tree: a row per node, the errors of the
+// node below it. The `node` columns describe the node: they are filled in the row of the node, and left empty in the rows
+// of its errors.
 export const COLUMNS = [
+    {key: 'nodePath', display: true, jcrLink: true, width: '28%', node: true},
+    {key: 'workspace', display: true, filterable: true, node: true},
     {key: 'checkName', display: true, filterable: true},
     {key: 'errorType', display: true, filterable: true},
-    {key: 'workspace', display: true, filterable: true},
-    {key: 'site', display: false, filterable: true},
-    {key: 'nodePath', display: true, jcrLink: true, width: '28%'},
-    {key: 'nodeId', display: false, jcrLink: true},
-    {key: 'nodePrimaryType', display: false, filterable: true},
-    {key: 'nodeMixins', display: false},
+    {key: 'site', display: false, filterable: true, node: true},
+    {key: 'nodeId', display: false, jcrLink: true, node: true},
+    {key: 'nodePrimaryType', display: false, filterable: true, node: true},
+    {key: 'nodeMixins', display: false, node: true},
     {key: 'locale', display: false, filterable: true},
     {key: 'message', display: true, filterable: true, width: '24%'},
     {key: 'extraInfosString', display: false},
     {key: 'importError', display: false, filterable: true}
 ];
 
-export const FILTERABLE_COLUMNS = COLUMNS.filter(c => c.filterable).map(c => c.key);
+// The fix status is a filter, not a column: the first cell of a row tells it. Its values are the errors which are fixed or
+// have no fix, and the ones left to fix.
+export const FIX_STATUS_FILTER = 'fixStatus';
+
+export const FILTERABLE_COLUMNS = [...COLUMNS.filter(c => c.filterable).map(c => c.key), FIX_STATUS_FILTER];
 
 export const DEFAULT_VISIBLE_COLUMNS = COLUMNS.filter(c => c.display).map(c => c.key);
 

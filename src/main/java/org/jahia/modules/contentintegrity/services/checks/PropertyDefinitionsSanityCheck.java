@@ -908,15 +908,50 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         }
     }
 
-    /*
-     * The values typed by an administrator are converted to the type of the definition, and checked against its constraints.
-     */
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error, List<String> values) throws RepositoryException {
-        if (!takesValues(error)) return false;
+        return fixErrors(node, Collections.singletonList(error), Collections.singletonList(values));
+    }
+
+    /*
+     * The values typed by an administrator are converted to the type of the definition, and checked against its constraints.
+     * All the values are written before the node is saved once: a node is saved only once all its mandatory properties are
+     * set, so two missing ones are fixed together.
+     */
+    @Override
+    public boolean fixErrors(JCRNodeWrapper node, List<ContentIntegrityError> errors, List<List<String>> values) throws RepositoryException {
+        final List<RepairUtils.JcrOperation> writes = new ArrayList<>(errors.size());
+        boolean onAce = false;
+        for (int i = 0; i < errors.size(); i++) {
+            final ContentIntegrityError error = errors.get(i);
+            if (!takesValues(error)) return false;
+            final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
+            writes.add(prepareFixValues(target, error, values.get(i)));
+            onAce |= target.isNodeType("jnt:ace");
+        }
+
+        try {
+            final RepairUtils.JcrOperation writeValues = () -> {
+                for (RepairUtils.JcrOperation write : writes) write.execute();
+                node.getSession().save();
+            };
+            // The ACL listener has to see a change of an ACE, for example to create the external ACE of a role
+            if (onAce) writeValues.execute();
+            else RepairUtils.runWithListenersDisabled(writeValues);
+        } catch (RepositoryException e) {
+            // The system session is shared: a rejected value must not stay pending in it
+            node.getSession().refresh(false);
+            throw e;
+        }
+        return true;
+    }
+
+    /*
+     * Checks the values which fix the error, and returns the operation which writes them on the node, without saving it.
+     */
+    private RepairUtils.JcrOperation prepareFixValues(JCRNodeWrapper target, ContentIntegrityError error, List<String> values) throws RepositoryException {
         final String propertyName = (String) error.getExtraInfo("property-name");
-        if (StringUtils.isBlank(propertyName)) return false;
-        final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
+        if (StringUtils.isBlank(propertyName)) throw new RepositoryException("The error does not name its property");
         if (StringUtils.startsWith(target.getPath(), "/modules/")) {
             throw new RepositoryException("The nodes under /modules are not fixed: deploy a fixed version of the module instead");
         }
@@ -928,17 +963,15 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         final List<String> typedValues = values == null ? Collections.emptyList() : values.stream()
                 .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toList());
-        if (typedValues.isEmpty()) throw new ValueFormatException("A value is required");
+        if (typedValues.isEmpty()) throw new ValueFormatException(String.format("A value of the property %s is required", propertyName));
         if (!definition.isMultiple() && typedValues.size() > 1) {
             throw new ValueFormatException(String.format("The property %s takes a single value", propertyName));
         }
         if (AclPrincipals.isAcePrincipal(target, propertyName)) {
-            AclPrincipals.setPrincipal(target, typedValues);
-            return true;
+            return () -> AclPrincipals.writePrincipal(target, typedValues);
         }
         if (AclRoles.isAceRoles(target, propertyName)) {
-            AclRoles.setRoles(target, typedValues);
-            return true;
+            return () -> AclRoles.writeRoles(target, typedValues);
         }
         final int type = getFixValueType(definition);
         final Value[] jcrValues = new Value[typedValues.size()];
@@ -949,22 +982,10 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
                 throw new ConstraintViolationException(String.format("The value %s does not match the constraints %s", value, Arrays.toString(definition.getValueConstraints())));
             }
         }
-
-        try {
-            final RepairUtils.JcrOperation setValues = () -> {
-                if (definition.isMultiple()) target.setProperty(propertyName, jcrValues);
-                else target.setProperty(propertyName, jcrValues[0]);
-                target.saveSession();
-            };
-            // The ACL listener has to see a change of an ACE, for example to create the external ACE of a role
-            if (target.isNodeType("jnt:ace")) setValues.execute();
-            else RepairUtils.runWithListenersDisabled(setValues);
-        } catch (RepositoryException e) {
-            // The system session is shared: a rejected value must not stay pending in it
-            target.getSession().refresh(false);
-            throw e;
-        }
-        return true;
+        return () -> {
+            if (definition.isMultiple()) target.setProperty(propertyName, jcrValues);
+            else target.setProperty(propertyName, jcrValues[0]);
+        };
     }
 
     private ExtendedPropertyDefinition getFixedPropertyDefinition(JCRNodeWrapper target, String propertyName) throws RepositoryException {

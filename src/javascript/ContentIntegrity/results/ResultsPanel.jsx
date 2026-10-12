@@ -23,11 +23,11 @@ import {
 import {Card} from '../common/Card';
 import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST, GET_SCAN_RESULTS_LOGS} from '../ContentIntegrity.gql';
 import {ScanLogs} from '../scan/ScanLogs';
-import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
-import {ErrorDetailsPanel} from './ErrorDetailsPanel';
+import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, FIX_STATUS_FILTER, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
+import {NodeErrorsPanel} from './NodeErrorsPanel';
 import {FixStatus} from './FixStatus';
 import {FixAllAction} from './FixAllAction';
-import {useFixError} from './useFixError';
+import {FIX_STATES, useFixError} from './useFixError';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {ReportLinks} from '../common/ReportLinks';
 import styles from '../ContentIntegrity.scss';
@@ -38,6 +38,15 @@ const STATUS_COLORS = {running: 'accent', finished: 'success', interrupted: 'war
 // The message which replaces the errors of the results of a scan which is not finished
 const STATUS_MESSAGES = {running: 'label.results.runningScan', interrupted: 'label.results.interruptedScan', failed: 'label.results.failedScan'};
 const NO_FILTERS = {};
+const nodeKey = error => `${error.workspace}|${error.nodePath}`;
+// The outcome of the fix of the errors of a node: running while one of them is fixed, failed when one of them has failed
+const nodeFixState = (errors, states) => {
+    if (errors.some(e => states[e.id] === FIX_STATES.FIXING)) {
+        return FIX_STATES.FIXING;
+    }
+
+    return errors.some(e => states[e.id] === FIX_STATES.FAILED) ? FIX_STATES.FAILED : undefined;
+};
 const DATE_WITH_MILLISECONDS = {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3};
 // The default filter shows only the errors which block an XML import, when there are some: otherwise it would hide all of them
 const defaultFiltersOf = summary => (summary?.importErrorCount > 0 ? DEFAULT_FILTERS : NO_FILTERS);
@@ -47,13 +56,19 @@ const fromOptionValue = value => (value === EMPTY ? '' : value);
 
 const FilterDropdown = ({column, values, active, onChange}) => {
     const {t} = useTranslation('content-integrity');
-    const options = (values || []).map(v => ({
-        value: toOptionValue(v.name),
-        label: `${toOptionValue(v.name) === EMPTY ? t('label.results.empty') : v.name} (${v.count})`
-    }));
+    // The values of the fix status are keys, the other ones are displayed as they are
+    const labelOf = name => {
+        if (toOptionValue(name) === EMPTY) {
+            return t('label.results.empty');
+        }
+
+        return column === FIX_STATUS_FILTER ? t(`label.fixStatus.${name}`) : name;
+    };
+
+    const options = (values || []).map(v => ({value: toOptionValue(v.name), label: `${labelOf(v.name)} (${v.count})`}));
     // Keep the active value selectable even when the other filters leave it no match.
     if (active !== undefined && !options.some(o => o.value === toOptionValue(active))) {
-        options.push({value: toOptionValue(active), label: `${toOptionValue(active) === EMPTY ? t('label.results.empty') : active} (0)`});
+        options.push({value: toOptionValue(active), label: `${labelOf(active)} (0)`});
     }
 
     const data = [{value: ALL, label: t('label.results.all')}, ...options];
@@ -90,7 +105,20 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
     // The filters belong to the displayed results: other results start again from their own default filters
     const [filterState, setFilterState] = useState({resultsId: null, filters: NO_FILTERS});
     const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
-    const [detailsId, setDetailsId] = useState(null);
+    // The node whose errors are displayed beside the table, and the error of the clicked row
+    const [selection, setSelection] = useState(null);
+    // The nodes whose errors are hidden in the tree: all are expanded by default
+    const [collapsed, setCollapsed] = useState(new Set());
+    const toggleNode = key => setCollapsed(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+            next.delete(key);
+        } else {
+            next.add(key);
+        }
+
+        return next;
+    });
 
     // A scan that just ended is not in the list yet: refresh it before selecting the requested results.
     const {refetch: refetchList} = list;
@@ -115,11 +143,19 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
 
     useEffect(() => {
         setPage(1);
-        setDetailsId(null);
+        setSelection(null);
+        setCollapsed(new Set());
     }, [resultsId]);
 
     const selectedSummary = summaries.find(s => s.id === resultsId);
     const filters = filterState.resultsId === resultsId ? filterState.filters : defaultFiltersOf(selectedSummary);
+    // The panel displays the errors of a node in one workspace: filtered on another workspace, the table no longer displays
+    // this node, so the panel is closed
+    useEffect(() => {
+        if (filters.workspace !== undefined && selection && selection.workspace !== filters.workspace) {
+            setSelection(null);
+        }
+    }, [filters.workspace, selection]);
     const setFilters = update => setFilterState({resultsId, filters: typeof update === 'function' ? update(filters) : update});
     // Only the errors of a finished scan are displayed, so read: those of an interrupted scan do not cover all the
     // content, and a running or failed scan has none. A scan without error has nothing to filter: only its outcome is displayed.
@@ -171,21 +207,113 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
     };
 
     const columns = COLUMNS.filter(c => visibleColumns.includes(c.key));
-    // A click on a row, or Enter on it, displays the details of its error beside the table. A click on a link of the row
-    // does what the link does.
-    const openDetails = (event, errorId) => {
+    // A click on a row, or Enter on it, displays the errors of its node beside the table, the ones of a header row or the
+    // one of an error row. A click on a link of the row does what the link does.
+    const select = (event, workspace, path, errorId) => {
         if (event.target.closest('a, button')) {
             return;
         }
 
-        setDetailsId(errorId);
+        setSelection({workspace, path, errorId});
     };
 
+    const onRowKeyDown = (event, workspace, path, errorId) => {
+        if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget) {
+            event.preventDefault();
+            setSelection({workspace, path, errorId});
+        }
+    };
+
+    const isSelectedNode = (workspace, path) => selection !== null && selection.workspace === workspace && selection.path === path;
+
     const closeDetails = () => {
-        const id = detailsId;
-        setDetailsId(null);
-        // The focus goes back to the row of the error, if it is still displayed
-        document.querySelector(`tr[data-error-id="${CSS.escape(id)}"]`)?.focus();
+        const closed = selection;
+        setSelection(null);
+        // The focus goes back to the row which opened the panel, if it is still displayed
+        const row = closed.errorId ?
+            document.querySelector(`tr[data-error-id="${CSS.escape(closed.errorId)}"]`) :
+            document.querySelector(`tr[data-node-path="${CSS.escape(closed.path)}"][data-workspace="${CSS.escape(closed.workspace)}"][data-node-group]`);
+        row?.focus();
+    };
+
+    // The errors of a node follow each other, sorted by workspace then by path: a header row starts each node
+    // The errors are displayed as a tree: a row per node, sorted by workspace then by path, then the rows of its errors
+    const nodes = [];
+    (details?.errors || []).forEach((error, i, errors) => {
+        if (i === 0 || errors[i - 1].workspace !== error.workspace || errors[i - 1].nodePath !== error.nodePath) {
+            nodes.push({key: nodeKey(error), error, errors: []});
+        }
+
+        nodes[nodes.length - 1].errors.push(error);
+    });
+    // The column of the tree: the path when displayed, which the row of a node tells, otherwise the first column
+    const treeColumn = columns.some(c => c.key === 'nodePath') ? 'nodePath' : columns[0]?.key;
+    // The row expected by the cells of Moonstone in the column of the tree, as react-table describes it
+    const treeRow = (depth, node) => ({
+        depth,
+        canExpand: Boolean(node),
+        isExpanded: Boolean(node) && !collapsed.has(node.key),
+        getToggleRowExpandedProps: props => ({
+            ...props,
+            role: 'button',
+            tabIndex: 0,
+            title: t(collapsed.has(node.key) ? 'label.results.expand' : 'label.results.collapse'),
+            'aria-label': t(collapsed.has(node.key) ? 'label.results.expand' : 'label.results.collapse'),
+            'aria-expanded': !collapsed.has(node.key),
+            className: styles.treeToggle,
+            onClick: event => {
+                // The link of the path, in the same cell, opens the JCR browser
+                if (event.target.closest('a, button')) {
+                    return;
+                }
+
+                event.stopPropagation();
+                toggleNode(node.key);
+            },
+            onKeyDown: event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleNode(node.key);
+                }
+            }
+        })
+    });
+    const cellValue = (error, c) => (c.jcrLink ? (
+        <JcrBrowserLink uuid={error.nodeId} workspace={error.workspace} title={String(formatCell(error[c.key]))}>{formatCell(error[c.key])}</JcrBrowserLink>
+    ) : formatCell(error[c.key]));
+    // The row of an error. The only error of a node is displayed alone, without the row of its node: its row tells the path
+    // and the other properties of the node.
+    const renderErrorRow = (error, isAlone) => {
+        // Below the row of its node, an error repeats the path of the node and leaves its other properties to that row
+        const isNodeCellLeftEmpty = c => !isAlone && c.node && c.key !== 'nodePath';
+        return (
+            <TableRow key={error.id}
+                      isSelected={isSelectedNode(error.workspace, error.nodePath)}
+                      className={`${styles.clickableRow} ${error.id === selection?.errorId ? styles.focusedRow : ''}`}
+                      // Moonstone 1.6 (Jahia 8.1.5) does not make the rows focusable
+                      tabIndex={0}
+                      data-node-group={isAlone ? true : undefined}
+                      data-error-id={error.id}
+                      data-node-path={error.nodePath}
+                      data-workspace={error.workspace}
+                      onClick={event => select(event, error.workspace, error.nodePath, error.id)}
+                      onKeyDown={event => onRowKeyDown(event, error.workspace, error.nodePath, error.id)}>
+                {columns.map(c => (
+                    <TableBodyCell key={c.key}
+                                   className={styles.cell}
+                                   width={c.width}
+                                   isExpandableColumn={c.key === treeColumn}
+                                   row={c.key === treeColumn ? treeRow(isAlone ? 0 : 1) : undefined}
+                                   title={isNodeCellLeftEmpty(c) ? undefined : String(formatCell(error[c.key]))}>
+                        {isNodeCellLeftEmpty(c) ? null : cellValue(error, c)}
+                    </TableBodyCell>
+                ))}
+                <TableBodyCell width="110px" textAlign="right" className={styles.fixStatusCell}>
+                    <FixStatus error={error} state={fixStates[error.id]}/>
+                </TableBodyCell>
+            </TableRow>
+        );
     };
 
     const activeFilterCount = Object.values(filters).filter(v => v !== undefined).length;
@@ -226,7 +354,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
     const totalErrorCount = details?.totalErrorCount ?? 0;
 
     return (
-        <div className={styles.panel}>
+        <div className={`${styles.panel} ${selection && showErrors ? styles.panelWithDetails : ''}`}>
             <Card className={`${styles.card} ${styles.resultsCard}`}>
                 <Typography variant="subheading" weight="bold" className={styles.sectionTitle}>{t('label.results.title')}</Typography>
                 <div className={styles.toolbar}>
@@ -328,40 +456,46 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                                 <Table className={styles.table} aria-label={t('label.results.tableLabel')}>
                                     <TableHead>
                                         <TableRow>
-                                            <TableHeadCell width="110px"><span className={styles.srOnly}>{t('label.results.fixStatus')}</span></TableHeadCell>
                                             {columns.map(c => <TableHeadCell key={c.key} width={c.width}>{t(`label.column.${c.key}`)}</TableHeadCell>)}
+                                            <TableHeadCell width="110px" textAlign="right" className={styles.fixStatusHeadCell}><span className={styles.srOnly}>{t('label.results.fixStatus')}</span></TableHeadCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {(details.errors || []).map(error => (
-                                            <TableRow key={error.id}
-                                                      hasMultipleLines
-                                                      isSelected={error.id === detailsId}
-                                                      className={styles.clickableRow}
-                                                      // Moonstone 1.6 (Jahia 8.1.5) does not make the rows focusable
-                                                      tabIndex={0}
-                                                      data-error-id={error.id}
-                                                      onClick={event => openDetails(event, error.id)}
-                                                      onKeyDown={event => {
-                                                          if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget) {
-                                                              event.preventDefault();
-                                                              setDetailsId(error.id);
-                                                          }
-                                                      }}>
-                                                <TableBodyCell width="110px" className={styles.fixStatusCell}>
-                                                    <FixStatus error={error} state={fixStates[error.id]}/>
-                                                </TableBodyCell>
-                                                {columns.map(c => (
-                                                    <TableBodyCell key={c.key} className={styles.cell} width={c.width} title={String(formatCell(error[c.key]))}>
-                                                        {c.jcrLink ? (
-                                                            <JcrBrowserLink uuid={error.nodeId} workspace={error.workspace}>
-                                                                {formatCell(error[c.key])}
-                                                            </JcrBrowserLink>
-                                                        ) : formatCell(error[c.key])}
+                                        {nodes.map(node => (node.errors.length === 1 ? renderErrorRow(node.errors[0], true) : (
+                                            <React.Fragment key={node.key}>
+                                                <TableRow className={`${styles.clickableRow} ${styles.nodeRow}`}
+                                                          isSelected={isSelectedNode(node.error.workspace, node.error.nodePath)}
+                                                          tabIndex={0}
+                                                          data-node-group
+                                                          data-node-path={node.error.nodePath}
+                                                          data-workspace={node.error.workspace}
+                                                          aria-label={t('label.results.nodeGroup', {path: node.error.nodePath, workspace: node.error.workspace})}
+                                                          onClick={event => select(event, node.error.workspace, node.error.nodePath, null)}
+                                                          onKeyDown={event => onRowKeyDown(event, node.error.workspace, node.error.nodePath, null)}>
+                                                    {columns.map(c => (
+                                                        <TableBodyCell key={c.key}
+                                                                       className={styles.cell}
+                                                                       width={c.width}
+                                                                       isExpandableColumn={c.key === treeColumn}
+                                                                       row={c.key === treeColumn ? treeRow(0, node) : undefined}
+                                                                       title={c.key === treeColumn || c.node ? String(formatCell(node.error[c.key === treeColumn ? 'nodePath' : c.key])) : undefined}>
+                                                            {c.key === treeColumn && (
+                                                                <JcrBrowserLink uuid={node.error.nodeId} workspace={node.error.workspace} title={node.error.nodePath}>{node.error.nodePath}</JcrBrowserLink>
+                                                            )}
+                                                            {c.key !== treeColumn && c.node && cellValue(node.error, c)}
+                                                        </TableBodyCell>
+                                                    ))}
+                                                    <TableBodyCell width="110px" textAlign="right" className={styles.fixStatusCell}>
+                                                        <FixStatus error={{
+                                                                       fixed: node.errors.every(e => e.fixed || fixStates[e.id] === FIX_STATES.FIXED),
+                                                                       fixFailed: node.errors.some(e => e.fixFailed && !fixStates[e.id])
+                                                                   }}
+                                                                   state={nodeFixState(node.errors, fixStates)}/>
                                                     </TableBodyCell>
-                                                ))}
-                                            </TableRow>
-                                        ))}
+                                                </TableRow>
+                                                {!collapsed.has(node.key) && node.errors.map(error => renderErrorRow(error, false))}
+                                            </React.Fragment>
+                                        )))}
                                     </TableBody>
                                 </Table>
                             </div>
@@ -383,13 +517,17 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                 )}
             </Card>
 
-            {detailsId && resultsId && showErrors && (
-                <ErrorDetailsPanel errorId={detailsId}
-                                   resultsId={resultsId}
-                                   fixState={fixStates[detailsId]}
-                                   canFixErrors={canFixErrors}
-                                   onFix={fix}
-                                   onClose={closeDetails}/>
+            {selection && resultsId && showErrors && (
+                // Remounted for another node, so that the values typed for the errors of a node are not kept for another one
+                <NodeErrorsPanel key={`${selection.workspace}|${selection.path}`}
+                                 workspace={selection.workspace}
+                                 path={selection.path}
+                                 focusedErrorId={selection.errorId}
+                                 resultsId={resultsId}
+                                 fixStates={fixStates}
+                                 canFixErrors={canFixErrors}
+                                 onFix={fix}
+                                 onClose={closeDetails}/>
             )}
         </div>
     );

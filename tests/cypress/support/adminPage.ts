@@ -31,19 +31,32 @@ export const getCurrentScanCard = (): Cypress.Chainable<JQuery<HTMLElement>> =>
 export const getResultsTable = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.get('[aria-label="Integrity errors"]', {timeout: 30000});
 
 /**
- * The row of the results table which displays the node, among the rows displayed on the current page.
+ * The first row of an error of the node, among the rows displayed on the current page. The errors of a node follow the row
+ * which tells its workspace and its path.
  */
 export const getRow = (path: string): Cypress.Chainable<JQuery<HTMLElement>> =>
-    getResultsTable().find(`[title="${path}"]`).first().closest('tr');
+    getResultsTable().find(`tr[data-error-id][data-node-path="${path}"]`).first();
 
 /**
- * The side panel which displays the details of the error of the selected row, and its fix.
+ * The rows of the errors of the node displayed on the current page.
  */
-export const getDetailsPanel = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.get('#ci-error-details').should('be.visible');
+export const getNodeErrorRows = (path: string): Cypress.Chainable<JQuery<HTMLElement>> =>
+    getResultsTable().find(`tr[data-error-id][data-node-path="${path}"]`);
 
 /**
- * Opens the details of the error of a row, with a click on its left end, the cell of the fix status, which is empty until
- * a fix: the cells of the path and the UUID are links to the JCR browser.
+ * The row which starts the errors of a node, with its workspace and its path.
+ */
+export const getNodeRow = (path: string, workspace = 'default'): Cypress.Chainable<JQuery<HTMLElement>> =>
+    getResultsTable().find(`tr[data-node-group][data-node-path="${path}"][data-workspace="${workspace}"]`).first();
+
+/**
+ * The side panel which displays the errors of the node of the selected row, and their fix.
+ */
+export const getDetailsPanel = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.get('#ci-node-errors').should('be.visible');
+
+/**
+ * Opens the errors of the node of a row, with a click on its left end: the row of an error has no chevron, and its path,
+ * a link to the JCR browser, starts after an indent. Its right end, the fix status, may be under the side panel.
  */
 export const openErrorDetails = (path: string): void => {
     getRow(path).click('left');
@@ -52,7 +65,7 @@ export const openErrorDetails = (path: string): void => {
 
 export const closeDetailsPanel = (): void => {
     getDetailsPanel().find('button[aria-label="Close"]').click();
-    cy.get('#ci-error-details').should('not.exist');
+    cy.get('#ci-node-errors').should('not.exist');
 };
 
 /**
@@ -134,7 +147,7 @@ export const selectInDropdown = (label: string, item: string | RegExp): void => 
 };
 
 /**
- * The labels of the header of the results table, without the column of the fix status, which is always the first one.
+ * The labels of the header of the results table, without the column of the fix status, which is always the last one.
  */
 export const getColumnLabels = (): Cypress.Chainable<string[]> =>
     getResultsTable().find('thead th').then(cells => cells.toArray().map(c => c.textContent.trim()).filter(l => l !== 'Fix status'));

@@ -29,6 +29,12 @@ public class GqlScanResultsError {
     }
 
     @GraphQLField
+    @GraphQLDescription("True if the fix of the error has run, and has not fixed it")
+    public boolean isFixFailed() {
+        return error.isFixFailed() && !error.isFixed();
+    }
+
+    @GraphQLField
     public String getCheckName() {
         return error.getIntegrityCheckName();
     }

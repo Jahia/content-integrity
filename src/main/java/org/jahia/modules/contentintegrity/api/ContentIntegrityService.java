@@ -37,6 +37,23 @@ public interface ContentIntegrityService {
     void fixError(ContentIntegrityError error, List<String> values) throws RepositoryException;
 
     /**
+     * Fixes several errors, each with the fix of the check which has detected it. The errors of the same node can block each
+     * other, such as two missing mandatory properties: the values of the errors of a node are written by their check before
+     * it saves the node once.
+     *
+     * @param errors the errors to fix
+     * @param values the values of each error, in the order of the errors: null for an error fixed without values
+     * @throws RepositoryException if the values are invalid, or if the fix fails, with a message which explains why
+     */
+    void fixErrors(List<ContentIntegrityError> errors, List<List<String>> values) throws RepositoryException;
+
+    /**
+     * Fixes the errors one by one, each with the fix of the check which has detected it, without values: an error whose fix
+     * fails is logged, and left not fixed.
+     */
+    void fixErrors(List<ContentIntegrityError> errors);
+
+    /**
      * @return true if the check which has detected the error provides a fix for it, and its node still exists and is not virtual
      */
     boolean isFixable(ContentIntegrityError error);

@@ -33,8 +33,8 @@ import java.util.TreeMap;
  * - on a site node, the roles of the group site-role too;
  * - out of the sites, for example on the root node, the roles of every group.
  * The hidden roles are not offered: they are set by the platform.
- * The ACE is saved with the listeners enabled, so that the ACL listener updates what depends on it, such as the external
- * ACE of a role.
+ * The roles are written without saving: the caller saves the ACE with the listeners enabled, so that the ACL listener
+ * updates what depends on it, such as the external ACE of a role.
  */
 public final class AclRoles {
 
@@ -65,11 +65,16 @@ public final class AclRoles {
     }
 
     /**
-     * Sets the roles of the ACE, which have to be roles which can be given at its place.
+     * Sets the roles of the ACE, which have to be roles which can be given at its place, without saving it: the caller saves
+     * the ACE once its other missing properties are set too.
      *
      * @throws RepositoryException if a value is not one of them, with a message which tells why
      */
-    public static void setRoles(JCRNodeWrapper ace, List<String> values) throws RepositoryException {
+    public static void writeRoles(JCRNodeWrapper ace, List<String> values) throws RepositoryException {
+        ace.setProperty(ROLES_PROPERTY, checkRoles(ace, values));
+    }
+
+    private static Value[] checkRoles(JCRNodeWrapper ace, List<String> values) throws RepositoryException {
         final List<String> roles = new ArrayList<>();
         if (values != null) {
             values.stream().filter(StringUtils::isNotBlank).map(String::trim).distinct().forEach(roles::add);
@@ -84,14 +89,7 @@ public final class AclRoles {
         final ValueFactory valueFactory = ace.getSession().getValueFactory();
         final Value[] jcrValues = new Value[roles.size()];
         for (int i = 0; i < jcrValues.length; i++) jcrValues[i] = valueFactory.createValue(roles.get(i), PropertyType.NAME);
-        try {
-            ace.setProperty(ROLES_PROPERTY, jcrValues);
-            ace.saveSession();
-        } catch (RepositoryException e) {
-            // The system session is shared: a rejected value must not stay pending in it
-            ace.getSession().refresh(false);
-            throw e;
-        }
+        return jcrValues;
     }
 
     /**

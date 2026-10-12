@@ -42,7 +42,11 @@ const useOpenInJcrBrowser = () => {
     }, [client]);
 };
 
-export const JcrBrowserLink = ({uuid, workspace, children}) => {
+/**
+ * A value which opens its node in the JCR browser. Its tooltip tells the full value, given as title, such as a path cut by
+ * the width of its cell, then the action.
+ */
+export const JcrBrowserLink = ({uuid, workspace, title, children}) => {
     const {t} = useTranslation('content-integrity');
     const open = useOpenInJcrBrowser();
     if (!uuid) {
@@ -52,7 +56,7 @@ export const JcrBrowserLink = ({uuid, workspace, children}) => {
     return (
         <button type="button"
                 className={styles.linkButton}
-                title={t('label.openInJcrBrowser')}
+                title={title ? `${title}\n${t('label.openInJcrBrowser')}` : t('label.openInJcrBrowser')}
                 onClick={event => {
                     event.stopPropagation();
                     open(uuid, workspace);
@@ -66,5 +70,6 @@ export const JcrBrowserLink = ({uuid, workspace, children}) => {
 JcrBrowserLink.propTypes = {
     uuid: PropTypes.string,
     workspace: PropTypes.string,
+    title: PropTypes.string,
     children: PropTypes.node
 };

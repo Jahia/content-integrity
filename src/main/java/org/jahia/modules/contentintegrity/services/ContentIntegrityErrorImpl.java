@@ -54,6 +54,7 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private Map<String, Object> extraInfos;
     private Map<String, Object> specificExtraInfos;
     private boolean fixed = false;
+    private boolean fixFailed = false;
 
     private ContentIntegrityErrorImpl(String path, String uuid, String primaryType, String mixins, String workspace,
                                       String locale, ContentIntegrityErrorType errorType, String constraintMessage,
@@ -164,6 +165,17 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     @Override
     public void setFixed(boolean fixed) {
         this.fixed = fixed;
+        if (fixed) fixFailed = false;
+    }
+
+    @Override
+    public boolean isFixFailed() {
+        return fixFailed;
+    }
+
+    @Override
+    public void setFixFailed(boolean fixFailed) {
+        this.fixFailed = fixFailed;
     }
 
     @Override

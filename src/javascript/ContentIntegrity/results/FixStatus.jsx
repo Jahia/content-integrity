@@ -17,7 +17,8 @@ export const FixStatus = ({error, state}) => {
     if (error.fixed || state === FIX_STATES.FIXED) {
         return <Chip label={t('label.fix.fixed')} color="success"/>;
     }
-    if (state === FIX_STATES.FAILED) {
+    // A fix which has failed is stored with the results: it is told until the error is fixed or fixed again
+    if (state === FIX_STATES.FAILED || (error.fixFailed && !state)) {
         return (
             <span title={t('label.fix.failedHelper')}>
                 <Chip label={t('label.fix.failed')} color="danger"/>
@@ -30,7 +31,8 @@ export const FixStatus = ({error, state}) => {
 
 FixStatus.propTypes = {
     error: PropTypes.shape({
-        fixed: PropTypes.bool
+        fixed: PropTypes.bool,
+        fixFailed: PropTypes.bool
     }).isRequired,
     state: PropTypes.oneOf(Object.values(FIX_STATES))
 };

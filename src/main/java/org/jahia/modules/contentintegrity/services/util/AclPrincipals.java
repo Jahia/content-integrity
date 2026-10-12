@@ -29,7 +29,8 @@ import java.util.regex.Pattern;
  * user or the group the ACE grants, or denies, its roles to. The users and the groups offered are the ones the ACE can
  * name at its place: the users and the groups of the server, and on a site, the ones of the site. The name of an ACE
  * tells its principal, GRANT_u_john for the user john: when that principal exists, it is suggested.
- * The ACE is saved with the listeners enabled, so that the ACL listener updates what depends on it.
+ * The principal is written without saving: the caller saves the ACE with the listeners enabled, so that the ACL listener
+ * updates what depends on it.
  */
 public final class AclPrincipals {
 
@@ -70,24 +71,22 @@ public final class AclPrincipals {
     }
 
     /**
-     * Sets the principal of the ACE, which has to be one of the users and the groups it can name.
+     * Sets the principal of the ACE, which has to be one of the users and the groups it can name, without saving it: the
+     * caller saves the ACE once its other missing properties are set too.
      *
      * @throws RepositoryException if the value is not one of them, with a message which tells why
      */
-    public static void setPrincipal(JCRNodeWrapper ace, List<String> values) throws RepositoryException {
+    public static void writePrincipal(JCRNodeWrapper ace, List<String> values) throws RepositoryException {
+        ace.setProperty(PRINCIPAL_PROPERTY, checkPrincipal(ace, values));
+    }
+
+    private static String checkPrincipal(JCRNodeWrapper ace, List<String> values) throws RepositoryException {
         if (values == null || values.size() != 1) throw new ValueFormatException("Choose one user or group");
         final String principal = values.get(0).trim();
         if (!getPrincipals(ace).containsKey(principal)) {
             throw new ConstraintViolationException(String.format("%s is not a user or a group which this access control entry can name", principal));
         }
-        try {
-            ace.setProperty(PRINCIPAL_PROPERTY, principal);
-            ace.saveSession();
-        } catch (RepositoryException e) {
-            // The system session is shared: a rejected value must not stay pending in it
-            ace.getSession().refresh(false);
-            throw e;
-        }
+        return principal;
     }
 
     /**

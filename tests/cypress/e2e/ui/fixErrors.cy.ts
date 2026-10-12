@@ -1,5 +1,17 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {clearFilters, closeDetailsPanel, getDetailsPanel, getDialog, getResultsTable, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
+import {
+    clearFilters,
+    closeDetailsPanel,
+    getDetailsPanel,
+    getDialog,
+    getNodeErrorRows,
+    getNodeRow,
+    getResultsTable,
+    getRow,
+    openErrorDetails,
+    selectInDropdown,
+    visitAdmin
+} from '../../support/adminPage';
 
 const SITE = 'ciUiFixErrors';
 const SITE_PATH = `/sites/${SITE}`;
@@ -27,7 +39,7 @@ describe('Fix of the errors', () => {
         clearFilters();
     });
 
-    it('opens the details of an error on a click on its row, and offers no menu', () => {
+    it('opens the errors of the node on a click on the row of one of them, and offers no menu', () => {
         getResultsTable().find('button[aria-label="Actions"]').should('not.exist');
         openErrorDetails(MISSING_TEMPLATE);
         getRow(MISSING_TEMPLATE).should('have.class', 'moonstone-TableRow-selected');
@@ -37,7 +49,7 @@ describe('Fix of the errors', () => {
             cy.contains('PagesSanityCheck').should('be.visible');
             cy.contains('ci-template-which-does-not-exist').should('be.visible');
         });
-        // A click on another row displays the details of its error in the same panel
+        // A click on a row of another node displays the errors of its node in the same panel
         openErrorDetails(`${LOCKS}/inconsistent-lock`);
         getDetailsPanel().should('contain.text', 'INCONSISTENT_LOCK').and('not.contain.text', 'MISSING_TEMPLATE');
         closeDetailsPanel();
@@ -46,8 +58,18 @@ describe('Fix of the errors', () => {
     it('closes the details with Escape, and gives the focus back to the row', () => {
         openErrorDetails(MISSING_TEMPLATE);
         cy.get('body').type('{esc}');
-        cy.get('#ci-error-details').should('not.exist');
+        cy.get('#ci-node-errors').should('not.exist');
         getRow(MISSING_TEMPLATE).should('have.focus');
+    });
+
+    it('opens the errors of a node on a click on the row of its path, above them', () => {
+        getNodeRow(MISSING_TEMPLATE).should('contain.text', 'default').and('contain.text', MISSING_TEMPLATE);
+        // The only error of the node is displayed in its row: its left end has no chevron
+        getNodeRow(MISSING_TEMPLATE).click('left');
+        getDetailsPanel().should('contain.text', MISSING_TEMPLATE).and('contain.text', 'Workspace default');
+        getRow(MISSING_TEMPLATE).should('have.class', 'moonstone-TableRow-selected');
+        cy.get('body').type('{esc}');
+        getNodeRow(MISSING_TEMPLATE).should('have.focus');
     });
 
     it('opens the details from the keyboard', () => {
@@ -86,6 +108,12 @@ describe('Fix of the errors', () => {
             cy.contains('Not fixed').should('be.visible');
             cy.contains('The fix of the check has not fixed this error').should('be.visible');
         });
+        // The failure is stored with the results: it is told again once the page is reloaded, and filtered
+        cy.reload();
+        clearFilters();
+        selectInDropdown('Fix status', /^Not fixed \(1\)$/);
+        getResultsTable().find('tr[data-error-id]').should('have.length', 1);
+        getRow(SITE_PATH).should('contain.text', 'NO_HOME').within(() => cy.contains('Not fixed').should('be.visible'));
         runFixture('checks/HomePageDeclarationCheck.groovy', {SITEKEY: SITE, SCENARIO: 'RESTORE'});
     });
 
@@ -102,20 +130,37 @@ describe('Fix of the errors', () => {
             cy.contains('button', /^Fix$/).click();
             cy.contains('Fixed').should('be.visible');
         });
+        closeDetailsPanel();
         getRow(MISSING_TEMPLATE).within(() => cy.contains('Fixed').should('be.visible'));
         scan(`/sites/${SITE}`, CHECKS).then(results => expect(results.errors.filter(e => e.nodePath === MISSING_TEMPLATE)).to.have.length(0));
         runFixture('checks/PagesSanityCheck.groovy', {SITEKEY: SITE});
     });
 
-    it('keeps the fixed status of an error once the page is reloaded', () => {
-        openErrorDetails(`${LOCKS}/deletion-lock-on-translation/j:translation_en`);
-        getDetailsPanel().contains('button', /^Fix$/).click();
-        getRow(`${LOCKS}/deletion-lock-on-translation/j:translation_en`).within(() => cy.contains('Fixed').should('be.visible'));
+    it('fixes all the errors of a node from the bottom of the panel', () => {
+        const translation = `${LOCKS}/deletion-lock-on-translation/j:translation_en`;
+        openErrorDetails(translation);
+        getDetailsPanel().contains('button', /^Fix all \(2\)$/).click();
+        getDetailsPanel().find('[data-error-id]').filter(':contains("Fixed")').should('have.length', 2);
+        // Nothing is left to fix: Fix all stays at the bottom of the panel of a node with several errors, disabled
+        getDetailsPanel().contains('button', /^Fix all \(0\)$/).should('be.disabled');
+        scan(LOCKS, ['LockSanityCheck']).then(results => expect(results.errors.filter(e => e.nodePath === translation)).to.have.length(0));
+        runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});
+    });
+
+    it('fixes each error of a node with its own fix when they are not linked, and keeps their fixed status once the page is reloaded', () => {
+        const translation = `${LOCKS}/deletion-lock-on-translation/j:translation_en`;
+        getNodeErrorRows(translation).should('have.length', 2);
+        openErrorDetails(translation);
+        getDetailsPanel().within(() => {
+            cy.contains('button', /^Fix \d+ errors$/).should('not.exist');
+            cy.get('[data-error-id]').should('have.length', 2).each(card => cy.wrap(card).contains('button', /^Fix$/).click());
+            cy.get('[data-error-id]').filter(':contains("Fixed")').should('have.length', 2);
+        });
+        closeDetailsPanel();
+        getNodeErrorRows(translation).each(row => cy.wrap(row).within(() => cy.contains('Fixed').should('be.visible')));
         cy.reload();
         clearFilters();
-        getRow(`${LOCKS}/deletion-lock-on-translation/j:translation_en`).within(() => {
-            cy.contains('Fixed').should('be.visible');
-        });
+        getNodeErrorRows(translation).should('have.length', 2).each(row => cy.wrap(row).within(() => cy.contains('Fixed').should('be.visible')));
         runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});
     });
 });

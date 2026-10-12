@@ -487,7 +487,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     private void checkRolesProp(JCRNodeWrapper node, boolean isExternal, ContentIntegrityErrorList errors) throws RepositoryException {
         if (!node.hasProperty(J_ROLES)) {
-            errors.addError(createError(node, NO_ROLES_PROP, String.format("%sExternal ACE without property j:roles", isExternal ? "External ACE" : "ACE")));
+            errors.addError(createError(node, NO_ROLES_PROP, String.format("%s without property j:roles", isExternal ? "External ACE" : "ACE")));
             return;
         }
 
@@ -580,21 +580,43 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
 
     @Override
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error, List<String> values) throws RepositoryException {
-        final List<String> typedValues = values == null ? Collections.emptyList() : values.stream()
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toList());
-        if (NO_PRINCIPAL.equals(error.getErrorType())) {
-            // Set since the scan, for example by the fix of another error: it is fixed
-            if (ace.hasProperty(J_PRINCIPAL)) return true;
-            AclPrincipals.setPrincipal(ace, typedValues);
-            return true;
+        return fixErrors(ace, Collections.singletonList(error), Collections.singletonList(values));
+    }
+
+    /*
+     * The principal and the roles of an ACE are both mandatory: when both are missing, they are written then the ACE is saved
+     * once, with the listeners enabled, so that the ACL listener updates what depends on it. A property set since the scan,
+     * for example by the fix of another error, is fixed.
+     */
+    @Override
+    public boolean fixErrors(JCRNodeWrapper ace, List<ContentIntegrityError> errors, List<List<String>> values) throws RepositoryException {
+        final List<RepairUtils.JcrOperation> writes = new ArrayList<>(errors.size());
+        for (int i = 0; i < errors.size(); i++) {
+            final ContentIntegrityErrorType errorType = errors.get(i).getErrorType();
+            final List<String> typedValues = values.get(i) == null ? Collections.emptyList() : values.get(i).stream()
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toList());
+            if (NO_PRINCIPAL.equals(errorType)) {
+                if (!ace.hasProperty(J_PRINCIPAL)) writes.add(() -> AclPrincipals.writePrincipal(ace, typedValues));
+            } else if (NO_ROLES_PROP.equals(errorType)) {
+                if (!ace.hasProperty(J_ROLES) || ace.getProperty(J_ROLES).getValues().length == 0) {
+                    writes.add(() -> AclRoles.writeRoles(ace, typedValues));
+                }
+            } else {
+                return false;
+            }
         }
-        if (NO_ROLES_PROP.equals(error.getErrorType())) {
-            if (ace.hasProperty(J_ROLES) && ace.getProperty(J_ROLES).getValues().length > 0) return true;
-            AclRoles.setRoles(ace, typedValues);
-            return true;
+        if (writes.isEmpty()) return true;
+
+        try {
+            for (RepairUtils.JcrOperation write : writes) write.execute();
+            ace.saveSession();
+        } catch (RepositoryException e) {
+            // The system session is shared: a rejected value must not stay pending in it
+            ace.getSession().refresh(false);
+            throw e;
         }
-        return false;
+        return true;
     }
 
     private boolean removeRolesOfInvalidPrincipal(JCRNodeWrapper ace) throws RepositoryException {

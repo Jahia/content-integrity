@@ -94,6 +94,25 @@ public interface ContentIntegrityCheck {
          * @throws RepositoryException if the values are invalid, with a message which explains why
          */
         boolean fixError(JCRNodeWrapper node, ContentIntegrityError error, List<String> values) throws RepositoryException;
+
+        /**
+         * Fixes several errors of the same node with their values. A node is saved only once all its mandatory properties
+         * are set: a check whose errors can block each other, such as two missing mandatory properties, writes all the values
+         * then saves the node once. By default, the errors are fixed one by one.
+         *
+         * @param node   the node on which the errors have been identified
+         * @param errors the errors to fix, which take values
+         * @param values the values of each error, in the order of the errors
+         * @return true if all the errors have been successfully fixed. false otherwise
+         * @throws RepositoryException if the values are invalid, with a message which explains why
+         */
+        default boolean fixErrors(JCRNodeWrapper node, List<ContentIntegrityError> errors, List<List<String>> values) throws RepositoryException {
+            boolean fixed = true;
+            for (int i = 0; i < errors.size(); i++) {
+                if (!fixError(node, errors.get(i), values.get(i))) fixed = false;
+            }
+            return fixed;
+        }
     }
 
     interface IsConfigurable {
