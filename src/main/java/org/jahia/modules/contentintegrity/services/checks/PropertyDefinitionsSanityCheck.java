@@ -16,6 +16,7 @@ import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrity
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.AclPrincipals;
 import org.jahia.modules.contentintegrity.services.util.AclRoles;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.modules.external.ExternalNodeImpl;
@@ -868,11 +869,13 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         } catch (RepositoryException e) {
             logger.debug("Impossible to read the default values of the property {}", propertyName, e);
         }
+        if (AclPrincipals.isAcePrincipal(target, propertyName)) {
+            // The principal of an ACE gets its roles: it is chosen among the users and the groups which the ACE can name
+            return AclPrincipals.getFixValuesDefinition(target);
+        }
         if (AclRoles.isAceRoles(target, propertyName)) {
             // A role of an ACE gives permissions: it is chosen among the roles which can be given at the place of the ACE
-            final Map<String, String> roles = AclRoles.getGrantableRoles(target);
-            return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), new ArrayList<>(roles.keySet()),
-                    constraints, Collections.emptyList(), new ArrayList<>(roles.values()), AclRoles.describe(target));
+            return AclRoles.getFixValuesDefinition(target);
         }
         if (!INVALID_VALUE_CONSTRAINT.equals(error.getErrorType())) {
             return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), choices, constraints, defaultValues);
@@ -928,13 +931,13 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         if (!definition.isMultiple() && typedValues.size() > 1) {
             throw new ValueFormatException(String.format("The property %s takes a single value", propertyName));
         }
+        if (AclPrincipals.isAcePrincipal(target, propertyName)) {
+            AclPrincipals.setPrincipal(target, typedValues);
+            return true;
+        }
         if (AclRoles.isAceRoles(target, propertyName)) {
-            final Map<String, String> roles = AclRoles.getGrantableRoles(target);
-            for (String role : typedValues) {
-                if (!roles.containsKey(role.trim())) {
-                    throw new ConstraintViolationException(String.format("The role %s can't be given on this access control entry", role));
-                }
-            }
+            AclRoles.setRoles(target, typedValues);
+            return true;
         }
         final int type = getFixValueType(definition);
         final Value[] jcrValues = new Value[typedValues.size()];
@@ -947,11 +950,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         }
 
         try {
-            RepairUtils.runWithListenersDisabled(() -> {
+            final RepairUtils.JcrOperation setValues = () -> {
                 if (definition.isMultiple()) target.setProperty(propertyName, jcrValues);
                 else target.setProperty(propertyName, jcrValues[0]);
                 target.saveSession();
-            });
+            };
+            // The ACL listener has to see a change of an ACE, for example to create the external ACE of a role
+            if (target.isNodeType("jnt:ace")) setValues.execute();
+            else RepairUtils.runWithListenersDisabled(setValues);
         } catch (RepositoryException e) {
             // The system session is shared: a rejected value must not stay pending in it
             target.getSession().refresh(false);

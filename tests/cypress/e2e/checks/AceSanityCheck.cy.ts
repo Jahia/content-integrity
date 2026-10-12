@@ -127,7 +127,7 @@ describe('AceSanityCheck', () => {
 
     describe('Fix', () => {
         // These errors need an analysis: the check provides no fix for them
-        ['INVALID_NODENAME', 'NO_ROLES_PROP', 'ROLE_DOESNT_EXIST', 'MISSING_SITE_PRIVILEGED_GRP_MEMBER', 'ACE_NON_GRANT_WITH_EXTERNAL_ACE',
+        ['INVALID_NODENAME', 'ROLE_DOESNT_EXIST', 'MISSING_SITE_PRIVILEGED_GRP_MEMBER', 'ACE_NON_GRANT_WITH_EXTERNAL_ACE',
             'INVALID_EXTERNAL_PERMISSIONS', 'DUPLICATED_REF_SRC_ACE', 'INVALID_ROLES_PROP'].forEach(errorType => {
             it(`provides no fix for ${errorType}`, () => {
                 expectNoFix(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
@@ -184,6 +184,39 @@ describe('AceSanityCheck', () => {
             });
         });
 
+        it('offers the same roles for NO_ROLES_PROP, which is not fixed without them', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => {
+                const error = expectError(results, 'NO_ROLES_PROP', NO_ROLES);
+                expect(error.fixable).to.be.true;
+                expect(error.fixWithValues).to.be.true;
+                readFixValues(results.resultsId, error.id).then(fixValues => {
+                    expect(fixValues.name).to.equal('j:roles');
+                    expect(fixValues.multiple).to.be.true;
+                    expect(fixValues.choices).to.include.members(['editor', 'reader']);
+                    expect(fixValues.choices).to.not.include('server-administrator');
+                    expect(fixValues.description).to.contain(`Choose the roles to grant to the user ${user('ace')}`);
+                });
+                // The right roles can't be guessed
+                fixError(results.resultsId, error.id).its('fixed').should('be.false');
+                fixError(results.resultsId, error.id, ['server-administrator']).then(result => {
+                    expect(result.fixed).to.be.false;
+                    expect(result.message).to.contain("The role server-administrator can't be given on this access control entry");
+                });
+            });
+        });
+
+        it('fixes NO_ROLES_PROP with the chosen roles', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => {
+                fixError(results.resultsId, expectError(results, 'NO_ROLES_PROP', NO_ROLES).id, ['editor'])
+                    .then(result => expect(result.fixed, result.message).to.be.true);
+            });
+            scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => expectNoError(results, 'NO_ROLES_PROP', NO_ROLES));
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => expectNoError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES));
+            graphql(`{ jcr { nodeByPath(path: "${NO_ROLES}") { property(name: "j:roles") { values } } } }`)
+                .its('jcr.nodeByPath.property.values').should('deep.equal', ['editor']);
+            runFixture('checks/AceSanityCheck.groovy', {SITEKEY: SITE});
+        });
+
         it('fixes the ACE with the chosen roles', () => {
             scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => {
                 const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES);
@@ -193,6 +226,76 @@ describe('AceSanityCheck', () => {
             scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => expectNoError(results, 'NO_ROLES_PROP', NO_ROLES));
             graphql(`{ jcr { nodeByPath(path: "${NO_ROLES}") { property(name: "j:roles") { values } } } }`)
                 .its('jcr.nodeByPath.property.values').should('deep.equal', ['reader', 'editor']);
+        });
+    });
+
+    describe('Principal chosen for an ACE without principal', () => {
+        const NO_PRINCIPAL = ace('NO_PRINCIPAL', user('ace'));
+        const DEFINITIONS = ['PropertyDefinitionsSanityCheck'];
+
+        type FixValues = { name: string; multiple: boolean; choices: string[]; choiceLabels: string[]; choiceGroups: string[]; defaultValues: string[]; description: string };
+        const readError = (resultsId: string, errorId: string): Cypress.Chainable<{ fixable: boolean; fixWithValues: boolean; fixValues: FixValues }> =>
+            graphql('query($r: String, $id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $r) { error: errorById(id: $id) { fixable fixWithValues fixValues { name multiple choices choiceLabels choiceGroups defaultValues description } } } } }',
+                {r: resultsId, id: errorId}).then(data => data.integrity.results.error);
+
+        const expectPrincipalChoices = (fixValues: FixValues) => {
+            expect(fixValues.name).to.equal('j:principal');
+            expect(fixValues.multiple).to.be.false;
+            // The users and the groups of the server, and the ones of the site of the ACE
+            expect(fixValues.choices).to.include.members([`u:${user('ace')}`, 'u:root', 'g:site-privileged', 'g:privileged']);
+            expect(fixValues.choiceLabels).to.have.length(fixValues.choices.length);
+            expect(fixValues.choiceLabels[fixValues.choices.indexOf(`u:${user('ace')}`)]).to.equal(user('ace'));
+            expect(fixValues.choiceLabels[fixValues.choices.indexOf('g:site-privileged')]).to.equal(`site-privileged (site ${SITE})`);
+            // Two groups in the dropdown: the users, then the groups
+            expect(fixValues.choiceGroups).to.deep.equal(fixValues.choices.map(c => (c.startsWith('u:') ? 'Users' : 'Groups')));
+            expect(fixValues.choiceGroups.lastIndexOf('Users')).to.be.lessThan(fixValues.choiceGroups.indexOf('Groups'));
+            // The name of the ACE tells its principal: it is suggested
+            expect(fixValues.defaultValues).to.deep.equal([`u:${user('ace')}`]);
+            expect(fixValues.description).to.contain('has no principal');
+            expect(fixValues.description).to.contain(`Its name suggests the user ${user('ace')}`);
+        };
+
+        before(() => runFixture('checks/AceSanityCheck.groovy', {SITEKEY: SITE}));
+
+        it('offers the users and the groups the ACE can name for the missing j:principal, and suggests the one of its name', () => {
+            scan(`${ROOT}/NO_PRINCIPAL`, DEFINITIONS).then(results => {
+                const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_PRINCIPAL);
+                readError(results.resultsId, error.id).then(details => {
+                    expect(details.fixable).to.be.true;
+                    expect(details.fixWithValues).to.be.true;
+                    expectPrincipalChoices(details.fixValues);
+                });
+            });
+        });
+
+        it('offers the same choice for NO_PRINCIPAL, instead of deleting the ACE', () => {
+            scan(`${ROOT}/NO_PRINCIPAL`, CHECKS).then(results => {
+                const error = expectError(results, 'NO_PRINCIPAL', NO_PRINCIPAL);
+                readError(results.resultsId, error.id).then(details => {
+                    expect(details.fixWithValues).to.be.true;
+                    expectPrincipalChoices(details.fixValues);
+                });
+            });
+        });
+
+        it('refuses a principal which the ACE can not name', () => {
+            scan(`${ROOT}/NO_PRINCIPAL`, CHECKS).then(results => {
+                fixError(results.resultsId, expectError(results, 'NO_PRINCIPAL', NO_PRINCIPAL).id, ['u:ci-user-which-does-not-exist']).then(result => {
+                    expect(result.fixed).to.be.false;
+                    expect(result.message).to.contain('u:ci-user-which-does-not-exist is not a user or a group which this access control entry can name');
+                });
+            });
+        });
+
+        it('fixes the ACE with the chosen principal', () => {
+            scan(`${ROOT}/NO_PRINCIPAL`, CHECKS).then(results => {
+                fixError(results.resultsId, expectError(results, 'NO_PRINCIPAL', NO_PRINCIPAL).id, [`u:${user('ace')}`])
+                    .then(result => expect(result.fixed, result.message).to.be.true);
+            });
+            scan(`${ROOT}/NO_PRINCIPAL`, CHECKS).then(results => expectNoError(results, 'NO_PRINCIPAL', NO_PRINCIPAL));
+            scan(`${ROOT}/NO_PRINCIPAL`, DEFINITIONS).then(results => expectNoError(results, 'EMPTY_MANDATORY_PROPERTY', NO_PRINCIPAL));
+            graphql(`{ jcr { nodeByPath(path: "${NO_PRINCIPAL}") { property(name: "j:principal") { value } } } }`)
+                .its('jcr.nodeByPath.property.value').should('equal', `u:${user('ace')}`);
         });
     });
 });

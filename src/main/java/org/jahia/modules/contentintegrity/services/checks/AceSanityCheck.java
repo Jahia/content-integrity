@@ -7,11 +7,14 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.AclPrincipals;
+import org.jahia.modules.contentintegrity.services.util.AclRoles;
 import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -85,7 +88,7 @@ import static org.jahia.services.usermanager.JahiaGroupManagerService.SITE_PRIVI
 })
 public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         ContentIntegrityCheck.IsConfigurable,
-        ContentIntegrityCheck.SupportsIntegrityErrorFix {
+        ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues {
 
     private static final Logger logger = LoggerFactory.getLogger(AceSanityCheck.class);
     private static final Pattern CURRENT_SITE_PATTERN = Pattern.compile("^currentSite");
@@ -121,7 +124,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(
             NO_PRINCIPAL, INVALID_PRINCIPAL, NO_ACE_TYPE_PROP, INVALID_ACE_TYPE_PROP,
             NO_SOURCE_ACE_PROP, EMPTY_SOURCE_ACE_PROP, SOURCE_ACE_BROKEN_REF, INVALID_EXTERNAL_ACE_PATH,
-            SOURCE_ACE_NOT_TYPE_GRANT, MISSING_EXTERNAL_ACE, ROLES_DIFFER_ON_SOURCE_ACE);
+            SOURCE_ACE_NOT_TYPE_GRANT, MISSING_EXTERNAL_ACE, ROLES_DIFFER_ON_SOURCE_ACE,
+            NO_ROLES_PROP);
 
     private final ContentIntegrityCheckConfiguration configurations;
     private final Map<String, Role> roles = new HashMap<>();
@@ -543,6 +547,38 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }
         if (errorType.equals(MISSING_EXTERNAL_ACE)) {
             return triggerAclListener(ace);
+        }
+        return false;
+    }
+
+    /*
+     * An ACE without principal is fixed with the user or the group an administrator chooses, among the ones it can name:
+     * without a value, as from the integrity-fix command, the ACE is deleted. An ACE without roles is fixed with the roles
+     * an administrator chooses, among the ones which can be given at its place: without a value, the right roles can't be
+     * guessed, and it is not fixed.
+     */
+    @Override
+    public FixValuesDefinition getFixValuesDefinition(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
+        if (NO_PRINCIPAL.equals(error.getErrorType())) return AclPrincipals.getFixValuesDefinition(ace);
+        if (NO_ROLES_PROP.equals(error.getErrorType())) return AclRoles.getFixValuesDefinition(ace);
+        return null;
+    }
+
+    @Override
+    public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error, List<String> values) throws RepositoryException {
+        final List<String> typedValues = values == null ? Collections.emptyList() : values.stream()
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toList());
+        if (NO_PRINCIPAL.equals(error.getErrorType())) {
+            // Set since the scan, for example by the fix of another error: it is fixed
+            if (ace.hasProperty(J_PRINCIPAL)) return true;
+            AclPrincipals.setPrincipal(ace, typedValues);
+            return true;
+        }
+        if (NO_ROLES_PROP.equals(error.getErrorType())) {
+            if (ace.hasProperty(J_ROLES) && ace.getProperty(J_ROLES).getValues().length > 0) return true;
+            AclRoles.setRoles(ace, typedValues);
+            return true;
         }
         return false;
     }

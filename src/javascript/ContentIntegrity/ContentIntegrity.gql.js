@@ -199,6 +199,7 @@ export const GET_ERROR_DETAILS = gql`
                         multiple
                         choices
                         choiceLabels
+                        choiceGroups
                         description
                         constraints
                         defaultValues

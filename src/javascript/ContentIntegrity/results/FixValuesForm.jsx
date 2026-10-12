@@ -13,6 +13,27 @@ const PLACEHOLDERS = {
     WeakReference: '/sites/mySite/contents/myNode'
 };
 
+// The options of a dropdown: grouped, in the order of their first choice, when the definition groups its choices
+const getDropdownData = (definition, choices) => {
+    const options = choices.map((choice, i) => ({label: definition.choiceLabels?.[i] || choice, value: choice}));
+    if (!definition.choiceGroups?.length) {
+        return options;
+    }
+
+    const groups = [];
+    options.forEach((option, i) => {
+        const groupLabel = definition.choiceGroups[i];
+        let group = groups.find(g => g.groupLabel === groupLabel);
+        if (!group) {
+            group = {groupLabel, options: []};
+            groups.push(group);
+        }
+
+        group.options.push(option);
+    });
+    return groups;
+};
+
 const getChoices = definition => {
     if (definition.choices?.length) {
         return definition.choices;
@@ -49,7 +70,7 @@ export const FixValuesForm = ({errorId, definition, values, message, isDisabled,
     const renderValue = (value, index) => {
         const label = definition.multiple ? t('label.fixValues.valueAt', {index: index + 1}) : definition.name;
         const editor = choices ? (
-            <Dropdown data={choices.map((choice, i) => ({label: definition.choiceLabels?.[i] || choice, value: choice}))}
+            <Dropdown data={getDropdownData(definition, choices)}
                       value={value || undefined}
                       placeholder={t('label.fixValues.choose')}
                       variant="outlined"
@@ -127,6 +148,7 @@ FixValuesForm.propTypes = {
         multiple: PropTypes.bool,
         choices: PropTypes.arrayOf(PropTypes.string),
         choiceLabels: PropTypes.arrayOf(PropTypes.string),
+        choiceGroups: PropTypes.arrayOf(PropTypes.string),
         description: PropTypes.string,
         constraints: PropTypes.arrayOf(PropTypes.string),
         defaultValues: PropTypes.arrayOf(PropTypes.string)

@@ -46,6 +46,12 @@ public class GqlFixValuesDefinition {
     }
 
     @GraphQLField
+    @GraphQLDescription("The groups of the choices, in the same order, empty if the choices are not grouped")
+    public List<String> getChoiceGroups() {
+        return definition.getChoiceGroups();
+    }
+
+    @GraphQLField
     @GraphQLDescription("What the values are for, null for a missing mandatory property")
     public String getDescription() {
         return definition.getDescription();

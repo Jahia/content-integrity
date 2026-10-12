@@ -1,15 +1,24 @@
 package org.jahia.modules.contentintegrity.services.util;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 
+import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
+import javax.jcr.Value;
+import javax.jcr.ValueFactory;
+import javax.jcr.ValueFormatException;
+import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.query.Query;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -23,6 +32,8 @@ import java.util.TreeMap;
  * - on a site node, the roles of the group site-role too;
  * - out of the sites, for example on the root node, the roles of every group.
  * The hidden roles are not offered: they are set by the platform.
+ * The ACE is saved with the listeners enabled, so that the ACL listener updates what depends on it, such as the external
+ * ACE of a role.
  */
 public final class AclRoles {
 
@@ -41,6 +52,45 @@ public final class AclRoles {
      */
     public static boolean isAceRoles(JCRNodeWrapper node, String propertyName) throws RepositoryException {
         return ROLES_PROPERTY.equals(propertyName) && node.isNodeType(ACE_TYPE);
+    }
+
+    /**
+     * @return the description of the roles to choose for the ACE: the roles which can be given at its place, and what they do
+     */
+    public static FixValuesDefinition getFixValuesDefinition(JCRNodeWrapper ace) throws RepositoryException {
+        final Map<String, String> roles = getGrantableRoles(ace);
+        return new FixValuesDefinition(ROLES_PROPERTY, PropertyType.nameFromValue(PropertyType.NAME), true, new ArrayList<>(roles.keySet()),
+                Collections.emptyList(), Collections.emptyList(), new ArrayList<>(roles.values()), describe(ace));
+    }
+
+    /**
+     * Sets the roles of the ACE, which have to be roles which can be given at its place.
+     *
+     * @throws RepositoryException if a value is not one of them, with a message which tells why
+     */
+    public static void setRoles(JCRNodeWrapper ace, List<String> values) throws RepositoryException {
+        final List<String> roles = new ArrayList<>();
+        if (values != null) {
+            values.stream().filter(StringUtils::isNotBlank).map(String::trim).distinct().forEach(roles::add);
+        }
+        if (roles.isEmpty()) throw new ValueFormatException("Choose at least one role");
+        final Map<String, String> grantable = getGrantableRoles(ace);
+        for (String role : roles) {
+            if (!grantable.containsKey(role)) {
+                throw new ConstraintViolationException(String.format("The role %s can't be given on this access control entry", role));
+            }
+        }
+        final ValueFactory valueFactory = ace.getSession().getValueFactory();
+        final Value[] jcrValues = new Value[roles.size()];
+        for (int i = 0; i < jcrValues.length; i++) jcrValues[i] = valueFactory.createValue(roles.get(i), PropertyType.NAME);
+        try {
+            ace.setProperty(ROLES_PROPERTY, jcrValues);
+            ace.saveSession();
+        } catch (RepositoryException e) {
+            // The system session is shared: a rejected value must not stay pending in it
+            ace.getSession().refresh(false);
+            throw e;
+        }
     }
 
     /**

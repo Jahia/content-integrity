@@ -15,6 +15,7 @@ public class FixValuesDefinition {
     private final List<String> constraints;
     private final List<String> defaultValues;
     private final List<String> choiceLabels;
+    private final List<String> choiceGroups;
     private final String description;
 
     /**
@@ -36,6 +37,16 @@ public class FixValuesDefinition {
      */
     public FixValuesDefinition(String name, String type, boolean multiple, List<String> choices, List<String> constraints, List<String> defaultValues,
                                List<String> choiceLabels, String description) {
+        this(name, type, multiple, choices, constraints, defaultValues, choiceLabels, null, description);
+    }
+
+    /**
+     * @param choiceGroups the groups of the choices, in the same order, to display the choices of a group together, empty
+     *                     to display them as one list
+     * @see #FixValuesDefinition(String, String, boolean, List, List, List, List, String)
+     */
+    public FixValuesDefinition(String name, String type, boolean multiple, List<String> choices, List<String> constraints, List<String> defaultValues,
+                               List<String> choiceLabels, List<String> choiceGroups, String description) {
         this.name = name;
         this.type = type;
         this.multiple = multiple;
@@ -43,6 +54,7 @@ public class FixValuesDefinition {
         this.constraints = constraints == null ? Collections.emptyList() : constraints;
         this.defaultValues = defaultValues == null ? Collections.emptyList() : defaultValues;
         this.choiceLabels = choiceLabels == null || choiceLabels.size() != this.choices.size() ? Collections.emptyList() : choiceLabels;
+        this.choiceGroups = choiceGroups == null || choiceGroups.size() != this.choices.size() ? Collections.emptyList() : choiceGroups;
         this.description = description;
     }
 
@@ -72,6 +84,10 @@ public class FixValuesDefinition {
 
     public List<String> getChoiceLabels() {
         return choiceLabels;
+    }
+
+    public List<String> getChoiceGroups() {
+        return choiceGroups;
     }
 
     public String getDescription() {

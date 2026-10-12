@@ -319,7 +319,9 @@ The script should be run with the listeners deactivated, and should be run on ea
 
 **Fix**: in the details of the error, in the administration screen, type the value, or choose it in a dropdown when the definition lists the accepted values, then click **Fix**. The value is converted to the type of the property and checked against its constraints. **Fix all** skips this error.
 
-On an access control entry (`jnt:ace`), the missing `j:roles` gives permissions: the roles are chosen in dropdowns, among the roles which can be given at the place of the entry. On content, these are the roles of the groups `edit-role` and `live-role`, on a site node the roles of the group `site-role` too, and out of the sites the roles of every group. The hidden roles are not offered. The details tell to which principal the roles are granted, or denied, and on which node.
+On an access control entry (`jnt:ace`), the missing `j:roles` gives permissions: the roles are chosen in dropdowns, among the roles which can be given at the place of the entry. On content, these are the roles of the groups `edit-role` and `live-role`, on a site node the roles of the group `site-role` too, and out of the sites the roles of every group. The hidden roles are not offered. The details tell to which principal the roles are granted, or denied, and on which node. The error `NO_ROLES_PROP` of `AceSanityCheck` offers the same choice, and is not fixed without a value.
+
+The missing `j:principal` of an access control entry is chosen in a dropdown, among the users and the groups which the entry can name: the ones of the server, and on a site, the ones of the site. The dropdown shows them in two groups, Users then Groups. The name of the entry tells its principal, `GRANT_u_john` for the user `john`: when that principal exists, it is suggested. The error `NO_PRINCIPAL` of `AceSanityCheck` offers the same choice. Without a value, as from the command `jcr:integrity-fix`, its fix deletes the entry. A fix of an access control entry is saved with the listeners enabled, so that the ACL listener updates what depends on it, such as the external entries of a role.
 
 #### Invalid value type
 
