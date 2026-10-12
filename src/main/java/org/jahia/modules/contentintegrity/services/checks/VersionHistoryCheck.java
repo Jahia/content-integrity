@@ -67,18 +67,14 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
             return null;
 
         try {
-            final JCRSessionWrapper session = node.getSession();
-            final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode(Constants.ROOT_NODE_PATH).getProvider());
-            final InternalVersionManager vm = providerSession.getInternalVersionManager();
-            final InternalVersionHistory history;
+            final int numVersions;
             try {
-                history = vm.getVersionHistoryOfNode(NodeId.valueOf(identifier));
+                numVersions = countVersions(node, identifier);
             } catch (ItemNotFoundException infe) {
                 final ContentIntegrityErrorList errors = createSingleError(createFrameworkError(node, infe));
                 if (logger.isDebugEnabled()) logger.debug("Impossible to load the version history for the node " + node.getPath(), infe);
                 return errors;
             }
-            final int numVersions = history.getNumVersions();
             final int threshold = getThreshold();
             if (numVersions > threshold)
                 return createSingleError(createError(node, TOO_MANY_VERSIONS, String.format("The node has over %s versions", threshold))
@@ -92,9 +88,27 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
         return null;
     }
 
+    private int countVersions(JCRNodeWrapper node, String identifier) throws RepositoryException {
+        final JCRSessionWrapper session = node.getSession();
+        final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode(Constants.ROOT_NODE_PATH).getProvider());
+        final InternalVersionManager vm = providerSession.getInternalVersionManager();
+        final InternalVersionHistory history = vm.getVersionHistoryOfNode(NodeId.valueOf(identifier));
+        return history.getNumVersions();
+    }
+
+    /*
+     * The purge removes the versions which are not used anymore: the versions still used, for example by the live
+     * node, are kept. The error is fixed only when the remaining versions are not over the threshold anymore.
+     */
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
-        NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(node.getIdentifier()));
+        final String identifier = node.getIdentifier();
+        NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(identifier));
+        final int remaining = countVersions(node, identifier);
+        if (remaining > getThreshold()) {
+            logger.warn("{} versions of {} are still used after the purge, over the threshold {}", remaining, node.getPath(), getThreshold());
+            return false;
+        }
         return true;
     }
 

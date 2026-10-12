@@ -344,6 +344,18 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         }
     }
 
+    // An external ACE of the ACE is a jnt:externalAce which references it, for the external permissions
+    private boolean hasExternalAce(JCRNodeWrapper aceNode, String externalPermissions) throws RepositoryException {
+        final PropertyIterator references = aceNode.getWeakReferences();
+        while (references.hasNext()) {
+            final Node extAce = references.nextProperty().getParent();
+            if (extAce.isNodeType(JNT_EXTERNAL_ACE) && extAce.hasProperty(J_EXTERNAL_PERMISSIONS_NAME)
+                    && StringUtils.equals(externalPermissions, extAce.getProperty(J_EXTERNAL_PERMISSIONS_NAME).getString()))
+                return true;
+        }
+        return false;
+    }
+
     private List<String> getRoleNames(JCRNodeWrapper ace, ContentIntegrityErrorList errors, JCRNodeWrapper checkedNode) throws RepositoryException {
         return Arrays.stream(ace.getProperty(J_ROLES).getValues()).map(jcrValueWrapper -> {
             try {
@@ -379,16 +391,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 } else if (isGrantAce) {
                     final Role role = roles.get(roleName);
                     for (String extPerm : role.getExternalPermissions().keySet()) {
-                        final PropertyIterator references = aceNode.getWeakReferences();
-                        boolean extAceFound = false;
-                        while (!extAceFound && references.hasNext()) {
-                            final Node extAce = references.nextProperty().getParent();
-                            if (!extAce.isNodeType(JNT_EXTERNAL_ACE)) continue;
-                            if (extAce.hasProperty(J_EXTERNAL_PERMISSIONS_NAME) &&
-                                    StringUtils.equals(extPerm, extAce.getProperty(J_EXTERNAL_PERMISSIONS_NAME).getString()))
-                                extAceFound = true;
-                        }
-                        if (!extAceFound)
+                        if (!hasExternalAce(aceNode, extPerm))
                             errors.addError(createError(aceNode, MISSING_EXTERNAL_ACE)
                                     .addExtraInfo("role", roleName)
                                     .addExtraInfo("external-permissions", extPerm)
@@ -546,7 +549,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             return removeInvalidSourceAces(ace);
         }
         if (errorType.equals(MISSING_EXTERNAL_ACE)) {
-            return triggerAclListener(ace);
+            return triggerAclListener(ace, error);
         }
         return false;
     }
@@ -668,13 +671,22 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
      * Saves the j:aceType of a GRANT ACE again, so that the ACL listener recreates its missing external ACE,
      * then publishes the ACL when the ACE is already published.
      */
-    private boolean triggerAclListener(JCRNodeWrapper ace) throws RepositoryException {
+    /*
+     * The ACL listener creates the missing external ACE when the ACE is saved. It can't when an external ACE already sits
+     * at the expected place for other external permissions: the error is then not fixed, and the ACE is not published.
+     */
+    private boolean triggerAclListener(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
         if (!ace.hasProperty(J_ACE_TYPE)) {
             logger.error(String.format("Impossible to fix %s since it has no property %s", ace.getPath(), J_ACE_TYPE));
             return false;
         }
         ace.setProperty(J_ACE_TYPE, ace.getPropertyAsString(J_ACE_TYPE));
         ace.saveSession();
+        final Object externalPermissions = error.getExtraInfos().get("external-permissions");
+        if (externalPermissions != null && !hasExternalAce(ace, externalPermissions.toString())) {
+            logger.warn("The ACL listener did not create the external ACE {} of {}", externalPermissions, ace.getPath());
+            return false;
+        }
         if (JCRUtils.isInDefaultWorkspace(ace) && JCRUtils.nodeExists(ace.getIdentifier(), JCRUtils.getSystemSession(LIVE_WORKSPACE, true))) {
             publish(Collections.singletonList(ace.getParent().getIdentifier()));
         }

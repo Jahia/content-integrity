@@ -4,6 +4,7 @@ import {
     deleteTestSite,
     expectError,
     expectExtraInfo,
+    expectFixFails,
     expectNoError,
     expectNoFix,
     fixAndVerify,
@@ -132,6 +133,11 @@ describe('AceSanityCheck', () => {
             it(`provides no fix for ${errorType}`, () => {
                 expectNoFix(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
             });
+        });
+
+        it('does not report MISSING_EXTERNAL_ACE as fixed while an external ACE for other permissions takes its place', () => {
+            // The external ACE of the ACE names unknown permissions: the ACL listener keeps it, and creates no other one
+            expectFixFails(SITE_PATH, CHECKS, 'EDIT', 'MISSING_EXTERNAL_ACE', ace('INVALID_EXTERNAL_PERMISSIONS', user('ace-6')));
         });
 
         ['NO_PRINCIPAL', 'NO_ACE_TYPE_PROP', 'INVALID_PRINCIPAL', 'MISSING_EXTERNAL_ACE', 'SOURCE_ACE_NOT_TYPE_GRANT', 'INVALID_ACE_TYPE_PROP',

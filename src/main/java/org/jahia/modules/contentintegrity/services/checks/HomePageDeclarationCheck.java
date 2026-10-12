@@ -114,7 +114,8 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                     final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
                     if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
                         if (home == null) home = child;
-                        else
+                        // The page kept as home is one of the children: its flag stays
+                        else if (!home.getIdentifier().equals(child.getIdentifier()))
                             child.getProperty(HOME_PAGE_FLAG).remove();
                     }
                 }

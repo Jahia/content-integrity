@@ -5,6 +5,7 @@ import {
     expectCheckEnabled,
     expectError,
     expectExtraInfo,
+    expectFixFails,
     expectNoError,
     fixAndVerify,
     resetCheckConfiguration,
@@ -50,6 +51,11 @@ describe('VersionHistoryCheck', () => {
 
         it('fixes TOO_MANY_VERSIONS by purging the version history', () => {
             fixAndVerify(ROOT, CHECKS, 'EDIT', 'TOO_MANY_VERSIONS', `${ROOT}/many-versions`);
+        });
+
+        it('does not report TOO_MANY_VERSIONS as fixed when the versions kept by the purge are still too many', () => {
+            // The default and the live nodes use their versions: the purge can't remove them
+            expectFixFails(ROOT, CHECKS, 'EDIT', 'TOO_MANY_VERSIONS', `${ROOT}/used-versions`);
         });
     });
 });

@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoFix, expectNoError, fixAndVerify, runFixture, scan} from '../../support/integrity';
+import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoFix, expectNoError, fixAndVerify, graphql, runFixture, scan} from '../../support/integrity';
 
 const SITE = 'ciHomePageCheck';
 const SITE_PATH = `/sites/${SITE}`;
@@ -52,6 +52,13 @@ describe('HomePageDeclarationCheck', () => {
         it('fixes MULTIPLE_HOMES by keeping a single page flagged as home', () => {
             scenario('MULTIPLE_HOMES');
             fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'MULTIPLE_HOMES', SITE_PATH);
+            // The page named home stays flagged, the other one is not anymore: the site has no home error left
+            scan(SITE_PATH, CHECKS).then(results => expect(results.errors.filter(e => e.nodePath === SITE_PATH)).to.have.length(0));
+            graphql(`{ jcr { home: nodeByPath(path: "${SITE_PATH}/home") { property(name: "j:isHomePage") { value } } second: nodeByPath(path: "${SITE_PATH}/second-home") { property(name: "j:isHomePage") { value } } } }`)
+                .then(data => {
+                    expect(data.jcr.home.property?.value).to.equal('true');
+                    expect(data.jcr.second.property).to.be.null;
+                });
         });
 
         it('fixes FALLBACK_ON_NAME by flagging the page named home', () => {
