@@ -18,6 +18,7 @@ export const ContentIntegrityAdmin = () => {
     const [isDialogOpen, setDialogOpen] = useState(false);
     const [requestedResultsId, setRequestedResultsId] = useState(null);
     const [refreshCount, setRefreshCount] = useState(0);
+    const [reloadCount, setReloadCount] = useState(0);
 
     // When the followed scan ends, display its results. A scan which stored none (failed, or no check
     // selected) still refreshes the results card, so that it never shows a state older than the scan.
@@ -50,7 +51,7 @@ export const ContentIntegrityAdmin = () => {
                                         icon={<Reload/>}
                                         variant="ghost"
                                         size="big"
-                                        onClick={() => setRefreshCount(c => c + 1)}/>
+                                        onClick={() => setReloadCount(c => c + 1)}/>
                                 {isRunning && (
                                     <Button label={t(isStopping ? 'label.scan.stopping' : 'label.scan.stop')}
                                             icon={<Cancel/>}
@@ -76,7 +77,11 @@ export const ContentIntegrityAdmin = () => {
                     <div className={styles.panel}>
                         {isRunning && <CurrentScanCard execution={execution} isStopping={isStopping}/>}
                         {error && <Typography className={styles.error} role="alert">{error}</Typography>}
-                        <ResultsPanel requestedResultsId={requestedResultsId}
+                        {/* Refresh clears the results, without reloading the menu and the header: the list of the scans is read
+                            again, and no results are displayed until a scan is chosen */}
+                        <ResultsPanel key={reloadCount}
+                                      selectsLatest={reloadCount === 0}
+                                      requestedResultsId={requestedResultsId}
                                       refreshCount={refreshCount}
                                       isScanLocked={locked}
                                       onRequestConsumed={clearRequest}

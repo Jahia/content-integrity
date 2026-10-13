@@ -94,7 +94,7 @@ FilterDropdown.propTypes = {
     onChange: PropTypes.func.isRequired
 };
 
-export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, onRequestConsumed, onNewScan}) => {
+export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, isScanLocked, onRequestConsumed, onNewScan}) => {
     const {t, i18n} = useTranslation('content-integrity');
     const list = useQuery(GET_SCAN_RESULTS_LIST, {fetchPolicy: 'network-only'});
     const summaries = useMemo(() => list.data?.integrity?.scanResults || [], [list.data]);
@@ -129,7 +129,8 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
         }
     }, [requestedResultsId, refetchList]);
 
-    // A scan that just ended wins, then the current selection if still stored, then the latest result.
+    // A scan that just ended wins, then the current selection if still stored, then the latest result, unless the results
+    // were cleared by Refresh: then none is displayed until a scan is chosen.
     useEffect(() => {
         if (requestedResultsId && ids.includes(requestedResultsId)) {
             setResultsId(requestedResultsId);
@@ -137,7 +138,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
         } else if (!ids.includes(resultsId)) {
             // The latest results of a scan which is over: the card of a running scan already follows it
             const latest = [...summaries].reverse().find(s => s.status !== 'running') || summaries[summaries.length - 1];
-            setResultsId(latest ? latest.id : null);
+            setResultsId(latest && selectsLatest ? latest.id : null);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ids, requestedResultsId]);
@@ -186,7 +187,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
     // After a fix, the errors are read again: their 'fixed' and 'fixable' fields have changed
     const {refetch: refetchResults} = results;
     const {fix, states: fixStates, markFailed} = useFixError(resultsId, useCallback(() => refetchResults(), [refetchResults]));
-    // The refresh button is in the page header: each click increments refreshCount.
+    // A scan which ends without storing results increments refreshCount: the list and the errors are read again
     useEffect(() => {
         if (refreshCount > 0) {
             refetchList();
@@ -365,6 +366,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                             <Dropdown className={styles.scanDropdown}
                                       data={resultsData}
                                       value={resultsId || undefined}
+                                      placeholder={t('label.results.selectScan')}
                                       variant="outlined"
                                       hasSearch={resultsData.length > 10}
                                       onChange={(e, item) => setResultsId(item.value)}/>
@@ -405,7 +407,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                     </div>
                 )}
                 {statusMessage && <Typography className={styles.noError}>{t(statusMessage)}</Typography>}
-                {!statusMessage && !hasErrors && <Typography className={styles.noError}>{t('label.results.noError')}</Typography>}
+                {selectedSummary && !statusMessage && !hasErrors && <Typography className={styles.noError}>{t('label.results.noError')}</Typography>}
                 {showErrors && (
                     <>
                     <div id="ci-filters">
@@ -536,6 +538,7 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
 
 ResultsPanel.propTypes = {
     requestedResultsId: PropTypes.string,
+    selectsLatest: PropTypes.bool.isRequired,
     refreshCount: PropTypes.number.isRequired,
     isScanLocked: PropTypes.bool,
     onRequestConsumed: PropTypes.func.isRequired,

@@ -118,8 +118,16 @@ describe('Results table', () => {
         getDropdown('Impact on XML import').should('contain.text', 'All');
     });
 
-    it('lists the results of a new scan once the page is refreshed', () => {
+    it('clears the results once refreshed, without reloading the page, and lists the results of a new scan', () => {
         getResultsTable().should('be.visible');
+        // A filter and an open panel, which the refresh clears
+        clearFilters();
+        selectInDropdown('Check name', /^PagesSanityCheck \(1\)$/);
+        openErrorDetails(MISSING_TEMPLATE);
+        // A reload of the page would lose this mark
+        cy.window().then(win => {
+            (win as any).ciNotReloaded = true;
+        });
         openDropdown('Scan');
         cy.get('li.moonstone-menuItem').its('length').then(listed => {
             closeMenu();
@@ -129,19 +137,32 @@ describe('Results table', () => {
                 cy.get('li.moonstone-menuItem').should('have.length', listed);
                 closeMenu();
                 cy.contains('button', 'Refresh').click();
+                // No results are displayed until a scan is chosen
+                getDropdown('Scan').should('contain.text', 'Select a scan');
+                cy.get('#ci-scan-status').should('not.exist');
+                cy.get('#ci-filters').should('not.exist');
+                getResultsTable().should('not.exist');
+                cy.contains('No error found by this scan').should('not.exist');
+                cy.get('#ci-node-errors').should('not.exist');
+                cy.window().its('ciNotReloaded').should('equal', true);
                 openDropdown('Scan');
                 cy.get('li.moonstone-menuItem').should('have.length', listed + 1);
                 closeMenu();
-                // The displayed results stay selected. Both labels are read once the new results exist: two scans
-                // started within the same second are told apart by their milliseconds
-                getScanLabel(resultsId).then(displayed => getDropdown('Scan').should('contain.text', displayed));
+                // The new results, with their default filters: no lock error blocks an XML import, so none applies. Both
+                // labels are read once the new results exist: two scans started within the same second are told apart by
+                // their milliseconds
                 getScanLabel(results.resultsId).then(added => {
                     selectInDropdown('Scan', added);
                     getDropdown('Scan').should('contain.text', added);
                 });
-                // Other results start from their own default filters: no lock error blocks an XML import, so none applies
+                getDropdown('Check name').should('contain.text', 'All');
                 getDropdown('Impact on XML import').should('contain.text', 'All');
                 getRow(INCONSISTENT_LOCK).should('exist');
+                // The previous results are still listed
+                getScanLabel(resultsId).then(previous => {
+                    selectInDropdown('Scan', previous);
+                    getDropdown('Scan').should('contain.text', previous);
+                });
             });
         });
     });

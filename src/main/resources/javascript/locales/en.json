@@ -50,6 +50,7 @@
     "results": {
       "scan": "Scan",
       "scanOption": "{{date}} · {{workspace}}",
+      "selectScan": "Select a scan",
       "allWorkspaces": "All workspaces",
       "status": {
         "running": "Running",

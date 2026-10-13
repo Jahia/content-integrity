@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import PropTypes from 'prop-types';
 import {useQuery} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
@@ -135,6 +135,15 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                 onClick={onClick}/>
     );
 
+    // The panel starts below the header of the page, whose actions, such as Refresh, stay usable while it is open
+    const [top, setTop] = useState(0);
+    useLayoutEffect(() => {
+        const measure = () => setTop(Math.max(0, document.querySelector('[data-ci-page-content]')?.getBoundingClientRect().top || 0));
+        measure();
+        window.addEventListener('resize', measure);
+        return () => window.removeEventListener('resize', measure);
+    }, []);
+
     // The focus goes to the panel when it opens, so a keyboard user reads it next
     useEffect(() => {
         panelRef.current?.focus();
@@ -164,7 +173,7 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
     const label = key => t(`label.column.${key}`);
 
     return (
-        <aside ref={panelRef} id="ci-node-errors" className={styles.sidePanel} tabIndex={-1} aria-labelledby={TITLE_ID}>
+        <aside ref={panelRef} id="ci-node-errors" className={styles.sidePanel} style={{top}} tabIndex={-1} aria-labelledby={TITLE_ID}>
             <div className={styles.sidePanelHeader}>
                 <Typography id={TITLE_ID} variant="heading" weight="bold" component="h2">
                     {t('label.details.title')}

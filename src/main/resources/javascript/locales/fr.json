@@ -50,6 +50,7 @@
     "results": {
       "scan": "Analyse",
       "scanOption": "{{date}} · {{workspace}}",
+      "selectScan": "Sélectionnez une analyse",
       "allWorkspaces": "Tous les espaces de travail",
       "status": {
         "running": "En cours",

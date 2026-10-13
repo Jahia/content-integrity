@@ -9,7 +9,7 @@ import styles from '../ContentIntegrity.scss';
 export const PageLayout = ({header, content}) => (
     <div className={styles.pageLayout}>
         {header}
-        <div className={styles.pageLayoutContent}>{content}</div>
+        <div className={styles.pageLayoutContent} data-ci-page-content>{content}</div>
     </div>
 );
 
