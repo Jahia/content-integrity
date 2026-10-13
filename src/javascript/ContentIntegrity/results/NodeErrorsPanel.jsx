@@ -242,7 +242,6 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                                     <DetailsList rows={[
                                         {label: label('checkName'), value: e.checkName},
                                         {label: label('errorType'), value: e.errorType},
-                                        {label: label('importError'), value: e.importError === null || e.importError === undefined ? null : t(e.importError ? 'label.details.yes' : 'label.details.no')},
                                         {label: label('locale'), value: e.locale},
                                         ...(e.extraInfos || []).map(info => ({label: toLabel(info.label), value: info.value}))
                                     ]}/>

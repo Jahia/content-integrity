@@ -87,9 +87,7 @@
       "impactsImport": "Impacts the XML import",
       "errors": "Errors of the node",
       "errorCount": "Workspace {{workspace}} · errors: {{count}}",
-      "noFix": "No fix",
-      "yes": "Yes",
-      "no": "No"
+      "noFix": "No fix"
     },
     "column": {
       "checkName": "Check name",

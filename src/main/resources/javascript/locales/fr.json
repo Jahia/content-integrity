@@ -87,9 +87,7 @@
       "impactsImport": "Impacte l'import XML",
       "errors": "Erreurs du nœud",
       "errorCount": "Espace de travail {{workspace}} · erreurs : {{count}}",
-      "noFix": "Pas de correction",
-      "yes": "Oui",
-      "no": "Non"
+      "noFix": "Pas de correction"
     },
     "column": {
       "checkName": "Contrôle",
