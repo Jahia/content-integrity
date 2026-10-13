@@ -46,7 +46,12 @@ public class NodeNameInfoSanityCheck extends AbstractContentIntegrityCheck imple
         validateValue(node, Constants.FULLPATH, node.getPath(), INVALID_FULLPATH, errors);
     }
 
+    /*
+     * The nodes of the /modules tree are not checked: in development mode, the files of the modules are exposed there by
+     * an external provider, which does not store j:nodename.
+     */
     private void validateNodeNameProperty(JCRNodeWrapper node, ContentIntegrityErrorList errors) throws RepositoryException {
+        if (StringUtils.startsWith(node.getPath(), Constants.MODULES_SUBTREE_PATH_PREFIX)) return;
         if (!node.hasProperty(Constants.NODENAME)) {
             errors.addError(createError(node, MISSING_NODENAME)
                     .addExtraInfo("property-name", Constants.NODENAME));
