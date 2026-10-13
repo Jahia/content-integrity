@@ -193,10 +193,18 @@ describe('AceSanityCheck', () => {
                     expect(fixValues.name).to.equal('j:roles');
                     expect(fixValues.multiple).to.be.true;
                     expect(fixValues.choices).to.include.members(['editor', 'reader', 'owner']);
-                    // A hidden role is set by the platform, a site or server role is not given on content
-                    expect(fixValues.choices).to.not.include.members(['privileged']);
+                    // A site or server role is not given on content
                     expect(fixValues.choices).to.not.include('site-administrator');
                     expect(fixValues.choices).to.not.include('server-administrator');
+                    // The roles given on content are the ones of the groups edit-role and live-role, a hidden role being set by
+                    // the platform: the roles of the instance tell which ones, a project may add some or change a group
+                    graphql('{ jcr { nodesByQuery(query: "select * from [jnt:role]") { nodes { name hidden: property(name: "j:hidden") { value } ' +
+                        'group: property(name: "j:roleGroup") { value } } } } }').then(data => {
+                        const expected = data.jcr.nodesByQuery.nodes
+                            .filter((role: any) => role.hidden?.value !== 'true' && ['edit-role', 'live-role'].includes(role.group?.value))
+                            .map((role: any) => role.name);
+                        expect([...fixValues.choices].sort(), 'roles offered').to.deep.equal([...new Set(expected)].sort());
+                    });
                     expect(fixValues.choiceLabels).to.have.length(fixValues.choices.length);
                     expect(fixValues.choiceLabels).to.include('Editor (editor)');
                     expect(fixValues.description).to.contain(`Choose the roles to grant to the user ${user('ace')} on this node and its sub-nodes`);

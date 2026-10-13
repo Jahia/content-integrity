@@ -20,11 +20,17 @@ const waitForReport = (id: string, attempt = 0): Cypress.Chainable<string> =>
             return cy.wrap(reports.find((r: { extension: string }) => r.extension === 'csv').uri as string, {log: false});
         });
 
+// A redirection is not followed: the login page of a site would answer 200 instead of the report
 const download = (uri: string, auth?: { username: string; password: string }) => cy.request({
     url: `/files/default${encodeURI(uri)}`,
     auth,
-    failOnStatusCode: false
+    failOnStatusCode: false,
+    followRedirect: false
 });
+
+// Jahia answers 404 for a file the user can't read. A site may answer 403 instead, or redirect to its login page
+const REFUSED = [302, 401, 403, 404];
+const expectRefused = (response: Cypress.Response<unknown>) => expect(response.status, 'refused download').to.be.oneOf(REFUSED);
 
 describe('Access to the scan reports', () => {
     let reportUri: string;
@@ -59,14 +65,14 @@ describe('Access to the scan reports', () => {
     });
 
     it('does not let an editor download a report, even about the site the editor works on', () => {
-        download(reportUri, EDITOR).its('status').should('eq', 404);
+        download(reportUri, EDITOR).then(expectRefused);
     });
 
     it('does not let an editor download the stored errors of a scan, next to its reports', () => {
         // The CSV report is named <resultsId>-full.csv, the stored errors <resultsId>-full-errors.json.gz
         const errorsUri = reportUri.replace(/\.csv$/, '-errors.json.gz');
         download(errorsUri, {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')}).its('status').should('eq', 200);
-        download(errorsUri, EDITOR).its('status').should('eq', 404);
+        download(errorsUri, EDITOR).then(expectRefused);
     });
 
     it('does not let an editor list the reports', () => {
@@ -80,6 +86,6 @@ describe('Access to the scan reports', () => {
     });
 
     it('does not let guest download a report', () => {
-        download(reportUri).its('status').should('eq', 404);
+        download(reportUri).then(expectRefused);
     });
 });

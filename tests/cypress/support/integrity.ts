@@ -140,10 +140,11 @@ export const waitForExecution = (id: string, attempt = 0): Cypress.Chainable<Exe
 export const REPORTS_PATH = '/sites/systemsite/files/content-integrity-reports';
 
 /**
- * A scan which lasts while a test acts, once CiSlowCheck is registered. It excludes the stored reports, so that its length
- * does not grow with the number of scans run before.
+ * A scan which lasts while a test acts, once CiSlowCheck is registered: it scans the subtree created with a fixed number of
+ * nodes by scan/slowCheck.groovy, so that its length does not depend on the content of the instance, nor on the number of
+ * scans run before. It excludes the stored reports, as a scan of the system site does.
  */
-export const SLOW_SCAN: ScanParameters = {startNode: '/sites/systemsite', checks: ['CiSlowCheck'], excludedPaths: [REPORTS_PATH]};
+export const SLOW_SCAN: ScanParameters = {startNode: '/sites/systemsite/contents/ci-slow-scan', checks: ['CiSlowCheck'], excludedPaths: [REPORTS_PATH]};
 
 /**
  * Stops the scan which runs, if any, and waits for its end: a test which fails while a scan runs must not leave it
