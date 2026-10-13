@@ -72,6 +72,9 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck implements Con
                     errors.addError(error);
                 }
                 final boolean propertyLangsIsDefined = node.hasProperty(WORKINPROGRESS_LANGUAGES);
+                // Content Editor creates a node with the languages of its WIP info, empty unless the status is LANGUAGES
+                // (WIPService.createWipPropertiesOnNewNode): an empty property names no language, as an absent one
+                final boolean hasLanguages = propertyLangsIsDefined && node.getProperty(WORKINPROGRESS_LANGUAGES).getValues().length > 0;
                 if (node.hasProperty(WORKINPROGRESS_STATUS)) {
                     final String status = node.getPropertyAsString(WORKINPROGRESS_STATUS);
                     switch (status) {
@@ -93,13 +96,13 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck implements Con
                             }
                             break;
                         case WORKINPROGRESS_STATUS_ALLCONTENT:
-                            if (propertyLangsIsDefined) {
+                            if (hasLanguages) {
                                 final ContentIntegrityError error = createError(node, WIP_UNEXPECTED_PROP, String.format("Unexpected property %s on a node with the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_ALLCONTENT));
                                 errors.addError(error);
                             }
                             break;
                         case WORKINPROGRESS_STATUS_DISABLED:
-                            if (propertyLangsIsDefined) {
+                            if (hasLanguages) {
                                 final ContentIntegrityError error = createError(node, WIP_UNEXPECTED_PROP, String.format("Unexpected property %s on a node with the %s=%s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS, WORKINPROGRESS_STATUS_DISABLED));
                                 errors.addError(error);
                             }
@@ -109,7 +112,7 @@ public class WipSanityCheck extends AbstractContentIntegrityCheck implements Con
                                     .addExtraInfo("property-value", status));
                             break;
                     }
-                } else if (propertyLangsIsDefined) {
+                } else if (hasLanguages) {
                     final ContentIntegrityError error = createError(node, WIP_UNEXPECTED_PROP, String.format("Unexpected property %s on a node without the property %s", WORKINPROGRESS_LANGUAGES, WORKINPROGRESS_STATUS));
                     errors.addError(error);
                 }

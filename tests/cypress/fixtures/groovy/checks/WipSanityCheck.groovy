@@ -6,6 +6,8 @@
 // - WIP_UNEXPECTED_PROP: the status ALL_CONTENT with j:workInProgressLanguages
 // - WIP_INCONSISTENT_STATUS_PROP: an unknown status
 // - WIP_IN_LIVE: a published node with a WIP status in the live workspace
+// Not reported: the WIP properties of a node created in Content Editor, the status DISABLED, or ALL_CONTENT when
+// wip.checkbox.checked is true, with an empty j:workInProgressLanguages (WIPService.createWipPropertiesOnNewNode)
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
@@ -35,7 +37,8 @@ def factory = BundleUtils.getOsgiService(JCRSessionFactory.class, null)
 def session = factory.getCurrentSystemSession("default", Locale.ENGLISH, null)
 def contents = session.getNode("/sites/SITEKEY/contents")
 def folder = contents.addNode("wip", "jnt:contentFolder")
-["on-translation", "legacy-format", "unexpected-language", "missing-languages", "unexpected-languages", "inconsistent-status", "in-live", "valid-wip"]
+["on-translation", "legacy-format", "unexpected-language", "missing-languages", "unexpected-languages", "inconsistent-status", "in-live", "valid-wip",
+ "created-wip-disabled", "created-wip-all-content"]
         .each { folder.addNode(it, "jnt:text").setProperty("text", it) }
 session.save()
 def user = factory.getCurrentUser()
@@ -48,6 +51,11 @@ try {
 def valid = folder.getNode("valid-wip")
 valid.setProperty("j:workInProgressStatus", "LANGUAGES")
 valid.setProperty("j:workInProgressLanguages", ["en"] as String[])
+["created-wip-disabled": "DISABLED", "created-wip-all-content": "ALL_CONTENT"].each { name, status ->
+    def created = folder.getNode(name)
+    created.setProperty("j:workInProgressStatus", status)
+    created.setProperty("j:workInProgressLanguages", new String[0])
+}
 session.save()
 
 JCRObservationManager.setAllEventListenersDisabled(true)

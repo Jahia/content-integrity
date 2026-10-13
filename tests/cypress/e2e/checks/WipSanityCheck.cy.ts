@@ -32,6 +32,12 @@ describe('WipSanityCheck', () => {
             });
         });
 
+        it('does not report the WIP properties of a node created in Content Editor, whose languages are empty', () => {
+            [`${ROOT}/created-wip-disabled`, `${ROOT}/created-wip-all-content`].forEach(path => {
+                expect(results.errors.filter(e => e.nodePath === path).map(e => e.errorType), path).to.deep.equal([]);
+            });
+        });
+
         it('reports the language which is not a language of the site', () => {
             expectExtraInfo(expectError(results, 'WIP_UNEXPECTED_LANG', `${ROOT}/unexpected-language`), 'language', 'de');
         });
