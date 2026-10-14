@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
 import graphql.ErrorType;
+import graphql.annotations.annotationTypes.GraphQLDefaultValue;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
@@ -14,6 +15,7 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
 import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
@@ -120,7 +122,7 @@ public class GqlScanResults {
     }
 
     @GraphQLField
-    public Collection<GqlScanResultsError> getErrors(@GraphQLName("offset") int offset, @GraphQLName("pageSize") int pageSize) {
+    public Collection<GqlScanResultsError> getErrors(@GraphQLName("offset") @GraphQLNonNull int offset, @GraphQLName("pageSize") @GraphQLNonNull int pageSize) {
         if (offset < 0 || offset >= getErrorCount() || pageSize < 1) return CollectionUtils.emptyCollection();
 
         return filteredErrors.stream()
@@ -253,8 +255,11 @@ public class GqlScanResults {
     }
 
     @GraphQLField
-    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols, @GraphQLName("withErrorsOnly") boolean withErrorsOnly) {
-        final Map<String, Map<String, Long>> columnsData = cols.stream()
+    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols,
+                                                              @GraphQLName("withErrorsOnly") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) Boolean withErrorsOnly) {
+        final boolean withErrorsOnlyValue = Boolean.TRUE.equals(withErrorsOnly);
+        final Map<String, Map<String, Long>> columnsData = CollectionUtils.emptyIfNull(cols).stream()
+                .distinct()
                 .collect(Collectors.toMap(Function.identity(),
                         name -> {
                             final List<ContentIntegrityError> errorsWithOtherFilters = getFilteredErrors(Collections.singleton(name));
@@ -263,7 +268,7 @@ public class GqlScanResults {
                                     .filter(Objects::nonNull)
                                     .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
-                            if (withErrorsOnly) return result;
+                            if (withErrorsOnlyValue) return result;
 
                             allErrors.stream()
                                     .map(error -> getColumnValue(error, name))

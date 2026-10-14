@@ -92,6 +92,32 @@ describe('Scan API', () => {
         });
     });
 
+    it('offers the values without errors by default, and requires the paging of the errors', () => {
+        scan(LOCKS, ['LockSanityCheck']).then(results => {
+            // No error matches the filter: the values offered are the ones without errors, with a count of 0
+            const possibleValues = (args: string): Cypress.Chainable<any[]> =>
+                graphql(`query($id: String, $filters: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { possibleValues${args} { name values { name count } } } } }`,
+                    {id: results.resultsId, filters: ['checkName;NO_SUCH_CHECK']}).then(data => data.integrity.results.possibleValues);
+            possibleValues('(names: ["errorType"], withErrorsOnly: true)').should('deep.equal', [{name: 'errorType', values: []}]);
+            possibleValues('(names: ["errorType"], withErrorsOnly: false)').then(withoutErrors => {
+                expect(withoutErrors[0].values).to.have.length(new Set(results.errors.map(e => e.errorType)).size);
+                possibleValues('(names: ["errorType"])').should('deep.equal', withoutErrors);
+                possibleValues('(names: ["errorType", "errorType"])').should('deep.equal', withoutErrors);
+            });
+            possibleValues('').should('deep.equal', []);
+            cy.request({
+                method: 'POST',
+                url: '/modules/graphql',
+                auth: {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')},
+                headers: {Origin: Cypress.config().baseUrl},
+                body: {query: 'query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errors(offset: 0) { id } } } }', variables: {id: results.resultsId}}
+            }).its('body.errors').then(errors => {
+                expect(errors, 'GraphQL errors').to.have.length(1);
+                expect(errors[0].message).to.contain('pageSize').and.not.contain('Internal Server Error');
+            });
+        });
+    });
+
     it('skips the excluded paths', () => {
         startScan({startNode: LOCKS, checks: ['LockSanityCheck'], excludedPaths: [`${LOCKS}/inconsistent-lock/`]})
             .then(id => waitForExecution(id))
