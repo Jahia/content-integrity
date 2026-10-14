@@ -35,6 +35,12 @@ public class GqlScanResultsError {
     }
 
     @GraphQLField
+    @GraphQLDescription("Why the last fix of the error has failed, when it raised an exception: null otherwise, and once the results are read again")
+    public String getFixFailureMessage() {
+        return isFixFailed() ? error.getFixFailureMessage() : null;
+    }
+
+    @GraphQLField
     public String getCheckName() {
         return error.getIntegrityCheckName();
     }
@@ -51,7 +57,13 @@ public class GqlScanResultsError {
     }
 
     @GraphQLField
-    @GraphQLDescription("True if the check which has detected the error provides a fix for it, the error is not fixed yet, and its node is not virtual")
+    @GraphQLDescription("True if the node of the error still exists in its workspace. A node removed since the scan, for example by the fix of another error, leaves nothing to fix")
+    public boolean isNodeExists() {
+        return Utils.errorNodeExists(error);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the check which has detected the error provides a fix for it, the error is not fixed yet, its node is not virtual, and it still exists")
     public boolean isFixable() {
         return !error.isFixed() && service.isFixable(error);
     }

@@ -3,6 +3,7 @@ import {
     clearFilters,
     closeDetailsPanel,
     getDetailsPanel,
+    getDetailsWorkspace,
     getDialog,
     getNodeErrorRows,
     getNodeRow,
@@ -66,7 +67,8 @@ describe('Fix of the errors', () => {
         getNodeRow(MISSING_TEMPLATE).should('contain.text', 'default').and('contain.text', MISSING_TEMPLATE);
         // The only error of the node is displayed in its row: its left end has no chevron
         getNodeRow(MISSING_TEMPLATE).click('left');
-        getDetailsPanel().should('contain.text', MISSING_TEMPLATE).and('contain.text', 'Workspace default');
+        getDetailsPanel().should('contain.text', MISSING_TEMPLATE);
+        getDetailsWorkspace().should('have.text', 'default');
         getRow(MISSING_TEMPLATE).should('have.class', 'moonstone-TableRow-selected');
         cy.get('body').type('{esc}');
         getNodeRow(MISSING_TEMPLATE).should('have.focus');
@@ -101,7 +103,20 @@ describe('Fix of the errors', () => {
         selectInDropdown('Error type', /^NO_HOME \(1\)$/);
         cy.contains('button', 'Fix all').click();
         getDialog('Fix all the displayed errors').within(() => cy.contains('button', 'Fix 1 errors').click());
-        cy.contains('[role=status]', '0 fixed, 1 not fixed, 0 skipped, 0 already fixed', {timeout: 30000}).should('be.visible');
+        // The fix has run without fixing the error: the dialog tells what the fix does, which says when it can't fix
+        getDialog('Outcome of the fix', 30000).within(() => {
+            cy.get('[data-fix-outcome=fixed]').should('have.text', 'Fixed: 0');
+            cy.get('[data-fix-outcome=skipped]').should('have.text', 'Skipped: 0');
+            cy.get('[data-fix-outcome=failed]').should('contain.text', 'Not fixed: 1').within(() => {
+                // Told once for all the errors whose fix tells no reason
+                cy.get('[data-no-message]').should('have.length', 1).and('have.text', 'The fix has run without fixing the error. The details are in jahia.log.');
+                cy.get('[data-error-type=NO_HOME]')
+                    .should('contain.text', 'HomePageDeclarationCheck · NO_HOME: 1')
+                    .and('contain.text', 'Sets the first page of the site as its home page.')
+                    .and('not.contain.text', 'The fix has run without fixing the error');
+            });
+            cy.contains('button', 'Close').click();
+        });
         getRow(SITE_PATH).within(() => cy.contains('Not fixed').should('be.visible'));
         openErrorDetails(SITE_PATH);
         getDetailsPanel().within(() => {

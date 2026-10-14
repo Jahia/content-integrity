@@ -8,6 +8,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
@@ -233,19 +234,33 @@ public class GqlScanResults {
                 result.addAlreadyFixed();
                 continue;
             }
-            // An error whose fix takes values is fixed with values chosen by an administrator
-            if (!service.isFixable(error) || service.getFixValuesDefinition(error) != null) {
-                result.addSkipped();
+            final GqlFixAllErrorsResult.SkipReason skipReason = getSkipReason(error);
+            if (skipReason != null) {
+                result.addSkipped(skipReason);
                 continue;
             }
-            // A fix can make another error of the list unfixable, for example when it removes its node: it is then counted as failed
             service.fixError(error);
             if (error.isFixed()) result.addFixed();
-            else result.addFailed(error.getErrorID());
+            else result.addFailed(error);
         }
         // The outcome of the fixes is stored with the results, in the JCR
         if (result.getFixed() > 0 || result.getFailed() > 0) service.saveFixedErrors(results);
         return result;
+    }
+
+    /*
+     * Why the fix of all the errors skips an error, null if it fixes it. An error whose fix takes values is fixed with values
+     * chosen by an administrator. A fix can remove the node of another error of the list, which is then skipped.
+     */
+    private GqlFixAllErrorsResult.SkipReason getSkipReason(ContentIntegrityError error) {
+        if (service.isFixable(error)) {
+            return service.getFixValuesDefinition(error) == null ? null : GqlFixAllErrorsResult.SkipReason.TAKES_VALUES;
+        }
+        final ContentIntegrityCheck check = service.getContentIntegrityCheck(error.getIntegrityCheckID());
+        if (!(check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix) || !((ContentIntegrityCheck.SupportsIntegrityErrorFix) check).isFixable(error)) {
+            return GqlFixAllErrorsResult.SkipReason.NO_FIX;
+        }
+        return Utils.isOnVirtualNode(error) ? GqlFixAllErrorsResult.SkipReason.VIRTUAL_NODE : GqlFixAllErrorsResult.SkipReason.NODE_NOT_FOUND;
     }
 
     private static void checkFixPermission() {

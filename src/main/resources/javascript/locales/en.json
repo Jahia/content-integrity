@@ -87,8 +87,9 @@
       "virtualNode": "The node is virtual, served by an external provider such as a mount point: its errors are not fixed here.",
       "impactsImport": "Impacts the XML import",
       "errors": "Errors of the node",
-      "errorCount": "Workspace {{workspace}} · errors: {{count}}",
-      "noFix": "No fix"
+      "noFix": "No fix",
+      "nodeRemoved": "Node removed",
+      "nodeRemovedHelper": "The node no longer exists: it has been removed since the scan, for example by the fix of another error. Run a new scan to update the results."
     },
     "column": {
       "checkName": "Check name",
@@ -127,6 +128,108 @@
       "fixAllNode": "Fix all ({{count}})",
       "fixAllNodeHelper": "Fix the errors of the node which can be fixed now: an error fixed with values once they are typed"
     },
+    "fixDescription": {
+      "AceSanityCheck": {
+        "NO_PRINCIPAL": "Sets the chosen user or group as the principal of the access control entry.",
+        "NO_ROLES_PROP": "Sets the chosen roles on the access control entry.",
+        "INVALID_PRINCIPAL": "Removes the roles granted to this principal on the node. Fixed in the default workspace only.",
+        "NO_ACE_TYPE_PROP": "Deletes the access control entry. A regular entry deleted in the default workspace has its access control list published again, an external entry is deleted in both workspaces.",
+        "INVALID_ACE_TYPE_PROP": "Deletes the access control entry. A regular entry deleted in the default workspace has its access control list published again, an external entry is deleted in both workspaces.",
+        "NO_SOURCE_ACE_PROP": "Deletes the access control entry. A regular entry deleted in the default workspace has its access control list published again, an external entry is deleted in both workspaces.",
+        "EMPTY_SOURCE_ACE_PROP": "Deletes the access control entry. A regular entry deleted in the default workspace has its access control list published again, an external entry is deleted in both workspaces.",
+        "SOURCE_ACE_BROKEN_REF": "Removes the invalid source entries from the external access control entry, and deletes it when none is valid.",
+        "SOURCE_ACE_NOT_TYPE_GRANT": "Removes the invalid source entries from the external access control entry, and deletes it when none is valid.",
+        "ROLES_DIFFER_ON_SOURCE_ACE": "Removes the invalid source entries from the external access control entry, and deletes it when none is valid.",
+        "INVALID_EXTERNAL_ACE_PATH": "Removes the invalid source entries from the external access control entry, and deletes it when none is valid.",
+        "MISSING_EXTERNAL_ACE": "Saves the access control entry again, so that Jahia creates its missing external entry, then publishes the access control list if the entry is published.",
+        "INVALID_NODENAME": "Renames the access control entry after its type and its principal. Not fixed when another entry already has this name.",
+        "INVALID_ROLES_PROP": "Deletes the external access control entry, then saves its source entries again, so that Jahia creates the right external entries.",
+        "ROLE_DOESNT_EXIST": "Removes the roles which don't exist from the access control entry. The entry is deleted when no role is left, and an external entry is always deleted."
+      },
+      "BinaryPropertiesSanityCheck": {
+        "INVALID_BINARY": "Deletes the file whose binary is missing, or the node which holds the binary property. On a translation node, only the property is removed. This can't be undone: restore the binary from a backup instead if it matters."
+      },
+      "ChildNodeDefinitionsSanityCheck": {
+        "NOT_ALLOWED_BY_PARENT_DEF": "Deletes the node and its subtree. This can't be undone."
+      },
+      "HomePageDeclarationCheck": {
+        "NO_HOME": "Sets the first page of the site as its home page.",
+        "MULTIPLE_HOMES": "Keeps one home page, the page named home when it is flagged, and removes the flag from the other pages. In live, the home page of the default workspace is kept: fix the default workspace first.",
+        "FALLBACK_ON_NAME": "Flags the page named home as the home page of the site."
+      },
+      "JCRLanguagePropertyCheck": {
+        "MISSING_JCR_LANGUAGE_PROP": "Sets jcr:language to the language in the name of the translation node.",
+        "INCONSISTENT_JCR_LANGUAGE_PROP": "Sets jcr:language to the language in the name of the translation node."
+      },
+      "LivePropertiesCheck": {
+        "LIVE_PROPERTIES": "Removes the property j:liveProperties and the mixin jmix:liveProperties.",
+        "EMPTY_LIVE_PROPERTIES": "Removes the property j:liveProperties and the mixin jmix:liveProperties."
+      },
+      "LockSanityCheck": {
+        "INCONSISTENT_LOCK": "Unlocks the node and removes its lock properties. A pending deletion of the node is canceled.",
+        "DELETION_LOCK_ON_I18N": "Removes the deletion lock of the translation node."
+      },
+      "MarkForDeletionCheck": {
+        "NO_ROOT_DELETION": "Removes the deletion mark of the node: its deletion is canceled.",
+        "DELETION_MARK_IN_LIVE": "Removes the deletion mark of the node in the live workspace.",
+        "DELETION_MARK_UNDER_USERS": "Removes the deletion mark of the node: its deletion is canceled."
+      },
+      "NodeNameInfoSanityCheck": {
+        "MISSING_NODENAME": "Sets j:nodename to the name of the node.",
+        "INVALID_NODENAME": "Sets j:nodename to the name of the node.",
+        "INVALID_FULLPATH": "Sets j:fullpath to the path of the node."
+      },
+      "PagesSanityCheck": {
+        "MISSING_TEMPLATE": "Sets the chosen template on the page, or as the default template of the site."
+      },
+      "PropertyDefinitionsSanityCheck": {
+        "UNDECLARED_PROPERTY": "Removes the property, which the node types no longer declare. Its value is lost.",
+        "EMPTY_MANDATORY_PROPERTY": "Sets the property to the typed value, or to the default value of its definition.",
+        "INVALID_VALUE_CONSTRAINT": "Replaces the invalid value with the typed one, or with the default value of the definition. The other values of a multiple property are kept."
+      },
+      "PublicationSanityDefaultCheck": {
+        "NO_LIVE_NODE": "Marks the node as not published. A node published automatically is published again instead."
+      },
+      "PublicationSanityLiveCheck": {
+        "NO_DEFAULT_NODE": "Publishes the node from the live workspace to the default workspace, which restores it there.",
+        "UNEXPECTED_UGC": "Sets j:originWS to default: the node is no longer user generated content.",
+        "INCONSISTENT_UGC": "Sets j:originWS to default when the node exists in the default workspace, else to live."
+      },
+      "ReferencesSanityCheck": {
+        "BROKEN_REF": "Removes the reference to the missing node: the missing value of a multiple property, else the whole property."
+      },
+      "SiteLevelSystemGroupsCheck": {
+        "GROUP_DOES_NOT_EXIST": "Creates the missing group again, as Jahia does for a new site: site-privileged is a member of privileged, and its members are the users and groups granted a privileged role in the site.",
+        "MISSING_MEMBERSHIP": "Adds the group site-privileged of the site to the members of the group privileged."
+      },
+      "UndeclaredNodeTypesCheck": {
+        "UNDECLARED_NODE_TYPE": "Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone.",
+        "GHOST_NODE_TYPE": "Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone."
+      },
+      "UndeployedModulesReferencesCheck": {
+        "UNDEPLOYED_MODULE_ON_SITE": "Removes the module from the modules of the site, in both workspaces. Nothing changes if the module is deployed again."
+      },
+      "UserAccountSanityCheck": {
+        "NOT_OWNER": "Grants the role owner to the user on its account."
+      },
+      "VersionHistoryCheck": {
+        "TOO_MANY_VERSIONS": "Purges the versions of the node which are not used. Not fixed when more versions than the threshold remain."
+      },
+      "WipSanityCheck": {
+        "WIP_ON_TRANSLATION_NODE": "Removes the work in progress property from the translation node.",
+        "WIP_LEGACY_FORMAT": "Removes the legacy property j:workInProgress.",
+        "WIP_UNEXPECTED_LANG": "Removes the language from the work in progress languages. The node is no longer in work in progress when no language is left.",
+        "WIP_MISSING_PROP": "Removes the work in progress status: the node is no longer in work in progress.",
+        "WIP_UNEXPECTED_PROP": "Removes the work in progress languages.",
+        "WIP_INCONSISTENT_STATUS_PROP": "Removes the work in progress status and languages: the node is no longer in work in progress.",
+        "WIP_IN_LIVE": "Removes the work in progress properties from the live node."
+      },
+      "WorkspaceSpecificDefinitionsCheck": {
+        "UNEXPECTED_TYPE": "Removes the mixin from the node. A deletion mark is removed by canceling the deletion.",
+        "UNEXPECTED_PROP": "Removes the property from the node.",
+        "UNEXPECTED_PROP_VALUE": "Removes the property from the node. For a work in progress status, all the work in progress properties are removed."
+      }
+    },
     "fixValues": {
       "title": "Fix with a value",
       "description": "The mandatory property {{property}} has no value. Type the value to set, then click Fix.",
@@ -142,8 +245,24 @@
       "title": "Fix all the displayed errors",
       "description": "The fix of its check will be run on each of the {{count}} errors matching the filters.",
       "warning": "Some fixes remove content, such as a node whose type is not declared anymore. The errors whose check provides no fix, and the ones fixed with a typed value, are skipped.",
-      "confirm": "Fix {{count}} errors",
-      "outcome": "{{fixed}} fixed, {{failed}} not fixed, {{skipped}} skipped, {{alreadyFixed}} already fixed"
+      "confirm": "Fix {{count}} errors"
+    },
+    "fixOutcome": {
+      "title": "Outcome of the fix",
+      "fixed": "Fixed: {{count}}",
+      "skipped": "Skipped: {{count}}",
+      "failed": "Not fixed: {{count}}",
+      "reason": {
+        "ALREADY_FIXED": "{{count}} already fixed, by an earlier fix",
+        "NO_FIX": "{{count}} without fix: their check provides none",
+        "TAKES_VALUES": "{{count}} fixed with a value: open the panel of their node to type it",
+        "VALUES_NOT_TYPED": "{{count}} waiting for a value: type it above their Fix button",
+        "VIRTUAL_NODE": "{{count}} on a virtual node, served by an external provider such as a mount point",
+        "NODE_NOT_FOUND": "{{count}} whose node no longer exists, for example removed by the fix of another error"
+      },
+      "failure": "{{check}} · {{type}}: {{count}}",
+      "noMessage": "The fix has run without fixing the error. The details are in jahia.log.",
+      "fixDoes": "What the fix does:"
     },
     "fixStatus": {
       "fixedOrSkipped": "Fixed and skipped",

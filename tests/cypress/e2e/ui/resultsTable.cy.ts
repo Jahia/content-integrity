@@ -254,14 +254,21 @@ describe('Results table', () => {
             cy.contains('button', 'Cancel').click();
         });
         cy.get('[role=dialog]').should('not.exist');
-        cy.get('[role=status]').should('not.exist');
         getResultsTable().contains('Fixed').should('not.exist');
     });
 
     it('fixes all the errors matching the filters, and skips the ones fixed with a chosen value', () => {
         cy.contains('button', 'Fix all').click();
         getDialog('Fix all the displayed errors').within(() => cy.contains('button', 'Fix 3 errors').click());
-        cy.contains('[role=status]', '2 fixed, 0 not fixed, 1 skipped, 0 already fixed', {timeout: 30000}).should('be.visible');
+        // The outcome tells how many errors are fixed, and why the other ones are skipped
+        getDialog('Outcome of the fix', 30000).within(() => {
+            cy.get('[data-fix-outcome=fixed]').should('have.text', 'Fixed: 2');
+            cy.get('[data-fix-outcome=skipped]').should('contain.text', 'Skipped: 1')
+                .find('[data-reason=TAKES_VALUES]').should('have.text', '1 fixed with a value: open the panel of their node to type it');
+            cy.get('[data-fix-outcome=failed]').should('have.text', 'Not fixed: 0');
+            cy.contains('button', 'Close').click();
+        });
+        cy.get('[role=dialog]').should('not.exist');
         getRow(MISSING_LANGUAGE).within(() => cy.contains('Fixed').should('be.visible'));
         getRow(INCONSISTENT_LANGUAGE).within(() => cy.contains('Fixed').should('be.visible'));
         getRow(MISSING_TEMPLATE).within(() => cy.contains('Fixed').should('not.exist'));

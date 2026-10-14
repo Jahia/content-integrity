@@ -1,5 +1,5 @@
-import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {closeDetailsPanel, getDetailsPanel, getNodeErrorRows, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
+import {createTestSite, deleteTestSite, graphql, runFixture, scan} from '../../support/integrity';
+import {closeDetailsPanel, getDetailsPanel, getDialog, getNodeErrorRows, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 const SITE = 'ciUiFixWithValue';
 const ROOT = `/sites/${SITE}/contents/property-definitions`;
@@ -92,6 +92,38 @@ describe('Fix of a missing mandatory property with a typed value', () => {
         });
         closeDetailsPanel();
         getRow(INVALID_VALUES).within(() => cy.contains('Fixed').should('be.visible'));
+    });
+
+    it('tells after the fix of all the errors of a node how many are fixed, and why the other ones are skipped', () => {
+        openErrorDetails(INVALID_VALUES);
+        // The undeclared property has a fix, the values of the wrong type have none, the value which breaks the constraints waits for a value
+        getDetailsPanel().contains('button', /^Fix all \(1\)$/).click();
+        getDialog('Outcome of the fix', 30000).within(() => {
+            cy.get('[data-fix-outcome=fixed]').should('have.text', 'Fixed: 1');
+            cy.get('[data-fix-outcome=skipped]').should('contain.text', 'Skipped: 3').within(() => {
+                cy.get('[data-reason=NO_FIX]').should('have.text', '2 without fix: their check provides none');
+                cy.get('[data-reason=VALUES_NOT_TYPED]').should('have.text', '1 waiting for a value: type it above their Fix button');
+            });
+            cy.get('[data-fix-outcome=failed]').should('have.text', 'Not fixed: 0');
+            cy.contains('button', 'Close').click();
+        });
+        // The panel stays open, the error fixed is tagged
+        getDetailsPanel().contains('[data-error-id]', 'UNDECLARED_PROPERTY').contains('Fixed').scrollIntoView().should('be.visible');
+    });
+
+    it('tells that the node of an error has been removed since the scan, instead of a missing fix', () => {
+        graphql('mutation($path: String!) { jcr { deleteNode(pathOrId: $path) } }', {path: INVALID_VALUES});
+        openErrorDetails(INVALID_VALUES);
+        getDetailsPanel().within(() => {
+            // The undeclared property has a fix, but no node left to fix: none of its errors is flagged without fix
+            cy.get('[data-error-id]').should('have.length', 4).each(error => cy.wrap(error).within(() => {
+                cy.contains('Node removed').should('exist');
+                cy.contains('No fix').should('not.exist');
+                cy.get('[data-node-removed]').should('contain.text', 'The node no longer exists');
+                cy.contains('button', /^Fix$/).should('not.exist');
+            }));
+        });
+        getDetailsPanel().contains('button', /^Fix all \(0\)$/).should('be.disabled');
     });
 
     it('fixes the missing mandatory properties of a node together, once both have a value', () => {

@@ -36,7 +36,8 @@ export const useFixError = (resultsId, onFixed) => {
 
     /**
      * @param fixes the errors to fix, as {id, values}: values is null for an error fixed without values
-     * @return a promise of {fixed, message}: fixed tells if all the errors have been fixed
+     * @return a promise of {fixed, message, errors}: fixed tells if all the errors have been fixed, errors gives the outcome of
+     * each one, {id, fixed, fixFailureMessage}, and message why the fix has been refused, when no error is fixed
      */
     const fix = useCallback(fixes => {
         const previous = Object.fromEntries(fixes.map(({id}) => [id, states[id] === FIX_STATES.FIXING ? undefined : states[id]]));
@@ -57,7 +58,7 @@ export const useFixError = (resultsId, onFixed) => {
                     onFixed();
                 }
 
-                return {fixed: fixedIds.size === fixes.length};
+                return {fixed: fixedIds.size === fixes.length, errors: data?.integrity?.results?.errors || []};
             })
             .catch(e => {
                 console.error('Impossible to fix the errors', fixes.map(f => f.id), e);

@@ -19,8 +19,8 @@ export const visitAdmin = (user?: { username: string; password: string }): void 
     cy.contains('h1, h2, h3', 'Content Integrity', {timeout: 60000}).should('be.visible');
 };
 
-export const getDialog = (title: string): Cypress.Chainable<JQuery<HTMLElement>> =>
-    cy.contains('[role=dialog]', title).should('be.visible');
+export const getDialog = (title: string, timeout?: number): Cypress.Chainable<JQuery<HTMLElement>> =>
+    cy.contains('[role=dialog]', title, timeout ? {timeout} : undefined).should('be.visible');
 
 /**
  * The card of the scan which runs. It is displayed only while a scan runs.
@@ -58,6 +58,12 @@ export const getDetailsPanel = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.
  * Opens the errors of the node of a row, with a click on its left end: the row of an error has no chevron, and its path,
  * a link to the JCR browser, starts after an indent. Its right end, the fix status, may be under the side panel.
  */
+/**
+ * The workspace of the node displayed in the details panel, read from the details of the node.
+ */
+export const getDetailsWorkspace = (): Cypress.Chainable<JQuery<HTMLElement>> =>
+    getDetailsPanel().contains('dt', /^Workspace$/).next('dd');
+
 export const openErrorDetails = (path: string): void => {
     getRow(path).click('left');
     getDetailsPanel().should('contain.text', path);

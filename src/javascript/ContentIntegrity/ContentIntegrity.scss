@@ -544,6 +544,12 @@
     border-radius: 4px;
 }
 
+/* What the fix of an error changes, above its Fix button: set apart from the details, as it describes a write */
+.fixDescription {
+    padding-left: var(--spacing-small);
+    border-left: 3px solid var(--color-danger);
+}
+
 .nodeErrorFocused {
     border-color: var(--color-accent);
     box-shadow: inset 3px 0 0 var(--color-accent);
@@ -566,6 +572,25 @@
 
 .configItem {
     margin-bottom: var(--spacing-medium);
+}
+
+/* The outcome of a fix of several errors: fixed, skipped and not fixed, each with its reasons */
+.fixOutcome {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-nano);
+
+    & + & {
+        margin-top: var(--spacing-medium);
+    }
+}
+
+.fixOutcomeList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+    margin: 0;
+    padding-left: var(--spacing-large);
 }
 
 .dialogBackdrop {

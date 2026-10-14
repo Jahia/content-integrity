@@ -514,10 +514,12 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     error.setFixed(true);
                 } else {
                     error.setFixFailed(true);
+                    error.setFixFailureMessage(null);
                     logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
                 }
             } catch (RepositoryException e) {
                 error.setFixFailed(true);
+                error.setFixFailureMessage(e.getMessage());
                 logger.error(String.format("Failed to fix the error %s", error.toJSON()), e);
             }
         }
@@ -604,16 +606,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         return integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix
                 && ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).isFixable(error)
                 && !Utils.isOnVirtualNode(error)
-                && errorNodeExists(error);
-    }
-
-    /*
-     * A node removed since the scan, for example by the fix of another error, leaves nothing to fix. Without its node, an
-     * error can't tell either whether its fix takes values: it would be fixed without them.
-     */
-    private boolean errorNodeExists(ContentIntegrityError error) {
-        final JCRSessionWrapper session = JCRUtils.getSystemSession(error.getWorkspace(), false);
-        return session != null && StringUtils.isNotBlank(error.getUuid()) && JCRUtils.nodeExists(error.getUuid(), session);
+                && Utils.errorNodeExists(error);
     }
 
     @Override

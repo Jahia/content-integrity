@@ -10,6 +10,14 @@ const fixAll = (resultsId: string, filters: string[]): Cypress.Chainable<FixAllR
     graphql('query($id: String, $filters: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { fixAll: fixAllErrors { fixed failed failedIds skipped alreadyFixed } } } }',
         {id: resultsId, filters}).then(data => data.integrity.results.fixAll as FixAllResult);
 
+type FixAllReasons = { skippedReasons: { reason: string; count: number }[]; failures: { checkName: string; errorType: string; message: string; count: number }[] };
+
+// Why errors are skipped or not fixed: run again on errors that a fix all leaves as they are, the same reasons are given
+const fixAllReasons = (resultsId: string, filters: string[]): Cypress.Chainable<FixAllReasons> =>
+    graphql('query($id: String, $filters: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { ' +
+        'fixAll: fixAllErrors { skippedReasons { reason count } failures { checkName errorType message count } } } } }',
+    {id: resultsId, filters}).then(data => data.integrity.results.fixAll as FixAllReasons);
+
 /**
  * The language errors are fixed by their check. The missing template has no fix. The missing mandatory property is
  * fixed with a value typed by an administrator. The lock errors are fixed by their check, but do not block an XML import.
@@ -83,6 +91,8 @@ describe('Fix of all the errors matching filters', () => {
             fixAll(results.resultsId, ['errorType;INVALID_VALUE_CONSTRAINT']).then(outcome => {
                 expect(outcome).to.deep.equal({fixed: 0, failed: 0, failedIds: [], skipped: chosen.length, alreadyFixed: 0});
             });
+            fixAllReasons(results.resultsId, ['errorType;INVALID_VALUE_TYPE']).its('skippedReasons').should('deep.equal', [{reason: 'NO_FIX', count: 1}]);
+            fixAllReasons(results.resultsId, ['errorType;INVALID_VALUE_CONSTRAINT']).should('deep.equal', {skippedReasons: [{reason: 'TAKES_VALUES', count: chosen.length}], failures: []});
         });
     });
 
@@ -95,6 +105,11 @@ describe('Fix of all the errors matching filters', () => {
             expect(failing[0].fixable).to.be.true;
             fixAll(results.resultsId, ['errorType;NO_HOME']).then(outcome => {
                 expect(outcome).to.deep.equal({fixed: 0, failed: 1, failedIds: failing.map(e => e.id), skipped: 0, alreadyFixed: 0});
+            });
+            // The fix returns false without exception: it tells no message
+            fixAllReasons(results.resultsId, ['errorType;NO_HOME']).should('deep.equal', {
+                skippedReasons: [],
+                failures: [{checkName: 'HomePageDeclarationCheck', errorType: 'NO_HOME', message: null, count: 1}]
             });
         });
         runFixture('checks/HomePageDeclarationCheck.groovy', {SITEKEY: SITE, SCENARIO: 'RESTORE'});
@@ -112,6 +127,12 @@ describe('Fix of all the errors matching filters', () => {
             fixAll(results.resultsId, []).then(outcome => {
                 expect(outcome.failed).to.equal(0);
                 expect(outcome.skipped).to.equal(results.errors.length);
+            });
+            // The errors without fix are skipped for this reason first, whatever their node
+            fixAllReasons(results.resultsId, []).its('skippedReasons').then(reasons => {
+                const nodeNotFound = reasons.find(r => r.reason === 'NODE_NOT_FOUND');
+                expect(nodeNotFound?.count, 'NODE_NOT_FOUND').to.equal(results.errors.filter(e => e.fixable).length);
+                expect(reasons.reduce((total, r) => total + r.count, 0)).to.equal(results.errors.length);
             });
         });
         runFixture('checks/PropertyDefinitionsSanityCheck.groovy', {SITEKEY: SITE});

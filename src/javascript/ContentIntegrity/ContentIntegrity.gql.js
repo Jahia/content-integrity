@@ -195,6 +195,7 @@ export const GET_NODE_ERRORS = gql`
                     fixFailed
                     fixable
                     virtualNode
+                    nodeExists
                     fixWithValues
                     fixValues {
                         name
@@ -227,6 +228,7 @@ export const FIX_ERRORS = gql`
                     id
                     fixed
                     fixFailed
+                    fixFailureMessage
                     fixable
                     fixWithValues
                 }
@@ -259,6 +261,16 @@ export const FIX_ALL_ERRORS = gql`
                     failedIds
                     skipped
                     alreadyFixed
+                    skippedReasons {
+                        reason
+                        count
+                    }
+                    failures {
+                        checkName
+                        errorType
+                        message
+                        count
+                    }
                 }
             }
         }

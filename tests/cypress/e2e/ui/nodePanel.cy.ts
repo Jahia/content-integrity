@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {clearFilters, getDetailsPanel, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
+import {clearFilters, getDetailsPanel, getDetailsWorkspace, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 // The panel displays the errors of a node in one workspace. The fixtures give an error in each workspace.
 const SITE = 'ciUiNodePanel';
@@ -28,16 +28,26 @@ describe('Panel of the errors of a node', () => {
 
     it('displays the errors of the node in the workspace of the clicked row only', () => {
         openErrorDetails(IN_LIVE);
-        getDetailsPanel().should('contain.text', 'Workspace live').and('contain.text', 'DELETION_MARK_IN_LIVE').and('not.contain.text', 'NO_ROOT_DELETION');
+        getDetailsWorkspace().should('have.text', 'live');
+        getDetailsPanel().should('contain.text', 'DELETION_MARK_IN_LIVE').and('not.contain.text', 'NO_ROOT_DELETION');
         openErrorDetails(IN_DEFAULT);
-        getDetailsPanel().should('contain.text', 'Workspace default').and('contain.text', 'NO_ROOT_DELETION').and('not.contain.text', 'DELETION_MARK_IN_LIVE');
+        getDetailsWorkspace().should('have.text', 'default');
+        getDetailsPanel().should('contain.text', 'NO_ROOT_DELETION').and('not.contain.text', 'DELETION_MARK_IN_LIVE');
+    });
+
+    it('describes what the fix of each error changes, above its Fix button', () => {
+        openErrorDetails(IN_DEFAULT);
+        getDetailsPanel().find('[data-fix-description]').should('have.length', 1)
+            .and('have.text', 'Removes the deletion mark of the node: its deletion is canceled.');
+        openErrorDetails(IN_LIVE);
+        getDetailsPanel().find('[data-fix-description]').should('have.text', 'Removes the deletion mark of the node in the live workspace.');
     });
 
     it('closes the panel when the table is filtered on another workspace', () => {
         openErrorDetails(IN_DEFAULT);
         // Filtered on the workspace of the node, the panel stays
         selectInDropdown('Workspace', /^default \(\d+\)$/);
-        getDetailsPanel().should('contain.text', 'Workspace default');
+        getDetailsWorkspace().should('have.text', 'default');
         selectInDropdown('Workspace', /^live \(\d+\)$/);
         cy.get('#ci-node-errors').should('not.exist');
         getRow(IN_LIVE).should('exist');

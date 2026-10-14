@@ -44,6 +44,17 @@ public interface ContentIntegrityError {
 
     void setFixFailed(boolean fixFailed);
 
+    /**
+     * @return why the last fix of the error has failed, when it raised an exception, null otherwise. Not stored with the
+     * results: a check whose fix only returns false tells no reason
+     */
+    default String getFixFailureMessage() {
+        return null;
+    }
+
+    default void setFixFailureMessage(String message) {
+    }
+
     JSONObject toJSON();
 
     Object getExtraInfo(String key);

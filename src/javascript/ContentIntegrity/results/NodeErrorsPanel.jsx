@@ -7,13 +7,13 @@ import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {GET_NODE_ERRORS} from '../ContentIntegrity.gql';
 import {formatCell} from './columns';
 import {FixStatus} from './FixStatus';
+import {FixOutcomeDialog} from './FixOutcomeDialog';
 import {FixValuesForm, initialFixValues, typedFixValues} from './FixValuesForm';
 import {FIX_STATES} from './useFixError';
 import styles from '../ContentIntegrity.scss';
 
 const TITLE_ID = 'ci-node-errors-title';
 const LINKED = '__linked__';
-const ALL = '__all__';
 
 const isEmpty = value => value === null || value === undefined || value === '';
 
@@ -67,7 +67,7 @@ DetailsList.propTypes = {
  * menu is open above the page.
  */
 export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fixStates, canFixErrors, onFix, onClose}) => {
-    const {t} = useTranslation('content-integrity');
+    const {t, i18n} = useTranslation('content-integrity');
     const panelRef = useRef(null);
     const onCloseRef = useRef(onClose);
     onCloseRef.current = onClose;
@@ -81,6 +81,8 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
     const [typedValues, setTypedValues] = useState({});
     // The reason of a refused fix, by error ID, or under LINKED for the linked errors
     const [messages, setMessages] = useState({});
+    // The outcome of Fix all, displayed in a dialog
+    const [outcome, setOutcome] = useState(null);
     const valuesOf = e => typedValues[e.id] || initialFixValues(e.fixValues);
 
     const isFixed = e => e.fixed || fixStates[e.id] === FIX_STATES.FIXED;
@@ -119,7 +121,54 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
     const allFixes = offered
         .filter(e => !takesValues(e) || (isLinked(e) ? isLinkedReady : typedFixValues(valuesOf(e)).length > 0))
         .map(fixOf);
-    const fixAll = () => fix(ALL, allFixes);
+    // Fix all tells in a dialog how many errors of the node are fixed, and why the other ones are skipped or not fixed
+    const skipReason = e => {
+        if (isFixed(e)) {
+            return 'ALREADY_FIXED';
+        }
+
+        if (!e.fixable) {
+            if (e.virtualNode) {
+                return 'VIRTUAL_NODE';
+            }
+
+            return e.nodeExists ? 'NO_FIX' : 'NODE_NOT_FOUND';
+        }
+
+        return allFixes.some(f => f.id === e.id) ? null : 'VALUES_NOT_TYPED';
+    };
+    const fixAll = () => {
+        if (!isReady(allFixes) || isFixing) {
+            return;
+        }
+
+        const skipped = {};
+        errors.map(skipReason).filter(Boolean).forEach(reason => {
+            skipped[reason] = (skipped[reason] || 0) + 1;
+        });
+        const attempted = errors.filter(e => allFixes.some(f => f.id === e.id));
+        onFix(allFixes).then(result => {
+            refetch();
+            const outcomes = Object.fromEntries((result.errors || []).map(r => [r.id, r]));
+            const failures = {};
+            attempted.filter(e => !outcomes[e.id]?.fixed).forEach(e => {
+                // A refused value stops the fix of all the errors: its reason is the one of each error
+                const message = outcomes[e.id]?.fixFailureMessage || (result.errors ? null : result.message) || null;
+                const key = [e.checkName, e.errorType, message].join('|');
+                failures[key] = failures[key] || {checkName: e.checkName, errorType: e.errorType, message, count: 0};
+                failures[key].count++;
+            });
+            setOutcome({
+                fixed: attempted.filter(e => outcomes[e.id]?.fixed).length,
+                skipped: Object.entries(skipped).map(([reason, count]) => ({reason, count})),
+                failures: Object.values(failures)
+            });
+        });
+    };
+    // What the fix of an error changes, described by error type: a check without description, such as one from another
+    // module, only names itself in the tooltip of its Fix button
+    const fixDescriptionKey = e => `label.fixDescription.${e.checkName}.${e.errorType}`;
+    const fixDescription = e => (i18n.exists(fixDescriptionKey(e), {ns: 'content-integrity'}) ? t(fixDescriptionKey(e)) : null);
     const fixOne = e => fix(e.id, [fixOf(e)]);
     // A fix writes to the repository: its button is a danger one, light for the fix of an error, full for Fix all
     const fixButton = (fixes, onClick, label, title, isFixAll = false) => (
@@ -190,9 +239,6 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                             <Typography variant="heading" weight="bold" className={`${styles.detailsMessage} ${styles.detailsValue}`}>
                                 {nodeLink(withPathBreaks(node.nodePath))}
                             </Typography>
-                            <Typography variant="body" className={styles.helper}>
-                                {t('label.details.errorCount', {count: errors.length, workspace: node.workspace})}
-                            </Typography>
                             {linked.length > 0 && (
                                 <>
                                     <Typography variant="body" className={styles.helper}>{t('label.fix.linkedHelper')}</Typography>
@@ -220,11 +266,14 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                                     <Typography variant="subheading" weight="bold" className={styles.detailsMessage}>{e.message}</Typography>
                                     <div className={styles.detailsChips}>
                                         <FixStatus error={e} state={fixStates[e.id]}/>
-                                        {!isFixed(e) && !e.fixable && <Chip label={t('label.details.noFix')} color="warning"/>}
+                                        {/* An error without fix may have one, but no node left to fix: the node has been removed since the scan */}
+                                        {!isFixed(e) && !e.fixable && <Chip label={t(e.nodeExists ? 'label.details.noFix' : 'label.details.nodeRemoved')} color="warning"/>}
                                         {e.importError === true && <Chip label={t('label.details.impactsImport')} icon={<Warning/>} color="danger"/>}
                                     </div>
                                     {e.virtualNode && !isFixed(e) && <Typography className={styles.helper}>{t('label.details.virtualNode')}</Typography>}
+                                    {!e.nodeExists && !isFixed(e) && <Typography className={styles.helper} data-node-removed>{t('label.details.nodeRemovedHelper')}</Typography>}
                                     {(fixStates[e.id] === FIX_STATES.FAILED || (e.fixFailed && !fixStates[e.id])) && <Typography className={styles.helper}>{t('label.fix.failedHelper')}</Typography>}
+                                    {isOffered(e) && fixDescription(e) && <Typography className={styles.fixDescription} data-fix-description>{fixDescription(e)}</Typography>}
                                     {takesValues(e) && (
                                         <FixValuesForm errorId={e.id}
                                                        definition={e.fixValues}
@@ -264,12 +313,12 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                 // The errors of a node with several errors are fixed at once from the bottom of the panel: disabled when none can be
                 // fixed now, for example when none has a fix or when their values are not typed yet
                 <div className={styles.sidePanelFooter}>
-                    {messages[ALL] && <Typography className={styles.error} role="alert">{messages[ALL]}</Typography>}
                     <div className={styles.fixActionRow}>
                         {fixButton(allFixes, fixAll, t('label.fix.fixAllNode', {count: allFixes.length}), t('label.fix.fixAllNodeHelper'), true)}
                     </div>
                 </div>
             )}
+            <FixOutcomeDialog outcome={outcome} onClose={() => setOutcome(null)}/>
         </aside>
     );
 };

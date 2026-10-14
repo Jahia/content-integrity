@@ -11,6 +11,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.reporting.CsvReport;
 import org.jahia.modules.contentintegrity.services.reporting.ExcelReport;
 import org.jahia.modules.contentintegrity.services.reporting.Report;
@@ -18,6 +19,7 @@ import org.jahia.modules.contentintegrity.services.reporting.ReportWriter;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.JCRStoreProvider;
 import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.osgi.framework.Bundle;
@@ -233,6 +235,15 @@ public final class Utils {
         if (StringUtils.isBlank(path)) return false;
         final JCRStoreProvider provider = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getProvider(path, false);
         return provider != null && !provider.isDefault();
+    }
+
+    /**
+     * True if the node of the error still exists in its workspace. A node removed since the scan, for example by the fix of
+     * another error, leaves nothing to fix. Without its node, an error can't tell either whether its fix takes values.
+     */
+    public static boolean errorNodeExists(ContentIntegrityError error) {
+        final JCRSessionWrapper session = JCRUtils.getSystemSession(error.getWorkspace(), false);
+        return session != null && StringUtils.isNotBlank(error.getUuid()) && JCRUtils.nodeExists(error.getUuid(), session);
     }
 
     public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, ExternalLogger externalLogger) {

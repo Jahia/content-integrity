@@ -87,8 +87,9 @@
       "virtualNode": "Le nœud est virtuel, servi par un fournisseur externe comme un point de montage : ses erreurs ne sont pas corrigées ici.",
       "impactsImport": "Impacte l'import XML",
       "errors": "Erreurs du nœud",
-      "errorCount": "Espace de travail {{workspace}} · erreurs : {{count}}",
-      "noFix": "Pas de correction"
+      "noFix": "Pas de correction",
+      "nodeRemoved": "Nœud supprimé",
+      "nodeRemovedHelper": "Le nœud n'existe plus : il a été supprimé depuis l'analyse, par exemple par la correction d'une autre erreur. Lancez une nouvelle analyse pour mettre à jour les résultats."
     },
     "column": {
       "checkName": "Contrôle",
@@ -127,6 +128,108 @@
       "fixAllNode": "Tout corriger ({{count}})",
       "fixAllNodeHelper": "Corriger les erreurs du nœud qui peuvent l'être maintenant : une erreur corrigée avec des valeurs, une fois celles-ci saisies"
     },
+    "fixDescription": {
+      "AceSanityCheck": {
+        "NO_PRINCIPAL": "Définit l'utilisateur ou le groupe choisi comme principal de l'entrée de contrôle d'accès.",
+        "NO_ROLES_PROP": "Définit les rôles choisis sur l'entrée de contrôle d'accès.",
+        "INVALID_PRINCIPAL": "Retire les rôles accordés à ce principal sur le nœud. Corrigée dans l'espace default uniquement.",
+        "NO_ACE_TYPE_PROP": "Supprime l'entrée de contrôle d'accès. Une entrée standard supprimée dans l'espace default voit sa liste de contrôle d'accès publiée à nouveau, une entrée externe est supprimée dans les deux espaces.",
+        "INVALID_ACE_TYPE_PROP": "Supprime l'entrée de contrôle d'accès. Une entrée standard supprimée dans l'espace default voit sa liste de contrôle d'accès publiée à nouveau, une entrée externe est supprimée dans les deux espaces.",
+        "NO_SOURCE_ACE_PROP": "Supprime l'entrée de contrôle d'accès. Une entrée standard supprimée dans l'espace default voit sa liste de contrôle d'accès publiée à nouveau, une entrée externe est supprimée dans les deux espaces.",
+        "EMPTY_SOURCE_ACE_PROP": "Supprime l'entrée de contrôle d'accès. Une entrée standard supprimée dans l'espace default voit sa liste de contrôle d'accès publiée à nouveau, une entrée externe est supprimée dans les deux espaces.",
+        "SOURCE_ACE_BROKEN_REF": "Retire les entrées sources invalides de l'entrée de contrôle d'accès externe, et la supprime si aucune n'est valide.",
+        "SOURCE_ACE_NOT_TYPE_GRANT": "Retire les entrées sources invalides de l'entrée de contrôle d'accès externe, et la supprime si aucune n'est valide.",
+        "ROLES_DIFFER_ON_SOURCE_ACE": "Retire les entrées sources invalides de l'entrée de contrôle d'accès externe, et la supprime si aucune n'est valide.",
+        "INVALID_EXTERNAL_ACE_PATH": "Retire les entrées sources invalides de l'entrée de contrôle d'accès externe, et la supprime si aucune n'est valide.",
+        "MISSING_EXTERNAL_ACE": "Enregistre à nouveau l'entrée de contrôle d'accès, pour que Jahia crée l'entrée externe manquante, puis publie la liste de contrôle d'accès si l'entrée est publiée.",
+        "INVALID_NODENAME": "Renomme l'entrée de contrôle d'accès d'après son type et son principal. Non corrigée si une autre entrée porte déjà ce nom.",
+        "INVALID_ROLES_PROP": "Supprime l'entrée de contrôle d'accès externe, puis enregistre à nouveau ses entrées sources, pour que Jahia crée les bonnes entrées externes.",
+        "ROLE_DOESNT_EXIST": "Retire de l'entrée de contrôle d'accès les rôles qui n'existent pas. L'entrée est supprimée s'il ne lui reste aucun rôle, et une entrée externe est toujours supprimée."
+      },
+      "BinaryPropertiesSanityCheck": {
+        "INVALID_BINARY": "Supprime le fichier dont le binaire manque, ou le nœud qui porte la propriété binaire. Sur un nœud de traduction, seule la propriété est supprimée. C'est irréversible : restaurez plutôt le binaire depuis une sauvegarde s'il est important."
+      },
+      "ChildNodeDefinitionsSanityCheck": {
+        "NOT_ALLOWED_BY_PARENT_DEF": "Supprime le nœud et son sous-arbre. C'est irréversible."
+      },
+      "HomePageDeclarationCheck": {
+        "NO_HOME": "Définit la première page du site comme sa page d'accueil.",
+        "MULTIPLE_HOMES": "Garde une seule page d'accueil, la page nommée home si elle est marquée, et retire la marque des autres pages. En live, la page d'accueil de l'espace default est gardée : corrigez d'abord l'espace default.",
+        "FALLBACK_ON_NAME": "Marque la page nommée home comme page d'accueil du site."
+      },
+      "JCRLanguagePropertyCheck": {
+        "MISSING_JCR_LANGUAGE_PROP": "Définit jcr:language à la langue du nom du nœud de traduction.",
+        "INCONSISTENT_JCR_LANGUAGE_PROP": "Définit jcr:language à la langue du nom du nœud de traduction."
+      },
+      "LivePropertiesCheck": {
+        "LIVE_PROPERTIES": "Supprime la propriété j:liveProperties et le mixin jmix:liveProperties.",
+        "EMPTY_LIVE_PROPERTIES": "Supprime la propriété j:liveProperties et le mixin jmix:liveProperties."
+      },
+      "LockSanityCheck": {
+        "INCONSISTENT_LOCK": "Déverrouille le nœud et supprime ses propriétés de verrou. Une suppression en attente du nœud est annulée.",
+        "DELETION_LOCK_ON_I18N": "Supprime le verrou de suppression du nœud de traduction."
+      },
+      "MarkForDeletionCheck": {
+        "NO_ROOT_DELETION": "Retire la marque de suppression du nœud : sa suppression est annulée.",
+        "DELETION_MARK_IN_LIVE": "Retire la marque de suppression du nœud dans l'espace live.",
+        "DELETION_MARK_UNDER_USERS": "Retire la marque de suppression du nœud : sa suppression est annulée."
+      },
+      "NodeNameInfoSanityCheck": {
+        "MISSING_NODENAME": "Définit j:nodename au nom du nœud.",
+        "INVALID_NODENAME": "Définit j:nodename au nom du nœud.",
+        "INVALID_FULLPATH": "Définit j:fullpath au chemin du nœud."
+      },
+      "PagesSanityCheck": {
+        "MISSING_TEMPLATE": "Définit le template choisi sur la page, ou comme template par défaut du site."
+      },
+      "PropertyDefinitionsSanityCheck": {
+        "UNDECLARED_PROPERTY": "Supprime la propriété, que les types du nœud ne déclarent plus. Sa valeur est perdue.",
+        "EMPTY_MANDATORY_PROPERTY": "Définit la propriété à la valeur saisie, ou à la valeur par défaut de sa définition.",
+        "INVALID_VALUE_CONSTRAINT": "Remplace la valeur invalide par la valeur saisie, ou par la valeur par défaut de la définition. Les autres valeurs d'une propriété multiple sont gardées."
+      },
+      "PublicationSanityDefaultCheck": {
+        "NO_LIVE_NODE": "Marque le nœud comme non publié. Un nœud publié automatiquement est publié à nouveau à la place."
+      },
+      "PublicationSanityLiveCheck": {
+        "NO_DEFAULT_NODE": "Publie le nœud de l'espace live vers l'espace default, ce qui l'y restaure.",
+        "UNEXPECTED_UGC": "Définit j:originWS à default : le nœud n'est plus un contenu généré par les utilisateurs.",
+        "INCONSISTENT_UGC": "Définit j:originWS à default si le nœud existe dans l'espace default, sinon à live."
+      },
+      "ReferencesSanityCheck": {
+        "BROKEN_REF": "Supprime la référence au nœud manquant : la valeur manquante d'une propriété multiple, sinon toute la propriété."
+      },
+      "SiteLevelSystemGroupsCheck": {
+        "GROUP_DOES_NOT_EXIST": "Crée à nouveau le groupe manquant, comme Jahia le fait pour un nouveau site : site-privileged est membre de privileged, et ses membres sont les utilisateurs et les groupes qui ont un rôle privilégié dans le site.",
+        "MISSING_MEMBERSHIP": "Ajoute le groupe site-privileged du site aux membres du groupe privileged."
+      },
+      "UndeclaredNodeTypesCheck": {
+        "UNDECLARED_NODE_TYPE": "Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible.",
+        "GHOST_NODE_TYPE": "Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible."
+      },
+      "UndeployedModulesReferencesCheck": {
+        "UNDEPLOYED_MODULE_ON_SITE": "Retire le module des modules du site, dans les deux espaces. Rien ne change si le module est à nouveau déployé."
+      },
+      "UserAccountSanityCheck": {
+        "NOT_OWNER": "Accorde le rôle owner à l'utilisateur sur son compte."
+      },
+      "VersionHistoryCheck": {
+        "TOO_MANY_VERSIONS": "Purge les versions inutilisées du nœud. Non corrigée s'il reste plus de versions que le seuil."
+      },
+      "WipSanityCheck": {
+        "WIP_ON_TRANSLATION_NODE": "Supprime la propriété de travail en cours du nœud de traduction.",
+        "WIP_LEGACY_FORMAT": "Supprime l'ancienne propriété j:workInProgress.",
+        "WIP_UNEXPECTED_LANG": "Retire la langue des langues de travail en cours. Le nœud n'est plus en travail en cours s'il ne reste aucune langue.",
+        "WIP_MISSING_PROP": "Supprime le statut de travail en cours : le nœud n'est plus en travail en cours.",
+        "WIP_UNEXPECTED_PROP": "Supprime les langues de travail en cours.",
+        "WIP_INCONSISTENT_STATUS_PROP": "Supprime le statut et les langues de travail en cours : le nœud n'est plus en travail en cours.",
+        "WIP_IN_LIVE": "Supprime les propriétés de travail en cours du nœud live."
+      },
+      "WorkspaceSpecificDefinitionsCheck": {
+        "UNEXPECTED_TYPE": "Retire le mixin du nœud. Une marque de suppression est retirée en annulant la suppression.",
+        "UNEXPECTED_PROP": "Supprime la propriété du nœud.",
+        "UNEXPECTED_PROP_VALUE": "Supprime la propriété du nœud. Pour un statut de travail en cours, toutes les propriétés de travail en cours sont supprimées."
+      }
+    },
     "fixValues": {
       "title": "Corriger avec une valeur",
       "description": "La propriété obligatoire {{property}} n'a pas de valeur. Saisissez la valeur à définir, puis cliquez sur Corriger.",
@@ -142,8 +245,24 @@
       "title": "Corriger toutes les erreurs affichées",
       "description": "Le correctif de son contrôle sera exécuté sur chacune des {{count}} erreurs correspondant aux filtres.",
       "warning": "Certains correctifs suppriment du contenu, par exemple un nœud dont le type n'est plus déclaré. Les erreurs dont le contrôle ne fournit pas de correctif, et celles corrigées avec une valeur saisie, sont ignorées.",
-      "confirm": "Corriger {{count}} erreurs",
-      "outcome": "{{fixed}} corrigées, {{failed}} non corrigées, {{skipped}} ignorées, {{alreadyFixed}} déjà corrigées"
+      "confirm": "Corriger {{count}} erreurs"
+    },
+    "fixOutcome": {
+      "title": "Résultat de la correction",
+      "fixed": "Corrigées : {{count}}",
+      "skipped": "Ignorées : {{count}}",
+      "failed": "Non corrigées : {{count}}",
+      "reason": {
+        "ALREADY_FIXED": "{{count}} déjà corrigées, par une correction précédente",
+        "NO_FIX": "{{count}} sans correction : leur contrôle n'en fournit pas",
+        "TAKES_VALUES": "{{count}} corrigées avec une valeur : ouvrez le panneau de leur nœud pour la saisir",
+        "VALUES_NOT_TYPED": "{{count}} en attente d'une valeur : saisissez-la au-dessus de leur bouton Corriger",
+        "VIRTUAL_NODE": "{{count}} sur un nœud virtuel, servi par un fournisseur externe tel qu'un point de montage",
+        "NODE_NOT_FOUND": "{{count}} dont le nœud n'existe plus, par exemple supprimé par la correction d'une autre erreur"
+      },
+      "failure": "{{check}} · {{type}} : {{count}}",
+      "noMessage": "La correction s'est exécutée sans corriger l'erreur. Les détails sont dans jahia.log.",
+      "fixDoes": "Ce que fait la correction :"
     },
     "fixStatus": {
       "fixedOrSkipped": "Corrigées et ignorées",
