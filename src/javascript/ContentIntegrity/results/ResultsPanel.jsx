@@ -287,8 +287,6 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
     // The row of an error. The only error of a node is displayed alone, without the row of its node: its row tells the path
     // and the other properties of the node.
     const renderErrorRow = (error, isAlone) => {
-        // Below the row of its node, an error repeats the path of the node and leaves its other properties to that row
-        const isNodeCellLeftEmpty = c => !isAlone && c.node && c.key !== 'nodePath';
         return (
             <TableRow key={error.id}
                       isSelected={isSelectedNode(error.workspace, error.nodePath)}
@@ -307,8 +305,8 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
                                    width={c.width}
                                    isExpandableColumn={c.key === treeColumn}
                                    row={c.key === treeColumn ? treeRow(isAlone ? 0 : 1) : undefined}
-                                   title={isNodeCellLeftEmpty(c) ? undefined : String(formatCell(error[c.key]))}>
-                        {isNodeCellLeftEmpty(c) ? null : cellValue(error, c)}
+                                   title={String(formatCell(error[c.key]))}>
+                        {cellValue(error, c)}
                     </TableBodyCell>
                 ))}
                 <TableBodyCell width="110px" textAlign="right" className={styles.fixStatusCell}>

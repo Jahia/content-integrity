@@ -77,6 +77,13 @@ describe('Results table', () => {
         });
         getNodeRow(MISSING_TEMPLATE).should('contain.text', 'default').and('contain.text', MISSING_TEMPLATE);
         getScanLabel(resultsId).then(label => getDropdown('Scan').should('contain.text', label));
+        // Below the row of its node, each error repeats the columns of the node, such as its path and its workspace
+        clearFilters();
+        getNodeRow(LOCKED_TRANSLATION).should('not.have.attr', 'data-error-id');
+        getNodeErrorRows(LOCKED_TRANSLATION).should('have.length.greaterThan', 1).each(row => {
+            cy.wrap(row).find('td').eq(0).should('contain.text', LOCKED_TRANSLATION);
+            cy.wrap(row).find('td').eq(1).should('have.text', 'default');
+        });
     });
 
     it('adds and removes columns, which keep their order', () => {
@@ -93,13 +100,13 @@ describe('Results table', () => {
         getNodeRow(MISSING_TEMPLATE).should('have.attr', 'data-error-id');
         getRow(MISSING_TEMPLATE).should('contain.text', SITE).and('contain.text', 'jnt:page').and('contain.text', 'PagesSanityCheck');
         getRow(MISSING_TEMPLATE).find('[aria-expanded]').should('not.exist');
-        // The columns of a node with several errors are filled in its row, the ones of the errors in their rows
+        // The row of a node with several errors displays only the columns of the node, the rows of its errors repeat them
         clearFilters();
         // An assertion on an attribute yields its value: the row is read again for its text
         getNodeRow(LOCKED_TRANSLATION).should('not.have.attr', 'data-error-id');
         getNodeRow(LOCKED_TRANSLATION).should('contain.text', 'jnt:translation').and('not.contain.text', 'LockSanityCheck');
-        // The rows of its errors repeat the path of the node
-        getRow(LOCKED_TRANSLATION).should('contain.text', 'LockSanityCheck').and('contain.text', LOCKED_TRANSLATION).and('not.contain.text', 'jnt:translation');
+        // The rows of its errors repeat the columns of the node, such as its path and its primary type
+        getRow(LOCKED_TRANSLATION).should('contain.text', 'LockSanityCheck').and('contain.text', LOCKED_TRANSLATION).and('contain.text', 'jnt:translation');
     });
 
     it('filters the errors on the value of a column, and counts the errors of each value', () => {

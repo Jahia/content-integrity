@@ -1,7 +1,7 @@
 // Columns of the errors table. `filterable` columns get a value filter fed by `possibleValues`,
 // `jcrLink` columns open the node in the JCR browser. The errors are displayed as a tree: a row per node, the errors of the
-// node below it. The `node` columns describe the node: they are filled in the row of the node, and left empty in the rows
-// of its errors.
+// node below it. The `node` columns describe the node: the row of the node displays only them, and the rows of its errors
+// repeat them, so that each row tells where its error is.
 export const COLUMNS = [
     {key: 'nodePath', display: true, jcrLink: true, width: '28%', node: true},
     {key: 'workspace', display: true, filterable: true, node: true},
