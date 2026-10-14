@@ -45,7 +45,8 @@ export const FixAllAction = ({resultsId, filterArgs, errorCount, onFixed}) => {
             {outcome?.error && <Typography variant="caption" className={styles.error} role="alert">{outcome.error}</Typography>}
             <Button label={t('label.fixAll.button')}
                     icon={<Build/>}
-                    variant="outlined"
+                    size="big"
+                    color="danger"
                     isLoading={isFixing}
                     isDisabled={errorCount === 0 || isFixing}
                     onClick={() => setConfirming(true)}/>

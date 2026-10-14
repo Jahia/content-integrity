@@ -106,15 +106,14 @@ export type ScanParameters = {
     checks: string[];
     workspace?: Workspace;
     excludedPaths?: string[];
-    upload?: boolean;
 };
 
 /**
  * Starts a scan, without waiting for its end, and returns the ID of its execution.
  */
-export const startScan = ({startNode, checks, workspace = 'EDIT', excludedPaths, upload}: ScanParameters): Cypress.Chainable<string> =>
-    graphql('query($workspace: WorkspaceToScan!, $startNode: String, $excludedPaths: [String], $checks: [String], $upload: Boolean) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, excludedPaths: $excludedPaths, checksToRun: $checks, uploadResults: $upload) } } }',
-        {workspace, startNode, excludedPaths, checks, upload}).then(data => data.integrity.scan.id);
+export const startScan = ({startNode, checks, workspace = 'EDIT', excludedPaths}: ScanParameters): Cypress.Chainable<string> =>
+    graphql('query($workspace: WorkspaceToScan!, $startNode: String, $excludedPaths: [String], $checks: [String]) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, excludedPaths: $excludedPaths, checksToRun: $checks) } } }',
+        {workspace, startNode, excludedPaths, checks}).then(data => data.integrity.scan.id);
 
 /**
  * Reads an execution. Without ID, the API returns the scan which runs, or else the last one.

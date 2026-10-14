@@ -105,11 +105,9 @@ public class GqlIntegrityScan {
                           @GraphQLName("startNode") @GraphQLDescription(PATH_DESC) String path,
                           @GraphQLName("excludedPaths") List<String> excludedPaths,
                           @GraphQLName("skipMountPoints") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) Boolean skipMountPoints,
-                          @GraphQLName("checksToRun") List<String> checksToRun,
-                          @GraphQLName("uploadResults") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) Boolean uploadResults) {
+                          @GraphQLName("checksToRun") List<String> checksToRun) {
         // Boxed: graphql-java 13 (Jahia 8.1) passes null for a declared variable left unset, instead of the default value
         final boolean skipMountPointsValue = Boolean.TRUE.equals(skipMountPoints);
-        final boolean uploadResultsValue = Boolean.TRUE.equals(uploadResults);
         id = generateExecutionID();
         executionStart.put(id, Instant.now());
         executionStatus.put(id, Status.RUNNING);
@@ -179,7 +177,7 @@ public class GqlIntegrityScan {
 
                     reportLogger.logLine(String.format("%d error%s found%s", nbErrors, nbErrors == 1 ? StringUtils.EMPTY : "s", details));
 
-                    if (uploadResultsValue && Utils.writeDumpInTheJCR(mergedResults, false, reportLogger)) {
+                    if (Utils.writeDumpInTheJCR(mergedResults, false, reportLogger)) {
                         executionReports.put(id, mergedResults.getReports());
                     }
                 }

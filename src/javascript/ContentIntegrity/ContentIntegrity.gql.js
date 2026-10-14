@@ -65,7 +65,7 @@ export const RUN_SCAN = gql`
     query ContentIntegrityRunScan($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String], $skipMP: Boolean) {
         integrity: contentIntegrity {
             scan: integrityScan {
-                id: scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, uploadResults: true, skipMountPoints: $skipMP)
+                id: scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, skipMountPoints: $skipMP)
             }
         }
     }

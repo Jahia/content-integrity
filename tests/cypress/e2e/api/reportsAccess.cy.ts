@@ -39,7 +39,7 @@ describe('Access to the scan reports', () => {
         createTestSite(SITE);
         runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});
         runFixture('reports/reportsAccess.groovy', {SITEKEY: SITE});
-        graphql('query($path: String) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: EDIT, startNode: $path, checksToRun: ["LockSanityCheck"], uploadResults: true) } } }',
+        graphql('query($path: String) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: EDIT, startNode: $path, checksToRun: ["LockSanityCheck"]) } } }',
             {path: `/sites/${SITE}/contents/locks`})
             .then(data => waitForReport(data.integrity.scan.id))
             .then(uri => {

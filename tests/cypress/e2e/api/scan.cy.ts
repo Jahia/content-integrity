@@ -139,10 +139,10 @@ describe('Scan API', () => {
         });
     });
 
-    it('writes the reports of a scan in the JCR when requested', () => {
-        startScan({startNode: LOCKS, checks: ['LockSanityCheck'], upload: true}).then(id => waitForExecution(id)).then(execution => {
+    it('writes the CSV and XLSX reports of every scan in the JCR', () => {
+        startScan({startNode: LOCKS, checks: ['LockSanityCheck']}).then(id => waitForExecution(id)).then(execution => {
             expect(execution.status).to.equal('finished');
-            expect(execution.reports.map(r => r.extension)).to.include.members(['csv']);
+            expect(execution.reports.map(r => r.extension)).to.have.members(['csv', 'xlsx']);
         });
     });
 
