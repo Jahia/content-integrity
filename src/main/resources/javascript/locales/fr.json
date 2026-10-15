@@ -167,7 +167,9 @@
       },
       "LockSanityCheck": {
         "INCONSISTENT_LOCK": "Déverrouille le nœud et supprime ses propriétés de verrou. Une suppression en attente du nœud est annulée.",
-        "DELETION_LOCK_ON_I18N": "Supprime le verrou de suppression du nœud de traduction."
+        "DELETION_LOCK_ON_I18N": "Supprime le verrou de suppression du nœud de traduction.",
+        "LOCK_OF_UNKNOWN_PROCESS": "Libère le verrou du processus de workflow qui n'existe plus, comme le fait le workflow à sa fin. Le nœud est déverrouillé une fois qu'aucun autre verrou ne reste.",
+        "LOCK_PROPERTIES_IN_LIVE": "Supprime les propriétés j:lockTypes et j:locktoken du nœud live, qui n'est pas verrouillé."
       },
       "MarkForDeletionCheck": {
         "NO_ROOT_DELETION": "Retire la marque de suppression du nœud : sa suppression est annulée.",

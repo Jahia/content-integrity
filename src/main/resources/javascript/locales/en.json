@@ -167,7 +167,9 @@
       },
       "LockSanityCheck": {
         "INCONSISTENT_LOCK": "Unlocks the node and removes its lock properties. A pending deletion of the node is canceled.",
-        "DELETION_LOCK_ON_I18N": "Removes the deletion lock of the translation node."
+        "DELETION_LOCK_ON_I18N": "Removes the deletion lock of the translation node.",
+        "LOCK_OF_UNKNOWN_PROCESS": "Releases the lock of the workflow process which does not exist anymore, as the workflow does when it ends. The node is unlocked once no other lock remains.",
+        "LOCK_PROPERTIES_IN_LIVE": "Removes the properties j:lockTypes and j:locktoken from the live node, which is not locked."
       },
       "MarkForDeletionCheck": {
         "NO_ROOT_DELETION": "Removes the deletion mark of the node: its deletion is canceled.",

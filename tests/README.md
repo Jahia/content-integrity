@@ -34,7 +34,7 @@ The specs must run one at a time, never in parallel: a single scan can run at a 
 `demo/generate.sh` builds a demo of the module from the fixtures of the tests, to check the errors and their fixes by
 hand: the site `integrityDemo` with the faulty content of every check, three sites `integrityDemo*` for the home page and
 site group scenarios which exclude each other, the thresholds which make the threshold checks report, then four scans
-(the version storage, a node moved in live, the whole repository, the demo site). They cover 81 of the 83 error types:
+(the version storage, a node moved in live, the whole repository, the demo site). They cover 83 of the 85 error types:
 `HISTORY_WITHOUT_NODE_ID` and `INVALID_BACK_REF` can't be reproduced.
 
 ```bash

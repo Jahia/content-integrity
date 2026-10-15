@@ -206,6 +206,30 @@ This error is raised when a deletion lock is detected on a translation node, but
 
 To clear this lock, open the page composer in the language of the detected translation node, delete the piece of content, and undelete it. 
 
+#### Lock of a workflow which does not exist anymore
+
+`Error code: LOCK_OF_UNKNOWN_PROCESS`
+
+A workflow locks its nodes while it runs, and releases them when it ends: the lock type of a publication workflow is
+` publication-process-<id> :validation`, the one of the lock step of a workflow definition ` process-<id> :<type>`, `<id>`
+being the identifier of its process. A process removed without ending, for example from the tables of jBPM, leaves its
+locks: the node can't be edited anymore, and nothing tells that a workflow holds it, since the process doesn't exist.  
+This error is raised in the `default` workspace when the process of a lock type is unknown to the workflow service.
+
+The fix releases the lock of the process, as the workflow does when it ends: its lock type is removed, and the node is
+unlocked once no other lock remains.
+
+#### Lock properties in the live workspace
+
+`Error code: LOCK_PROPERTIES_IN_LIVE`
+
+A workflow publishes its nodes before it unlocks them. The first publication of a node clones it to the `live` workspace,
+with its properties: `j:lockTypes` and `j:locktoken` are copied, but not the JCR lock itself. The lock is then released in
+`default` only, and those properties stay in `live`, where the node is not locked.  
+This error is raised in the `live` workspace on a node which has `j:lockTypes` or `j:locktoken` without being locked.
+
+The fix removes those properties from the `live` node.
+
 ## MarkForDeletionCheck
 
 When deleting a piece of content from the UI, the node is not technically deleted from the `default` workspace, but marked for deletion. This results in adding some mixins on the node as well as on its sub-nodes.
