@@ -265,7 +265,8 @@
       "fixDoes": "Ce que fait la correction :"
     },
     "fixStatus": {
-      "fixedOrSkipped": "Corrigées et ignorées",
+      "fixed": "Corrigées",
+      "skipped": "Ignorées",
       "notFixed": "Non corrigées"
     }
   }

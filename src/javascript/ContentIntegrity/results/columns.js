@@ -17,9 +17,10 @@ export const COLUMNS = [
     {key: 'importError', display: false, filterable: true}
 ];
 
-// The fix status is a filter, not a column: the first cell of a row tells it. Its values are the errors which are fixed or
-// have no fix, and the ones left to fix.
+// The fix status is a filter, not a column: the last cell of a row tells it. Its values are the errors fixed, the ones on
+// which no fix has run, and the ones whose fix has run without fixing them. All of them are offered, in this order.
 export const FIX_STATUS_FILTER = 'fixStatus';
+export const FIX_STATUS_VALUES = ['fixed', 'skipped', 'notFixed'];
 
 export const FILTERABLE_COLUMNS = [...COLUMNS.filter(c => c.filterable).map(c => c.key), FIX_STATUS_FILTER];
 

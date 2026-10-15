@@ -34,7 +34,8 @@ public class GqlScanResults {
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final String FIX_STATUS = "fixStatus";
-    private static final String FIXED_OR_SKIPPED = "fixedOrSkipped";
+    private static final String FIXED = "fixed";
+    private static final String SKIPPED = "skipped";
     private static final String NOT_FIXED = "notFixed";
 
     private final List<ContentIntegrityError> filteredErrors;
@@ -326,11 +327,12 @@ public class GqlScanResults {
     }
 
     /*
-     * An error is not fixed when its fix has run without fixing it, as Fix all tells: the other ones are fixed, or skipped
-     * since no fix has run on them.
+     * As Fix all tells: an error is fixed, not fixed when its fix has run without fixing it, or skipped when no fix has run
+     * on it, for example because its check provides none.
      */
     private String getFixStatus(ContentIntegrityError error) {
-        return error.isFixFailed() && !error.isFixed() ? NOT_FIXED : FIXED_OR_SKIPPED;
+        if (error.isFixed()) return FIXED;
+        return error.isFixFailed() ? NOT_FIXED : SKIPPED;
     }
 
     private boolean columnValueMatches(ContentIntegrityError error, String column, String value) {

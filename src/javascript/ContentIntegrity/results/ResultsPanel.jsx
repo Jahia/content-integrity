@@ -23,7 +23,7 @@ import {
 import {Card} from '../common/Card';
 import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST, GET_SCAN_RESULTS_LOGS} from '../ContentIntegrity.gql';
 import {ScanLogs} from '../scan/ScanLogs';
-import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, FIX_STATUS_FILTER, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
+import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, FIX_STATUS_FILTER, FIX_STATUS_VALUES, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
 import {NodeErrorsPanel} from './NodeErrorsPanel';
 import {FixStatus} from './FixStatus';
 import {FixAllAction} from './FixAllAction';
@@ -65,8 +65,11 @@ const FilterDropdown = ({column, values, active, onChange}) => {
         return column === FIX_STATUS_FILTER ? t(`label.fixStatus.${name}`) : name;
     };
 
-    // A value which matches no error with the other filters is not offered
-    const options = (values || []).filter(v => v.count > 0).map(v => ({value: toOptionValue(v.name), label: `${labelOf(v.name)} (${v.count})`}));
+    // A value which matches no error with the other filters is not offered, except the fix statuses, which are all offered
+    const counted = column === FIX_STATUS_FILTER ?
+        FIX_STATUS_VALUES.map(name => ({name, count: (values || []).find(v => v.name === name)?.count || 0})) :
+        (values || []).filter(v => v.count > 0);
+    const options = counted.map(v => ({value: toOptionValue(v.name), label: `${labelOf(v.name)} (${v.count})`}));
     // Keep the active value selectable even when the other filters leave it no match.
     if (active !== undefined && !options.some(o => o.value === toOptionValue(active))) {
         options.push({value: toOptionValue(active), label: `${labelOf(active)} (0)`});

@@ -265,7 +265,8 @@
       "fixDoes": "What the fix does:"
     },
     "fixStatus": {
-      "fixedOrSkipped": "Fixed and skipped",
+      "fixed": "Fixed",
+      "skipped": "Skipped",
       "notFixed": "Not fixed"
     }
   }

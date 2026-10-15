@@ -237,19 +237,27 @@ describe('Results table', () => {
         getNodeErrorRows(LOCKED_TRANSLATION).should('have.length', 2);
     });
 
-    it('filters the errors fixed or skipped, the ones whose fix has not run yet being skipped', () => {
+    it('filters the errors fixed, skipped or not fixed, the three statuses being always offered', () => {
         clearFilters();
-        // No fix has failed: no error is told not fixed
+        // No fix has run yet: every error is skipped, and the other statuses are offered without error
         openDropdown('Fix status');
-        getMenuItem(/^Fixed and skipped \(\d+\)$/);
-        cy.get('li.moonstone-menuItem').filter(':contains("Not fixed")').should('not.exist');
+        cy.get('li.moonstone-menuItem').then(items => {
+            const labels = items.toArray().map(item => item.textContent.trim());
+            expect(labels[0]).to.equal('All');
+            expect(labels[1]).to.equal('Fixed (0)');
+            expect(labels[2]).to.match(/^Skipped \(\d+\)$/);
+            expect(labels[3]).to.equal('Not fixed (0)');
+        });
         closeMenu();
         openErrorDetails(INCONSISTENT_LOCK);
         getDetailsPanel().contains('button', /^Fix$/).click();
         getDetailsPanel().contains('Fixed').should('be.visible');
         closeDetailsPanel();
-        selectInDropdown('Fix status', /^Fixed and skipped \(\d+\)$/);
+        selectInDropdown('Fix status', 'Fixed (1)');
         getRow(INCONSISTENT_LOCK).should('exist');
+        getResultsTable().find(`tr[data-node-path="${MISSING_LANGUAGE}"]`).should('not.exist');
+        selectInDropdown('Fix status', /^Skipped \(\d+\)$/);
+        getResultsTable().find(`tr[data-node-path="${INCONSISTENT_LOCK}"]`).should('not.exist');
         getRow(MISSING_LANGUAGE).should('exist');
         runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});
     });

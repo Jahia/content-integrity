@@ -122,17 +122,17 @@ describe('Fix of the errors of a node together', () => {
         scan(ROOT, CHECKS).then(results => {
             const [width, height] = frameErrors(results);
             // No fix has run yet: the errors are skipped
-            fixStatus(results.resultsId).should('deep.equal', {fixedOrSkipped: 2});
+            fixStatus(results.resultsId).should('deep.equal', {skipped: 2});
             // Without a value, the fix of a missing width runs, and can't guess the value
             graphql('query($id: String, $ids: [String]!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errors: fixErrors(ids: $ids) { fixed fixFailed } } } }',
                 {id: results.resultsId, ids: [width.id]}).its('integrity.results.errors').should('deep.equal', [{fixed: false, fixFailed: true}]);
-            fixStatus(results.resultsId).should('deep.equal', {fixedOrSkipped: 1, notFixed: 1});
+            fixStatus(results.resultsId).should('deep.equal', {skipped: 1, notFixed: 1});
             graphql('query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: ["fixStatus;notFixed"]) { errors(offset: 0, pageSize: 10) { id } } } }',
                 {id: results.resultsId}).its('integrity.results.errors').should('deep.equal', [{id: width.id}]);
             storedFailures(results.resultsId).should('deep.equal', [width.id]);
             // Fixed since, the error is not failed anymore
             graphql(FIX_ERRORS, {id: results.resultsId, ids: [width.id, height.id], values: [['640'], ['480']]});
-            fixStatus(results.resultsId).should('deep.equal', {fixedOrSkipped: 2});
+            fixStatus(results.resultsId).should('deep.equal', {fixed: 2});
             storedFailures(results.resultsId).should('deep.equal', []);
         });
     });
