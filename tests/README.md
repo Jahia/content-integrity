@@ -29,6 +29,25 @@ JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root yarn e2e:local
 
 The specs must run one at a time, never in parallel: a single scan can run at a time on a server.
 
+## Generate the demo
+
+`demo/generate.sh` builds a demo of the module from the fixtures of the tests, to check the errors and their fixes by
+hand: the site `integrityDemo` with the faulty content of every check, three sites `integrityDemo*` for the home page and
+site group scenarios which exclude each other, the thresholds which make the threshold checks report, then four scans
+(the version storage, a node moved in live, the whole repository, the demo site). They cover 81 of the 83 error types:
+`HISTORY_WITHOUT_NODE_ID` and `INVALID_BACK_REF` can't be reproduced.
+
+```bash
+JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root demo/generate.sh
+```
+
+* It runs once, on a server without the demo: several fixtures fail when they are applied again to an existing site.
+* A fix changes the demo content, and the specs of the tests remove some fixture data shared with it, such as the node
+  types of `PropertyDefinitionsSanityCheck`. `demo/regenerate.sh` deletes the demo, its data outside the sites and every
+  stored scan report, then generates it again.
+* A redeploy of the module resets the thresholds, and removes the template of `TemplatesIndexationCheck`: generate the
+  demo again after a redeploy.
+
 ## How a long scan is simulated
 
 The tests of the execution of a scan need a scan which lasts long enough to be stopped, or to be running while another one
