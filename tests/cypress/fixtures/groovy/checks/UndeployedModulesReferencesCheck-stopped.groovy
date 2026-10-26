@@ -1,6 +1,7 @@
 // Fixtures of UndeployedModulesReferencesCheck, on the site SITEKEY, for the scenario SCENARIO
-// - STOP: the module sdl-generator-tools, a tool which no other module depends on, is installed but stopped, and the site
-//   references it in both workspaces: it is not available, so the site references a module which is not deployed
+// - STOP: the module jahia-dashboard-docs, installed on Jahia 8.1 and 8.2 and which no other module depends on, is
+//   stopped, and the site references it in both workspaces: it is not available, so the site references a module which
+//   is not deployed
 // - START: the module is started again
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils
@@ -8,7 +9,7 @@ import org.jahia.osgi.FrameworkService
 import org.jahia.services.content.JCRObservationManager
 import org.jahia.services.content.JCRSessionFactory
 
-final String MODULE = "sdl-generator-tools"
+final String MODULE = "jahia-dashboard-docs"
 final String SCENARIO = "SCENARIO"
 
 def bundle = FrameworkService.getBundleContext().getBundles().find { it.getSymbolicName() == MODULE }

@@ -27,7 +27,7 @@ describe('UndeployedModulesReferencesCheck', () => {
 describe('UndeployedModulesReferencesCheck on a module installed but not started', () => {
     const STOPPED_SITE = 'ciStoppedModuleCheck';
     const STOPPED_SITE_PATH = `/sites/${STOPPED_SITE}`;
-    const MODULE = 'sdl-generator-tools';
+    const MODULE = 'jahia-dashboard-docs';
     const scenario = (name: string) => runFixture('checks/UndeployedModulesReferencesCheck-stopped.groovy', {SITEKEY: STOPPED_SITE, SCENARIO: name});
     const installedModules = (): Cypress.Chainable<string[]> =>
         graphql(`{ jcr { nodeByPath(path: "${STOPPED_SITE_PATH}") { property(name: "j:installedModules") { values } } } }`).its('jcr.nodeByPath.property.values');

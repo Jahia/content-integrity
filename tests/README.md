@@ -24,6 +24,10 @@ yarn install
 JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root yarn e2e:local
 ```
 
+Set both `JAHIA_URL` and `SUPER_USER_PASSWORD`: without any of them, `@jahia/cypress` uses `http://localhost:8080` and
+the password `root1234`, and with only one of them, the other one is undefined. Every spec fails at its first request
+when the module is not deployed on the server.
+
 * `yarn e2e:checks` runs the specs of the checks only, `yarn e2e:ui` the specs of the administration page only.
 * `yarn e2e:debug` opens the Cypress UI.
 * `yarn lint` type-checks the specs.

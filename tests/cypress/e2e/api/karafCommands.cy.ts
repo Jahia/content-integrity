@@ -106,9 +106,9 @@ describe('Karaf shell commands', () => {
             karaf('jcr:integrity-fix 0').should('contain', 'Fixed the error id=0');
             karaf('jcr:integrity-fix 0').should('contain', 'The error (id=0) is already fixed');
             // The fixed error is flagged in the column Fixed, then left out with -ef. The table of the shell draws its
-            // columns with the box-drawing character │
+            // columns with the box-drawing character │ on Jahia 8.1, and with | on Jahia 8.2
             karaf('jcr:integrity-printTestResults').then(results => {
-                expect(results.split('\n').find(line => line.includes(firstUuid))).to.match(/│\s*X\s*│/);
+                expect(results.split('\n').find(line => line.includes(firstUuid))).to.match(/[│|]\s*X\s*[│|]/);
             });
             karaf('jcr:integrity-printTestResults -ef').should('not.contain', firstUuid);
         });
