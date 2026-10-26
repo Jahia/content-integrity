@@ -157,7 +157,8 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
         if (!integrityError.getErrorType().equals(NO_LIVE_NODE)) return false;
-        if (node.isNodeType(Constants.JMIX_AUTO_PUBLISH)) {
+        // The content of the modules is published when they are deployed: like an auto-published node, it is published again
+        if (node.isNodeType(Constants.JMIX_AUTO_PUBLISH) || StringUtils.startsWith(node.getPath(), MODULES_SUBTREE_PATH_PREFIX)) {
             final String uuid = node.getIdentifier();
             RepairUtils.runWithListenersDisabled(() -> {
                 if (node.hasProperty(PUBLISHED)) {

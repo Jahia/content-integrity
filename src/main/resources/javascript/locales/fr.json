@@ -190,7 +190,7 @@
         "INVALID_VALUE_CONSTRAINT": "Remplace la valeur invalide par la valeur saisie, ou par la valeur par défaut de la définition. Les autres valeurs d'une propriété multiple sont gardées."
       },
       "PublicationSanityDefaultCheck": {
-        "NO_LIVE_NODE": "Marque le nœud comme non publié. Un nœud publié automatiquement est publié à nouveau à la place."
+        "NO_LIVE_NODE": "Marque le nœud comme non publié. Un nœud publié automatiquement, ou le contenu d'un module, est publié à nouveau à la place."
       },
       "PublicationSanityLiveCheck": {
         "NO_DEFAULT_NODE": "Publie le nœud de l'espace live vers l'espace default, ce qui l'y restaure.",
@@ -209,7 +209,7 @@
         "GHOST_NODE_TYPE": "Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible."
       },
       "UndeployedModulesReferencesCheck": {
-        "UNDEPLOYED_MODULE_ON_SITE": "Retire le module des modules du site, dans les deux espaces. Rien ne change si le module est à nouveau déployé."
+        "UNDEPLOYED_MODULE_ON_SITE": "Retire le module des modules du site, dans les deux espaces. Rien ne change si le module est à nouveau disponible. Un module installé mais non démarré n'est pas retiré : démarrez-le."
       },
       "UserAccountSanityCheck": {
         "NOT_OWNER": "Accorde le rôle owner à l'utilisateur sur son compte."

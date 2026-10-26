@@ -69,12 +69,19 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
         final JCRSiteNode site = (JCRSiteNode) node;
         final String missingModule = (String) integrityError.getExtraInfo("module");
         final JahiaTemplateManagerService jahiaTemplateManagerService = BundleUtils.getOsgiService(JahiaTemplateManagerService.class, null);
+        // Available as the scan expects it: the error is gone
+        if (jahiaTemplateManagerService.getAvailableTemplatePackages().stream().map(JahiaTemplatesPackage::getId).anyMatch(missingModule::equals)) {
+            logger.info(String.format("The module %s has not been unreferenced from the site %s since it is now available on the server",
+                    missingModule, site.getSiteKey()));
+            return true;
+        }
+        // Installed but not available, such as a module which is not started: the site most likely needs it, it is not
+        // unreferenced, and the error stays until the module is started
         final Set<Bundle> bundles = jahiaTemplateManagerService.getModuleStates().keySet();
         final Collection<String> installedModuleIDs = CollectionUtils.collect(bundles, BundleUtils::getModuleId);
         if (installedModuleIDs.contains(missingModule)) {
-            logger.info(String.format("The module %s has not been unreferenced from the site %s since it is now installed on the server",
-                    missingModule, site.getSiteKey()));
-            return true;
+            throw new RepositoryException(String.format("The module %s is installed but not available, for example not started: start it, " +
+                    "or uninstall it to unreference it from the site %s", missingModule, site.getSiteKey()));
         }
         unreferenceModule(site, missingModule);
         // From the jcr-scripts fix: the error is reported in the default workspace only, but the site node is

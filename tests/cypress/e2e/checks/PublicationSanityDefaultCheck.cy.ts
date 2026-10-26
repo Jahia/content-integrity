@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoFix, fixFromTwoScans, runFixture, scan, ScanResults} from '../../support/integrity';
+import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoFix, fixAndVerify, fixFromTwoScans, graphql, runFixture, scan, ScanResults} from '../../support/integrity';
 
 const SITE = 'ciPublicationDefaultCheck';
 const ROOT = `/sites/${SITE}/contents/publication-default`;
@@ -55,6 +55,37 @@ describe('PublicationSanityDefaultCheck', () => {
         it('fixes NO_LIVE_NODE by removing the publication flag', () => {
             // Fixed from the first results, then from the second ones, where it is already fixed
             fixFromTwoScans(ROOT, CHECKS, 'EDIT', 'NO_LIVE_NODE', `${ROOT}/flagged-as-published`);
+        });
+    });
+});
+
+describe('PublicationSanityDefaultCheck on the content of a module', () => {
+    const MODULE_SITE = 'ciPublicationModules';
+    const nodeInLive = (path: string): Cypress.Chainable<boolean> =>
+        graphql('query($p: String!) { jcr(workspace: LIVE) { nodesByQuery(query: $p, queryLanguage: SQL2) { nodes { path } } } }',
+            {p: `select * from [jnt:contentFolder] where issamenode(['${path}'])`})
+            .then(data => data.jcr.nodesByQuery.nodes.length > 0);
+    let folder: string;
+
+    before(() => {
+        runFixture('checks/PublicationSanityDefaultCheck-modules.groovy', {SITEKEY: MODULE_SITE});
+        graphql(`{ jcr { nodesByQuery(query: "select * from [jnt:contentFolder] where localname() = 'ci-unpublished-${MODULE_SITE}' and isdescendantnode('/modules/templates-system')", queryLanguage: SQL2) { nodes { path } } } }`)
+            .then(data => {
+                folder = data.jcr.nodesByQuery.nodes[0].path;
+            });
+    });
+
+    after(() => runFixture('checks/PublicationSanityDefaultCheck-cleanup.groovy', {SITEKEY: MODULE_SITE}));
+
+    it('detects NO_LIVE_NODE on the content of a module which is not in live', () => {
+        cy.wrap(null).then(() => scan(folder, CHECKS).then(r => expectError(r, 'NO_LIVE_NODE', folder)));
+    });
+
+    it('fixes NO_LIVE_NODE on the content of a module by publishing it, as the deployment of the module does', () => {
+        cy.wrap(null).then(() => {
+            nodeInLive(folder).should('be.false');
+            fixAndVerify(folder, CHECKS, 'EDIT', 'NO_LIVE_NODE', folder);
+            nodeInLive(folder).should('be.true');
         });
     });
 });

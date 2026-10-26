@@ -190,7 +190,7 @@
         "INVALID_VALUE_CONSTRAINT": "Replaces the invalid value with the typed one, or with the default value of the definition. The other values of a multiple property are kept."
       },
       "PublicationSanityDefaultCheck": {
-        "NO_LIVE_NODE": "Marks the node as not published. A node published automatically is published again instead."
+        "NO_LIVE_NODE": "Marks the node as not published. A node published automatically, or the content of a module, is published again instead."
       },
       "PublicationSanityLiveCheck": {
         "NO_DEFAULT_NODE": "Publishes the node from the live workspace to the default workspace, which restores it there.",
@@ -209,7 +209,7 @@
         "GHOST_NODE_TYPE": "Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone."
       },
       "UndeployedModulesReferencesCheck": {
-        "UNDEPLOYED_MODULE_ON_SITE": "Removes the module from the modules of the site, in both workspaces. Nothing changes if the module is deployed again."
+        "UNDEPLOYED_MODULE_ON_SITE": "Removes the module from the modules of the site, in both workspaces. Nothing changes if the module is available again. A module installed but not started is not removed: start it."
       },
       "UserAccountSanityCheck": {
         "NOT_OWNER": "Grants the role owner to the user on its account."
