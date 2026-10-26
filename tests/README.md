@@ -7,7 +7,8 @@ End-to-end tests of the content-integrity module, run against a Jahia server whe
 * `cypress/e2e/api`: the GraphQL API: the catalog and the configuration of the checks, a scan and its parameters, the
   pages, filters and column values of its results, the execution of a scan (one at a time, and its stop), the fix of
   all the errors matching filters, the permission to fix the errors (in the API and in the administration screen), and
-  the access to the scan reports, which only the server administrators may download.
+  the access to the scan reports, which only the server administrators may download. `karafCommands.cy.ts` runs the
+  Karaf shell commands `jcr:integrity-*` through `shell/karafCommand.groovy`, which captures what they print.
 * `cypress/e2e/ui`: the administration page: the new scan dialog (its defaults, the excluded paths, the parameters sent,
   the configuration and the documentation of the checks), the scan in progress and its stop, the results table (its
   columns, filters, refresh, reports and link to the JCR browser), the fix of an error, the fix of all the filtered
@@ -29,12 +30,16 @@ JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root yarn e2e:local
 
 The specs must run one at a time, never in parallel: a single scan can run at a time on a server.
 
+The license of the server can limit the number of users logged in at once: the Jahia login page then answers
+"Authentication impossible as max number of concurrent users limit is reached". A spec which logs in other users than
+root logs them out after each test, so that their sessions do not hold the slots until they expire.
+
 ## Generate the demo
 
 `demo/generate.sh` builds a demo of the module from the fixtures of the tests, to check the errors and their fixes by
 hand: the site `integrityDemo` with the faulty content of every check, three sites `integrityDemo*` for the home page and
 site group scenarios which exclude each other, the thresholds which make the threshold checks report, then four scans
-(the version storage, a node moved in live, the whole repository, the demo site). They cover 83 of the 85 error types:
+(the version storage, a node moved in live, the whole repository, the demo site). They cover 84 of the 86 error types:
 `HISTORY_WITHOUT_NODE_ID` and `INVALID_BACK_REF` can't be reproduced.
 
 ```bash
@@ -47,6 +52,16 @@ JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root demo/generate.sh
   stored scan report, then generates it again.
 * A redeploy of the module resets the thresholds, and removes the template of `TemplatesIndexationCheck`: generate the
   demo again after a redeploy.
+
+`demo/screenshots.sh` then takes the screenshots of the documentation of the checks, with the details of the first
+displayed error open: `docs/img/checks/<check>.png`, the results of the demo scan with the most error types of the check,
+filtered on it, and `docs/img/checks/<check>/<error type>.png`, the results of the demo scan with the most errors of the
+type, filtered on the check and the type. When `pngquant` is installed, the screenshots are reduced to 256 colors, at a quarter of
+their size.
+
+```bash
+demo/screenshots.sh
+```
 
 ## How a long scan is simulated
 
@@ -75,7 +90,7 @@ The Jahia API refuses to create inconsistent content, so the scripts write below
 
 ## Coverage
 
-✅ detected, 🔧 fixed and verified by a new scan, ➖ the check provides no fix, ❌ the fix of the check does not fix it,
+✅ detected, 🔧 fixed and verified by a new scan, ➖ the check provides no fix,
 ⏸ not reproducible, so the test is skipped.
 
 | Check                            | Error type                                                                                                                     | Detection | Fix |
@@ -90,19 +105,19 @@ The Jahia API refuses to create inconsistent content, so the scripts write below
 | ChildNodeDefinitionsSanityCheck  | NOT_ALLOWED_BY_PARENT_DEF                                                                                                      |    ✅     | 🔧  |
 | FlatStorageCheck                 | TOO_MANY_CHILD_NODES                                                                                                           |    ✅     | ➖  |
 | HomePageDeclarationCheck         | MULTIPLE_HOMES, FALLBACK_ON_NAME, NO_HOME                                                                                      |    ✅     | 🔧  |
-|                                  | FALLBACK_ON_NAME_WRONG_TYPE                                                                                                    |    ✅     | ❌  |
+|                                  | FALLBACK_ON_NAME_WRONG_TYPE                                                                                                    |    ✅     | ➖  |
 | JCRLanguagePropertyCheck         | MISSING_JCR_LANGUAGE_PROP, INCONSISTENT_JCR_LANGUAGE_PROP                                                                      |    ✅     | 🔧  |
 | LivePropertiesCheck              | LIVE_PROPERTIES, EMPTY_LIVE_PROPERTIES                                                                                         |    ✅     | 🔧  |
-| LockSanityCheck                  | INCONSISTENT_LOCK, DELETION_LOCK_ON_I18N                                                                                       |    ✅     | 🔧  |
+| LockSanityCheck                  | INCONSISTENT_LOCK, DELETION_LOCK_ON_I18N, LOCK_OF_UNKNOWN_PROCESS, LOCK_PROPERTIES_IN_LIVE                                     |    ✅     | 🔧  |
 | MarkForDeletionCheck             | NO_ROOT_DELETION, DELETION_MARK_IN_LIVE, DELETION_MARK_UNDER_USERS                                                             |    ✅     | 🔧  |
 | NodeNameInfoSanityCheck          | INVALID_FULLPATH, MISSING_NODENAME, INVALID_NODENAME                                                                           |    ✅     | 🔧  |
-| PagesSanityCheck                 | MISSING_TEMPLATE (with a chosen template)                                                                                      |    ✅     | 🔧  |
+| PagesSanityCheck                 | MISSING_TEMPLATE on a page and on the default template of a site (with a chosen template)                                      |    ✅     | 🔧  |
 | PropertyDefinitionsSanityCheck   | EMPTY_MANDATORY_PROPERTY and INVALID_VALUE_CONSTRAINT (with a chosen or typed value), UNDECLARED_PROPERTY                      |    ✅     | 🔧  |
 |                                  | INVALID_VALUE_TYPE, INVALID_MULTI_VALUE_STATUS, INVALID_NODE_VALIDATION                                                        |    ✅     | ➖  |
 | PublicationSanityDefaultCheck    | NO_LIVE_NODE                                                                                                                   |    ✅     | 🔧  |
-|                                  | DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP, PATH_CONFLICT, DIFFERENT_PT                                                       |    ✅     | ❌  |
+|                                  | DIFFERENT_PATH, DIFFERENT_PATH_POTENTIAL_FP, PATH_CONFLICT, DIFFERENT_PT                                                       |    ✅     | ➖  |
 | PublicationSanityLiveCheck       | NO_DEFAULT_NODE, UNEXPECTED_UGC, INCONSISTENT_UGC                                                                              |    ✅     | 🔧  |
-|                                  | MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL, DIFFERENT_MIXINS                                                  |    ✅     | ❌  |
+|                                  | MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL, DIFFERENT_MIXINS                                                  |    ✅     | ➖  |
 | ReferencesSanityCheck            | BROKEN_REF                                                                                                                     |    ✅     | 🔧  |
 |                                  | BROKEN_REF_TO_VN                                                                                                               |    ✅     | ➖  |
 |                                  | INVALID_BACK_REF                                                                                                               |    ⏸     |     |
