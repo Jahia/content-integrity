@@ -69,9 +69,12 @@ export const FixValuesForm = ({errorId, definition, values, message, isDisabled,
 
     const renderValue = (value, index) => {
         const label = definition.multiple ? t('label.fixValues.valueAt', {index: index + 1}) : definition.name;
+        // Moonstone 1.6 (Jahia 8.1.5) does not find the label of a value among grouped options: it is given
+        const selectedIndex = choices && value ? choices.indexOf(value) : -1;
         const editor = choices ? (
             <Dropdown data={getDropdownData(definition, choices)}
                       value={value || undefined}
+                      label={selectedIndex < 0 ? undefined : definition.choiceLabels?.[selectedIndex] || value}
                       placeholder={t('label.fixValues.choose')}
                       variant="outlined"
                       hasSearch={choices.length > 10}
