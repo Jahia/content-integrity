@@ -43,6 +43,10 @@ describe('Permission to fix the errors', () => {
         });
     });
 
+    // The license of the server limits the number of users logged in at once: the session of a user is closed once its
+    // test is over, instead of being kept until it expires
+    afterEach(() => cy.logout());
+
     after(() => {
         runFixture('permissions/fixPermission-cleanup.groovy', {SITEKEY: SITE});
         deleteTestSite(SITE);

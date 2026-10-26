@@ -41,7 +41,19 @@ describe('Integrity checks', () => {
     });
 
     describe('Configuration', () => {
-        after(() => resetCheckConfiguration('FlatStorageCheck'));
+        after(() => {
+            resetCheckConfiguration('FlatStorageCheck');
+            resetCheckConfiguration('ReferencesSanityCheck');
+        });
+
+        it('resets a single configuration to its default value, and keeps the other ones', () => {
+            configureCheck('ReferencesSanityCheck', 'validate-refs', 'false');
+            configureCheck('ReferencesSanityCheck', 'validate-back-refs', 'true');
+            graphql('{ integrity: contentIntegrity { check: integrityCheckById(id: "ReferencesSanityCheck") { resetConfiguration(name: "validate-refs") } } }')
+                .its('integrity.check.resetConfiguration').should('be.true');
+            readConfiguration('ReferencesSanityCheck', 'validate-refs').then(conf => expect(conf.value).to.equal(conf.defaultValue));
+            readConfiguration('ReferencesSanityCheck', 'validate-back-refs').then(conf => expect(conf.value).to.equal('true'));
+        });
 
         it('changes a configuration, then resets it to its default value', () => {
             configureCheck('FlatStorageCheck', 'threshold', '42');

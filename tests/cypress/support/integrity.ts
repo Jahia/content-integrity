@@ -238,12 +238,21 @@ export const registerSlowCheck = (delayMs = 200): void => runFixture('scan/slowC
 
 export const unregisterSlowCheck = (): void => runFixture('scan/slowCheck-cleanup.groovy');
 
+// The API returns at most 100 errors per page
+const ERRORS_PAGE_SIZE = 100;
+
 /**
- * Reads all the errors of scan results.
+ * Reads all the errors of scan results, page after page.
  */
-export const getErrors = (resultsId: string): Cypress.Chainable<IntegrityError[]> =>
-    graphql(`query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errorCount errors(offset: 0, pageSize: 10000) { ${ERROR_FIELDS} } } } }`, {id: resultsId})
-        .then(data => data.integrity.results.errors as IntegrityError[]);
+export const getErrors = (resultsId: string, offset = 0, read: IntegrityError[] = []): Cypress.Chainable<IntegrityError[]> =>
+    graphql(`query($id: String, $offset: Int!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errorCount errors(offset: $offset, pageSize: ${ERRORS_PAGE_SIZE}) { ${ERROR_FIELDS} } } } }`,
+        {id: resultsId, offset})
+        .then(data => {
+            const errors = [...read, ...data.integrity.results.errors as IntegrityError[]];
+            return errors.length < data.integrity.results.errorCount && errors.length > read.length ?
+                getErrors(resultsId, errors.length, errors) :
+                cy.wrap(errors, {log: false});
+        });
 
 /**
  * Scans the subtree of a node with the given checks, waits for the end of the scan and returns its errors.
@@ -313,14 +322,16 @@ export const expectExtraInfo = (error: IntegrityError, label: string, value?: st
  * an administrator, for the errors fixed with values. A rejected value is returned as a message, not as a test failure.
  */
 export const fixError = (resultsId: string, errorId: string, values?: string[]): Cypress.Chainable<FixResult> =>
-    request('query($resultsId: String, $id: String!, $values: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id, values: $values) { fixed } } } }',
+    request('query($resultsId: String, $id: String!, $values: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id, values: $values) { fixed fixFailureMessage } } } }',
         {resultsId, id: errorId, values})
         .then(response => {
             if (response.body.errors?.length) {
                 return {fixed: false, message: response.body.errors.map((e: { message: string }) => e.message).join(', ')};
             }
 
-            return {fixed: response.body.data.integrity.results.error.fixed === true};
+            // The reason why the fix of its check has failed, when it tells one
+            const error = response.body.data.integrity.results.error;
+            return {fixed: error.fixed === true, message: error.fixFailureMessage ?? undefined};
         });
 
 /**

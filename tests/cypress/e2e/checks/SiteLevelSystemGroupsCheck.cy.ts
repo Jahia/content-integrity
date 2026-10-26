@@ -12,11 +12,24 @@ const membersOf = (groupPath: string): Cypress.Chainable<string[]> =>
     graphql('query($q: String!) { jcr { nodesByQuery(query: $q, queryLanguage: SQL2) { nodes { name } } } }',
         {q: `select * from [jnt:member] where isdescendantnode(['${groupPath}'])`})
         .then(data => data.jcr.nodesByQuery.nodes.map((n: { name: string }) => n.name).sort());
+// The paths of the entries which grant a role to the group site-privileged in the site
+const sitePrivilegedGrants = (): Cypress.Chainable<string[]> =>
+    graphql('query($q: String!) { jcr { nodesByQuery(query: $q, queryLanguage: SQL2) { nodes { path } } } }',
+        {q: `select * from [jnt:ace] where isdescendantnode(['${SITE_PATH}']) and localname() = 'GRANT_g_site-privileged'`})
+        .then(data => data.jcr.nodesByQuery.nodes.map((n: { path: string }) => n.path).sort());
 const roles = (acePath: string): Cypress.Chainable<string[]> =>
     graphql(`{ jcr { nodeByPath(path: "${acePath}") { property(name: "j:roles") { values } } } }`).its('jcr.nodeByPath.property.values');
 
 describe('SiteLevelSystemGroupsCheck', () => {
-    before(() => createTestSite(SITE));
+    // The entries written with the site: on the site node, and on its folders users and groups when Jahia creates them
+    let grantsAtCreation: string[];
+
+    before(() => {
+        createTestSite(SITE);
+        sitePrivilegedGrants().then(grants => {
+            grantsAtCreation = grants;
+        });
+    });
 
     after(() => {
         scenario('RESTORE');
@@ -53,11 +66,18 @@ describe('SiteLevelSystemGroupsCheck', () => {
         membersOf(SITE_PRIVILEGED).then(members => {
             expect(members, 'members of the group created with the site').to.not.be.empty;
             scenario('GROUP_DOES_NOT_EXIST');
+            // Deleting the group leaves its entries: they are deleted too, so that the fix has to grant the role again
+            grantsAtCreation.forEach(ace => graphql('mutation($p: String!) { jcr { deleteNode(pathOrId: $p) } }', {p: ace}));
+            sitePrivilegedGrants().should('be.empty');
             fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'GROUP_DOES_NOT_EXIST', SITE_PATH);
             nodeExists(SITE_PRIVILEGED).should('be.true');
             membersOf(SITE_PRIVILEGED).should('deep.equal', members);
         });
         scan(SITE_PATH, CHECKS).then(results => expect(results.errors.filter(e => e.nodePath === SITE_PATH), 'errors on the site').to.have.length(0));
-        ['', '/users', '/groups'].forEach(folder => roles(`${SITE_PATH}${folder}/j:acl/GRANT_g_site-privileged`).should('include', 'privileged'));
+        cy.wrap(null).then(() => {
+            expect(grantsAtCreation, 'entries of the group written with the site').to.include(`${SITE_PATH}/j:acl/GRANT_g_site-privileged`);
+            sitePrivilegedGrants().should('include.members', grantsAtCreation);
+            grantsAtCreation.forEach(ace => roles(ace).should('include', 'privileged'));
+        });
     });
 });
