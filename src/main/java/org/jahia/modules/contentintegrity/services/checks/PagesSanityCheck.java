@@ -59,18 +59,21 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
 
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
+        final ContentIntegrityErrorList errors = createEmptyErrorsList();
         final String templateName;
+        final boolean isValid;
         if (JCRUtils.runJcrCallBack(JAHIANT_VIRTUALSITE, node::isNodeType)) {
             clearCaches();
             templateName = getTemplateName(node, SITE_DEFAULT_TEMPLATE_NAME);
             if (StringUtils.isBlank(templateName))
                 return null;
+            isValid = isDefaultTemplateValid(templateName, node, errors);
         } else {
             templateName = getTemplateName(node, TEMPLATE_NAME);
+            isValid = isTemplateValid(templateName, node, errors);
         }
 
-        final ContentIntegrityErrorList errors = createEmptyErrorsList();
-        if (!isTemplateValid(templateName, node, errors)) {
+        if (!isValid) {
             return errors.addError(createError(node, MISSING_TEMPLATE)
                     .addExtraInfo("template-name", templateName));
         }
@@ -107,6 +110,20 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
         }
         missingTemplates.add(templateName);
         return false;
+    }
+
+    /*
+     * The default template of the site is not the one the site node renders with: it has to be one of the templates the
+     * pages of the site can use, the ones which the fix offers. When they can't be listed, the template is not reported.
+     */
+    private boolean isDefaultTemplateValid(String templateName, JCRNodeWrapper site, ContentIntegrityErrorList errors) {
+        try {
+            final Map<String, String> available = getAvailableTemplates(site, SITE_DEFAULT_TEMPLATE_NAME);
+            return available.isEmpty() || available.containsKey(templateName);
+        } catch (RepositoryException e) {
+            errors.addError(createFrameworkError(site, e));
+            return true;
+        }
     }
 
     private void clearCaches() {
@@ -199,7 +216,7 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
     }
 
     private String getTemplateName(JCRNodeWrapper node, String propertyName) {
-        if (!JCRUtils.runJcrCallBack(TEMPLATE_NAME, node::hasProperty)) {
+        if (!JCRUtils.runJcrCallBack(propertyName, node::hasProperty)) {
             // For the default template of a site, the property is not mandatory
             // For a page, the property is mandatory, and the error will be reported by PropertyDefinitionsSanityCheck
             return null;
