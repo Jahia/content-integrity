@@ -69,7 +69,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         final Map<Boolean, List<String>> checkIDs = checks.stream().collect(Collectors.partitioningBy(id -> id.trim().charAt(0) != SKIP_MARKER));
         final List<String> whiteList = checkIDs.get(true);
         final List<String> blackList = checkIDs.get(false).stream()
-                .map(id -> id.trim().substring(1)).filter(StringUtils::isBlank).collect(Collectors.toList());
+                .map(id -> id.trim().substring(1)).filter(StringUtils::isNotBlank).collect(Collectors.toList());
 
         return Utils.getChecksToExecute(service, whiteList, blackList, CONSOLE);
     }
