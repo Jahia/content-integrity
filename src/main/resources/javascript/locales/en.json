@@ -198,7 +198,8 @@
         "INCONSISTENT_UGC": "Sets j:originWS to default when the node exists in the default workspace, else to live."
       },
       "ReferencesSanityCheck": {
-        "BROKEN_REF": "Removes the reference to the missing node: the missing value of a multiple property, else the whole property."
+        "BROKEN_REF": "Removes the reference to the missing node: the missing value of a multiple property, else the whole property.",
+        "BROKEN_REF_IN_FIELD": "Removes the broken link from the text, keeping its text, as when it is removed in CKEditor, and deletes its reference node."
       },
       "SiteLevelSystemGroupsCheck": {
         "GROUP_DOES_NOT_EXIST": "Creates the missing group again, as Jahia does for a new site: site-privileged is a member of privileged, and its members are the users and groups granted a privileged role in the site.",

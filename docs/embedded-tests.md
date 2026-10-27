@@ -1056,6 +1056,20 @@ If the virtual node is gone forever, then the property should be fixed the same 
 
 **Fix**: no automatic fix: the provider of the virtual node might be temporarily unavailable.
 
+#### Broken links of a text
+
+`Error code: BROKEN_REF_IN_FIELD`
+
+![BROKEN_REF_IN_FIELD in the results of a scan](img/checks/ReferencesSanityCheck/BROKEN_REF_IN_FIELD.png)
+
+**Description**: a text links to a node with a placeholder `##ref:linkN##`, but no node is referenced for this link. When a link of a text points to a node, Jahia stores the identifier of this node in a `jnt:referenceInField` subnode of the node holding the text, named `j:referenceInField_<field>_N`, whose `j:fieldName` is the name of the property (followed by `_<language>` for an internationalized property), and the text refers to it with `##ref:linkN##`. The error is raised when this subnode is missing, or has no `j:reference`, mostly once the linked node has been deleted. The details give the name of the property (`property-name`) and the placeholder (`placeholder`). A link of a translation node is reported on the node it belongs to, in the language of the translation node.
+
+Such a link is rendered as `#`, and each rendering of the text logs a warning `Cannot find referenced item`. When the `jnt:referenceInField` subnode references a node which is missing, `BROKEN_REF` is raised on this subnode instead.
+
+The link should be edited to point to an existing node, or removed from the text.
+
+**Fix**: removes the link from the text, as when it is removed in CKEditor: the element holding the placeholder is unwrapped, its content being kept (the text of a link), or removed when it has no content (an image). Its `jnt:referenceInField` subnode without `j:reference` is deleted. The other links of the text are kept. The text is updated at the JCR level, with the listeners disabled: the change is not published, fix the error in each workspace. To link to another node instead, edit the text.
+
 #### Invalid back references
 
 `Error code: INVALID_BACK_REF`

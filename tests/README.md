@@ -43,7 +43,7 @@ root logs them out after each test, so that their sessions do not hold the slots
 `demo/generate.sh` builds a demo of the module from the fixtures of the tests, to check the errors and their fixes by
 hand: the site `integrityDemo` with the faulty content of every check, three sites `integrityDemo*` for the home page and
 site group scenarios which exclude each other, the thresholds which make the threshold checks report, then four scans
-(the version storage, a node moved in live, the whole repository, the demo site). They cover 84 of the 86 error types:
+(the version storage, a node moved in live, the whole repository, the demo site). They cover 85 of the 87 error types:
 `HISTORY_WITHOUT_NODE_ID` and `INVALID_BACK_REF` can't be reproduced.
 
 ```bash

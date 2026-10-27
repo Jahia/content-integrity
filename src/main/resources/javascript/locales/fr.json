@@ -198,7 +198,8 @@
         "INCONSISTENT_UGC": "Définit j:originWS à default si le nœud existe dans l'espace default, sinon à live."
       },
       "ReferencesSanityCheck": {
-        "BROKEN_REF": "Supprime la référence au nœud manquant : la valeur manquante d'une propriété multiple, sinon toute la propriété."
+        "BROKEN_REF": "Supprime la référence au nœud manquant : la valeur manquante d'une propriété multiple, sinon toute la propriété.",
+        "BROKEN_REF_IN_FIELD": "Retire le lien cassé du texte, en gardant son texte, comme lorsqu'il est retiré dans CKEditor, et supprime son nœud de référence."
       },
       "SiteLevelSystemGroupsCheck": {
         "GROUP_DOES_NOT_EXIST": "Crée à nouveau le groupe manquant, comme Jahia le fait pour un nouveau site : site-privileged est membre de privileged, et ses membres sont les utilisateurs et les groupes qui ont un rôle privilégié dans le site.",

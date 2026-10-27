@@ -87,7 +87,8 @@ public class StaticInternalLinksCheck extends AbstractContentIntegrityCheck impl
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         final PropertyIterator properties;
         try {
-            properties = node.getProperties();
+            // Read from the real node, to check the stored values: the interceptors would expand the ##placeholders## of the texts
+            properties = node.getRealNode().getProperties();
         } catch (RepositoryException e) {
             return createSingleError(createFrameworkError(node, e));
         }
