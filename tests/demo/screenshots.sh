@@ -7,6 +7,8 @@
 # JAHIA_URL (default http://localhost:8080) and SUPER_USER_PASSWORD are the ones of the Cypress tests. The arguments are
 # passed to Cypress, for example to take only some screenshots, from some scans (see checkScreenshots.cy.ts):
 #   demo/screenshots.sh --env RESULTS=<results id>,CHECKS=ReferencesSanityCheck,ERROR_TYPES=BROKEN_REF_IN_FIELD
+# Cypress splits --env on the commas: several values of a variable are passed as JSON, for example
+#   demo/screenshots.sh --env '{"RESULTS":"<results id>,<results id>"}'
 DEMO=$(cd "$(dirname "$0")" && pwd)
 TESTS=$(cd "$DEMO/.." && pwd)
 DOCS=$(cd "$TESTS/../docs" && pwd)/img/checks

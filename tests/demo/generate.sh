@@ -7,6 +7,8 @@
 # generate the demo again, run regenerate.sh. Needs the module deployed and `yarn install` run in tests/.
 #
 # JAHIA_URL (default http://localhost:8080) and SUPER_USER_PASSWORD (default root) are the ones of the Cypress tests.
+# EXCLUDED_PATHS, a comma-separated list of paths, are left out of the scans, for example the sites of a server which holds
+# other content than the demo.
 TESTS=$(cd "$(dirname "$0")/.." && pwd)
 BASE=${JAHIA_URL:-http://localhost:8080}
 AUTH=root:${SUPER_USER_PASSWORD:-root}
@@ -68,7 +70,7 @@ conf WorkspaceSpecificDefinitionsCheck ws-live-specific-props j:liveProperties
 # Every check runs, the ones disabled by default included
 checks=$(G '{"query":"{ contentIntegrity { integrityChecks { id } } }"}' | python3 -c 'import json,sys;print(json.dumps([c["id"] for c in json.load(sys.stdin)["data"]["contentIntegrity"]["integrityChecks"]]))')
 scan() { # $1 root node, $2 workspace
-  q=$(python3 -c "import json,sys;print(json.dumps({'query':'query(\$c:[String], \$s:String){ contentIntegrity { integrityScan { scan(workspace: %s, startNode: \$s, excludedPaths: [\"/sites/systemsite/files/content-integrity-reports\"], checksToRun: \$c) } } }' % sys.argv[2],'variables':{'c':$checks,'s':sys.argv[1]}}))" "$1" "$2")
+  q=$(python3 -c "import json,os,sys;print(json.dumps({'query':'query(\$c:[String], \$s:String, \$x:[String]){ contentIntegrity { integrityScan { scan(workspace: %s, startNode: \$s, excludedPaths: \$x, checksToRun: \$c) } } }' % sys.argv[2],'variables':{'c':$checks,'s':sys.argv[1],'x':['/sites/systemsite/files/content-integrity-reports'] + [p for p in os.environ.get('EXCLUDED_PATHS', '').split(',') if p]}}))" "$1" "$2")
   id=$(G "$q" | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["contentIntegrity"]["integrityScan"]["scan"])')
   for _ in $(seq 1 1800); do s=$(G "{\"query\":\"{ contentIntegrity { integrityScan(id: \\\"$id\\\") { status resultsID } } }\"}"); echo "$s" | grep -q '"running"' || break; sleep 2; done
   echo "scan $1 $2 -> $s"

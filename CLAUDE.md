@@ -47,9 +47,25 @@ on the command line (a hook blocks commands which contain a password).
    the other scan reports.
 
 **All the screenshots**: `demo/regenerate.sh` (or `demo/generate.sh` on a server without the demo), then
-`demo/screenshots.sh` without arguments. **Only on a disposable Jahia**: `regenerate.sh` deletes EVERY stored scan
-report, the fixtures create users, sites, mount points and node types, and the screenshots are taken from all the
-stored scans. A redeploy of the module resets the check thresholds: generate the demo again after a redeploy.
+`demo/screenshots.sh` without arguments, on a disposable Jahia: `regenerate.sh` deletes EVERY stored scan report, the
+fixtures create users, sites, mount points and node types, and the screenshots are taken from all the stored scans. A
+redeploy of the module, or a restart, resets the check thresholds: generate the demo again after it.
+
+On a server holding other content, when asked to:
+
+- Run `demo/generate.sh`, never `regenerate.sh`, with `EXCLUDED_PATHS` set to the other sites (comma-separated).
+- Its scan of `/jcr:system/jcr:versionStorage` covers all the version histories of the server: on a real dataset, it
+  holds hundreds of thousands of errors, and reading them can make the server run out of memory. Delete its results with
+  `deleteScanResults` (it does not read them) and scan `/jcr:system/jcr:versionStorage/0c/1e/57` instead, where the
+  fixtures of `VersionSanityCheck` are.
+- Take the screenshots from the demo scans only: `demo/screenshots.sh --env '{"RESULTS":"<id>,<id>,..."}'` (a list is
+  passed as JSON: Cypress splits `--env` on the commas).
+- Before keeping an image, check that the errors of its check / type, in the scan it is taken from, are demo data
+  (`integrityDemo*`, `ci-*`, `/modules`, the fixture histories) or generic Jahia nodes, and look at the images whose
+  scan holds other errors: an image which shows a site, a group, a user or a principal of the server keeps its
+  committed version.
+- Clean up afterwards: the `*-cleanup.groovy` fixtures with `SITEKEY=integrityDemo`, `vfsMount-cleanup.groovy`, the
+  four `integrityDemo*` sites, and the demo scans with `deleteScanResults`.
 
 Check the diff of `docs/img/checks`: only the expected images are added or changed. Commit them with the change of the
 check.
