@@ -13,10 +13,11 @@ const extension = name => {
 
 // Only the reports uploaded to the JCR can be downloaded from the browser.
 // The links sit next to the scan selector, which already names the scan, so they show only the format.
-export const ReportLinks = ({reports}) => {
+// The action, such as the deletion of the results, is displayed after the links, the same way.
+export const ReportLinks = ({reports, action}) => {
     const {t} = useTranslation('content-integrity');
     const files = (reports || []).filter(r => r.location === 'JCR' && r.uri);
-    if (files.length === 0) {
+    if (files.length === 0 && !action) {
         return null;
     }
 
@@ -39,6 +40,7 @@ export const ReportLinks = ({reports}) => {
                         </a>
                     </li>
                 ))}
+                {action && <li>{action}</li>}
             </ul>
         </div>
     );
@@ -49,5 +51,6 @@ ReportLinks.propTypes = {
         name: PropTypes.string,
         location: PropTypes.string,
         uri: PropTypes.string
-    }))
+    })),
+    action: PropTypes.node
 };

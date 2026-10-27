@@ -109,6 +109,7 @@ export const STOP_SCAN = gql`
 export const GET_SCAN_RESULTS_LIST = gql`
     query ContentIntegrityScanResultsList {
         integrity: contentIntegrity {
+            canDeleteResults
             scanResults: scanResultsSummaries {
                 id
                 startDate
@@ -117,6 +118,14 @@ export const GET_SCAN_RESULTS_LIST = gql`
                 errorCount
                 importErrorCount
             }
+        }
+    }
+`;
+
+export const DELETE_SCAN_RESULTS = gql`
+    query ContentIntegrityDeleteScanResults($id: String!) {
+        integrity: contentIntegrity {
+            deleted: deleteScanResults(id: $id)
         }
     }
 `;

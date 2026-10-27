@@ -95,6 +95,16 @@ public interface ContentIntegrityService {
     ContentIntegrityResults getTestResults(String testID);
 
     /**
+     * Deletes the stored results with this identifier: their errors, their log, and their CSV and XLSX reports. Only the
+     * users who may read the reports, the server administrators, may delete them.
+     *
+     * @return false if no results readable by the current user have this identifier
+     * @throws IllegalStateException if the scan of the results is running
+     * @throws javax.jcr.AccessDeniedException if the current user may not delete them
+     */
+    boolean deleteResults(String testID) throws RepositoryException;
+
+    /**
      * @return the log of the scan of the stored results with this identifier, as stored in the JCR, or null
      */
     List<String> getExecutionLog(String testID);

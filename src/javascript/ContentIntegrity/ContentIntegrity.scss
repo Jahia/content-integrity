@@ -275,6 +275,16 @@
     }
 }
 
+// An action of the reports, such as their deletion, displayed as their links
+.reportAction {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-danger);
+    font: inherit;
+    cursor: pointer;
+}
+
 .toolbar {
     display: flex;
     flex-wrap: wrap;

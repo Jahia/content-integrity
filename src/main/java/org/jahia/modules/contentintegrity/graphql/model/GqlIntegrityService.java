@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
+import graphql.ErrorType;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
@@ -8,7 +9,14 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.DataFetchingException;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.jcr.AccessDeniedException;
+import javax.jcr.RepositoryException;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -20,6 +28,8 @@ import org.osgi.service.component.annotations.Reference;
 
 @Component(service = GqlIntegrityService.class, immediate = true)
 public class GqlIntegrityService {
+
+    private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityService.class);
 
     @Reference
     private ContentIntegrityService service;
@@ -45,6 +55,13 @@ public class GqlIntegrityService {
     @GraphQLDescription("True if the current user may fix the errors, with the permission adminContentIntegrityFix")
     public boolean canFixErrors() {
         return Utils.canFixErrors();
+    }
+
+    @GraphQLField
+    @GraphQLName("canDeleteResults")
+    @GraphQLDescription("True if the current user may delete the results of the scans, with the permission adminContentIntegrityDelete")
+    public boolean canDeleteResults() {
+        return Utils.canDeleteResults();
     }
 
     @GraphQLField
@@ -108,6 +125,27 @@ public class GqlIntegrityService {
             "The log of a running scan is the one of its last update, at most a few seconds old")
     public List<String> getScanResultsLogs(@GraphQLName("id") @GraphQLNonNull String id) {
         return service.getExecutionLog(id);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Deletes the stored results of a scan: its errors, its log, and its CSV and XLSX reports. Returns false if no results " +
+            "have this identifier. The results of a running scan are not deleted. Requires the permission adminContentIntegrityDelete, and " +
+            "the access to the reports, which only the server administrators read")
+    public boolean deleteScanResults(@GraphQLName("id") @GraphQLNonNull String id) {
+        if (!Utils.canDeleteResults()) {
+            throw new BaseGqlClientException("The current user is not allowed to delete the results: the permission " + Utils.DELETE_PERMISSION
+                    + " is required", ErrorType.DataFetchingException);
+        }
+        try {
+            return service.deleteResults(id);
+        } catch (IllegalStateException e) {
+            throw new BaseGqlClientException(e.getMessage(), ErrorType.DataFetchingException);
+        } catch (AccessDeniedException e) {
+            throw new BaseGqlClientException("The current user is not allowed to delete the results " + id, ErrorType.DataFetchingException);
+        } catch (RepositoryException e) {
+            logger.error("Impossible to delete the results " + id, e);
+            throw new DataFetchingException(e);
+        }
     }
 
     @GraphQLField

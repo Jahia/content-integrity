@@ -66,6 +66,7 @@ public final class Utils {
     private static final List<Report> reportGenerators = Arrays.asList(new CsvReport(), new ExcelReport());
     public static final String JAVA_ERROR_PREFIX = "[java error]";
     public static final String FIX_PERMISSION = "adminContentIntegrityFix";
+    public static final String DELETE_PERMISSION = "adminContentIntegrityDelete";
 
     private Utils() {
     }
@@ -79,10 +80,22 @@ public final class Utils {
      * to the module, which allows to scan and read the results, is not enough: the permission is checked on the root node.
      */
     public static boolean canFixErrors() {
+        return hasRootPermission(FIX_PERMISSION);
+    }
+
+    /**
+     * Tells if the current user may delete the stored results of the scans, with their reports. The deletion can't be
+     * undone, so the access to the module is not enough: the permission is checked on the root node.
+     */
+    public static boolean canDeleteResults() {
+        return hasRootPermission(DELETE_PERMISSION);
+    }
+
+    private static boolean hasRootPermission(String permission) {
         try {
-            return BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentUserSession().getNode("/").hasPermission(FIX_PERMISSION);
+            return BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentUserSession().getNode("/").hasPermission(permission);
         } catch (RepositoryException e) {
-            logger.error("Impossible to check the permission " + FIX_PERMISSION, e);
+            logger.error("Impossible to check the permission " + permission, e);
             return false;
         }
     }

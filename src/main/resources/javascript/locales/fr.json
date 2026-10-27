@@ -250,6 +250,13 @@
       "warning": "Certains correctifs suppriment du contenu, par exemple un nœud dont le type n'est plus déclaré. Les erreurs dont le contrôle ne fournit pas de correctif, et celles corrigées avec une valeur saisie, sont ignorées.",
       "confirm": "Corriger {{count}} erreurs"
     },
+    "deleteResults": {
+      "button": "Supprimer",
+      "title": "Supprimer les résultats du scan",
+      "description": "Les résultats du scan {{scan}} seront supprimés : ses erreurs, son journal, et ses rapports CSV et XLSX.",
+      "warning": "La suppression est définitive. Le contenu n'est pas modifié : les erreurs non corrigées seront de nouveau détectées par le prochain scan.",
+      "confirm": "Supprimer les résultats"
+    },
     "fixOutcome": {
       "title": "Résultat de la correction",
       "fixed": "Corrigées : {{count}}",

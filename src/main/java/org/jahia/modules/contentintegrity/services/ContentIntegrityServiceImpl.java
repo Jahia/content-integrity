@@ -710,6 +710,13 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
+    public boolean deleteResults(String testID) throws RepositoryException {
+        final boolean deleted = ResultsStore.delete(testID);
+        if (deleted) loadedResults.remove(testID);
+        return deleted;
+    }
+
+    @Override
     public List<String> getExecutionLog(String testID) {
         return ResultsStore.loadExecutionLog(testID);
     }

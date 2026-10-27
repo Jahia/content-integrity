@@ -6,5 +6,7 @@
         <adminContentIntegrity jcr:primaryType="jnt:permission"/>
         <!-- Not a child of adminContentIntegrity, so that granting the access to the module does not grant the fix of the errors -->
         <adminContentIntegrityFix jcr:primaryType="jnt:permission"/>
+        <!-- Not a child of adminContentIntegrity either: the deletion of the results and their reports can't be undone -->
+        <adminContentIntegrityDelete jcr:primaryType="jnt:permission"/>
     </admin>
 </permissions>

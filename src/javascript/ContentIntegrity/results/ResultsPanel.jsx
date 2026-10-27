@@ -27,6 +27,7 @@ import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, F
 import {NodeErrorsPanel} from './NodeErrorsPanel';
 import {FixStatus} from './FixStatus';
 import {FixAllAction} from './FixAllAction';
+import {DeleteResultsAction} from './DeleteResultsAction';
 import {FIX_STATES, useFixError} from './useFixError';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {ReportLinks} from '../common/ReportLinks';
@@ -102,6 +103,8 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
     const list = useQuery(GET_SCAN_RESULTS_LIST, {fetchPolicy: 'network-only'});
     const summaries = useMemo(() => list.data?.integrity?.scanResults || [], [list.data]);
     const ids = useMemo(() => summaries.map(s => s.id), [summaries]);
+    // The deletion of the results requires the permission adminContentIntegrityDelete, which the access to the module does not grant
+    const canDeleteResults = list.data?.integrity?.canDeleteResults === true;
 
     const [resultsId, setResultsId] = useState(null);
     const [page, setPage] = useState(1);
@@ -386,7 +389,14 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
                             )}
                         </div>
                     </div>
-                    {showErrors && details && <ReportLinks reports={details.reports}/>}
+                    {selectedSummary && (
+                        <ReportLinks reports={showErrors ? details?.reports : []}
+                                     action={canDeleteResults && selectedSummary.status !== 'running' && (
+                                         <DeleteResultsAction resultsId={resultsId}
+                                                              scanLabel={resultsData.find(r => r.value === resultsId)?.label || resultsId}
+                                                              onDeleted={() => refetchList()}/>
+                                     )}/>
+                    )}
                     <div className={styles.spacer}/>
                     {showErrors && (
                         <div className={styles.filter}>

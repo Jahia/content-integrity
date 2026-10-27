@@ -250,6 +250,13 @@
       "warning": "Some fixes remove content, such as a node whose type is not declared anymore. The errors whose check provides no fix, and the ones fixed with a typed value, are skipped.",
       "confirm": "Fix {{count}} errors"
     },
+    "deleteResults": {
+      "button": "Delete",
+      "title": "Delete the results of the scan",
+      "description": "The results of the scan {{scan}} will be deleted: its errors, its log, and its CSV and XLSX reports.",
+      "warning": "The deletion can't be undone. The content is not changed: the errors not fixed will be detected again by the next scan.",
+      "confirm": "Delete the results"
+    },
     "fixOutcome": {
       "title": "Outcome of the fix",
       "fixed": "Fixed: {{count}}",

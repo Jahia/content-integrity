@@ -24,12 +24,13 @@ Jahia module that provides an extensible service to test the integrity of the co
 
 ### Configuration
 
-Two permissions, granted at server level, control the feature:
+Three permissions, granted at server level, control the feature:
 
 * `adminContentIntegrity` allows to run an integrity scan, to configure the checks and to read the results.
 * `adminContentIntegrityFix` allows to fix the errors, one at a time or all the errors matching the filters. A fix writes to the repository with a system session, whatever the ACL of the fixed node, so this permission is not granted by `adminContentIntegrity`. Without it, the administration screen offers no fix, and the GraphQL fields `fixError` and `fixAllErrors` are refused.
+* `adminContentIntegrityDelete` allows to delete the results of a scan, with their CSV and XLSX reports, which can't be undone. It is not granted by `adminContentIntegrity` either. Without it, the administration screen offers no deletion, and the GraphQL field `deleteScanResults` is refused. The deletion also requires to read the reports, which only the server administrators do.
 
-By default, both permissions are added to the role `server-administrator`, thus any server administrator is able to use the feature and to fix the errors. To delegate the scans only, grant a server role holding `adminContentIntegrity`, plus `administrationAccess` to open the administration.
+By default, the three permissions are added to the role `server-administrator` only, thus any server administrator is able to use the feature, to fix the errors and to delete the results. To delegate the scans only, grant a server role holding `adminContentIntegrity`, plus `administrationAccess` to open the administration.
 
 The command `jcr:integrity-fix` of the Karaf console is not controlled by these permissions, since the access to the console already requires to be a system administrator.
 
@@ -62,6 +63,8 @@ Virtual nodes (e.g. exposed by an EDP connector) can be excluded from the scan. 
 While a scan runs, a card displays it above the results, with its start date and its logs, and **Stop** interrupts it at the end of its current step. The scan is run in background, and leaving the page will have no impact on its execution: when coming back to the page, the running scan is displayed again.
 
 When the scan is over, its results are displayed, and its reports can be downloaded from the JCR (uploaded under `/sites/systemsite/files/content-integrity-reports`). A report describes the whole scanned repository, so the reports folder is readable by the server administrators only: the role `privileged`, which every editor of every site holds on the system site, is denied on it. Each scan of the results tells its status, finished, interrupted or failed, and keeps its log, displayed with **Show the logs**. The errors of a scan which did not finish are not displayed, since they do not cover the whole tree.
+
+The **Delete** action, next to the reports, deletes the results of the selected scan, after a confirmation: its errors, its log, and its CSV and XLSX reports. The content is not changed, and the errors not fixed are detected again by the next scan. It is offered to the users who hold `adminContentIntegrityDelete`, for the scans which are not running.
 
 #### Explore the results
 

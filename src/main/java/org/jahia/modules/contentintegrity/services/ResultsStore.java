@@ -16,6 +16,7 @@ import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRAutoSplitUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -349,17 +350,43 @@ public final class ResultsStore {
                     node.remove();
                     count++;
                 }
-                for (JCRNodeWrapper monthFolder : parents) {
-                    final JCRNodeWrapper yearFolder = monthFolder.getParent();
-                    if (!monthFolder.getNodes().hasNext()) monthFolder.remove();
-                    if (!yearFolder.getPath().equals(REPORTS_FOLDER_PATH) && !yearFolder.getNodes().hasNext()) yearFolder.remove();
-                }
+                removeEmptyFolders(parents);
                 if (count > 0) session.save();
                 return count;
             });
         } catch (RepositoryException e) {
             logger.error("Impossible to delete the old reports", e);
             return 0;
+        }
+    }
+
+    /**
+     * Deletes the stored results: their report node, which holds their errors and their CSV and XLSX reports, then the
+     * year and month folders left empty. The deletion is done with the session of the current user, so that only the
+     * users who may read the reports, the server administrators, may delete them.
+     *
+     * @return false if no results readable by the current user have this identifier
+     * @throws IllegalStateException if the scan of the results is running
+     */
+    public static boolean delete(String resultsID) throws RepositoryException {
+        final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE);
+        final JCRNodeWrapper reportNode = findReportNode(session, resultsID);
+        if (reportNode == null) return false;
+        if (ContentIntegrityResults.Status.RUNNING.getValue().equals(reportNode.getPropertyAsString(PROP_STATUS)))
+            throw new IllegalStateException(String.format("The results %s are the ones of a running scan: stop it first", resultsID));
+
+        final JCRNodeWrapper monthFolder = reportNode.getParent();
+        reportNode.remove();
+        removeEmptyFolders(Collections.singleton(monthFolder));
+        session.save();
+        return true;
+    }
+
+    private static void removeEmptyFolders(Collection<JCRNodeWrapper> monthFolders) throws RepositoryException {
+        for (JCRNodeWrapper monthFolder : monthFolders) {
+            final JCRNodeWrapper yearFolder = monthFolder.getParent();
+            if (!monthFolder.getNodes().hasNext()) monthFolder.remove();
+            if (!yearFolder.getPath().equals(REPORTS_FOLDER_PATH) && !yearFolder.getNodes().hasNext()) yearFolder.remove();
         }
     }
 
