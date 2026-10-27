@@ -21,3 +21,4 @@ repository.xml.generated
 
 # Custom
 TODO.md
+/.claude/settings.local.json
