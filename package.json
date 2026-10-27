@@ -9,6 +9,7 @@
     "build": "yarn webpack",
     "build:dev": "yarn webpack",
     "build:production": "yarn webpack --mode=production",
+    "docs:pdf": "node docs/build-pdf.js",
     "webpack": "node --max_old_space_size=2048 ./node_modules/webpack/bin/webpack.js",
     "dev": "yarn webpack --watch",
     "watch": "yarn webpack --watch",
@@ -26,10 +27,10 @@
     "@jahia/ui-extender": "^1.0.0",
     "graphql": "^15.8.0",
     "i18next": "^21.6.14",
+    "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-i18next": "^11.18.6",
-    "prop-types": "^15.8.1"
+    "react-i18next": "^11.18.6"
   },
   "devDependencies": {
     "@babel/core": "^7.29.6",
@@ -41,6 +42,7 @@
     "clean-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.8.1",
+    "marked": "12.0.2",
     "rimraf": "^5.0.0",
     "sass": "^1.52.1",
     "sass-loader": "^12.4.0",

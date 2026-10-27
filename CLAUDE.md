@@ -70,6 +70,12 @@ On a server holding other content, when asked to:
 Check the diff of `docs/img/checks`: only the expected images are added or changed. Commit them with the change of the
 check.
 
+## PDF of the documentation of the checks
+
+`yarn docs:pdf` (at the root) builds `docs/embedded-tests.pdf` from `docs/embedded-tests.md` and its screenshots, with
+a headless Chrome (`CHROME_PATH` if not found in its default locations). The PDF is git-ignored: build it again after a
+change of the documentation or of the screenshots, never commit it.
+
 If the screenshots can't be regenerated in the session, say so in the summary, and list the error types whose image is
 missing (an error type documented in `docs/embedded-tests.md` without its `![<TYPE> ...]` line).
 
