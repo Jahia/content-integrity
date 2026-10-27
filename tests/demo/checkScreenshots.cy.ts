@@ -8,9 +8,18 @@ import {getErrors, graphql, IntegrityError} from '../cypress/support/integrity';
  * - docs/img/checks/<check>/<error type>.png: the results of the scan with the most errors of the type, filtered on the
  *   check and the type, for each error type found in the scans of the demo
  * Run by screenshots.sh, once generate.sh has run.
+ *
+ * Optional Cypress env variables, as comma-separated lists, to take only some screenshots: RESULTS, the ids of the scans
+ * to take them from (by default, all the stored scans), CHECKS, the checks, ERROR_TYPES, the error types. With
+ * ERROR_TYPES, the screenshots of the checks are not taken.
  */
 
 type Rank = { id: string; count: number; types: number };
+
+const envList = (name: string): string[] => String(Cypress.env(name) || '').split(',').map(v => v.trim()).filter(Boolean);
+const RESULTS = envList('RESULTS');
+const CHECKS = envList('CHECKS');
+const ERROR_TYPES = envList('ERROR_TYPES');
 
 /**
  * Selects an item of a filter of the results table, found by its text. The menu can be longer than the screen: the item
@@ -26,11 +35,17 @@ const filterOn = (label: string, value: string): void => {
 /**
  * Displays the errors of the check, and of the error type if given, in the results, opens the details of the first one,
  * and takes the screenshot. The table is read once it counts the expected errors, so once the filters apply.
+ * The default filter on the errors which block an XML import, the only one to clear, is set only on the results which
+ * have such errors.
  */
 const capture = (resultsId: string, check: string, errorType: string | undefined, count: number, name: string): void => {
     visitAdmin();
     getScanLabel(resultsId).then(label => selectInDropdown('Scan', label));
-    clearFilters();
+    graphql('{ integrity: contentIntegrity { scanResults: scanResultsSummaries { id importErrorCount } } }')
+        .then(data => {
+            const summary = data.integrity.scanResults.find((r: { id: string }) => r.id === resultsId);
+            if (summary?.importErrorCount > 0) clearFilters();
+        });
     filterOn('Check name', check);
     if (errorType) filterOn('Error type', errorType);
     cy.contains(new RegExp(`^Errors: ${count} \\(total: \\d+\\)$`)).should('be.visible');
@@ -53,8 +68,8 @@ describe('Screenshots of the checks', () => {
 
     before(() => {
         graphql('{ integrity: contentIntegrity { checks: integrityChecks { id } scanResults: scanResultsSummaries { id } } }').then(data => {
-            checks = data.integrity.checks.map((c: { id: string }) => c.id).sort();
-            data.integrity.scanResults.forEach((r: { id: string }) => getErrors(r.id).then(errors => {
+            checks = data.integrity.checks.map((c: { id: string }) => c.id).filter((id: string) => CHECKS.length === 0 || CHECKS.includes(id)).sort();
+            data.integrity.scanResults.filter((r: { id: string }) => RESULTS.length === 0 || RESULTS.includes(r.id)).forEach((r: { id: string }) => getErrors(r.id).then(errors => {
                 errorsByResults[r.id] = errors;
             }));
         });
@@ -62,6 +77,7 @@ describe('Screenshots of the checks', () => {
 
     it('captures the errors of every check', () => {
         cy.wrap(null).then(() => {
+            if (ERROR_TYPES.length > 0) return;
             checks.forEach(check => {
                 const ranked = rank(e => e.checkName === check);
                 if (ranked.length === 0) {
@@ -77,7 +93,8 @@ describe('Screenshots of the checks', () => {
     it('captures every error type of every check', () => {
         cy.wrap(null).then(() => {
             checks.forEach(check => {
-                const types = [...new Set(Object.values(errorsByResults).flat().filter(e => e.checkName === check).map(e => e.errorType))].sort();
+                const types = [...new Set(Object.values(errorsByResults).flat().filter(e => e.checkName === check).map(e => e.errorType))]
+                    .filter(errorType => ERROR_TYPES.length === 0 || ERROR_TYPES.includes(errorType)).sort();
                 types.forEach(errorType => {
                     const ranked = rank(e => e.checkName === check && e.errorType === errorType);
                     capture(ranked[0].id, check, errorType, ranked[0].count, `${check}/${errorType}`);
