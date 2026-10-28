@@ -127,20 +127,23 @@ export const ResultsMenu = ({count, onDeleted}) => {
                                                aria-expanded={isOpen}
                                                onClick={() => setOpen(true)}/>
                                    </div>
-                                   <Menu isDisplayed={isOpen}
-                                         anchorEl={anchor}
-                                         anchorElOrigin={{vertical: 'bottom', horizontal: 'left'}}
-                                         onClose={() => setOpen(false)}
-                                   >
-                                       <MenuItem id="ci-delete-all-results"
-                                                 className={styles.dangerMenuItem}
-                                                 label={t('label.deleteAllResults.button')}
-                                                 iconStart={<Delete/>}
-                                                 onClick={() => {
-                                                     setOpen(false);
-                                                     open();
-                                                 }}/>
-                                   </Menu>
+                                   {/* Mounted only while open: a closed menu would leave its items in the page */}
+                                   {isOpen && (
+                                       <Menu isDisplayed
+                                             anchorEl={anchor}
+                                             anchorElOrigin={{vertical: 'bottom', horizontal: 'left'}}
+                                             onClose={() => setOpen(false)}
+                                       >
+                                           <MenuItem id="ci-delete-all-results"
+                                                     className={styles.dangerMenuItem}
+                                                     label={t('label.deleteAllResults.button')}
+                                                     iconStart={<Delete/>}
+                                                     onClick={() => {
+                                                         setOpen(false);
+                                                         open();
+                                                     }}/>
+                                       </Menu>
+                                   )}
                                </>
                            )}
                            labels={{
