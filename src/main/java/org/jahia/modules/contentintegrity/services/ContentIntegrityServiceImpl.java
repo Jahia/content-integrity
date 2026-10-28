@@ -702,7 +702,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
             loaded.getErrors().stream().filter(e -> !e.isFixed() && failedErrors.contains(e.getErrorID())).forEach(e -> e.setFixFailed(true));
             return loaded;
         }
-        final ContentIntegrityResults results = ResultsStore.load(id, this::getContentIntegrityCheck);
+        final ContentIntegrityResults results = ResultsStore.load(id);
         // The results of a scan which runs change until its end
         if (results != null && results.getStatus() != ContentIntegrityResults.Status.RUNNING) loadedResults.put(id, results);
         return results;

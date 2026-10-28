@@ -8,7 +8,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.jahia.api.content.JCRTemplate;
 import org.jahia.modules.contentintegrity.api.Constants;
-import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.JCRUtils;
@@ -29,8 +28,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -46,8 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
@@ -89,7 +84,6 @@ public final class ResultsStore {
     private static final int LOG_HEAD_SIZE = 100;
     private static final int LOG_TAIL_SIZE = 500;
     // The error types declared by each check class, to restore the very instances its fix compares with
-    private static final Map<Class<?>, Map<String, ContentIntegrityErrorType>> ERROR_TYPES = new ConcurrentHashMap<>();
 
     private ResultsStore() {
     }
@@ -209,10 +203,9 @@ public final class ResultsStore {
     /**
      * Reads the stored results. Those of a scan which is running, or which failed, have no errors.
      *
-     * @param checks resolves an integrity check from its identifier, to restore the types of its errors
      * @return the results, or null if none are stored with this identifier
      */
-    public static ContentIntegrityResults load(String resultsID, Function<String, ContentIntegrityCheck> checks) {
+    public static ContentIntegrityResults load(String resultsID) {
         try {
             return getJcrTemplate().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final JCRNodeWrapper reportNode = findReportNode(session, resultsID);
@@ -227,7 +220,7 @@ public final class ResultsStore {
                     final Set<String> fixedErrors = readErrorIds(reportNode, PROP_FIXED_ERRORS);
                     final Set<String> failedErrors = readErrorIds(reportNode, PROP_FAILED_ERRORS);
                     try (InputStream in = new GZIPInputStream(reportNode.getNode(errorsFileName).getFileContent().downloadFile())) {
-                        errors = readErrors(in, checks, fixedErrors);
+                        errors = readErrors(in, fixedErrors);
                         errors.stream().filter(e -> !e.isFixed() && failedErrors.contains(e.getErrorID())).forEach(e -> e.setFixFailed(true));
                     } catch (IOException e) {
                         logger.error("Impossible to read the errors of the results {}", resultsID, e);
@@ -539,7 +532,7 @@ public final class ResultsStore {
         json.writeEndArray();
     }
 
-    static List<ContentIntegrityError> readErrors(InputStream in, Function<String, ContentIntegrityCheck> checks, Set<String> fixedErrors) throws IOException {
+    static List<ContentIntegrityError> readErrors(InputStream in, Set<String> fixedErrors) throws IOException {
         final List<ContentIntegrityError> errors = new ArrayList<>();
         try (JsonParser json = JSON.createParser(in)) {
             if (json.nextToken() != JsonToken.START_OBJECT) throw new IOException("Unexpected format of the stored errors");
@@ -548,7 +541,7 @@ public final class ResultsStore {
                 json.nextToken();
                 if ("errors".equals(field)) {
                     while (json.nextToken() == JsonToken.START_OBJECT) {
-                        errors.add(readError(json, checks, fixedErrors));
+                        errors.add(readError(json, fixedErrors));
                     }
                 } else {
                     json.skipChildren();
@@ -558,7 +551,7 @@ public final class ResultsStore {
         return errors;
     }
 
-    private static ContentIntegrityError readError(JsonParser json, Function<String, ContentIntegrityCheck> checks, Set<String> fixedErrors) throws IOException {
+    private static ContentIntegrityError readError(JsonParser json, Set<String> fixedErrors) throws IOException {
         final Map<String, String> fields = new HashMap<>();
         final Map<String, Object> extraInfos = new LinkedHashMap<>();
         final Set<String> specificKeys = new HashSet<>();
@@ -585,7 +578,7 @@ public final class ResultsStore {
         }
         final String id = fields.get("id");
         final String checkId = fields.get("checkId");
-        final ContentIntegrityErrorType errorType = resolveErrorType(checkId == null ? null : checks.apply(checkId), fields.get("errorType"), blockingImport);
+        final ContentIntegrityErrorType errorType = new ContentIntegrityErrorTypeImpl(StringUtils.defaultString(fields.get("errorType")), blockingImport);
         return ContentIntegrityErrorImpl.restoreError(id, fields.get("path"), fields.get("uuid"), fields.get("primaryType"), fields.get("mixins"),
                 fields.get("workspace"), fields.get("locale"), errorType, fields.get("message"), fields.get("checkName"), checkId,
                 extraInfos, specificKeys, fixed || fixedErrors.contains(id));
@@ -633,37 +626,5 @@ public final class ResultsStore {
             default:
                 return json.getText();
         }
-    }
-
-    /**
-     * The checks compare the type of an error with their own constants, so the type is resolved to the constant its
-     * check declares with this key. A type the check does not declare, or the type of an error of the framework, is
-     * rebuilt from its key.
-     */
-    private static ContentIntegrityErrorType resolveErrorType(ContentIntegrityCheck check, String key, boolean blockingImport) {
-        final ContentIntegrityErrorType frameworkError = ContentIntegrityErrorImpl.getFrameworkErrorType();
-        if (frameworkError.getKey().equals(key)) return frameworkError;
-        if (check != null) {
-            final ContentIntegrityErrorType declared = ERROR_TYPES.computeIfAbsent(check.getClass(), ResultsStore::getDeclaredErrorTypes).get(key);
-            if (declared != null) return declared;
-        }
-        return new ContentIntegrityErrorTypeImpl(StringUtils.defaultString(key), blockingImport);
-    }
-
-    private static Map<String, ContentIntegrityErrorType> getDeclaredErrorTypes(Class<?> checkClass) {
-        final Map<String, ContentIntegrityErrorType> types = new HashMap<>();
-        for (Class<?> c = checkClass; c != null && c != Object.class; c = c.getSuperclass()) {
-            for (Field field : c.getDeclaredFields()) {
-                if (!Modifier.isStatic(field.getModifiers()) || !ContentIntegrityErrorType.class.isAssignableFrom(field.getType())) continue;
-                try {
-                    field.setAccessible(true);
-                    final ContentIntegrityErrorType type = (ContentIntegrityErrorType) field.get(null);
-                    if (type != null) types.putIfAbsent(type.getKey(), type);
-                } catch (IllegalAccessException | RuntimeException e) {
-                    logger.debug("Impossible to read the error type {} of {}", field.getName(), checkClass.getName(), e);
-                }
-            }
-        }
-        return types;
     }
 }

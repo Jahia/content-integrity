@@ -55,7 +55,6 @@ import javax.validation.Validator;
 import javax.validation.groups.Default;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -635,13 +634,10 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         final HashMap<String, Object> customExtraInfos = new HashMap<>();
         String propertyName;
         final String propertyValue;
-        try {
-            final Method propertyNameGetter = constraintViolation.getConstraintDescriptor().getAnnotation().annotationType()
-                    .getMethod("propertyName");
-            propertyName = (String) propertyNameGetter.invoke(constraintViolation.getConstraintDescriptor().getAnnotation());
-        } catch (Exception e) {
-            propertyName = constraintViolation.getPropertyPath().toString();
-        }
+        // The constraints of the Jahia validators name the property they apply to in their attribute propertyName
+        final Object propertyNameAttribute = constraintViolation.getConstraintDescriptor().getAttributes().get("propertyName");
+        if (propertyNameAttribute instanceof String) propertyName = (String) propertyNameAttribute;
+        else propertyName = constraintViolation.getPropertyPath().toString();
 
         ExtendedPropertyDefinition propertyDefinition;
         final String errorLocale;
