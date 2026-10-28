@@ -28,6 +28,9 @@ describe('Deletion of the results from the administration page', () => {
     after(() => deleteTestSite(SITE));
 
     it('deletes the selected results, after a confirmation', () => {
+        // Other results stay stored, so that the page keeps the dropdown of the scans: once no results are stored, it
+        // displays that no scan has run yet, which the server does not ensure, as the deletion of all the results empties it
+        scan(LOCKS, ['LockSanityCheck']).its('resultsId').as('otherResults');
         selectNewResults().then(({resultsId, label}) => {
             // A server administrator holds adminContentIntegrityDelete: the menu after the title offers to delete all
             cy.get('#ci-results-menu').should('be.visible');
@@ -54,6 +57,7 @@ describe('Deletion of the results from the administration page', () => {
             cy.get('li.moonstone-menuItem').should('not.contain.text', label);
             closeMenu();
         });
+        cy.get<string>('@otherResults').then(id => graphql('query($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id}));
     });
 
     it('opens without any results selected, also once the page is reloaded', () => {
