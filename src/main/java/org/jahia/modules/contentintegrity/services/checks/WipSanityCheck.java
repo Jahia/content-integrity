@@ -1,11 +1,11 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
@@ -18,14 +18,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_LASTPUBLISHED;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_TRANSLATION;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_LANGUAGES;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_ALLCONTENT;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_DISABLED;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_LANG;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIAMIX_LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIANT_TRANSLATION;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS_LANGUAGES;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS_STATUS;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS_STATUS_ALLCONTENT;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS_STATUS_DISABLED;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS_STATUS_LANG;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + JAHIAMIX_LASTPUBLISHED + "," + JAHIANT_TRANSLATION,

@@ -7,6 +7,7 @@ import org.apache.karaf.shell.api.console.Completer;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.completers.StringsCompleter;
 
+import java.util.Arrays;
 import java.util.List;
 
 public abstract class SimpleCompleter implements Completer {
@@ -28,4 +29,17 @@ public abstract class SimpleCompleter implements Completer {
     }
 
     public abstract List<String> getAllowedValues(Session session, CommandLine commandLine);
+
+    /**
+     * Returns the value typed after an option of the command line, specified by its name or one of its aliases, or null if
+     * the option is not typed, or is not followed by a value
+     */
+    protected static String getOptionValue(CommandLine commandLine, String... names) {
+        final List<String> arguments = Arrays.asList(commandLine.getArguments());
+        for (String name : names) {
+            final int index = arguments.indexOf(name);
+            if (index >= 0 && index + 1 < arguments.size()) return StringUtils.trim(arguments.get(index + 1));
+        }
+        return null;
+    }
 }

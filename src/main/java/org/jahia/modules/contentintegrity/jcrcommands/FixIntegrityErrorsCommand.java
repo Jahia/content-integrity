@@ -1,7 +1,6 @@
 package org.jahia.modules.contentintegrity.jcrcommands;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
@@ -45,12 +44,8 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
         }
 
         final ContentIntegrityService contentIntegrityService = integrityService;
-        final ContentIntegrityResults results = contentIntegrityService.getTestResults(testID);
-        if (results == null) {
-            if (StringUtils.isBlank(testID)) System.out.println("No test results found");
-            else System.out.println("The specified test results couldn't be found");
-            return null;
-        }
+        final ContentIntegrityResults results = loadTestResults(contentIntegrityService, testID);
+        if (results == null) return null;
 
         final List<ContentIntegrityError> errors = results.getErrors();
         if (errorIDs.contains("*")) {
@@ -61,17 +56,13 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
             }
         } else {
             for (String errorID : errorIDs) {
-                final int errorIdx = NumberUtils.toInt(errorID, -1);
-                if (errorIdx < 0 || errorIdx >= errors.size()) {
-                    System.out.println(String.format("The specified error (id=%s) couldn't be found", errorID));
-                    continue;
-                }
-                final ContentIntegrityError error = errors.get(errorIdx);
+                final ContentIntegrityError error = getError(errors, errorID);
+                if (error == null) continue;
                 if (error.isFixed()) {
                     System.out.println(String.format("The error (id=%s) is already fixed", errorID));
                     continue;
                 }
-                fixSingleError(error, errorIdx, contentIntegrityService);
+                fixSingleError(error, NumberUtils.toInt(errorID), contentIntegrityService);
             }
         }
         // The fixed status is stored with the results, in the JCR

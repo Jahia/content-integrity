@@ -1,15 +1,15 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
@@ -35,14 +35,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.CALCULATION_ERROR;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_REFERENCES_IN_FIELD;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_REFERENCEINFIELD_FIELDNAME;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_REFERENCEINFIELD_LANG_SEP;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_TRANSLATION;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIA_REFERENCE_IN_FIELD_PREFIX;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.MIX_VERSIONABLE;
-import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
+import static org.jahia.modules.contentintegrity.api.Constants.CALCULATION_ERROR;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIAMIX_REFERENCES_IN_FIELD;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIANT_REFERENCEINFIELD_FIELDNAME;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIANT_REFERENCEINFIELD_LANG_SEP;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIANT_TRANSLATION;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIA_REFERENCE_IN_FIELD_PREFIX;
+import static org.jahia.modules.contentintegrity.api.Constants.MIX_VERSIONABLE;
+import static org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
 public class ReferencesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {

@@ -1,21 +1,4 @@
-import {createTestSite, deleteTestSite, graphql, runFixture, scan, ScanResults} from '../../support/integrity';
-
-// The order of the paths of the errors table: name by name, whatever their case, then with their case
-const comparePaths = (a: string, b: string): number => {
-    const namesA = a.split('/').filter(Boolean);
-    const namesB = b.split('/').filter(Boolean);
-    for (let i = 0; i < Math.min(namesA.length, namesB.length); i++) {
-        const lowerA = namesA[i].toLowerCase();
-        const lowerB = namesB[i].toLowerCase();
-        if (lowerA !== lowerB) {
-            return lowerA < lowerB ? -1 : 1;
-        }
-        if (namesA[i] !== namesB[i]) {
-            return namesA[i] < namesB[i] ? -1 : 1;
-        }
-    }
-    return namesA.length - namesB.length;
-};
+import {comparePaths, createTestSite, deleteTestSite, graphql, requestAs, rootUser, runFixture, scan, ScanResults} from '../../support/integrity';
 
 // The errors of a node can block each other: a node is saved only once all its mandatory properties are set. The frame of
 // the fixture misses its width and its height, so neither error is fixed alone, and both are fixed together.
@@ -28,14 +11,6 @@ const NODE_ERRORS = 'query($id: String, $filters: [String]!, $path: String!) { i
     'errors: nodeErrors(workspace: "default", path: $path) { id errorType fixed extraInfos { label value } } } } }';
 const FIX_ERRORS = 'query($id: String, $ids: [String]!, $values: [[String]]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { ' +
     'errors: fixErrors(ids: $ids, values: $values) { id fixed } } } }';
-
-const request = (query: string, variables: Record<string, unknown>) => cy.request({
-    method: 'POST',
-    url: '/modules/graphql',
-    auth: {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')},
-    headers: {Origin: Cypress.config().baseUrl},
-    body: {query, variables}
-}).its('body');
 
 const propertyOf = (error: { extraInfos: { label: string; value: string }[] }) => error.extraInfos.find(i => i.label === 'property-name')?.value;
 
@@ -66,7 +41,7 @@ describe('Fix of the errors of a node together', () => {
     it('does not fix one of two missing mandatory properties alone', () => {
         scan(ROOT, CHECKS).then(results => {
             const [width] = frameErrors(results);
-            request('query($id: String, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e, values: ["640"]) { fixed } } } }',
+            requestAs(rootUser(), 'query($id: String, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e, values: ["640"]) { fixed } } } }',
                 {id: results.resultsId, e: width.id}).then(body => {
                 expect(body.errors, 'GraphQL errors').to.have.length(1);
                 expect(body.errors[0].message).to.contain('mandatory');
@@ -90,7 +65,7 @@ describe('Fix of the errors of a node together', () => {
     it('fixes none of the errors when a value is rejected', () => {
         scan(ROOT, CHECKS).then(results => {
             const [width, height] = frameErrors(results);
-            request(FIX_ERRORS, {id: results.resultsId, ids: [width.id, height.id], values: [['640'], ['not a number']]}).then(body => {
+            requestAs(rootUser(), FIX_ERRORS, {id: results.resultsId, ids: [width.id, height.id], values: [['640'], ['not a number']]}).then(body => {
                 expect(body.errors, 'GraphQL errors').to.have.length(1);
                 expect(body.errors[0].message).to.contain('not a number');
             });

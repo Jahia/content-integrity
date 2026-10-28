@@ -1,12 +1,12 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -31,10 +31,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LOCKISDEEP;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LOCKOWNER;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LOCKTOKEN;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LOCK_TYPES;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_LOCKISDEEP;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_LOCKOWNER;
+import static org.jahia.modules.contentintegrity.api.Constants.J_LOCKTOKEN;
+import static org.jahia.modules.contentintegrity.api.Constants.J_LOCK_TYPES;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_IF_HAS_PROP + "=" + J_LOCK_TYPES + "," + J_LOCKTOKEN + "," + JCR_LOCKISDEEP + "," + JCR_LOCKOWNER

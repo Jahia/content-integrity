@@ -63,9 +63,7 @@
         <jahia-depends>default,graphql-dxm-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
-        <export-package>org.jahia.modules.contentintegrity.api,
-            org.jahia.modules.contentintegrity.services.impl,
-            org.jahia.modules.contentintegrity.taglib</export-package>
+        <export-package>org.jahia.modules.contentintegrity.api</export-package>
         <!--
         Built against Jahia 8.1.5 to run on 8.1.5 and later. Jahia 8.1 provides graphql-java 13, graphql-java-annotations
         7.2.1 and graphql-dxm-provider 2.x; Jahia 8.2 provides graphql-java 21, graphql-java-annotations 21.1 and

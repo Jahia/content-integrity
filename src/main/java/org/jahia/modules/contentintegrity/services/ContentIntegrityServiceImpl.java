@@ -12,9 +12,9 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -41,10 +41,10 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NODE_PATH;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_PATH_SEPARATOR;
+import static org.jahia.modules.contentintegrity.api.Constants.ROOT_NODE_PATH;
+import static org.jahia.modules.contentintegrity.api.Constants.TAB_LVL_1;
+import static org.jahia.modules.contentintegrity.api.Constants.TAB_LVL_2;
 
 @Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
         Constants.SERVICE_PID + "=org.jahia.modules.contentintegrity.service",
@@ -213,7 +213,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final ExternalLogger[] externalLoggersArray = externalLoggers.toArray(new ExternalLogger[0]);
                 printChecksDuration(testDuration, activeChecks, externalLoggersArray);
                 Utils.validateImportCompatibility(errors, logger, externalLoggersArray);
-                Utils.detectLegacyErrorTypes(errors, logger, externalLoggersArray);
                 finalResults = new ContentIntegrityResults(start, testDuration, workspace, errors, summary).setInterrupted(interrupted);
                 if (reportLogger != null) saveResults(finalResults, reportLogger.getLines(), true);
                 return finalResults;

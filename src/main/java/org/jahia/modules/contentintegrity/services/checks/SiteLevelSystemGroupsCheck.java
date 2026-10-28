@@ -1,11 +1,11 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
@@ -30,15 +30,15 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.ACE_TYPE_GRANT;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.ACL;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_VIRTUALSITE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JNT_EXTERNAL_ACE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ACE_TYPE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.J_PRINCIPAL;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.J_ROLES;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
+import static org.jahia.modules.contentintegrity.api.Constants.ACE_TYPE_GRANT;
+import static org.jahia.modules.contentintegrity.api.Constants.ACL;
+import static org.jahia.modules.contentintegrity.api.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIANT_VIRTUALSITE;
+import static org.jahia.modules.contentintegrity.api.Constants.JNT_EXTERNAL_ACE;
+import static org.jahia.modules.contentintegrity.api.Constants.J_ACE_TYPE;
+import static org.jahia.modules.contentintegrity.api.Constants.J_PRINCIPAL;
+import static org.jahia.modules.contentintegrity.api.Constants.J_ROLES;
+import static org.jahia.modules.contentintegrity.api.Constants.LIVE_WORKSPACE;
 import static org.jahia.services.usermanager.JahiaGroupManagerService.PRIVILEGED_GROUPNAME;
 import static org.jahia.services.usermanager.JahiaGroupManagerService.SITE_PRIVILEGED_GROUPNAME;
 

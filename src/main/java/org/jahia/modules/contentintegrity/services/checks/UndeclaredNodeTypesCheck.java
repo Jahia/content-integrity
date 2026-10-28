@@ -3,11 +3,11 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.data.templates.ModuleState;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -29,8 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_MIXINTYPES;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PRIMARYTYPE;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_MIXINTYPES;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_PRIMARYTYPE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
 public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {

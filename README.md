@@ -184,7 +184,13 @@ Prints out the currently registered checks.
  
 #### <a name="jcr-integrity-printTestResults"></a>jcr:integrity-printTestResults   
 Allows to reprint the result of a previous test.   
-                         
+
+**Argument:**
+
+| Value  | Mandatory | Multiple | Description                                                         |
+|:------:|:---------:|:--------:|---------------------------------------------------------------------|
+| string |           |          | ID of the test whose results to print. Latest test used if not defined |
+
 **Options:**
 
 | Name | alias                |         Value          | Mandatory | Multiple | Description                                                                                                                      |
@@ -192,7 +198,7 @@ Allows to reprint the result of a previous test.
 | -l   | --limit              | positive integer, [20] |           |          | Specifies the maximum number of errors to print out                                                                              |
 | -d   | --dump               |                        |           |          | Dumps the errors into report files in temp/content-integrity/ if used. The limit option is ignored when dumping                  |
 | -u   | --upload             |                        |           |          | Uploads the report files in the JCR instead of writing in on the filesystem. This option has no effect if not combined with `-d` |
-| -ef  | --excludeFixedErrors |                        |           |          | Coming soon                                                                                                                      |
+| -ef  | --excludeFixedErrors |                        |           |          | Leaves out the errors which are already fixed                                                                                    |
 
 **Example:**
 

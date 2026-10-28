@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, graphql, readStoredReport, runFixture, scan} from '../../support/integrity';
+import {createTestSite, deleteTestSite, graphql, isListed, readStoredReport, runFixture, scan} from '../../support/integrity';
 import {closeMenu, getDialog, getDropdown, getScanLabel, openDeleteAll, openDropdown, selectInDropdown, visitAdmin} from '../../support/adminPage';
 
 // The button next to the reports deletes the selected results, with their reports, once confirmed
@@ -14,10 +14,6 @@ const selectNewResults = (): Cypress.Chainable<{ resultsId: string; label: strin
         return cy.wrap({resultsId, label}, {log: false});
     });
 });
-
-const isListed = (resultsId: string): Cypress.Chainable<boolean> =>
-    graphql('{ integrity: contentIntegrity { summaries: scanResultsSummaries { id } } }')
-        .then(data => data.integrity.summaries.some((s: { id: string }) => s.id === resultsId));
 
 describe('Deletion of the results from the administration page', () => {
     before(() => {

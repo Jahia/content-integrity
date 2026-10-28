@@ -2,9 +2,12 @@ import {
     createTestSite,
     deleteTestSite,
     graphql,
+    isListed,
     readExecution,
     readStoredReport,
     registerSlowCheck,
+    requestAs,
+    rootUser,
     runFixture,
     scan,
     SLOW_SCAN,
@@ -22,18 +25,6 @@ const VIEWER = {username: `ci-${SITE}-viewer`, password: `ci-${SITE}-viewer-Pwd1
 const FIXER = {username: `ci-${SITE}-fixer`, password: `ci-${SITE}-fixer-Pwd1!`};
 
 const DELETE = 'query($id: String!) { integrity: contentIntegrity { deleted: deleteScanResults(id: $id) } }';
-
-const requestAs = (user: { username: string; password: string }, query: string, variables: Record<string, unknown> = {}) => cy.request({
-    method: 'POST',
-    url: '/modules/graphql',
-    auth: user,
-    headers: {Origin: Cypress.config().baseUrl},
-    body: {query, variables}
-}).its('body');
-
-const isListed = (resultsId: string): Cypress.Chainable<boolean> =>
-    graphql('{ integrity: contentIntegrity { summaries: scanResultsSummaries { id } } }')
-        .then(data => data.integrity.summaries.some((s: { id: string }) => s.id === resultsId));
 
 const scanLocks = (): Cypress.Chainable<string> => scan(LOCKS, ['LockSanityCheck']).then(results => results.resultsId as string);
 
@@ -74,7 +65,7 @@ describe('Deletion of the results of a scan', () => {
         registerSlowCheck();
         startScan(SLOW_SCAN).then(id => readExecution(id)).then(execution => {
             const resultsId = execution.resultsID as string;
-            requestAs({username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')}, DELETE, {id: resultsId}).then(body => {
+            requestAs(rootUser(), DELETE, {id: resultsId}).then(body => {
                 expect(body.errors, 'GraphQL errors').to.have.length.greaterThan(0);
                 expect(body.errors[0].message).to.contain('running scan');
             });

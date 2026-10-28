@@ -5,13 +5,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.api.content.JCRTemplate;
 import org.jahia.bin.Jahia;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.modules.contentintegrity.services.reporting.CsvReport;
 import org.jahia.modules.contentintegrity.services.reporting.ExcelReport;
 import org.jahia.modules.contentintegrity.services.reporting.Report;
@@ -46,12 +46,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.ACE_TYPE_DENY;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_SITE_PATH_PREFIX;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
+import static org.jahia.modules.contentintegrity.api.Constants.ACE_TYPE_DENY;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_PATH_SEPARATOR_CHAR;
+import static org.jahia.modules.contentintegrity.api.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
+import static org.jahia.modules.contentintegrity.api.Constants.NODE_UNDER_SITE_PATH_PREFIX;
+import static org.jahia.modules.contentintegrity.api.Constants.TAB_LVL_1;
+import static org.jahia.modules.contentintegrity.api.Constants.TAB_LVL_2;
 
 public final class Utils {
 
@@ -505,19 +505,5 @@ public final class Utils {
                 .map(ContentIntegrityError::getSite)
                 .collect(Collectors.groupingBy(Function.identity(), TreeMap::new, Collectors.counting()))
                 .forEach((site, count) -> log(String.format("%s%s: %s errors", TAB_LVL_2, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
-    }
-
-    @Deprecated
-    public static void detectLegacyErrorTypes(List<ContentIntegrityError> errors, Logger logger, ExternalLogger... externalLoggers) {
-        final List<String> checksUsingLegacyAPI = errors.stream()
-                .filter(e -> e.getErrorType() instanceof ContentIntegrityErrorTypeImplLegacy)
-                .map(ContentIntegrityError::getIntegrityCheckName)
-                .distinct()
-                .collect(Collectors.toList());
-        if (checksUsingLegacyAPI.isEmpty()) return;
-        log("Some checks are using a deprecated API for the error types. Please refactor them before this API is dropped", LOG_LEVEL.WARN, logger, externalLoggers);
-        checksUsingLegacyAPI.stream()
-                .map(TAB_LVL_1::concat)
-                .forEach(msg -> log(msg, LOG_LEVEL.WARN, logger, externalLoggers));
     }
 }

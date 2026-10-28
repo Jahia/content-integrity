@@ -1,4 +1,4 @@
-package org.jahia.modules.contentintegrity.services.impl;
+package org.jahia.modules.contentintegrity.api;
 
 import org.apache.commons.lang.StringUtils;
 

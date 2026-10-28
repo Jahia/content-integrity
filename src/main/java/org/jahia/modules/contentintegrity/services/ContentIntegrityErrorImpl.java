@@ -297,13 +297,6 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     }
 
     @Override
-    public ContentIntegrityError setErrorType(Object type) {
-        if (!(errorType instanceof ContentIntegrityErrorTypeImplLegacy)) throw new UnsupportedOperationException("The error type can't be changed afterwards");
-        ((ContentIntegrityErrorTypeImplLegacy)getErrorType()).setKeyLegacy(type.toString());
-        return this;
-    }
-
-    @Override
     public ContentIntegrityErrorType getErrorType() {
         return errorType;
     }

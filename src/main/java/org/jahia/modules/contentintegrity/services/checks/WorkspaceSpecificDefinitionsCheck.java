@@ -1,15 +1,15 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.utils.Patterns;
@@ -24,12 +24,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_MARKED_FOR_DELETION;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_LANGUAGES;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.WORKINPROGRESS_STATUS_DISABLED;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIAMIX_MARKED_FOR_DELETION;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIAMIX_MARKED_FOR_DELETION_ROOT;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS_LANGUAGES;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS_STATUS;
+import static org.jahia.modules.contentintegrity.api.Constants.WORKINPROGRESS_STATUS_DISABLED;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
 public class WorkspaceSpecificDefinitionsCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {

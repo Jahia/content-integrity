@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
+import {comparePaths, createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
 import {
     clearFilters,
     closeDetailsPanel,
@@ -19,23 +19,6 @@ import {
     selectInDropdown,
     visitLatestResults
 } from '../../support/adminPage';
-
-// The order of the paths of the errors table: name by name, whatever their case, then with their case
-const comparePaths = (a: string, b: string): number => {
-    const namesA = a.split('/').filter(Boolean);
-    const namesB = b.split('/').filter(Boolean);
-    for (let i = 0; i < Math.min(namesA.length, namesB.length); i++) {
-        const lowerA = namesA[i].toLowerCase();
-        const lowerB = namesB[i].toLowerCase();
-        if (lowerA !== lowerB) {
-            return lowerA < lowerB ? -1 : 1;
-        }
-        if (namesA[i] !== namesB[i]) {
-            return namesA[i] < namesB[i] ? -1 : 1;
-        }
-    }
-    return namesA.length - namesB.length;
-};
 
 const SITE = 'ciUiResultsTable';
 const CHECKS = ['JCRLanguagePropertyCheck', 'LockSanityCheck', 'PagesSanityCheck'];

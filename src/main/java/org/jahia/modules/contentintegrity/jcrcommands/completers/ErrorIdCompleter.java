@@ -5,20 +5,18 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.CommandLine;
-import org.apache.karaf.shell.api.console.Completer;
 import org.apache.karaf.shell.api.console.Session;
-import org.apache.karaf.shell.support.completers.StringsCompleter;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.jahia.modules.contentintegrity.jcrcommands.PrintPreviousTestCommand.LAST_PRINTED_TEST;
 
 @Service
-public class ErrorIdCompleter implements Completer {
+public class ErrorIdCompleter extends SimpleCompleter {
 
     @Reference
     private ContentIntegrityService integrityService;
@@ -27,49 +25,18 @@ public class ErrorIdCompleter implements Completer {
     private static final String ALIAS = "--test";
 
     @Override
-    public int complete(Session session, CommandLine commandLine, List<String> candidates) {
-        final String testID = getTestID(session, commandLine);
+    public List<String> getAllowedValues(Session session, CommandLine commandLine) {
+        final String testID = StringUtils.defaultIfEmpty(getOptionValue(commandLine, OPTION, ALIAS), (String) session.get(LAST_PRINTED_TEST));
         final ContentIntegrityResults testResults = integrityService.getTestResults(testID);
         final List<ContentIntegrityError> errors;
-        if (testResults == null || CollectionUtils.isEmpty(errors = testResults.getErrors())) return -1;
+        if (testResults == null || CollectionUtils.isEmpty(errors = testResults.getErrors())) return null;
 
-        final StringsCompleter delegate = new StringsCompleter();
-        final String argument = commandLine.getCursorArgument();
-        if (StringUtils.isBlank(argument)) {
-            for (int i = 0; i < errors.size(); i++) {
-                final ContentIntegrityError error = errors.get(i);
-                if (!error.isFixed()) candidates.add(Integer.toString(i));
-            }
-            candidates.add("*");
-        } else {
-            for (int i = 0; i < errors.size(); i++) {
-                final ContentIntegrityError error = errors.get(i);
-                if (!error.isFixed()) {
-                    final String errorID = Integer.toString(i);
-                    if (errorID.startsWith(argument)) candidates.add(errorID);
-                }
-            }
+        // The IDs of the errors which are not fixed yet, and * for all of them
+        final List<String> errorIDs = new ArrayList<>();
+        for (int i = 0; i < errors.size(); i++) {
+            if (!errors.get(i).isFixed()) errorIDs.add(Integer.toString(i));
         }
-        return delegate.complete(session, commandLine, candidates);
-    }
-
-    private String getTestID(Session session, CommandLine commandLine) {
-        if (commandLine.getArguments().length > 0) {
-            final List<String> arguments = Arrays.asList(commandLine.getArguments());
-            if (arguments.contains(OPTION)) {
-                final int index = arguments.indexOf(OPTION);
-                if (arguments.size() > index) {
-                    return arguments.get(index + 1);
-                }
-            }
-
-            if (arguments.contains(ALIAS)) {
-                final int index = arguments.indexOf(ALIAS);
-                if (arguments.size() > index) {
-                    return arguments.get(index + 1);
-                }
-            }
-        }
-        return (String) session.get(LAST_PRINTED_TEST);
+        errorIDs.add("*");
+        return errorIDs;
     }
 }

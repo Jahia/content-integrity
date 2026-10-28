@@ -1,6 +1,5 @@
 package org.jahia.modules.contentintegrity.jcrcommands;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
 import org.apache.karaf.shell.api.action.Command;
@@ -26,9 +25,9 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
     @Reference
     Session session;
 
-    @Argument(description = "Test date")
+    @Argument(description = "ID of the test whose results to print. Latest test used if not defined.")
     @Completion(TestDateCompleter.class)
-    private String testDate;
+    private String testID;
 
     @Option(name = "-l", aliases = "--limit", description = "Maximum number of lines to print.")
     private String limit;
@@ -46,23 +45,10 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
 
     @Override
     public Object execute() throws Exception {
-        final ContentIntegrityResults results;
-        final String errorMsg;
+        final ContentIntegrityResults results = loadTestResults(integrityService, testID);
+        if (results == null) return null;
 
-        if (StringUtils.isBlank(testDate)) {
-            results = integrityService.getLatestTestResults();
-            errorMsg = "No previous test results found";
-        } else {
-            results = integrityService.getTestResults(testDate);
-            errorMsg = "No previous test results found for this date";
-        }
-
-        if (results == null) {
-            System.out.println(errorMsg);
-            return null;
-        }
-
-        session.put(LAST_PRINTED_TEST, testDate);
+        session.put(LAST_PRINTED_TEST, testID);
         if (dumpToCSV) {
             if (uploadDump) {
                 if (!Utils.writeDumpInTheJCR(results, excludeFixedErrors, CONSOLE)) {

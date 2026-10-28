@@ -1,4 +1,4 @@
-package org.jahia.modules.contentintegrity.services.impl;
+package org.jahia.modules.contentintegrity.api;
 
 import org.apache.commons.lang.StringUtils;
 import org.jahia.osgi.BundleUtils;
@@ -27,13 +27,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_LASTPUBLISHED;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_LASTMODIFIED;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_ORIGIN_WS;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.LASTPUBLISHED;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.ORIGIN_WORKSPACE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TRANSLATION_NODE_PREFIX;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIAMIX_LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_LASTMODIFIED;
+import static org.jahia.modules.contentintegrity.api.Constants.JMIX_ORIGIN_WS;
+import static org.jahia.modules.contentintegrity.api.Constants.LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.api.Constants.LIVE_WORKSPACE;
+import static org.jahia.modules.contentintegrity.api.Constants.ORIGIN_WORKSPACE;
+import static org.jahia.modules.contentintegrity.api.Constants.TRANSLATION_NODE_PREFIX;
 
 public class JCRUtils {
 
@@ -147,13 +147,6 @@ public class JCRUtils {
             return LanguageCodeConverters.languageCodeToLocale(StringUtils.substringAfterLast(fieldName, Constants.JAHIANT_REFERENCEINFIELD_LANG_SEP));
         }
         return null;
-    }
-
-    public static boolean isNeverPublished(JCRNodeWrapper node) throws RepositoryException {
-        if (!isInDefaultWorkspace(node))
-            throw new IllegalArgumentException("The publication status can be tested only in the default workspace");
-
-        return !nodeExists(node.getIdentifier(), getSystemSession(LIVE_WORKSPACE));
     }
 
     private static boolean isInWorkspace(Node node, String workspace) {

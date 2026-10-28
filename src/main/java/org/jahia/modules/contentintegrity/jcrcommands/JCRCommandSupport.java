@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.jcrcommands;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.api.console.Terminal;
@@ -9,6 +10,7 @@ import org.apache.karaf.shell.support.table.Row;
 import org.apache.karaf.shell.support.table.ShellTable;
 import org.jahia.api.settings.SettingsBean;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.osgi.BundleUtils;
@@ -78,6 +80,30 @@ public class JCRCommandSupport {
                 }
             }
         }
+    }
+
+    /**
+     * Loads the results of a scan, or of the latest scan if no ID is specified, and prints a message if they can't be found
+     */
+    protected ContentIntegrityResults loadTestResults(ContentIntegrityService service, String testID) {
+        final ContentIntegrityResults results = service.getTestResults(testID);
+        if (results == null) {
+            if (StringUtils.isBlank(testID)) System.out.println("No previous test results found");
+            else System.out.println(String.format("No test results found for the ID %s", testID));
+        }
+        return results;
+    }
+
+    /**
+     * Returns the error at the specified index of the errors, or prints a message and returns null if there is none
+     */
+    protected ContentIntegrityError getError(List<ContentIntegrityError> errors, String errorID) {
+        final int errorIdx = NumberUtils.toInt(errorID, -1);
+        if (errorIdx < 0 || errorIdx >= errors.size()) {
+            System.out.println(String.format("The specified error (id=%s) couldn't be found", errorID));
+            return null;
+        }
+        return errors.get(errorIdx);
     }
 
     protected void printContentIntegrityErrors(ContentIntegrityResults results, String limitStr, Session session) throws JSONException {

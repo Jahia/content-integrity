@@ -1,18 +1,12 @@
-package org.jahia.modules.contentintegrity.services.impl;
+package org.jahia.modules.contentintegrity.api;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.bin.Jahia;
 import org.jahia.commons.Version;
-import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
-import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
-import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorImpl;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorListImpl;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorTypeImpl;
-import org.jahia.modules.contentintegrity.services.ContentIntegrityErrorTypeImplLegacy;
-import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.utils.Patterns;
 import org.osgi.service.component.ComponentContext;
@@ -28,8 +22,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
-
 public abstract class AbstractContentIntegrityCheck implements ContentIntegrityCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractContentIntegrityCheck.class);
@@ -38,7 +30,6 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     private float priority = 100f;
     private boolean enabled = true;
     private boolean scanDurationDisabled = false;
-    private String description;
     private final List<ExecutionCondition> conditions = new LinkedList<>();
     private String id = null;
     private long ownTime = 0L;
@@ -135,12 +126,6 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         conditions.add(condition);
     }
 
-    public final void setConditions(List<ExecutionCondition> conditions) {
-        for (ExecutionCondition condition : conditions) {
-            addCondition(condition);
-        }
-    }
-
     @Override
     public final boolean areConditionsReachable(JCRNodeWrapper scanRootNode, Collection<String> excludedPaths) {
         return conditions.stream().allMatch(c -> c.isReachableCondition(scanRootNode, excludedPaths) >= 0);
@@ -168,14 +153,6 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
 
     protected final void setScanDurationDisabled(boolean scanDurationDisabled) {
         this.scanDurationDisabled = scanDurationDisabled;
-    }
-
-    public final String getDescription() {
-        return description;
-    }
-
-    public final void setDescription(String description) {
-        this.description = description;
     }
 
     @Override
@@ -265,24 +242,6 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
     protected final ContentIntegrityError createFrameworkError(JCRNodeWrapper node, String locale, String message, Throwable t) {
         logger.error(StringUtils.trimToEmpty(message), t);
         return ContentIntegrityErrorImpl.createFrameworkError(node, locale, message, t, this);
-    }
-
-    @Deprecated
-    protected final ContentIntegrityError createError(JCRNodeWrapper node, String message) {
-        return createError(node, (String) null, message);
-    }
-
-    @Deprecated
-    protected final ContentIntegrityError createError(JCRNodeWrapper node, String locale, String message) {
-        String key = StringUtils.defaultIfBlank(JCRContentUtils.generateNodeName(message, message.length()), "undefined");
-        key = Patterns.DASH.matcher(key).replaceAll(Patterns.UNDERSCORE.pattern());
-        key = StringUtils.upperCase(key);
-        return createError(node, locale, new ContentIntegrityErrorTypeImplLegacy(key), message);
-    }
-
-    @Deprecated
-    protected final ContentIntegrityError createError(JCRNodeWrapper node, Locale locale, String message) {
-        return createError(node, locale.toString(), message);
     }
 
     /**
@@ -531,12 +490,12 @@ public abstract class AbstractContentIntegrityCheck implements ContentIntegrityC
         private final String treePathPlusSlash;
 
         public SubtreeCondition(String treePath) {
-            if (treePath.endsWith(JCR_PATH_SEPARATOR)) {
+            if (treePath.endsWith(Constants.JCR_PATH_SEPARATOR)) {
                 this.treePath = treePath.length() == 1 ? treePath : treePath.substring(0, treePath.length() - 1);
                 treePathPlusSlash = treePath;
             } else {
                 this.treePath = treePath;
-                treePathPlusSlash = treePath.concat(JCR_PATH_SEPARATOR);
+                treePathPlusSlash = treePath.concat(Constants.JCR_PATH_SEPARATOR);
             }
         }
 

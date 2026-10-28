@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, graphql, runFixture, scan, ScanResults} from '../../support/integrity';
+import {createTestSite, deleteTestSite, graphql, requestAs, runFixture, scan, ScanResults} from '../../support/integrity';
 import {closeDetailsPanel, getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitLatestResults} from '../../support/adminPage';
 
 // The access to the module, adminContentIntegrity, allows to scan and to read the results. Fixing the errors writes to the
@@ -8,16 +8,6 @@ const SITE = 'ciFixPermission';
 const LOCKS = `/sites/${SITE}/contents/locks`;
 const VIEWER = {username: `ci-${SITE}-viewer`, password: `ci-${SITE}-viewer-Pwd1!`};
 const FIXER = {username: `ci-${SITE}-fixer`, password: `ci-${SITE}-fixer-Pwd1!`};
-
-type User = { username: string; password: string };
-
-const requestAs = (user: User, query: string, variables: Record<string, unknown> = {}) => cy.request({
-    method: 'POST',
-    url: '/modules/graphql',
-    auth: user,
-    headers: {Origin: Cypress.config().baseUrl},
-    body: {query, variables}
-}).its('body');
 
 const FIX_ERROR = 'query($resultsId: String, $id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id) { fixed } } } }';
 const FIX_ERRORS = 'query($resultsId: String, $ids: [String]!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { errors: fixErrors(ids: $ids) { fixed } } } }';

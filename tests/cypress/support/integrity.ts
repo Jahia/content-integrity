@@ -39,14 +39,26 @@ const SCAN_POLLING_ATTEMPTS = 240;
 
 const ERROR_FIELDS = 'id checkName errorType workspace nodePath nodeId locale message fixed fixable fixWithValues extraInfos { label value }';
 
-const request = (query: string, variables: Record<string, unknown> = {}): Cypress.Chainable<Cypress.Response<any>> => cy.request({
+export type User = { username: string; password: string };
+
+export const rootUser = (): User => ({username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')});
+
+const post = (user: User, query: string, variables: Record<string, unknown>): Cypress.Chainable<Cypress.Response<any>> => cy.request({
     method: 'POST',
     url: '/modules/graphql',
-    auth: {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')},
+    auth: user,
     headers: {Origin: Cypress.config().baseUrl},
     body: {query, variables},
     log: false
 });
+
+const request = (query: string, variables: Record<string, unknown> = {}): Cypress.Chainable<Cypress.Response<any>> => post(rootUser(), query, variables);
+
+/**
+ * Runs a GraphQL query as a user, and yields the body of the response, with its errors, which the test asserts.
+ */
+export const requestAs = (user: User, query: string, variables: Record<string, unknown> = {}): Cypress.Chainable<any> =>
+    post(user, query, variables).its('body');
 
 /**
  * Runs a GraphQL query as root, and fails the test if the response carries errors.
@@ -284,7 +296,7 @@ const matchesPath = (error: IntegrityError, path?: PathMatcher): boolean => {
 /**
  * The errors of a type, optionally on a node.
  */
-export const errorsOf = (results: ScanResults, errorType: string, path?: PathMatcher): IntegrityError[] =>
+const errorsOf = (results: ScanResults, errorType: string, path?: PathMatcher): IntegrityError[] =>
     results.errors.filter(e => e.errorType === errorType && matchesPath(e, path));
 
 const describeErrors = (results: ScanResults): string => results.errors.map(e => `${e.errorType} on ${e.nodePath}`).join(', ') || 'no error';
@@ -421,4 +433,30 @@ export const expectNoFix = (startNode: string, checks: string[], workspace: Work
 export const expectCheckEnabled = (checkId: string, enabled: boolean): void => {
     graphql('query($id: String) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { id enabled } } }', {id: checkId})
         .then(data => expect(data.integrity.check.enabled, `${checkId} is enabled`).to.equal(enabled));
+};
+
+/**
+ * True if the results are listed among the stored results.
+ */
+export const isListed = (resultsId: string): Cypress.Chainable<boolean> =>
+    graphql('{ integrity: contentIntegrity { summaries: scanResultsSummaries { id } } }')
+        .then(data => data.integrity.summaries.some((s: { id: string }) => s.id === resultsId));
+
+/**
+ * The order of the paths of the errors table: name by name, whatever their case, then with their case.
+ */
+export const comparePaths = (a: string, b: string): number => {
+    const namesA = a.split('/').filter(Boolean);
+    const namesB = b.split('/').filter(Boolean);
+    for (let i = 0; i < Math.min(namesA.length, namesB.length); i++) {
+        const lowerA = namesA[i].toLowerCase();
+        const lowerB = namesB[i].toLowerCase();
+        if (lowerA !== lowerB) {
+            return lowerA < lowerB ? -1 : 1;
+        }
+        if (namesA[i] !== namesB[i]) {
+            return namesA[i] < namesB[i] ? -1 : 1;
+        }
+    }
+    return namesA.length - namesB.length;
 };
