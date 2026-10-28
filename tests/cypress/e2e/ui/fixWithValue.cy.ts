@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, runFixture, scan} from '../../support/integrity';
-import {closeDetailsPanel, getDetailsPanel, getDialog, getNodeErrorRows, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
+import {closeDetailsPanel, confirmFix, getDetailsPanel, getDialog, getNodeErrorRows, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
 
 const SITE = 'ciUiFixWithValue';
 const ROOT = `/sites/${SITE}/contents/property-definitions`;
@@ -48,10 +48,12 @@ describe('Fix of a missing mandatory property with a typed value', () => {
         getDetailsPanel().within(() => {
             cy.get('input[aria-label="width"]').type('not a number');
             cy.contains('button', /^Fix$/).click();
+            confirmFix(1);
             cy.contains('not a number').should('be.visible');
             // A rejected value is not a failed fix: it is corrected in its field
             cy.contains('Not fixed').should('not.exist');
             cy.get('input[aria-label="width"]').clear().type('640{enter}');
+            confirmFix(1);
             cy.contains('Fixed').should('be.visible');
             cy.contains('Fix with a value').should('not.exist');
             cy.contains('button', /^Fix$/).should('not.exist');
@@ -85,6 +87,7 @@ describe('Fix of a missing mandatory property with a typed value', () => {
             cy.contains('button', /^Fix all \(2\)$/).should('be.enabled');
             cy.contains('[data-error-id]', 'INVALID_VALUE_CONSTRAINT').within(() => {
                 cy.contains('button', /^Fix$/).click();
+                confirmFix(1);
                 cy.contains('Fixed').should('be.visible');
             });
             // The undeclared property is left to its own fix
@@ -98,6 +101,7 @@ describe('Fix of a missing mandatory property with a typed value', () => {
         openErrorDetails(INVALID_VALUES);
         // The undeclared property has a fix, the values of the wrong type have none, the value which breaks the constraints waits for a value
         getDetailsPanel().contains('button', /^Fix all \(1\)$/).click();
+        confirmFix(1);
         getDialog('Outcome of the fix', 30000).within(() => {
             cy.get('[data-fix-outcome=fixed]').should('have.text', 'Fixed: 1');
             cy.get('[data-fix-outcome=skipped]').should('contain.text', 'Skipped: 3').within(() => {
@@ -143,6 +147,7 @@ describe('Fix of a missing mandatory property with a typed value', () => {
             cy.contains('button', /^Fix 2 errors$/).should('be.disabled');
             cy.get('input[aria-label="height"]').type('480');
             cy.contains('button', /^Fix 2 errors$/).click();
+            confirmFix(2);
             cy.get('[data-error-id]').filter(':contains("Fixed")').should('have.length', 2);
         });
         closeDetailsPanel();

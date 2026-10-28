@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, requestAs, runFixture, scan, ScanResults} from '../../support/integrity';
-import {closeDetailsPanel, getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitLatestResults} from '../../support/adminPage';
+import {closeDetailsPanel, confirmFix, getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitLatestResults} from '../../support/adminPage';
 
 // The access to the module, adminContentIntegrity, allows to scan and to read the results. Fixing the errors writes to the
 // repository with a system session, so it requires its own permission, adminContentIntegrityFix, which the first one
@@ -98,6 +98,7 @@ describe('Permission to fix the errors', () => {
         cy.get('#ci-results-menu').should('not.exist');
         openErrorDetails(`${LOCKS}/inconsistent-lock`);
         getDetailsPanel().contains('button', /^Fix$/).click();
+        confirmFix(1);
         getDetailsPanel().contains('Fixed').should('be.visible');
         // The fix status, in the last column, is displayed once the panel is closed
         closeDetailsPanel();

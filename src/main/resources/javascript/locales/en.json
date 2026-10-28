@@ -8,6 +8,7 @@
     },
     "add": "Add",
     "cancel": "Cancel",
+    "acknowledge": "Be careful, data are going to be altered in this environment",
     "close": "Close",
     "save": "Save",
     "reports": "Reports",
@@ -129,7 +130,10 @@
       "helper": "Fix this error with the fix of {{check}}",
       "withValuesHelper": "Fix this error with the typed value",
       "fixAllNode": "Fix all ({{count}})",
-      "fixAllNodeHelper": "Fix the errors of the node which can be fixed now: an error fixed with values once they are typed"
+      "fixAllNodeHelper": "Fix the errors of the node which can be fixed now: an error fixed with values once they are typed",
+      "confirmTitle": "Fix the errors of the node",
+      "confirmDescription": "The fix of its check will be run on {{count}} errors of the node {{path}}.",
+      "confirmWarning": "Some fixes remove content, such as a node whose type is not declared anymore."
     },
     "fixDescription": {
       "AceSanityCheck": {

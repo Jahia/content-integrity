@@ -2,6 +2,7 @@ import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/in
 import {
     clearFilters,
     closeDetailsPanel,
+    confirmFix,
     getDetailsPanel,
     getDetailsWorkspace,
     getDialog,
@@ -83,6 +84,7 @@ describe('Fix of the errors', () => {
         openErrorDetails(`${LOCKS}/inconsistent-lock`);
         getDetailsPanel().within(() => {
             cy.contains('button', /^Fix$/).click();
+            confirmFix(1);
             cy.contains('Fixed').should('be.visible');
             cy.contains('button', /^Fix$/).should('not.exist');
         });
@@ -102,7 +104,7 @@ describe('Fix of the errors', () => {
         clearFilters();
         selectInDropdown('Error type', /^NO_HOME \(1\)$/);
         cy.contains('button', 'Fix all').click();
-        getDialog('Fix all the displayed errors').within(() => cy.contains('button', 'Fix 1 errors').click());
+        confirmFix(1);
         // The fix has run without fixing the error: the dialog tells what the fix does, which says when it can't fix
         getDialog('Outcome of the fix', 30000).within(() => {
             cy.get('[data-fix-outcome=fixed]').should('have.text', 'Fixed: 0');
@@ -143,6 +145,7 @@ describe('Fix of the errors', () => {
         cy.contains('li.moonstone-menuItem', /^home$/).click();
         getDetailsPanel().within(() => {
             cy.contains('button', /^Fix$/).click();
+            confirmFix(1);
             cy.contains('Fixed').should('be.visible');
         });
         closeDetailsPanel();
@@ -155,6 +158,7 @@ describe('Fix of the errors', () => {
         const translation = `${LOCKS}/deletion-lock-on-translation/j:translation_en`;
         openErrorDetails(translation);
         getDetailsPanel().contains('button', /^Fix all \(2\)$/).click();
+        confirmFix(2);
         getDetailsPanel().find('[data-error-id]').filter(':contains("Fixed")').should('have.length', 2);
         // Nothing is left to fix: Fix all stays at the bottom of the panel of a node with several errors, disabled
         getDetailsPanel().contains('button', /^Fix all \(0\)$/).should('be.disabled');
@@ -168,7 +172,10 @@ describe('Fix of the errors', () => {
         openErrorDetails(translation);
         getDetailsPanel().within(() => {
             cy.contains('button', /^Fix \d+ errors$/).should('not.exist');
-            cy.get('[data-error-id]').should('have.length', 2).each(card => cy.wrap(card).contains('button', /^Fix$/).click());
+            cy.get('[data-error-id]').should('have.length', 2).each(card => {
+                cy.wrap(card).contains('button', /^Fix$/).click();
+                confirmFix(1);
+            });
             cy.get('[data-error-id]').filter(':contains("Fixed")').should('have.length', 2);
         });
         closeDetailsPanel();

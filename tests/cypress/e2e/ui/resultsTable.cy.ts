@@ -3,6 +3,7 @@ import {
     clearFilters,
     closeDetailsPanel,
     closeMenu,
+    confirmFix,
     getColumnLabels,
     getDetailsPanel,
     getDialog,
@@ -235,6 +236,7 @@ describe('Results table', () => {
         closeMenu();
         openErrorDetails(INCONSISTENT_LOCK);
         getDetailsPanel().contains('button', /^Fix$/).click();
+        confirmFix(1);
         getDetailsPanel().contains('Fixed').should('be.visible');
         closeDetailsPanel();
         selectInDropdown('Fix status', 'Fixed (1)');
@@ -250,6 +252,20 @@ describe('Results table', () => {
         cy.contains('button', 'Fix all').click();
         getDialog('Fix all the displayed errors').within(() => {
             cy.contains('3 errors matching the filters').should('be.visible');
+            // The fix is confirmed only once the administrator has ticked that the data are going to be altered
+            cy.contains('Be careful, data are going to be altered in this environment').should('be.visible');
+            cy.get('#ci-acknowledge').should('not.be.checked');
+            cy.contains('button', 'Fix 3 errors').should('be.disabled');
+            cy.get('#ci-acknowledge').click({force: true});
+            cy.contains('button', 'Fix 3 errors').should('be.enabled');
+            cy.contains('button', 'Cancel').click();
+        });
+        cy.get('[role=dialog]').should('not.exist');
+        // Opened again, the confirmation has to be ticked again
+        cy.contains('button', 'Fix all').click();
+        getDialog('Fix all the displayed errors').within(() => {
+            cy.get('#ci-acknowledge').should('not.be.checked');
+            cy.contains('button', 'Fix 3 errors').should('be.disabled');
             cy.contains('button', 'Cancel').click();
         });
         cy.get('[role=dialog]').should('not.exist');
@@ -258,7 +274,7 @@ describe('Results table', () => {
 
     it('fixes all the errors matching the filters, and skips the ones fixed with a chosen value', () => {
         cy.contains('button', 'Fix all').click();
-        getDialog('Fix all the displayed errors').within(() => cy.contains('button', 'Fix 3 errors').click());
+        confirmFix(3);
         // The outcome tells how many errors are fixed, and why the other ones are skipped
         getDialog('Outcome of the fix', 30000).within(() => {
             cy.get('[data-fix-outcome=fixed]').should('have.text', 'Fixed: 2');

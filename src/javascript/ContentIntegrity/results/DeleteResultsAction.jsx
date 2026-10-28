@@ -3,16 +3,17 @@ import PropTypes from 'prop-types';
 import {useApolloClient} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
 import {Button, Delete, Menu, MenuItem, MoreVert, Typography} from '@jahia/moonstone';
-import {Dialog} from '../common/Dialog';
+import {ConfirmDialog} from '../common/ConfirmDialog';
 import {DELETE_ALL_SCAN_RESULTS, DELETE_SCAN_RESULTS} from '../ContentIntegrity.gql';
 import styles from '../ContentIntegrity.scss';
 
 /**
- * A deletion of stored results, which can't be undone, so the administrator confirms first. trigger renders what opens
+ * A deletion of stored results, which can't be undone, so the administrator confirms first, and, with
+ * requiresAcknowledgement, ticks that the data are going to be altered. trigger renders what opens
  * the confirmation, from the function it receives. onDeleted is called once the results are deleted: the page then
  * displays no results until a scan is chosen, as after a refresh.
  */
-const ConfirmedDeletion = ({trigger, labels, query, variables, onDeleted}) => {
+const ConfirmedDeletion = ({trigger, labels, query, variables, requiresAcknowledgement = false, onDeleted}) => {
     const {t} = useTranslation('content-integrity');
     const client = useApolloClient();
     const [isConfirming, setConfirming] = useState(false);
@@ -37,25 +38,19 @@ const ConfirmedDeletion = ({trigger, labels, query, variables, onDeleted}) => {
                 setError(null);
                 setConfirming(true);
             })}
-            <Dialog isOpen={isConfirming}
-                    title={labels.title}
-                    actions={(
-                        <>
-                            <Button label={t('label.cancel')} variant="outlined" isDisabled={isDeleting} onClick={() => setConfirming(false)}/>
-                            <Button label={labels.confirm}
-                                    icon={<Delete/>}
-                                    color="danger"
-                                    isLoading={isDeleting}
-                                    isDisabled={isDeleting}
-                                    onClick={deleteResults}/>
-                        </>
-                    )}
-                    onClose={() => !isDeleting && setConfirming(false)}
+            <ConfirmDialog isOpen={isConfirming}
+                           title={labels.title}
+                           confirmLabel={labels.confirm}
+                           icon={<Delete/>}
+                           isPending={isDeleting}
+                           requiresAcknowledgement={requiresAcknowledgement}
+                           onConfirm={deleteResults}
+                           onClose={() => setConfirming(false)}
             >
                 <Typography>{labels.description}</Typography>
                 <Typography className={styles.helper}>{t('label.deleteResults.warning')}</Typography>
                 {error && <Typography variant="caption" className={styles.error} role="alert">{error}</Typography>}
-            </Dialog>
+            </ConfirmDialog>
         </>
     );
 };
@@ -69,6 +64,7 @@ ConfirmedDeletion.propTypes = {
     }).isRequired,
     query: PropTypes.object.isRequired,
     variables: PropTypes.object,
+    requiresAcknowledgement: PropTypes.bool,
     onDeleted: PropTypes.func.isRequired
 };
 
@@ -152,7 +148,8 @@ export const ResultsMenu = ({count, onDeleted}) => {
                                confirm: t('label.deleteAllResults.confirm', {count})
                            }}
                            query={DELETE_ALL_SCAN_RESULTS}
-                           onDeleted={onDeleted}/>
+                           onDeleted={onDeleted}
+                           requiresAcknowledgement/>
     );
 };
 

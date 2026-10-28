@@ -8,6 +8,7 @@
     },
     "add": "Ajouter",
     "cancel": "Annuler",
+    "acknowledge": "Attention, des données vont être modifiées dans cet environnement",
     "close": "Fermer",
     "save": "Enregistrer",
     "reports": "Rapports",
@@ -129,7 +130,10 @@
       "helper": "Corriger cette erreur avec la correction de {{check}}",
       "withValuesHelper": "Corriger cette erreur avec la valeur saisie",
       "fixAllNode": "Tout corriger ({{count}})",
-      "fixAllNodeHelper": "Corriger les erreurs du nœud qui peuvent l'être maintenant : une erreur corrigée avec des valeurs, une fois celles-ci saisies"
+      "fixAllNodeHelper": "Corriger les erreurs du nœud qui peuvent l'être maintenant : une erreur corrigée avec des valeurs, une fois celles-ci saisies",
+      "confirmTitle": "Corriger les erreurs du nœud",
+      "confirmDescription": "Le correctif de son contrôle sera exécuté sur {{count}} erreurs du nœud {{path}}.",
+      "confirmWarning": "Certains correctifs suppriment du contenu, par exemple un nœud dont le type n'est plus déclaré."
     },
     "fixDescription": {
       "AceSanityCheck": {

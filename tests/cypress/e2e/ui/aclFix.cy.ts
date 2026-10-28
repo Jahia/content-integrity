@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {closeDetailsPanel, getDetailsPanel, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
+import {closeDetailsPanel, confirmFix, getDetailsPanel, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
 
 const SITE = 'ciUiAclFix';
 const USER = `ci-${SITE}-ace`;
@@ -40,6 +40,7 @@ describe('Fix of an access control entry in the administration page', () => {
         });
         getDetailsPanel().within(() => {
             cy.contains('button', /^Fix$/).click();
+            confirmFix(1);
             cy.contains('Fixed').should('be.visible');
         });
         // The fix status, in the last column, is displayed once the panel is closed

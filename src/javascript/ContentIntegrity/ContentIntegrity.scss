@@ -571,8 +571,9 @@
 }
 
 /* What the fix of an error changes, above its Fix button: set apart from the details, as it describes a write */
+// A wrapper, not the Typography itself, holds the padding: the style of the Typography of Moonstone would reset it
 .fixDescription {
-  padding-left: var(--spacing-small);
+  padding-left: var(--spacing-medium);
   border-left: 3px solid var(--color-danger);
 }
 
@@ -712,6 +713,13 @@
 .dialogBody {
   flex: 1;
   overflow: auto;
+}
+
+// The description, the warning and the acknowledgement of a confirmation, spaced to be read one after the other
+.confirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
 }
 
 .dialogActions {

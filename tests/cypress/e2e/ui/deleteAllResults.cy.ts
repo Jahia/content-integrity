@@ -57,7 +57,10 @@ describe('Deletion of the results of all the scans', () => {
                 openDeleteAll();
                 getDialog(TITLE).within(() => {
                     cy.contains(`The results of the ${stored.length} scans will be deleted`);
-                    cy.contains('button', `Delete ${stored.length} results`).click();
+                    // The deletion is confirmed only once the administrator has ticked that the data are going to be altered
+                    cy.contains('button', `Delete ${stored.length} results`).should('be.disabled');
+                    cy.get('#ci-acknowledge').should('not.be.checked').click({force: true});
+                    cy.contains('button', `Delete ${stored.length} results`).should('be.enabled').click();
                 });
                 cy.contains(TITLE).should('not.exist');
                 listResults().should('have.length', 0);

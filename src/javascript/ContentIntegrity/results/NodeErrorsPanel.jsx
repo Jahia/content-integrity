@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import {useQuery} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
 import {Build, Button, Chip, Close, Loader, Typography, Warning} from '@jahia/moonstone';
+import {ConfirmDialog} from '../common/ConfirmDialog';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {GET_NODE_ERRORS} from '../ContentIntegrity.gql';
 import {formatCell} from './columns';
@@ -83,6 +84,8 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
     const [messages, setMessages] = useState({});
     // The outcome of Fix all, displayed in a dialog
     const [outcome, setOutcome] = useState(null);
+    // The fix waiting for its confirmation: the number of errors it fixes, and the action of its button
+    const [confirmation, setConfirmation] = useState(null);
     const valuesOf = e => typedValues[e.id] || initialFixValues(e.fixValues);
 
     const isFixed = e => e.fixed || fixStates[e.id] === FIX_STATES.FIXED;
@@ -170,7 +173,18 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
     const fixDescriptionKey = e => `label.fixDescription.${e.checkName}.${e.errorType}`;
     const fixDescription = e => (i18n.exists(fixDescriptionKey(e), {ns: 'content-integrity'}) ? t(fixDescriptionKey(e)) : null);
     const fixOne = e => fix(e.id, [fixOf(e)]);
-    // A fix writes to the repository: its button is a danger one, light for the fix of an error, full for Fix all
+    // A fix writes to the repository: its button is a danger one, light for the fix of an error, full for Fix all. It runs
+    // once confirmed, whether it is asked for by its button or by Enter in a field of its values
+    const askConfirmation = (fixes, run) => {
+        if (isReady(fixes) && !isFixing) {
+            setConfirmation({count: fixes.length, run});
+        }
+    };
+    const confirmFix = () => {
+        const {run} = confirmation;
+        setConfirmation(null);
+        run();
+    };
     const fixButton = (fixes, onClick, label, title, isFixAll = false) => (
         <Button className={styles.fixButton}
                 label={label}
@@ -181,7 +195,7 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                 isLoading={fixes.some(f => fixStates[f.id] === FIX_STATES.FIXING)}
                 isDisabled={!isReady(fixes) || isFixing}
                 title={title}
-                onClick={onClick}/>
+                onClick={() => askConfirmation(fixes, onClick)}/>
     );
 
     // The panel starts below the header of the page, whose actions, such as Refresh, stay usable while it is open
@@ -273,7 +287,7 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                                     {e.virtualNode && !isFixed(e) && <Typography className={styles.helper}>{t('label.details.virtualNode')}</Typography>}
                                     {!e.nodeExists && !isFixed(e) && <Typography className={styles.helper} data-node-removed>{t('label.details.nodeRemovedHelper')}</Typography>}
                                     {(fixStates[e.id] === FIX_STATES.FAILED || (e.fixFailed && !fixStates[e.id])) && <Typography className={styles.helper}>{t('label.fix.failedHelper')}</Typography>}
-                                    {isOffered(e) && fixDescription(e) && <Typography className={styles.fixDescription} data-fix-description>{fixDescription(e)}</Typography>}
+                                    {isOffered(e) && fixDescription(e) && <div className={styles.fixDescription} data-fix-description><Typography>{fixDescription(e)}</Typography></div>}
                                     {takesValues(e) && (
                                         <FixValuesForm errorId={e.id}
                                                        definition={e.fixValues}
@@ -284,7 +298,7 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                                                            setTypedValues(prev => ({...prev, [e.id]: next}));
                                                            setMessages(prev => ({...prev, [isLinked(e) ? LINKED : e.id]: null}));
                                                        }}
-                                                       onSubmit={() => (isLinked(e) ? fixLinked() : fixOne(e))}
+                                                       onSubmit={() => (isLinked(e) ? askConfirmation(linked.map(fixOf), fixLinked) : askConfirmation([fixOf(e)], () => fixOne(e)))}
                                         >
                                             {!isLinked(e) && fixButton([fixOf(e)], () => fixOne(e), t('label.fix.fix'), t('label.fix.withValuesHelper'))}
                                         </FixValuesForm>
@@ -318,6 +332,17 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                     </div>
                 </div>
             )}
+            <ConfirmDialog isOpen={confirmation !== null}
+                           title={t('label.fix.confirmTitle')}
+                           confirmLabel={t('label.fix.fixCount', {count: confirmation?.count || 0})}
+                           icon={<Build/>}
+                           onConfirm={confirmFix}
+                           onClose={() => setConfirmation(null)}
+                           requiresAcknowledgement
+            >
+                <Typography>{t('label.fix.confirmDescription', {count: confirmation?.count || 0, path})}</Typography>
+                <Typography className={styles.helper}>{t('label.fix.confirmWarning')}</Typography>
+            </ConfirmDialog>
             <FixOutcomeDialog outcome={outcome} onClose={() => setOutcome(null)}/>
         </aside>
     );

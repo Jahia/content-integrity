@@ -3,14 +3,14 @@ import PropTypes from 'prop-types';
 import {useApolloClient} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
 import {Build, Button, Typography} from '@jahia/moonstone';
-import {Dialog} from '../common/Dialog';
+import {ConfirmDialog} from '../common/ConfirmDialog';
 import {FIX_ALL_ERRORS} from '../ContentIntegrity.gql';
 import {FixOutcomeDialog} from './FixOutcomeDialog';
 import styles from '../ContentIntegrity.scss';
 
 /**
  * Fixes all the errors matching the active filters, each with the fix of the check which has detected it. A fix can
- * remove content, so the administrator confirms first. The outcome is displayed in a dialog, which tells why errors are
+ * remove content, so the administrator confirms first, once they have ticked that the data are going to be altered. The outcome is displayed in a dialog, which tells why errors are
  * skipped or not fixed, and is passed to onFixed, which tags the errors not fixed.
  */
 export const FixAllAction = ({resultsId, filterArgs, errorCount, onFixed}) => {
@@ -48,24 +48,18 @@ export const FixAllAction = ({resultsId, filterArgs, errorCount, onFixed}) => {
                     isLoading={isFixing}
                     isDisabled={errorCount === 0 || isFixing}
                     onClick={() => setConfirming(true)}/>
-            <Dialog isOpen={isConfirming}
-                    title={t('label.fixAll.title')}
-                    actions={(
-                        <>
-                            <Button label={t('label.cancel')} variant="outlined" isDisabled={isFixing} onClick={() => setConfirming(false)}/>
-                            <Button label={t('label.fixAll.confirm', {count: errorCount})}
-                                    icon={<Build/>}
-                                    color="danger"
-                                    isLoading={isFixing}
-                                    isDisabled={isFixing}
-                                    onClick={fixAll}/>
-                        </>
-                    )}
-                    onClose={() => !isFixing && setConfirming(false)}
+            <ConfirmDialog isOpen={isConfirming}
+                           title={t('label.fixAll.title')}
+                           confirmLabel={t('label.fixAll.confirm', {count: errorCount})}
+                           icon={<Build/>}
+                           isPending={isFixing}
+                           onConfirm={fixAll}
+                           onClose={() => setConfirming(false)}
+                           requiresAcknowledgement
             >
                 <Typography>{t('label.fixAll.description', {count: errorCount})}</Typography>
                 <Typography className={styles.helper}>{t('label.fixAll.warning')}</Typography>
-            </Dialog>
+            </ConfirmDialog>
             <FixOutcomeDialog outcome={outcome?.result} onClose={() => setOutcome(null)}/>
         </div>
     );

@@ -47,6 +47,17 @@ export const getDialog = (title: string, timeout?: number): Cypress.Chainable<JQ
     cy.contains('[role=dialog]', title, timeout ? {timeout} : undefined).should('be.visible');
 
 /**
+ * Confirms a fix, of the errors of a node or of all the displayed errors: ticks that the data are going to be altered,
+ * which enables the button. The confirmation is looked up in the whole page, whatever the scope of a within.
+ */
+export const confirmFix = (count: number): void => {
+    cy.document().its('body').find('#ci-acknowledge').closest('[role=dialog]').should('be.visible').within(() => {
+        cy.get('#ci-acknowledge').should('not.be.checked').click({force: true});
+        cy.contains('button', `Fix ${count} errors`).should('be.enabled').click();
+    });
+};
+
+/**
  * The card of the scan which runs. It is displayed only while a scan runs.
  */
 export const getCurrentScanCard = (): Cypress.Chainable<JQuery<HTMLElement>> =>
