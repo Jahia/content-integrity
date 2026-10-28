@@ -4,7 +4,7 @@
   "description": "Content Integrity administration UI for Jahia",
   "main": "index.js",
   "author": "Jahia",
-  "license": "JSEL",
+  "license": "MIT",
   "scripts": {
     "build": "yarn webpack",
     "build:dev": "yarn webpack",

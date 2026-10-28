@@ -23,7 +23,7 @@ The tests need Jahia 8.1.5 or later with the module deployed, and a root passwor
 
 ```bash
 yarn install
-JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root yarn e2e:local
+JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root yarn e2e:ci
 ```
 
 Set both `JAHIA_URL` and `SUPER_USER_PASSWORD`: without any of them, `@jahia/cypress` uses `http://localhost:8080` and
