@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import {useQuery} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
 import {
-    Add,
     Button,
     ChevronDown,
     ChevronRight,
@@ -27,10 +26,11 @@ import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, F
 import {NodeErrorsPanel} from './NodeErrorsPanel';
 import {FixStatus} from './FixStatus';
 import {FixAllAction} from './FixAllAction';
-import {DeleteResultsAction} from './DeleteResultsAction';
+import {DeleteResultsAction, ResultsMenu} from './DeleteResultsAction';
 import {FIX_STATES, useFixError} from './useFixError';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {ReportLinks} from '../common/ReportLinks';
+import {EmptyState} from '../common/EmptyState';
 import styles from '../ContentIntegrity.scss';
 
 const ALL = '__all__';
@@ -98,13 +98,15 @@ FilterDropdown.propTypes = {
     onChange: PropTypes.func.isRequired
 };
 
-export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, isScanLocked, onRequestConsumed, onNewScan}) => {
+export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, onRequestConsumed, onResultsDeleted, onNewScan}) => {
     const {t, i18n} = useTranslation('content-integrity');
     const list = useQuery(GET_SCAN_RESULTS_LIST, {fetchPolicy: 'network-only'});
     const summaries = useMemo(() => list.data?.integrity?.scanResults || [], [list.data]);
     const ids = useMemo(() => summaries.map(s => s.id), [summaries]);
     // The deletion of the results requires the permission adminContentIntegrityDelete, which the access to the module does not grant
     const canDeleteResults = list.data?.integrity?.canDeleteResults === true;
+    // The results of a running scan are not deleted
+    const deletableCount = summaries.filter(s => s.status !== 'running').length;
 
     const [resultsId, setResultsId] = useState(null);
     const [page, setPage] = useState(1);
@@ -135,16 +137,14 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
         }
     }, [requestedResultsId, refetchList]);
 
-    // A scan that just ended wins, then the current selection if still stored, then the latest result, unless the results
-    // were cleared by Refresh: then none is displayed until a scan is chosen.
+    // A scan that just ended wins, then the current selection if still stored. Otherwise, when the page opens or is reloaded,
+    // after a refresh or a deletion, no results are displayed until a scan is chosen.
     useEffect(() => {
         if (requestedResultsId && ids.includes(requestedResultsId)) {
             setResultsId(requestedResultsId);
             onRequestConsumed();
         } else if (!ids.includes(resultsId)) {
-            // The latest results of a scan which is over: the card of a running scan already follows it
-            const latest = [...summaries].reverse().find(s => s.status !== 'running') || summaries[summaries.length - 1];
-            setResultsId(latest && selectsLatest ? latest.id : null);
+            setResultsId(null);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ids, requestedResultsId]);
@@ -336,11 +336,10 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
     if (ids.length === 0) {
         return (
             <Card className={`${styles.card} ${styles.resultsCard}`}>
-                <div className={styles.emptyState}>
-                    <Typography variant="heading">{t('label.results.noResultsTitle')}</Typography>
-                    <Typography variant="body" className={styles.helper}>{t('label.results.noResults')}</Typography>
-                    <Button label={t('label.scan.newScan')} icon={<Add/>} color="accent" isDisabled={isScanLocked} onClick={onNewScan}/>
-                </div>
+                <EmptyState title={t('label.results.noResultsTitle')}
+                            hint={t('label.results.noResults')}
+                            isScanLocked={isScanLocked}
+                            onNewScan={onNewScan}/>
             </Card>
         );
     }
@@ -362,7 +361,10 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
     return (
         <div className={`${styles.panel} ${selection && showErrors ? styles.panelWithDetails : ''}`}>
             <Card className={`${styles.card} ${styles.resultsCard}`}>
-                <Typography variant="subheading" weight="bold" className={styles.sectionTitle}>{t('label.results.title')}</Typography>
+                <div className={styles.resultsTitle}>
+                    <Typography variant="subheading" weight="bold">{t('label.results.title')}</Typography>
+                    {canDeleteResults && deletableCount > 0 && <ResultsMenu count={deletableCount} onDeleted={onResultsDeleted}/>}
+                </div>
                 <div className={styles.toolbar}>
                     <div className={styles.filter}>
                         <Typography variant="caption" weight="semiBold" component="label">{t('label.results.scan')}</Typography>
@@ -394,7 +396,7 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
                                      action={canDeleteResults && selectedSummary.status !== 'running' && (
                                          <DeleteResultsAction resultsId={resultsId}
                                                               scanLabel={resultsData.find(r => r.value === resultsId)?.label || resultsId}
-                                                              onDeleted={() => refetchList()}/>
+                                                              onDeleted={onResultsDeleted}/>
                                      )}/>
                     )}
                     <div className={styles.spacer}/>
@@ -416,6 +418,13 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
                         {logs.loading && !logs.data ? <Loader size="small"/> : <ScanLogs logs={logs.data?.integrity?.logs || []}/>}
                         {logs.error && <Typography className={styles.error}>{logs.error.message}</Typography>}
                     </div>
+                )}
+                {/* No scan chosen, after a refresh or a deletion: the same content as when no scan is stored, under the scan selector */}
+                {!selectedSummary && (
+                    <EmptyState title={t('label.results.noSelectionTitle')}
+                                hint={t('label.results.noSelection')}
+                                isScanLocked={isScanLocked}
+                                onNewScan={onNewScan}/>
                 )}
                 {statusMessage && <Typography className={styles.noError}>{t(statusMessage)}</Typography>}
                 {selectedSummary && !statusMessage && !hasErrors && <Typography className={styles.noError}>{t('label.results.noError')}</Typography>}
@@ -549,7 +558,8 @@ export const ResultsPanel = ({selectsLatest, requestedResultsId, refreshCount, i
 
 ResultsPanel.propTypes = {
     requestedResultsId: PropTypes.string,
-    selectsLatest: PropTypes.bool.isRequired,
+    // Called once the selected results are deleted: the panel is displayed again without any results selected
+    onResultsDeleted: PropTypes.func.isRequired,
     refreshCount: PropTypes.number.isRequired,
     isScanLocked: PropTypes.bool,
     onRequestConsumed: PropTypes.func.isRequired,

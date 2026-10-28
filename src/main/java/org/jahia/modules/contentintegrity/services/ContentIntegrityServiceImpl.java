@@ -717,6 +717,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
+    public int deleteAllResults() throws RepositoryException {
+        final int deleted = ResultsStore.deleteAll();
+        // The results of a running scan are not kept in memory
+        loadedResults.clear();
+        return deleted;
+    }
+
+    @Override
     public List<String> getExecutionLog(String testID) {
         return ResultsStore.loadExecutionLog(testID);
     }

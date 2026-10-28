@@ -64,6 +64,8 @@
       "all": "Toutes les valeurs",
       "empty": "(vide)",
       "noResults": "Lancez une analyse pour vérifier l'intégrité du contenu. Ses résultats s'affichent ici.",
+      "noSelectionTitle": "Aucune analyse sélectionnée",
+      "noSelection": "Choisissez une analyse ci-dessus pour afficher ses résultats, ou lancez une nouvelle analyse.",
       "errorCount": "Erreurs : {{count}}",
       "errorCountFiltered": "Erreurs : {{count}} (sur {{total}})",
       "noError": "Cette analyse n'a trouvé aucune erreur.",
@@ -74,6 +76,7 @@
       "rowsPerPage": "Erreurs par page",
       "of": "sur",
       "title": "Résultats d'analyse",
+      "actions": "Actions sur les résultats",
       "noResultsTitle": "Aucun résultat d'analyse",
       "clearFilters": "Effacer les filtres",
       "fixStatus": "Statut de la correction",
@@ -252,10 +255,16 @@
     },
     "deleteResults": {
       "button": "Supprimer",
-      "title": "Supprimer les résultats du scan",
-      "description": "Les résultats du scan {{scan}} seront supprimés : ses erreurs, son journal, et ses rapports CSV et XLSX.",
+      "title": "Supprimer les résultats de l'analyse",
+      "description": "Les résultats de l'analyse {{scan}} seront supprimés : ses erreurs, son journal, et ses rapports CSV et XLSX.",
       "warning": "La suppression est définitive. Le contenu n'est pas modifié : les erreurs non corrigées seront de nouveau détectées par le prochain scan.",
       "confirm": "Supprimer les résultats"
+    },
+    "deleteAllResults": {
+      "button": "Tout supprimer",
+      "title": "Supprimer les résultats de toutes les analyses",
+      "description": "Les résultats des {{count}} analyses seront supprimés : leurs erreurs, leurs journaux, et leurs rapports CSV et XLSX. Les résultats d'une analyse en cours sont conservés.",
+      "confirm": "Supprimer {{count}} résultats"
     },
     "fixOutcome": {
       "title": "Résultat de la correction",

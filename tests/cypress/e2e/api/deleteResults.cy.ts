@@ -91,6 +91,17 @@ describe('Deletion of the results of a scan', () => {
         requestAs(FIXER, '{ integrity: contentIntegrity { canDeleteResults } }').its('data.integrity.canDeleteResults').should('equal', false);
     });
 
+    it('does not let a user without the permission adminContentIntegrityDelete delete all the results', () => {
+        scanLocks().then(resultsId => {
+            requestAs(VIEWER, '{ integrity: contentIntegrity { deleteAllScanResults } }').then(body => {
+                expect(body.errors, 'GraphQL errors').to.have.length.greaterThan(0);
+                expect(body.errors[0].message).to.contain('adminContentIntegrityDelete');
+            });
+            readStoredReport(resultsId).should('not.be.null');
+            graphql(DELETE, {id: resultsId});
+        });
+    });
+
     it('does not let a user without the permission adminContentIntegrityDelete delete the results', () => {
         scanLocks().then(resultsId => {
             requestAs(VIEWER, DELETE, {id: resultsId}).then(body => {

@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, runFixture, scan, ScanResults} from '../../support/integrity';
-import {closeDetailsPanel, getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitAdmin} from '../../support/adminPage';
+import {closeDetailsPanel, getDetailsPanel, getResultsTable, getRow, openErrorDetails, visitLatestResults} from '../../support/adminPage';
 
 // The access to the module, adminContentIntegrity, allows to scan and to read the results. Fixing the errors writes to the
 // repository with a system session, so it requires its own permission, adminContentIntegrityFix, which the first one
@@ -87,9 +87,12 @@ describe('Permission to fix the errors', () => {
     });
 
     it('offers no fix in the administration page to a user without the permission', () => {
-        visitAdmin(VIEWER);
+        visitLatestResults(VIEWER);
         getResultsTable().should('be.visible');
         cy.contains('button', 'Fix all').should('not.exist');
+        // Neither the deletion of the results, which requires adminContentIntegrityDelete
+        cy.get('#ci-delete-results').should('not.exist');
+        cy.get('#ci-results-menu').should('not.exist');
         openErrorDetails(`${LOCKS}/inconsistent-lock`);
         getDetailsPanel().within(() => {
             cy.contains('INCONSISTENT_LOCK').should('be.visible');
@@ -98,8 +101,11 @@ describe('Permission to fix the errors', () => {
     });
 
     it('offers the fix in the administration page to a user with the permission', () => {
-        visitAdmin(FIXER);
+        visitLatestResults(FIXER);
         cy.contains('button', 'Fix all').should('be.visible');
+        // The fix of the errors does not grant the deletion of the results
+        cy.get('#ci-delete-results').should('not.exist');
+        cy.get('#ci-results-menu').should('not.exist');
         openErrorDetails(`${LOCKS}/inconsistent-lock`);
         getDetailsPanel().contains('button', /^Fix$/).click();
         getDetailsPanel().contains('Fixed').should('be.visible');

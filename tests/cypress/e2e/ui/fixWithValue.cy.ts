@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, runFixture, scan} from '../../support/integrity';
-import {closeDetailsPanel, getDetailsPanel, getDialog, getNodeErrorRows, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
+import {closeDetailsPanel, getDetailsPanel, getDialog, getNodeErrorRows, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
 
 const SITE = 'ciUiFixWithValue';
 const ROOT = `/sites/${SITE}/contents/property-definitions`;
@@ -16,7 +16,7 @@ describe('Fix of a missing mandatory property with a typed value', () => {
         createTestSite(SITE);
         runFixture('checks/PropertyDefinitionsSanityCheck.groovy', {SITEKEY: SITE});
         scan(ROOT, ['PropertyDefinitionsSanityCheck']);
-        visitAdmin();
+        visitLatestResults();
     });
 
     after(() => {
@@ -129,7 +129,7 @@ describe('Fix of a missing mandatory property with a typed value', () => {
     it('fixes the missing mandatory properties of a node together, once both have a value', () => {
         runFixture('nodeErrors/frameWithoutSize.groovy', {SITEKEY: SITE});
         scan(NODE_ERRORS, ['PropertyDefinitionsSanityCheck']);
-        cy.reload();
+        visitLatestResults();
         getNodeErrorRows(FRAME).should('have.length', 2);
         openErrorDetails(FRAME);
         getDetailsPanel().within(() => {

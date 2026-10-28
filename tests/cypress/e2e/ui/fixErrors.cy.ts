@@ -11,7 +11,7 @@ import {
     getRow,
     openErrorDetails,
     selectInDropdown,
-    visitAdmin
+    visitLatestResults
 } from '../../support/adminPage';
 
 const SITE = 'ciUiFixErrors';
@@ -33,10 +33,10 @@ describe('Fix of the errors', () => {
         deleteTestSite(SITE);
     });
 
-    // The page displays the latest scan results. The lock errors do not block an XML import, so the default filter hides them
+    // The latest scan results are selected. The lock errors do not block an XML import, so the default filter hides them
     beforeEach(() => {
         scan(`/sites/${SITE}`, CHECKS);
-        visitAdmin();
+        visitLatestResults();
         clearFilters();
     });
 
@@ -98,7 +98,7 @@ describe('Fix of the errors', () => {
         // A site without page: its check flags a page as home, and finds none
         runFixture('checks/HomePageDeclarationCheck.groovy', {SITEKEY: SITE, SCENARIO: 'NO_PAGE'});
         scan(`/sites/${SITE}`, [...CHECKS, 'HomePageDeclarationCheck']);
-        cy.reload();
+        visitLatestResults();
         clearFilters();
         selectInDropdown('Error type', /^NO_HOME \(1\)$/);
         cy.contains('button', 'Fix all').click();
@@ -124,7 +124,7 @@ describe('Fix of the errors', () => {
             cy.contains('The fix of the check has not fixed this error').should('be.visible');
         });
         // The failure is stored with the results: it is told again once the page is reloaded, and filtered
-        cy.reload();
+        visitLatestResults();
         clearFilters();
         selectInDropdown('Fix status', /^Not fixed \(1\)$/);
         getResultsTable().find('tr[data-error-id]').should('have.length', 1);
@@ -173,7 +173,7 @@ describe('Fix of the errors', () => {
         });
         closeDetailsPanel();
         getNodeErrorRows(translation).each(row => cy.wrap(row).within(() => cy.contains('Fixed').should('be.visible')));
-        cy.reload();
+        visitLatestResults();
         clearFilters();
         getNodeErrorRows(translation).should('have.length', 2).each(row => cy.wrap(row).within(() => cy.contains('Fixed').should('be.visible')));
         runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});

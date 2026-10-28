@@ -88,6 +88,26 @@
     margin-bottom: var(--spacing-small);
 }
 
+// The title of the results card, directly followed by the menu of the actions on all the results
+.resultsTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-nano);
+    min-height: 32px;
+    margin-bottom: var(--spacing-small);
+}
+
+.resultsMenu {
+    display: inline-flex;
+}
+
+// A destructive item of a menu, such as the deletion of all the results, displayed as the Delete action of the reports
+.dangerMenuItem,
+.dangerMenuItem * {
+    color: var(--color-danger) !important;
+    fill: var(--color-danger) !important;
+}
+
 .sectionActions {
     display: flex;
     align-items: center;
@@ -658,8 +678,13 @@
     min-width: 26rem;
 }
 
+// The outcome of a scan without errors to display, laid out as the empty states of the results card
 .noError {
-    padding: var(--spacing-large) 0;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-huge) var(--spacing-large);
     color: var(--color-gray);
     text-align: center;
 }

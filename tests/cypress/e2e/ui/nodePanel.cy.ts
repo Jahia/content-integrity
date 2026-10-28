@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {clearFilters, getDetailsPanel, getDetailsWorkspace, getRow, openErrorDetails, selectInDropdown, visitAdmin} from '../../support/adminPage';
+import {clearFilters, getDetailsPanel, getDetailsWorkspace, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
 
 // The panel displays the errors of a node in one workspace. The fixtures give an error in each workspace.
 const SITE = 'ciUiNodePanel';
@@ -22,7 +22,7 @@ describe('Panel of the errors of a node', () => {
     });
 
     beforeEach(() => {
-        visitAdmin();
+        visitLatestResults();
         clearFilters();
     });
 

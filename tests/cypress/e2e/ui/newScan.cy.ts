@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, readExecution, resetCheckConfiguration, runFixture, scan} from '../../support/integrity';
-import {getDialog, getDropdown, getMenuItem, getResultsTable, getScanLabel, selectInDropdown, visitAdmin} from '../../support/adminPage';
+import {getDialog, getDropdown, getMenuItem, getResultsTable, getScanLabel, selectInDropdown, visitAdmin, visitLatestResults} from '../../support/adminPage';
 
 const SITE = 'ciUiNewScan';
 const ROOT = `/sites/${SITE}/contents/locks`;
@@ -199,7 +199,8 @@ describe('New scan', () => {
     });
 
     it('displays a scan without error in place of the results displayed before', () => {
-        // The results displayed when the page opens are those of a scan with errors
+        // The results displayed before are those of a scan with errors
+        visitLatestResults();
         getResultsTable().should('be.visible');
         openNewScanDialog();
         getDialog('New integrity scan').within(() => {

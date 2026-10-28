@@ -105,6 +105,15 @@ public interface ContentIntegrityService {
     boolean deleteResults(String testID) throws RepositoryException;
 
     /**
+     * Deletes all the stored results readable by the current user, except those of a running scan. Only the users who
+     * may read the reports, the server administrators, may delete them.
+     *
+     * @return the number of deleted results
+     * @throws javax.jcr.AccessDeniedException if the current user may not delete them
+     */
+    int deleteAllResults() throws RepositoryException;
+
+    /**
      * @return the log of the scan of the stored results with this identifier, as stored in the JCR, or null
      */
     List<String> getExecutionLog(String testID);

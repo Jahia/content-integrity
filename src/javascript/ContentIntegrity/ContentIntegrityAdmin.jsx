@@ -38,6 +38,7 @@ export const ContentIntegrityAdmin = () => {
     const openDialog = useCallback(() => setDialogOpen(true), []);
     const closeDialog = useCallback(() => setDialogOpen(false), []);
     const clearRequest = useCallback(() => setRequestedResultsId(null), []);
+    const reload = useCallback(() => setReloadCount(c => c + 1), []);
     const locked = isRunning || isStarting;
 
     return (
@@ -51,7 +52,7 @@ export const ContentIntegrityAdmin = () => {
                                         icon={<Reload/>}
                                         variant="ghost"
                                         size="big"
-                                        onClick={() => setReloadCount(c => c + 1)}/>
+                                        onClick={reload}/>
                                 {isRunning && (
                                     <Button label={t(isStopping ? 'label.scan.stopping' : 'label.scan.stop')}
                                             icon={<Cancel/>}
@@ -78,13 +79,14 @@ export const ContentIntegrityAdmin = () => {
                         {isRunning && <CurrentScanCard execution={execution} isStopping={isStopping}/>}
                         {error && <Typography className={styles.error} role="alert">{error}</Typography>}
                         {/* Refresh clears the results, without reloading the menu and the header: the list of the scans is read
-                            again, and no results are displayed until a scan is chosen */}
+                            again, and no results are displayed until a scan is chosen, as when the page opens. The deletion
+                            of results does the same */}
                         <ResultsPanel key={reloadCount}
-                                      selectsLatest={reloadCount === 0}
                                       requestedResultsId={requestedResultsId}
                                       refreshCount={refreshCount}
                                       isScanLocked={locked}
                                       onRequestConsumed={clearRequest}
+                                      onResultsDeleted={reload}
                                       onNewScan={openDialog}/>
                     </div>
                     <NewScanDialog isOpen={isDialogOpen}

@@ -130,6 +130,14 @@ export const DELETE_SCAN_RESULTS = gql`
     }
 `;
 
+export const DELETE_ALL_SCAN_RESULTS = gql`
+    query ContentIntegrityDeleteAllScanResults {
+        integrity: contentIntegrity {
+            deleted: deleteAllScanResults
+        }
+    }
+`;
+
 export const GET_SCAN_RESULTS_LOGS = gql`
     query ContentIntegrityScanResultsLogs($id: String!) {
         integrity: contentIntegrity {

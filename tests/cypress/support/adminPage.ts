@@ -19,6 +19,30 @@ export const visitAdmin = (user?: { username: string; password: string }): void 
     cy.contains('h1, h2, h3', 'Content Integrity', {timeout: 60000}).should('be.visible');
 };
 
+/**
+ * Opens the administration page, which displays no results until a scan is chosen, then selects the latest results of a
+ * scan which is over, as the specs which scan before opening the page expect.
+ */
+export const visitLatestResults = (user?: { username: string; password: string }): void => {
+    // The results are read as root before the page is opened as the user: the requests of the page then run as the user
+    graphql('{ integrity: contentIntegrity { scanResults: scanResultsSummaries { id status } } }').then(data => {
+        const latest = [...data.integrity.scanResults].reverse().find((s: { status: string }) => s.status !== 'running');
+        expect(latest, 'Results of a scan which is over').to.exist;
+        getScanLabel(latest.id).then(label => {
+            visitAdmin(user);
+            selectInDropdown('Scan', label);
+        });
+    });
+};
+
+/**
+ * Opens the confirmation of the deletion of all the results, from the menu after the title of the results card.
+ */
+export const openDeleteAll = (): void => {
+    cy.get('#ci-results-menu').click();
+    cy.contains('li.moonstone-menuItem', /^Delete all$/).click();
+};
+
 export const getDialog = (title: string, timeout?: number): Cypress.Chainable<JQuery<HTMLElement>> =>
     cy.contains('[role=dialog]', title, timeout ? {timeout} : undefined).should('be.visible');
 

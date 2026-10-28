@@ -336,28 +336,46 @@ public final class ResultsStore {
      */
     public static int deleteReportsOlderThan(JCRTemplate jcrTemplate, long date) {
         try {
-            return jcrTemplate.doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
-                if (!session.nodeExists(REPORTS_FOLDER_PATH)) return 0;
-                final String statement = String.format("SELECT * FROM [%s] AS report WHERE ISDESCENDANTNODE(report, '%s') AND report.[%s] < CAST('%s' AS DATE)",
-                        REPORT_MIXIN, REPORTS_FOLDER_PATH, PROP_EXECUTION_DATE, QUERY_DATE_FORMAT.format(date));
-                final JCRNodeIteratorWrapper nodes = session.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
-                final Set<JCRNodeWrapper> parents = new HashSet<>();
-                int count = 0;
-                while (nodes.hasNext()) {
-                    final JCRNodeWrapper node = (JCRNodeWrapper) nodes.nextNode();
-                    if (ContentIntegrityResults.Status.RUNNING.getValue().equals(node.getPropertyAsString(PROP_STATUS))) continue;
-                    parents.add(node.getParent());
-                    node.remove();
-                    count++;
-                }
-                removeEmptyFolders(parents);
-                if (count > 0) session.save();
-                return count;
-            });
+            return jcrTemplate.doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session ->
+                    deleteReports(session, String.format(" AND report.[%s] < CAST('%s' AS DATE)", PROP_EXECUTION_DATE, QUERY_DATE_FORMAT.format(date))));
         } catch (RepositoryException e) {
             logger.error("Impossible to delete the old reports", e);
             return 0;
         }
+    }
+
+    /**
+     * Deletes all the stored results, whatever their format, except those of a running scan, then the year and month
+     * folders left empty. The deletion is done with the session of the current user, so that only the users who may
+     * read the reports, the server administrators, may delete them.
+     *
+     * @return the number of deleted results
+     */
+    public static int deleteAll() throws RepositoryException {
+        return deleteReports(JCRSessionFactory.getInstance().getCurrentUserSession(Constants.EDIT_WORKSPACE), "");
+    }
+
+    /**
+     * Deletes the reports matching the condition, a JCR-SQL2 clause on the report nodes (aliased report) starting with
+     * AND, or empty for all of them, except those of a running scan.
+     */
+    private static int deleteReports(JCRSessionWrapper session, String condition) throws RepositoryException {
+        if (!session.nodeExists(REPORTS_FOLDER_PATH)) return 0;
+        final String statement = String.format("SELECT * FROM [%s] AS report WHERE ISDESCENDANTNODE(report, '%s')%s",
+                REPORT_MIXIN, REPORTS_FOLDER_PATH, condition);
+        final JCRNodeIteratorWrapper nodes = session.getWorkspace().getQueryManager().createQuery(statement, Query.JCR_SQL2).execute().getNodes();
+        final Set<JCRNodeWrapper> parents = new HashSet<>();
+        int count = 0;
+        while (nodes.hasNext()) {
+            final JCRNodeWrapper node = (JCRNodeWrapper) nodes.nextNode();
+            if (ContentIntegrityResults.Status.RUNNING.getValue().equals(node.getPropertyAsString(PROP_STATUS))) continue;
+            parents.add(node.getParent());
+            node.remove();
+            count++;
+        }
+        removeEmptyFolders(parents);
+        if (count > 0) session.save();
+        return count;
     }
 
     /**

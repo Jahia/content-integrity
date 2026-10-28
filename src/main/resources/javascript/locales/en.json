@@ -64,6 +64,8 @@
       "all": "All",
       "empty": "(empty)",
       "noResults": "Run a scan to check the integrity of the content. Its results are displayed here.",
+      "noSelectionTitle": "No scan selected",
+      "noSelection": "Choose a scan above to display its results, or run a new scan.",
       "errorCount": "Errors: {{count}}",
       "errorCountFiltered": "Errors: {{count}} (total: {{total}})",
       "noError": "No error found by this scan.",
@@ -74,6 +76,7 @@
       "rowsPerPage": "Errors per page",
       "of": "of",
       "title": "Scan results",
+      "actions": "Actions on the results",
       "noResultsTitle": "No scan results yet",
       "clearFilters": "Clear the filters",
       "fixStatus": "Fix status",
@@ -256,6 +259,12 @@
       "description": "The results of the scan {{scan}} will be deleted: its errors, its log, and its CSV and XLSX reports.",
       "warning": "The deletion can't be undone. The content is not changed: the errors not fixed will be detected again by the next scan.",
       "confirm": "Delete the results"
+    },
+    "deleteAllResults": {
+      "button": "Delete all",
+      "title": "Delete the results of all the scans",
+      "description": "The results of the {{count}} scans will be deleted: their errors, their logs, and their CSV and XLSX reports. The results of a running scan are kept.",
+      "confirm": "Delete {{count}} results"
     },
     "fixOutcome": {
       "title": "Outcome of the fix",

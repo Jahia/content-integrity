@@ -121,13 +121,15 @@ describe('Scan execution in the administration page', () => {
         });
     });
 
-    it('lists a running scan, but selects the latest results of a scan which is over', () => {
+    it('lists a running scan, and selects no results until a scan is chosen', () => {
         startScan({startNode: '/sites/systemsite/home', checks: ['LockSanityCheck']}).then(id => waitForExecution(id)).then(over => {
             startScan(SLOW_SCAN).then(id => readExecution(id)).then(running => {
                 visitAdmin();
                 getCurrentScanCard().should('exist');
-                // The card of the scan follows it: the results card displays the results of the last scan which is over
-                getScanLabel(over.resultsID as string).then(label => getDropdown('Scan').should('contain.text', label));
+                // The card of the scan follows it: the results card displays no results until a scan is chosen, even when the
+                // results of a scan which is over are stored
+                getScanLabel(over.resultsID as string).should('exist');
+                getDropdown('Scan').should('contain.text', 'Select a scan');
                 getScanLabel(running.resultsID as string).then(label => selectInDropdown('Scan', label));
                 cy.get('#ci-scan-status').should('have.text', 'Running');
                 cy.contains('The scan is running: its errors are displayed once it ends.').should('be.visible');

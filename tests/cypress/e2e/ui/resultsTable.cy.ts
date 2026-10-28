@@ -17,7 +17,7 @@ import {
     openDropdown,
     openErrorDetails,
     selectInDropdown,
-    visitAdmin
+    visitLatestResults
 } from '../../support/adminPage';
 
 // The order of the paths of the errors table: name by name, whatever their case, then with their case
@@ -66,7 +66,7 @@ describe('Results table', () => {
         scan(`/sites/${SITE}`, CHECKS).then(results => {
             resultsId = results.resultsId;
         });
-        visitAdmin();
+        visitLatestResults();
     });
 
     it('displays the path, the workspace, the check name, the error type and the message by default, as a tree of the nodes and their errors', () => {
@@ -151,6 +151,7 @@ describe('Results table', () => {
                 getResultsTable().should('not.exist');
                 cy.contains('No error found by this scan').should('not.exist');
                 cy.get('#ci-node-errors').should('not.exist');
+                cy.get('#ci-empty-state').should('contain.text', 'No scan selected');
                 cy.window().its('ciNotReloaded').should('equal', true);
                 openDropdown('Scan');
                 cy.get('li.moonstone-menuItem').should('have.length', listed + 1);
