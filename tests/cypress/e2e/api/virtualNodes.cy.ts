@@ -1,7 +1,19 @@
-import {getErrors, graphql, runFixture, scan} from '../../support/integrity';
+import {getErrors, graphql, runFixture, scan, startScan, waitForExecution} from '../../support/integrity';
 
 const MOUNT = 'ciApiVirtualNodes';
 const EMPTY_FILE = `/mounts/${MOUNT}/empty.txt/jcr:content`;
+
+/**
+ * The paths of the errors of a scan of /mounts, which starts above the mount point: skipMountPoints only skips the
+ * virtual nodes below the start node.
+ */
+const pathsOfMountsScan = (skipMountPoints: boolean): Cypress.Chainable<string[]> =>
+    startScan({startNode: '/mounts', checks: ['BinaryPropertiesSanityCheck'], skipMountPoints})
+        .then(id => waitForExecution(id))
+        .then(execution => {
+            expect(execution.status).to.equal('finished');
+            return execution.resultsID ? getErrors(execution.resultsID).then(errors => errors.map(e => e.nodePath)) : cy.wrap<string[]>([]);
+        });
 
 const FIX_ERROR = 'query($id: String, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e) { fixed fixable virtualNode } } } }';
 const FIX_ALL = 'query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { fixAll: fixAllErrors { fixed skipped failed } } } }';
@@ -36,5 +48,10 @@ describe('Errors of virtual nodes', () => {
                 expect((errors as { nodePath: string }[]).map(e => e.nodePath)).to.include(EMPTY_FILE);
             });
         });
+    });
+
+    it('skips the virtual nodes when the scan skips the mount points', () => {
+        pathsOfMountsScan(false).should('include', EMPTY_FILE);
+        pathsOfMountsScan(true).then(paths => expect(paths.filter(p => p.startsWith(`/mounts/${MOUNT}/`))).to.be.empty);
     });
 });

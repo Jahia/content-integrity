@@ -7,8 +7,10 @@ End-to-end tests of the content-integrity module, run against a Jahia server whe
 * `cypress/e2e/api`: the GraphQL API: the catalog and the configuration of the checks, a scan and its parameters, the
   pages, filters and column values of its results, the execution of a scan (one at a time, and its stop), the fix of
   all the errors matching filters, the permission to fix the errors (in the API and in the administration screen), and
-  the access to the scan reports, which only the server administrators may download. `karafCommands.cy.ts` runs the
-  Karaf shell commands `jcr:integrity-*` through `shell/karafCommand.groovy`, which captures what they print.
+  the access to the scan reports, which only the server administrators may download, and the errors of the virtual nodes
+  of a mount point, which are not fixed, and which a scan with `skipMountPoints` skips. `karafCommands.cy.ts` runs the
+  Karaf shell commands `jcr:integrity-*`, with each of their options, through `shell/karafCommand.groovy`, which
+  captures what they print.
 * `cypress/e2e/ui`: the administration page: the new scan dialog (its defaults, the excluded paths, the parameters sent,
   the configuration and the documentation of the checks), the scan in progress and its stop, the results table (its
   columns, filters, refresh, reports and link to the JCR browser), the fix of an error, the fix of all the filtered
