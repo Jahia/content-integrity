@@ -8,7 +8,8 @@
 #
 # JAHIA_URL (default http://localhost:8080) and SUPER_USER_PASSWORD (default root) are the ones of the Cypress tests.
 # EXCLUDED_PATHS, a comma-separated list of paths, are left out of the scans, for example the sites of a server which holds
-# other content than the demo.
+# other content than the demo. VERSION_STORAGE_ROOT (default /jcr:system/jcr:versionStorage) is the root of the scan of the
+# version histories: on such a server, /jcr:system/jcr:versionStorage/0c/1e/57 holds the histories of the fixtures only.
 TESTS=$(cd "$(dirname "$0")/.." && pwd)
 BASE=${JAHIA_URL:-http://localhost:8080}
 AUTH=root:${SUPER_USER_PASSWORD:-root}
@@ -76,7 +77,7 @@ scan() { # $1 root node, $2 workspace
   echo "scan $1 $2 -> $s"
 }
 # The version histories: TOO_MANY_VERSIONS, ORPHANED_HISTORY and the other errors of the version storage
-scan /jcr:system/jcr:versionStorage EDIT
+scan "${VERSION_STORAGE_ROOT:-/jcr:system/jcr:versionStorage}" EDIT
 # A node moved in live only: its errors in the default workspace
 scan /sites/$SITE/contents/publication-default/moved-in-live EDIT
 # The whole repository: the errors outside the sites, such as the users, the groups and the modules

@@ -19,16 +19,21 @@ fix), update in the same change:
 4. **Fix description** `src/main/resources/javascript/locales/en.json` and `fr.json`, only for a fixable error.
 5. **Release notes** `docs/release-notes.md`: an item in the row of the current version.
 6. **Coverage count** in `tests/README.md` ("They cover N of the M error types").
-7. **Screenshots**: regenerate them, see below. Add the screenshot line of step 3 only once the image exists.
+7. **Screenshots**: regenerate all of them, see below. Add the screenshot line of step 3 only once the image exists.
 
 ## Regenerating the screenshots
+
+**Regenerate ALL the screenshots every time**: after any change of a check, and after any change of the administration
+screen, since every screenshot displays it. Then build the PDF again (`yarn docs:pdf`, see below). Do it once the change
+is built, deployed and its tests pass, and commit the images separately from the code.
 
 `docs/img/checks/<Check>.png` and `docs/img/checks/<Check>/<TYPE>.png` are taken from stored scans by
 `tests/demo/screenshots.sh` (Chrome needed, `pngquant` compresses the new images). `JAHIA_URL` and
 `SUPER_USER_PASSWORD` come from the environment: set them in `.claude/settings.local.json` (`env`, git-ignored), never
 on the command line (a hook blocks commands which contain a password).
 
-**Only the changed error types** (the usual case, on any server, the current one included):
+**Only some error types**, as a fallback when all the screenshots can't be regenerated (on any server, the current one
+included):
 
 1. Build and deploy the module.
 2. Create the demo site and apply only the fixture of the check: `createSite.groovy` of `@jahia/cypress` with
@@ -46,38 +51,37 @@ on the command line (a hook blocks commands which contain a password).
    `@jahia/cypress`), and the scan report of step 3 (under `/sites/systemsite/files/content-integrity-reports`). Keep
    the other scan reports.
 
-**All the screenshots**: `demo/regenerate.sh` (or `demo/generate.sh` on a server without the demo), then
+**All the screenshots** (the rule): `demo/regenerate.sh` (or `demo/generate.sh` on a server without the demo), then
 `demo/screenshots.sh` without arguments, on a disposable Jahia: `regenerate.sh` deletes EVERY stored scan report, the
 fixtures create users, sites, mount points and node types, and the screenshots are taken from all the stored scans. A
 redeploy of the module, or a restart, resets the check thresholds: generate the demo again after it.
 
-On a server holding other content, when asked to:
+On a server holding other content, such as a copy of a customer dataset:
 
-- Run `demo/generate.sh`, never `regenerate.sh`, with `EXCLUDED_PATHS` set to the other sites (comma-separated).
-- Its scan of `/jcr:system/jcr:versionStorage` covers all the version histories of the server: on a real dataset, it
-  holds hundreds of thousands of errors, and reading them can make the server run out of memory. Delete its results with
-  `deleteScanResults` (it does not read them) and scan `/jcr:system/jcr:versionStorage/0c/1e/57` instead, where the
-  fixtures of `VersionSanityCheck` are.
+- Run `demo/generate.sh`, never `regenerate.sh`, with `EXCLUDED_PATHS` set to the other sites (comma-separated) and
+  `VERSION_STORAGE_ROOT=/jcr:system/jcr:versionStorage/0c/1e/57`, where the fixtures of `VersionSanityCheck` are: a scan
+  of all the version histories of a real dataset holds hundreds of thousands of errors, and reading them can make the
+  server run out of memory.
 - Take the screenshots from the demo scans only: `demo/screenshots.sh --env '{"RESULTS":"<id>,<id>,..."}'` (a list is
   passed as JSON: Cypress splits `--env` on the commas).
 - Before keeping an image, check that the errors of its check / type, in the scan it is taken from, are demo data
   (`integrityDemo*`, `ci-*`, `/modules`, the fixture histories) or generic Jahia nodes, and look at the images whose
   scan holds other errors: an image which shows a site, a group, a user or a principal of the server keeps its
   committed version.
-- Clean up afterwards: the `*-cleanup.groovy` fixtures with `SITEKEY=integrityDemo`, `vfsMount-cleanup.groovy`, the
-  four `integrityDemo*` sites, and the demo scans with `deleteScanResults`.
+- Clean up afterwards, unless asked to keep the demo to check it by hand: the `*-cleanup.groovy` fixtures with
+  `SITEKEY=integrityDemo`, `vfsMount-cleanup.groovy`, the four `integrityDemo*` sites, and the demo scans with
+  `deleteScanResults`.
 
-Check the diff of `docs/img/checks`: only the expected images are added or changed. Commit them with the change of the
-check.
+Check the diff of `docs/img/checks`: only the expected images are added or changed.
+
+If the screenshots can't be regenerated in the session, say so in the summary, and list the error types whose image is
+missing (an error type documented in `docs/embedded-tests.md` without its `![<TYPE> ...]` line).
 
 ## PDF of the documentation of the checks
 
 `yarn docs:pdf` (at the root) builds `docs/embedded-tests.pdf` from `docs/embedded-tests.md` and its screenshots, with
 a headless Chrome (`CHROME_PATH` if not found in its default locations). The PDF is git-ignored: build it again after a
 change of the documentation or of the screenshots, never commit it.
-
-If the screenshots can't be regenerated in the session, say so in the summary, and list the error types whose image is
-missing (an error type documented in `docs/embedded-tests.md` without its `![<TYPE> ...]` line).
 
 ## Reading property values in a check
 
