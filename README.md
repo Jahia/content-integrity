@@ -4,6 +4,17 @@
 
 # <a name="summary"></a>Content Integrity
 Jahia module that provides an extensible service to test the integrity of the content
+
+> [!CAUTION]
+> **This module is a community module. It is not supported by the Jahia Engineering team.** Be careful when running it
+> on non-production environments. Feel free to report any issue or idea through a GitHub issue, or through your access
+> to https://support.jahia.com.
+
+> [!CAUTION]
+> **Ce module est communautaire. Il n'est pas supporté par l'équipe Engineering Jahia.** Attention à son exécution sur
+> des environnements hors production. N'hésitez pas à reporter toute anomalie ou idée via une issue GitHub, ou bien via
+> votre accès https://support.jahia.com.
+
 * [How to use it](#how-to-use)
     * [Configuration](#configuration)
     * [UI](#how-to-use-ui)
