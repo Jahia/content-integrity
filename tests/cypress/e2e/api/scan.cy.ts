@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, getErrors, graphql, readExecution, runFixture, scan, startScan, waitForExecution} from '../../support/integrity';
+import {createTestSite, deleteTestSite, getErrors, graphql, readExecution, rootUser, runFixture, scan, startScan, waitForExecution} from '../../support/integrity';
 
 const SITE = 'ciApiScan';
 const LOCKS = `/sites/${SITE}/contents/locks`;
@@ -108,7 +108,7 @@ describe('Scan API', () => {
             cy.request({
                 method: 'POST',
                 url: '/modules/graphql',
-                auth: {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')},
+                auth: rootUser(),
                 headers: {Origin: Cypress.config().baseUrl},
                 body: {query: 'query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errors(offset: 0) { id } } } }', variables: {id: results.resultsId}}
             }).its('body.errors').then(errors => {

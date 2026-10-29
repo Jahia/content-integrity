@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, graphql, runFixture} from '../../support/integrity';
+import {createTestSite, deleteTestSite, graphql, rootUser, runFixture} from '../../support/integrity';
 
 // The reports describe the whole scanned repository: they are readable by the server administrators only.
 // They are stored under the system site, which every editor of every site reads in the default workspace.
@@ -57,7 +57,7 @@ describe('Access to the scan reports', () => {
     });
 
     it('lets root download a report', () => {
-        download(reportUri, {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')}).its('status').should('eq', 200);
+        download(reportUri, rootUser()).its('status').should('eq', 200);
     });
 
     it('lets a server administrator who is not root download a report', () => {
@@ -71,7 +71,7 @@ describe('Access to the scan reports', () => {
     it('does not let an editor download the stored errors of a scan, next to its reports', () => {
         // The CSV report is named <resultsId>-full.csv, the stored errors <resultsId>-full-errors.json.gz
         const errorsUri = reportUri.replace(/\.csv$/, '-errors.json.gz');
-        download(errorsUri, {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')}).its('status').should('eq', 200);
+        download(errorsUri, rootUser()).its('status').should('eq', 200);
         download(errorsUri, EDITOR).then(expectRefused);
     });
 

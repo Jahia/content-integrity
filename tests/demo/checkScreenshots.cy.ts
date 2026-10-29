@@ -16,10 +16,11 @@ import {getErrors, graphql, IntegrityError} from '../cypress/support/integrity';
 
 type Rank = { id: string; count: number; types: number };
 
-const envList = (name: string): string[] => String(Cypress.env(name) || '').split(',').map(v => v.trim()).filter(Boolean);
-const RESULTS = envList('RESULTS');
-const CHECKS = envList('CHECKS');
-const ERROR_TYPES = envList('ERROR_TYPES');
+const toList = (value: unknown): string[] => String(value || '').split(',').map(v => v.trim()).filter(Boolean);
+// The lists of the env, read with cy.env() in the before hook
+let selectedResults: string[] = [];
+let selectedChecks: string[] = [];
+let selectedErrorTypes: string[] = [];
 
 /**
  * Selects an item of a filter of the results table, found by its text. The menu can be longer than the screen: the item
@@ -67,9 +68,14 @@ describe('Screenshots of the checks', () => {
         .sort((a, b) => b.types - a.types || b.count - a.count);
 
     before(() => {
+        cy.env(['RESULTS', 'CHECKS', 'ERROR_TYPES']).then(env => {
+            selectedResults = toList(env.RESULTS);
+            selectedChecks = toList(env.CHECKS);
+            selectedErrorTypes = toList(env.ERROR_TYPES);
+        });
         graphql('{ integrity: contentIntegrity { checks: integrityChecks { id } scanResults: scanResultsSummaries { id } } }').then(data => {
-            checks = data.integrity.checks.map((c: { id: string }) => c.id).filter((id: string) => CHECKS.length === 0 || CHECKS.includes(id)).sort();
-            data.integrity.scanResults.filter((r: { id: string }) => RESULTS.length === 0 || RESULTS.includes(r.id)).forEach((r: { id: string }) => getErrors(r.id).then(errors => {
+            checks = data.integrity.checks.map((c: { id: string }) => c.id).filter((id: string) => selectedChecks.length === 0 || selectedChecks.includes(id)).sort();
+            data.integrity.scanResults.filter((r: { id: string }) => selectedResults.length === 0 || selectedResults.includes(r.id)).forEach((r: { id: string }) => getErrors(r.id).then(errors => {
                 errorsByResults[r.id] = errors;
             }));
         });
@@ -77,7 +83,7 @@ describe('Screenshots of the checks', () => {
 
     it('captures the errors of every check', () => {
         cy.wrap(null).then(() => {
-            if (ERROR_TYPES.length > 0) return;
+            if (selectedErrorTypes.length > 0) return;
             checks.forEach(check => {
                 const ranked = rank(e => e.checkName === check);
                 if (ranked.length === 0) {
@@ -94,7 +100,7 @@ describe('Screenshots of the checks', () => {
         cy.wrap(null).then(() => {
             checks.forEach(check => {
                 const types = [...new Set(Object.values(errorsByResults).flat().filter(e => e.checkName === check).map(e => e.errorType))]
-                    .filter(errorType => ERROR_TYPES.length === 0 || ERROR_TYPES.includes(errorType)).sort();
+                    .filter(errorType => selectedErrorTypes.length === 0 || selectedErrorTypes.includes(errorType)).sort();
                 types.forEach(errorType => {
                     const ranked = rank(e => e.checkName === check && e.errorType === errorType);
                     capture(ranked[0].id, check, errorType, ranked[0].count, `${check}/${errorType}`);

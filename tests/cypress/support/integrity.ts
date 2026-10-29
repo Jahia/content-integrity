@@ -41,7 +41,18 @@ const ERROR_FIELDS = 'id checkName errorType workspace nodePath nodeId locale me
 
 export type User = { username: string; password: string };
 
-export const rootUser = (): User => ({username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')});
+// The root password, read with cy.env() before the tests of each spec: cy.env() is a command, it yields the value later
+// in the chain, whereas the helpers need it where they build a request. The hook is registered here, not in e2e.ts:
+// Cypress bundles the support file and each spec apart, so each has its own copy of this module, and the specs read theirs
+let rootPassword: string;
+
+before(() => {
+    cy.env<{ SUPER_USER_PASSWORD: string }>(['SUPER_USER_PASSWORD']).then(env => {
+        rootPassword = env.SUPER_USER_PASSWORD;
+    });
+});
+
+export const rootUser = (): User => ({username: 'root', password: rootPassword});
 
 const post = (user: User, query: string, variables: Record<string, unknown>): Cypress.Chainable<Cypress.Response<any>> => cy.request({
     method: 'POST',

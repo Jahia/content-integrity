@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, getErrors, graphql, resetCheckConfiguration, runFixture, scan} from '../../support/integrity';
+import {createTestSite, deleteTestSite, getErrors, graphql, resetCheckConfiguration, rootUser, runFixture, scan} from '../../support/integrity';
 
 const SITE = 'ciKarafCommands';
 const ROOT = `/sites/${SITE}/contents/live-properties`;
@@ -13,7 +13,7 @@ const karaf = (command: string): Cypress.Chainable<string> => {
     runFixture('shell/karafCommand.groovy', {KARAF_COMMAND: command});
     return cy.request({
         url: `/files/default${OUTPUT}/output.txt?t=${Date.now()}`,
-        auth: {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')},
+        auth: rootUser(),
         log: false
     }).its('body');
 };

@@ -5,9 +5,10 @@ import {
     expectExtraInfo,
     expectFixFails,
     expectNoFix,
-    fixFromTwoScans,
     fixError,
+    fixFromTwoScans,
     graphql,
+    rootUser,
     runFixture,
     scan,
     ScanResults
@@ -108,7 +109,7 @@ describe('PropertyDefinitionsSanityCheck', () => {
                 cy.request({
                     method: 'POST',
                     url: '/modules/graphql',
-                    auth: {username: 'root', password: Cypress.env('SUPER_USER_PASSWORD')},
+                    auth: rootUser(),
                     headers: {Origin: Cypress.config().baseUrl},
                     body: {
                         query: 'query($r: String, $id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $r) { error: errorById(id: $id) { fixValues { name type multiple choices defaultValues } } } } }',
