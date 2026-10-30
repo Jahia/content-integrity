@@ -1,5 +1,5 @@
 <a href="https://store.jahia.com/contents/modules-repository/org/jahia/modules/content-integrity.html">
-    <img src="https://www.jahia.com/modules/jahiacom-templates/images/jahia-3x.png" alt="Jahia logo" title="Jahia" align="right" height="60" />
+    <img src="./docs/img/jahia-logo.svg" alt="Jahia logo" title="Jahia" align="right" height="40" />
 </a>
 
 # <a name="summary"></a>Content Integrity
@@ -24,6 +24,7 @@ Jahia module that provides an extensible service to test the integrity of the co
         * [jcr:integrity-printChecks](#jcr-integrity-printChecks) 
         * [jcr:integrity-printTestResults](#jcr-integrity-printTestResults) 
         * [jcr:integrity-configureCheck](#jcr-integrity-configureCheck) 
+        * [jcr:integrity-fix](#jcrintegrity-fix) 
 * [Embedded tests](docs/embedded-tests.md#summary)
 * [FAQ](#faq)
 * [How to extend it](docs/how-to-extend.md#summary) 
@@ -81,11 +82,13 @@ The **Delete** action, next to the reports, deletes the results of the selected 
 
 #### Explore the results
 
-Select the scan to display, by its date and its workspace, and choose the columns to display: the check name, the error type, the workspace, the path and the message are displayed by default. The filters are always displayed, and filter the errors on the check, the error type, the workspace, the site, the node type, the locale, the message or the impact on the XML import. Each filter value shows its number of errors. By default, only the errors which make the XML import fail are displayed: **Clear the filters** displays all of them.
+Select the scan to display, by its date and its workspace, and choose the columns to display: the path, the workspace, the check name, the error type and the message are displayed by default. The filters are always displayed, and filter the errors on the workspace, the check, the error type, the site, the node type, the locale, the message, the impact on the XML import or the fix status. Each filter value shows its number of errors. By default, only the errors which make the XML import fail are displayed: **Clear the filters** displays all of them.
 
 **Fix all** runs the fix of every error matching the filters, after a confirmation, which is enabled once the box **Be careful, data are going to be altered in this environment** is ticked, then displays how many errors were fixed, not fixed, skipped and already fixed. Each error fixed or not fixed is tagged as such in its row. The errors whose check provides no fix, the ones fixed with a chosen or typed value, and the ones whose node does not exist anymore are skipped. Some fixes remove content, so narrow the filters to the errors to fix first.
 
-Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. A click on the row of an error, or Enter on it, opens its details in a side panel: all its information, including the extra information provided by the check, and **Fix**, which runs the fix of the check which has detected it, when the check provides one. Like **Fix all**, every fix of the panel, from its buttons or from Enter in the field of a value, is run once confirmed, after the box **Be careful, data are going to be altered in this environment** is ticked. A click on another row displays its error in the same panel, and Escape closes it. An error fixed with a value has the field of the value in the panel, and **Fix** sends it: a missing mandatory property, a value which breaks the constraints of its definition, chosen among the accepted values, a missing template, chosen among the templates available to the page, or the missing roles of an access control entry, chosen among the roles which can be given at its place. The outcome of a fix, **Fixed** or **Not fixed**, stays displayed in the first column of the row.
+The errors are grouped by node: the errors of a node which has several of them follow a row which tells its path and its workspace, and whose chevron hides or shows them. Click on the path or the UUID of a node to open it in the JCR browser of the `tools` area. A click on the row of an error, or Enter on it, opens the errors of its node in a side panel: the node, then each of its errors with all its information, including the extra information provided by the check, and **Fix**, which runs the fix of the check which has detected it, when the check provides one. **Fix all**, in the panel, fixes together the errors of the node which can be fixed now. Like **Fix all** of the results, every fix of the panel, from its buttons or from Enter in the field of a value, is run once confirmed, after the box **Be careful, data are going to be altered in this environment** is ticked. The errors of a virtual node, served by an external provider such as a mount point, are not fixed from the panel, and the panel tells when the node has been removed since the scan, for example by the fix of another error. A click on another row displays the errors of its node in the same panel, and Escape closes it. An error fixed with a value has the field of the value in the panel, and **Fix** sends it: a missing mandatory property, a value which breaks the constraints of its definition, chosen among the accepted values, a missing template, chosen among the templates available to the page, or the missing roles of an access control entry, chosen among the roles which can be given at its place. The outcome of a fix, **Fixed** or **Not fixed**, stays displayed in the first column of the row.
+
+![Errors of a node](./docs/img/ui-error-details.png)
 
 The results are stored in the JCR, under `/sites/systemsite/files/content-integrity-reports`, from the start of their scan: they remain available after a restart. The reports older than 30 days are deleted by a background job, configured by `org.jahia.modules.contentintegrity.reports` (`retentionDays`, 0 to keep them all, and `cleanupIntervalHours`).
 
@@ -156,9 +159,9 @@ Prints out some extended information about an error.
     2  |       | PropertyConstraintsSanityCheck | default   | dbb81015-5cac-4887-90d5-68c9be704ac8 | mynt:internalLink | fr     | Missing mandatory property
     
     jahia@dx()> jcr:integrity-printError 2
-    ID             | 0
+    ID             | 2
     Check name     | PropertyConstraintsSanityCheck
-    Check ID       | 8
+    Check ID       | PropertyConstraintsSanityCheck
     Fixed          | false
     Workspace      | default
     Locale         | fr
@@ -183,15 +186,13 @@ Prints out the currently registered checks.
 **Example:**
 
     jahia@dx()> jcr:integrity-printChecks
-    Integrity checks (8):
-       FlatStorageCheck (id: 1, priority: 0.0, enabled: true)
-       HomePageDeclaration (id: 2, priority: 100.0, enabled: true)
-       JCRLanguagePropertyCheck (id: 3, priority: 100.0, enabled: true)
-       LockSanityCheck (id: 4, priority: 100.0, enabled: true)
-       MarkForDeletionCheck (id: 5, priority: 100.0, enabled: true)
-       PublicationSanityDefaultCheck (id: 6, priority: 100.0, enabled: true)
-       PublicationSanityLiveCheck (id: 7, priority: 100.0, enabled: true)
-       UndeployedModulesReferencesCheck (id: 8, priority: 100.0, enabled: true)
+    Integrity checks (26):
+       FlatStorageCheck (id: FlatStorageCheck, priority: 0.0, enabled: true)
+       AceSanityCheck (id: AceSanityCheck, priority: 100.0, enabled: true)
+       [...]
+       LivePropertiesCheck (id: LivePropertiesCheck, priority: 100.0, enabled: false)
+       [...]
+       WorkspaceSpecificDefinitionsCheck (id: WorkspaceSpecificDefinitionsCheck, priority: 100.0, enabled: true)
  
 #### <a name="jcr-integrity-printTestResults"></a>jcr:integrity-printTestResults   
 Allows to reprint the result of a previous test.   
@@ -217,8 +218,8 @@ Allows to reprint the result of a previous test.
     Content integrity tested in 141 ms
     No error found
     jahia@dx()> jcr:integrity-printTestResults -d
-    Dumped into C:\DigitalExperienceManager-EnterpriseDistribution-7.2.3.0\tomcat\temp\content-integrity\default_2023_04_21-13_34_15_786-full.csv
-    Dumped into C:\DigitalExperienceManager-EnterpriseDistribution-7.2.3.0\tomcat\temp\content-integrity\default_2023_04_21-13_34_15_786-full.xlsx
+    Dumped into /usr/local/tomcat/temp/content-integrity/default_2026_10_30-13_34_15_786-full.csv
+    Dumped into /usr/local/tomcat/temp/content-integrity/default_2026_10_30-13_34_15_786-full.xlsx
  
 #### <a name="jcr-integrity-configureCheck"></a>jcr:integrity-configureCheck   
 Allows to configure a registered integrity check. Please note that for the moment, the configuration is reset when restarting the module implementing the check,
@@ -238,22 +239,22 @@ or when restarting the server.
 **Example:**
 
     jahia@dx()> jcr:integrity-printChecks
-    Integrity checks (11):
-       FlatStorageCheck (id: 2, priority: 0.0, enabled: true)
+    Integrity checks (26):
+       FlatStorageCheck (id: FlatStorageCheck, priority: 0.0, enabled: true)
        [...]
-    jahia@dx()> jcr:integrity-configureCheck -id 2 -e false
+    jahia@dx()> jcr:integrity-configureCheck -id FlatStorageCheck -e false
     jahia@dx()> jcr:integrity-printChecks
-    Integrity checks (11):
-       FlatStorageCheck (id: 2, priority: 0.0, enabled: false)
+    Integrity checks (26):
+       FlatStorageCheck (id: FlatStorageCheck, priority: 0.0, enabled: false)
        [...]
-    jahia@dx()> jcr:integrity-configureCheck -id 2 -pc
+    jahia@dx()> jcr:integrity-configureCheck -id FlatStorageCheck -pc
     FlatStorageCheck:
         threshold = 500 (Number of children nodes beyond which an error is raised)
-    jahia@dx()> jcr:integrity-configureCheck -id 2 -p threshold
+    jahia@dx()> jcr:integrity-configureCheck -id FlatStorageCheck -p threshold
     FlatStorageCheck: threshold = 500
-    jahia@dx()> jcr:integrity-configureCheck -id 2 -p threshold -v 200
+    jahia@dx()> jcr:integrity-configureCheck -id FlatStorageCheck -p threshold -v 200
     FlatStorageCheck: threshold = 200
-    jahia@dx()> jcr:integrity-configureCheck -id 2 -rp threshold
+    jahia@dx()> jcr:integrity-configureCheck -id FlatStorageCheck -rp threshold
     FlatStorageCheck: threshold = 500
 
  

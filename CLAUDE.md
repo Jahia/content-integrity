@@ -37,9 +37,12 @@ missing (an error type documented in `docs/embedded-tests.md` without its `![<TY
 
 ## PDF of the documentation of the checks
 
-`yarn docs:pdf` (at the root) builds `docs/embedded-tests.pdf` from `docs/embedded-tests.md` and its screenshots, with
-a headless Chrome (`CHROME_PATH` if not found in its default locations). The PDF is git-ignored: build it again after a
-change of the documentation or of the screenshots, never commit it.
+`yarn docs:pdf` (at the root) builds `docs/embedded-tests.pdf` from `docs/embedded-tests.md`, and `README.pdf` from
+`README.md`, with their screenshots, with a headless Chrome (`CHROME_PATH` if not found in its default locations). The
+PDFs are git-ignored: build them again after a change of the documentation or of the screenshots, never commit them.
+
+The screenshots of the administration screen in the README, `docs/img/ui-*.png`, are taken by
+`tests/demo/screenshots.sh` with the ones of the checks (`tests/demo/uiScreenshots.cy.ts`).
 
 ## Reading property values in a check
 
