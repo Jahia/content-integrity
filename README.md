@@ -6,14 +6,27 @@
 Jahia module that provides an extensible service to test the integrity of the content
 
 > [!CAUTION]
-> **This module is a community module. It is not supported by the Jahia Engineering team.** Be careful when running it
-> on non-production environments. Feel free to report any issue or idea through a GitHub issue, or through your access
-> to https://support.jahia.com.
+> **This module is a community module: it is not supported by the Jahia Engineering team**, and comes without any
+> warranty. Try it on a copy of your environment before running it in production. Feel free to report any issue or idea
+> through a GitHub issue, or through your access to https://support.jahia.com.
+>
+> **Fixing the errors changes the JCR, and can't be undone.** A scan only reads the content, but a fix writes to the
+> repository with a system session, whatever the permissions on the node: depending on the error, it deletes nodes and
+> their subtree, properties or access control entries, changes values, or publishes content. Back up the repository
+> before fixing errors in production, read what each fix does in the [documentation of the checks](docs/embedded-tests.md#summary),
+> and narrow the filters to the errors to fix before using **Fix all** or `jcr:integrity-fix *`.
 
 > [!CAUTION]
-> **Ce module est communautaire. Il n'est pas supporté par l'équipe Engineering Jahia.** Attention à son exécution sur
-> des environnements hors production. N'hésitez pas à reporter toute anomalie ou idée via une issue GitHub, ou bien via
-> votre accès https://support.jahia.com.
+> **Ce module est communautaire : il n'est pas supporté par l'équipe Engineering Jahia**, et n'est fourni avec aucune
+> garantie. Essayez-le sur une copie de votre environnement avant de l'exécuter en production. N'hésitez pas à reporter
+> toute anomalie ou idée via une issue GitHub, ou bien via votre accès https://support.jahia.com.
+>
+> **La correction des erreurs modifie le JCR, de façon irréversible.** Une analyse ne fait que lire le contenu, mais une
+> correction écrit dans le référentiel avec une session système, quelles que soient les permissions sur le nœud : selon
+> l'erreur, elle supprime des nœuds et leur sous-arbre, des propriétés ou des entrées de contrôle d'accès, modifie des
+> valeurs, ou publie du contenu. Sauvegardez le référentiel avant de corriger des erreurs en production, lisez ce que fait
+> chaque correction dans la [documentation des contrôles](docs/embedded-tests.md#summary), et restreignez les filtres
+> aux erreurs à corriger avant d'utiliser **Fix all** ou `jcr:integrity-fix *`.
 
 * [How to use it](#how-to-use)
     * [Configuration](#configuration)
