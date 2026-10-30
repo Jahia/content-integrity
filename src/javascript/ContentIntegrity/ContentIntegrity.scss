@@ -577,6 +577,12 @@
   border-left: 3px solid var(--color-danger);
 }
 
+// What a cluster changes to an error which depends on a resource of the server, such as its search index
+.clusterHelper {
+  padding-left: var(--spacing-medium);
+  border-left: 3px solid var(--color-warning);
+}
+
 .nodeErrorFocused {
   border-color: var(--color-accent);
   box-shadow: inset 3px 0 0 var(--color-accent);

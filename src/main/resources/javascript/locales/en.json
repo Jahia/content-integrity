@@ -95,6 +95,32 @@
       "nodeRemoved": "Node removed",
       "nodeRemovedHelper": "The node no longer exists: it has been removed since the scan, for example by the fix of another error. Run a new scan to update the results."
     },
+    "cluster": {
+      "title": "In a cluster",
+      "TemplatesIndexationCheck": {
+        "NOT_INDEXED_TEMPLATE": "Each server has its own search index: this error concerns the index of the server which ran the scan. Reindex the template on each server which reports it."
+      },
+      "PagesSanityCheck": {
+        "MISSING_TEMPLATE": "The template is resolved with the search index and the modules started on the server which ran the scan. If the other servers don't report this error, reindex the template or start its module on this server rather than changing the page."
+      },
+      "AceSanityCheck": {
+        "MISSING_EXTERNAL_ACE": "The external entries are found with the search index of the server which ran the scan. If the other servers don't report this error, reindex the entry on this server rather than fixing it.",
+        "ACE_NON_GRANT_WITH_EXTERNAL_ACE": "The external entries are found with the search index of the server which ran the scan, which can differ from the index of the other servers: scan every server."
+      },
+      "ReferencesSanityCheck": {
+        "INVALID_BACK_REF": "The references to the node are found with the search index of the server which ran the scan, which can differ from the index of the other servers: scan every server."
+      },
+      "UndeclaredNodeTypesCheck": {
+        "UNDECLARED_NODE_TYPE": "The types are the ones of the modules started on the server which ran the scan. If the other servers don't report this error, start the module which declares the type on this server rather than fixing the node.",
+        "GHOST_NODE_TYPE": "The type is declared by a module which is not started on the server which ran the scan. If the other servers don't report this error, start the module on this server rather than fixing the node."
+      },
+      "UndeployedModulesReferencesCheck": {
+        "UNDEPLOYED_MODULE_ON_SITE": "The module is not deployed on the server which ran the scan. If it is deployed on the other servers, deploy it on this one: the fix would remove it from the site for the whole cluster."
+      },
+      "SiteLevelSystemGroupsCheck": {
+        "GROUP_DOES_NOT_EXIST": "The fix finds the members of the group with the search index of the server which runs it: fix the error from a server whose index is up to date."
+      }
+    },
     "column": {
       "checkName": "Check name",
       "errorType": "Error type",

@@ -95,6 +95,32 @@
       "nodeRemoved": "Nœud supprimé",
       "nodeRemovedHelper": "Le nœud n'existe plus : il a été supprimé depuis l'analyse, par exemple par la correction d'une autre erreur. Lancez une nouvelle analyse pour mettre à jour les résultats."
     },
+    "cluster": {
+      "title": "Dans un cluster",
+      "TemplatesIndexationCheck": {
+        "NOT_INDEXED_TEMPLATE": "Chaque serveur a son propre index de recherche : cette erreur concerne l'index du serveur qui a lancé l'analyse. Réindexez le template sur chaque serveur qui la signale."
+      },
+      "PagesSanityCheck": {
+        "MISSING_TEMPLATE": "Le template est résolu avec l'index de recherche et les modules démarrés sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, réindexez le template ou démarrez son module sur ce serveur plutôt que de modifier la page."
+      },
+      "AceSanityCheck": {
+        "MISSING_EXTERNAL_ACE": "Les entrées externes sont trouvées avec l'index de recherche du serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, réindexez l'entrée sur ce serveur plutôt que de la corriger.",
+        "ACE_NON_GRANT_WITH_EXTERNAL_ACE": "Les entrées externes sont trouvées avec l'index de recherche du serveur qui a lancé l'analyse, qui peut différer de l'index des autres serveurs : analysez chaque serveur."
+      },
+      "ReferencesSanityCheck": {
+        "INVALID_BACK_REF": "Les références au nœud sont trouvées avec l'index de recherche du serveur qui a lancé l'analyse, qui peut différer de l'index des autres serveurs : analysez chaque serveur."
+      },
+      "UndeclaredNodeTypesCheck": {
+        "UNDECLARED_NODE_TYPE": "Les types sont ceux des modules démarrés sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez sur ce serveur le module qui déclare le type plutôt que de corriger le nœud.",
+        "GHOST_NODE_TYPE": "Le type est déclaré par un module qui n'est pas démarré sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez le module sur ce serveur plutôt que de corriger le nœud."
+      },
+      "UndeployedModulesReferencesCheck": {
+        "UNDEPLOYED_MODULE_ON_SITE": "Le module n'est pas déployé sur le serveur qui a lancé l'analyse. S'il est déployé sur les autres serveurs, déployez-le sur celui-ci : la correction le retirerait du site pour tout le cluster."
+      },
+      "SiteLevelSystemGroupsCheck": {
+        "GROUP_DOES_NOT_EXIST": "La correction trouve les membres du groupe avec l'index de recherche du serveur qui la lance : corrigez l'erreur depuis un serveur dont l'index est à jour."
+      }
+    },
     "column": {
       "checkName": "Contrôle",
       "errorType": "Type d'erreur",

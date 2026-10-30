@@ -289,7 +289,14 @@ You can for example run the following script in a groovy console:
 
 Most of the checks are purely related to the JCR, and do not need to be executed on every server in the cluster. The scan can be run on any server, not just the processing server.
 
-The following checks rely on some local resources, and should be run on every server in a cluster:
-* TemplatesIndexationCheck
+The content is shared by the servers of a cluster, but each server has its own search index, and its own modules started. The following checks rely on these local resources, and should be run on every server in a cluster:
+* `TemplatesIndexationCheck`: the templates are looked up in the search index
+* `PagesSanityCheck`: `MISSING_TEMPLATE`, the templates are resolved with the search index and the modules started on the server
+* `AceSanityCheck`: `MISSING_EXTERNAL_ACE` and `ACE_NON_GRANT_WITH_EXTERNAL_ACE`, the external entries are found with the search index
+* `ReferencesSanityCheck`: `INVALID_BACK_REF`, the weak references are found with the search index (only when `validate-back-refs` is enabled)
+* `UndeclaredNodeTypesCheck`: a type is undeclared when its module is not started on the server
+* `UndeployedModulesReferencesCheck`: the modules of the sites are compared with the modules deployed on the server
+
+An error reported on some servers only comes from their index or their modules, not from the content: reindex, or deploy and start the module, on these servers rather than fixing the error, since a fix changes the content for the whole cluster. The fix of `GROUP_DOES_NOT_EXIST` (`SiteLevelSystemGroupsCheck`) also finds the members of the group with the search index: run it on a server whose index is up to date. See the documentation of each check in [Embedded tests](docs/embedded-tests.md#summary).
 
 In the UI, the checks to execute can be easily selected. If using the Karaf Shell, refer to [jcr:integrity-check](#jcrintegrity-check) to run a scan with a specified list of checks to execute.

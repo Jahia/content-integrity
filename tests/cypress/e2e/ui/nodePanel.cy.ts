@@ -8,12 +8,15 @@ const ROOT = `/sites/${SITE}/contents/mark-for-deletion`;
 const IN_DEFAULT = `${ROOT}/no-root-deletion`;
 // DELETION_MARK_IN_LIVE, in the live workspace
 const IN_LIVE = `${ROOT}/deleted-in-live`;
+// UNDEPLOYED_MODULE_ON_SITE, which depends on the modules deployed on the server, in the default workspace
+const SITE_PATH = `/sites/${SITE}`;
 
 describe('Panel of the errors of a node', () => {
     before(() => {
         createTestSite(SITE);
         runFixture('checks/MarkForDeletionCheck.groovy', {SITEKEY: SITE});
-        scan(ROOT, ['MarkForDeletionCheck'], 'BOTH');
+        runFixture('checks/UndeployedModulesReferencesCheck.groovy', {SITEKEY: SITE});
+        scan(SITE_PATH, ['MarkForDeletionCheck', 'UndeployedModulesReferencesCheck'], 'BOTH');
     });
 
     after(() => {
@@ -41,6 +44,15 @@ describe('Panel of the errors of a node', () => {
             .and('have.text', 'Removes the deletion mark of the node: its deletion is canceled.');
         openErrorDetails(IN_LIVE);
         getDetailsPanel().find('[data-fix-description]').should('have.text', 'Removes the deletion mark of the node in the live workspace.');
+    });
+
+    it('tells what a cluster changes to an error which depends on a resource of the server, and only to such an error', () => {
+        openErrorDetails(SITE_PATH);
+        getDetailsPanel().find('[data-cluster-helper]').should('have.length', 1)
+            .and('contain.text', 'In a cluster')
+            .and('contain.text', 'The module is not deployed on the server which ran the scan.');
+        openErrorDetails(IN_DEFAULT);
+        getDetailsPanel().find('[data-cluster-helper]').should('not.exist');
     });
 
     it('closes the panel when the table is filtered on another workspace', () => {

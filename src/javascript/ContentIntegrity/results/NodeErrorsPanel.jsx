@@ -172,6 +172,10 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
     // module, only names itself in the tooltip of its Fix button
     const fixDescriptionKey = e => `label.fixDescription.${e.checkName}.${e.errorType}`;
     const fixDescription = e => (i18n.exists(fixDescriptionKey(e), {ns: 'content-integrity'}) ? t(fixDescriptionKey(e)) : null);
+    // An error which depends on a resource of the server which ran the scan, such as its search index or its started modules,
+    // tells what it means in a cluster, where each server has its own: described by error type, as the fixes
+    const clusterHelperKey = e => `label.cluster.${e.checkName}.${e.errorType}`;
+    const clusterHelper = e => (i18n.exists(clusterHelperKey(e), {ns: 'content-integrity'}) ? t(clusterHelperKey(e)) : null);
     const fixOne = e => fix(e.id, [fixOf(e)]);
     // A fix writes to the repository: its button is a danger one, light for the fix of an error, full for Fix all. It runs
     // once confirmed, whether it is asked for by its button or by Enter in a field of its values
@@ -284,6 +288,12 @@ export const NodeErrorsPanel = ({workspace, path, focusedErrorId, resultsId, fix
                                         {!isFixed(e) && !e.fixable && <Chip label={t(e.nodeExists ? 'label.details.noFix' : 'label.details.nodeRemoved')} color="warning"/>}
                                         {e.importError === true && <Chip label={t('label.details.impactsImport')} icon={<Warning/>} color="danger"/>}
                                     </div>
+                                    {!isFixed(e) && clusterHelper(e) && (
+                                        <div className={styles.clusterHelper} data-cluster-helper>
+                                            <Typography weight="bold">{t('label.cluster.title')}</Typography>
+                                            <Typography className={styles.helper}>{clusterHelper(e)}</Typography>
+                                        </div>
+                                    )}
                                     {e.virtualNode && !isFixed(e) && <Typography className={styles.helper}>{t('label.details.virtualNode')}</Typography>}
                                     {!e.nodeExists && !isFixed(e) && <Typography className={styles.helper} data-node-removed>{t('label.details.nodeRemovedHelper')}</Typography>}
                                     {(fixStates[e.id] === FIX_STATES.FAILED || (e.fixFailed && !fixStates[e.id])) && <Typography className={styles.helper}>{t('label.fix.failedHelper')}</Typography>}

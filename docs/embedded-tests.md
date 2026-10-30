@@ -160,6 +160,8 @@ To restore it, add the principal to the members of the group `site-privileged` o
 
 **Description**: the regular entry, of type `GRANT`, names a role which declares external permissions, but no external entry references it for these external permissions. The principal does not get the permissions the role gives out of the node, such as the access to the site. The details tell the role, the external permissions and where they apply.
 
+The external entries which reference an entry are found by a query, answered by the search index of the server which runs the scan. In a cluster, where each server has its own index, an error reported on one server only comes from its index, not from the content: reindex the entry on this server rather than fixing it.
+
 **Fix**: saves the access control entry again, so that Jahia creates its missing external entry, then publishes the access control list if the entry is published. Not fixed when an external entry already sits at the expected place for other external permissions, for example when its `j:externalPermissionsName` was changed (see `INVALID_EXTERNAL_PERMISSIONS`): the ACL listener keeps it and creates no other one, and the entry is not published.
 
 #### Entry not of type GRANT with an external entry
@@ -171,6 +173,8 @@ To restore it, add the principal to the members of the group `site-privileged` o
 **Description**: the regular entry is not of type `GRANT` (`DENY`, or no type), but an external entry references it as its source. An error is raised for each external entry. The details tell the type and the roles of the entry, and the path of the external entry.
 
 This usually happens when the type of an entry is changed without the listeners. The external entry is then reported with `SOURCE_ACE_NOT_TYPE_GRANT` (when the entry has a type).
+
+As for `MISSING_EXTERNAL_ACE`, the external entries are found by a query, answered by the search index of the server which runs the scan: in a cluster, run the check on every server.
 
 **Fix**: no automatic fix on the entry itself. Fix the error `SOURCE_ACE_NOT_TYPE_GRANT` of the external entry: it removes this entry from the sources of the external entry, which clears both errors.
 
@@ -731,6 +735,8 @@ The check is enabled by default and runs on the nodes of type `jmix:hasTemplateN
 
 **Description**: a page is using a template which can't be resolved from the various modules enabled on the site, or the default template of a site is not one of the page templates available to its pages. The details of the error tell the name of the missing template.
 
+The templates are resolved as Jahia does to render the page, on the server which runs the scan: with the modules started on this server, its search index and its cache `RenderService.TemplatesCache`. In a cluster, run the check on every server: a template missing on one server only is not indexed there (see [TemplatesIndexationCheck](#templatesindexationcheck)), or its module is not started there, and the page must not be changed.
+
 If the template is implemented in a module which is mistakenly missing, then installing this module back will fix the error.  
 Otherwise, the page has to be edited to select another template. Note: the new template might use some different areas, and those related to the former template might need to be renamed or deleted.
 
@@ -1078,6 +1084,8 @@ The link should be edited to point to an existing node, or removed from the text
 
 This can happen only when the node holding the reference is a virtual node, the property is not virtual, and this node is not exposed by the `DataSource` at the time of the scan.
 
+The weak references to the node are found by a query, answered by the search index of the server which runs the scan: in a cluster, where each server has its own index, run the check on every server.
+
 If the virtual node is temporarily missing, for example because of a connectivity issue at `DataSource` level, the error has to be considered as false positive.
 
 If the virtual node is gone forever, then the extension node should be deleted from the JCR, what will clean the reference as well.
@@ -1112,7 +1120,8 @@ The group `privileged` is created at server level when the server is installed: 
 The group `site-privileged` is created at site level when the site is created: when it is missing, the error is raised on the site, and the details tell the site.
 
 **Fix**: creates the missing group again, as Jahia does for a new site: `site-privileged` is a member of `privileged`, and its members are the users and groups granted a privileged role in the site.  
-More precisely, the group `privileged` is created at server level, hidden, and the group `site-privileged` of every site is added to its members. The group `site-privileged` is created in the site, added to the members of `privileged`, and its members are the principals granted, by an entry of type `GRANT` in the site, a role with a privileged access (`j:privilegedAccess`). It is granted the role `privileged` on the site, where `privileged` is denied this role, and on the folders `users` and `groups` of the site, except on `systemsite` where only the folders are concerned. The access control lists changed are published when their node exists in `live`.
+More precisely, the group `privileged` is created at server level, hidden, and the group `site-privileged` of every site is added to its members. The group `site-privileged` is created in the site, added to the members of `privileged`, and its members are the principals granted, by an entry of type `GRANT` in the site, a role with a privileged access (`j:privilegedAccess`). It is granted the role `privileged` on the site, where `privileged` is denied this role, and on the folders `users` and `groups` of the site, except on `systemsite` where only the folders are concerned. The access control lists changed are published when their node exists in `live`.  
+The privileged roles and the entries of the site are found by queries, answered by the search index of the server which runs the fix: in a cluster, run it on a server whose index is up to date, or some members of `site-privileged` are missed.
 
 #### Missing membership
 
@@ -1162,6 +1171,8 @@ Detects the templates (`jnt:template`) of the modules which are not correctly in
 
 The check runs on the templates under `/modules`, in every workspace. Every version of a module found under `/modules` is checked, no matter if it is started or not: a template not indexed in a stopped version has no functional impact immediately, but it would have one if this version was started.
 
+In a cluster, the content is shared by the servers, but each server has its own search index: a template can be indexed on a server and missing from the index of another one. The check tells about the index of the server which runs the scan only, so run it on every server of the cluster.
+
 ![TemplatesIndexationCheck in the results of a scan](img/checks/TemplatesIndexationCheck.png)
 
 ### Dealing with errors
@@ -1175,7 +1186,8 @@ The check runs on the templates under `/modules`, in every workspace. Every vers
 **Description**: a query on the templates of the module version, by the name of the template, does not return the template.
 
 If a template is not correctly indexed, you can simply reindex it from the `JCR browser` in the tools. If several templates are identified, you can also reindex the whole subtree of the module.  
-Then, you need to flush the cache, or at least the cache named `RenderService.TemplatesCache`.
+Then, you need to flush the cache, or at least the cache named `RenderService.TemplatesCache`.  
+In a cluster, the reindexation applies to the index of the server where it is done: reindex, flush the cache, and run the check again on each server where the error is reported.
 
 If you suspect that the issue is not related to a module deployment error, then you should consider a full re-indexation of the JCR.
 
@@ -1186,6 +1198,8 @@ If you suspect that the issue is not related to a module deployment error, then 
 Each node has a primary type, and can have been added some mixin types. If a type assigned to a node can't be loaded, then you might encounter some issues when manipulating the node.
 
 The check runs on both workspaces. The details of an error give the type, as `primary type` or as `mixin type`.
+
+A type declared by a module is undeclared when its module is not started on the server which runs the scan, or when the started version of the module does not declare it. In a cluster, the modules are started on each server: run the check on every server. A type reported on one server only is declared by a module which is not started there: start it there, and do not fix the nodes.
 
 ![UndeclaredNodeTypesCheck in the results of a scan](img/checks/UndeclaredNodeTypesCheck.png)
 
@@ -1233,6 +1247,8 @@ When you enable a module on a site, then a property is written on the site node 
 Only currently deployed modules should be referred to in this list.  
 
 The check runs on the site nodes, in the `default` workspace, and compares the modules listed in the property `j:installedModules` with the modules deployed on the server.
+
+In a cluster, the modules deployed are the ones of the server which runs the scan, while the sites are shared: run the check on every server. A module missing on one server only has to be deployed on it. Don't fix the error from this server: the fix would remove the module from the site for the whole cluster.
 
 ![UndeployedModulesReferencesCheck in the results of a scan](img/checks/UndeployedModulesReferencesCheck.png)
 
