@@ -31,7 +31,7 @@ import {FIX_STATES, useFixError} from './useFixError';
 import {JcrBrowserLink} from '../common/JcrBrowserLink';
 import {ReportLinks} from '../common/ReportLinks';
 import {EmptyState} from '../common/EmptyState';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 const ALL = '__all__';
 const ALL_WORKSPACES = 'all-workspaces';

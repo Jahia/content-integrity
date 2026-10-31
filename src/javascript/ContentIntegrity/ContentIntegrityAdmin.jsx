@@ -6,7 +6,7 @@ import {NewScanDialog} from './scan/NewScanDialog';
 import {CurrentScanCard} from './scan/CurrentScanCard';
 import {RUNNING, useScanExecution} from './scan/useScanExecution';
 import {ResultsPanel} from './results/ResultsPanel';
-import styles from './ContentIntegrity.scss';
+import styles from './ContentIntegrity.module.scss';
 
 /*
  * One page, no tabs: the results are the main content, a scan is configured in a dialog opened from

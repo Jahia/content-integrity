@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
 import {Add, Button, Close, Dropdown, Input, Typography} from '@jahia/moonstone';
 import {FormField} from '../common/FormField';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 const BOOLEAN_CHOICES = ['true', 'false'];
 

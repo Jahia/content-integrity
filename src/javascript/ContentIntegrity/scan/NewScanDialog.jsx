@@ -9,7 +9,7 @@ import {GET_CHECKS} from '../ContentIntegrity.gql';
 import {Dialog} from '../common/Dialog';
 import {ChecksSelector} from './ChecksSelector';
 import {ExcludedPaths} from './ExcludedPaths';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 const WORKSPACES = ['EDIT', 'LIVE', 'BOTH'];
 

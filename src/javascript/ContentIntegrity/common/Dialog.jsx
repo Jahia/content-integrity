@@ -2,7 +2,7 @@ import React, {useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
 import {Button, Close, Typography} from '@jahia/moonstone';
 import {Card} from './Card';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 // useId needs React 18, and Jahia 8.1 shares React 16
 let dialogCount = 0;

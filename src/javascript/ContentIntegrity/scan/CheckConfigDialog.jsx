@@ -7,7 +7,7 @@ import {Checkbox} from '../common/Checkbox';
 import {FormField} from '../common/FormField';
 import {Dialog} from '../common/Dialog';
 import {buildSaveConfigurationsQuery, GET_CHECK_CONFIGURATIONS, RESET_CHECK_CONFIGURATIONS} from '../ContentIntegrity.gql';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 const SUPPORTED_TYPES = ['string', 'integer', 'boolean'];
 

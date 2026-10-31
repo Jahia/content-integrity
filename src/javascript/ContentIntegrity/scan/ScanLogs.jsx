@@ -1,7 +1,7 @@
 import React, {useLayoutEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 // Follows the end of the log while the reader is already there, and leaves the scroll alone otherwise.
 export const ScanLogs = ({logs}) => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 /**
  * The page header above a scrollable content, as Moonstone's LayoutContent, which Moonstone 1.6 (Jahia 8.1.5) does

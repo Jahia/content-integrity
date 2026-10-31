@@ -5,7 +5,7 @@ import {useTranslation} from 'react-i18next';
 import {Button, Delete, Menu, MenuItem, MoreVert, Typography} from '@jahia/moonstone';
 import {ConfirmDialog} from '../common/ConfirmDialog';
 import {DELETE_ALL_SCAN_RESULTS, DELETE_SCAN_RESULTS} from '../ContentIntegrity.gql';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 /**
  * A deletion of stored results, which can't be undone, so the administrator confirms first, and, with

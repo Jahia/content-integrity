@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Typography} from '@jahia/moonstone';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 /**
  * A labelled form field, laid out as Moonstone's Field: a label, a helper, the inputs, then the error message.

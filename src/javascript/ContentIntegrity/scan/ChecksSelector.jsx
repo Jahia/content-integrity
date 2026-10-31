@@ -4,7 +4,7 @@ import {useTranslation} from 'react-i18next';
 import {Button, HelpOutline, Tune, Typography} from '@jahia/moonstone';
 import {Checkbox} from '../common/Checkbox';
 import {CheckConfigDialog} from './CheckConfigDialog';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 export const ChecksSelector = ({checks, selected, onChange, isDisabled}) => {
     const {t} = useTranslation('content-integrity');
