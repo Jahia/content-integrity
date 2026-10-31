@@ -17,7 +17,7 @@ fix), update in the same change:
    `` `Error code: <TYPE>` ``, the screenshot line `![<TYPE> in the results of a scan](img/checks/<Check>/<TYPE>.png)`,
    the description (with the extra infos), what to do, and `**Fix**:`.
 4. **Fix description** `src/main/resources/javascript/locales/en.json` and `fr.json`, only for a fixable error.
-5. **Release notes** `docs/release-notes.md`: an item in the row of the current version.
+5. **Release notes** `docs/release-notes.md`: an item in the list of the section of the current version (`#### 4.0.0`).
 6. **Coverage count** in `tests/README.md` ("They cover N of the M error types").
 7. **Screenshots**: regenerate all of them, see below. Add the screenshot line of step 3 only once the image exists.
 
