@@ -61,7 +61,7 @@ extra integrityDemoFallback FALLBACK_ON_NAME
 extra integrityDemoWrongType FALLBACK_ON_NAME_WRONG_TYPE
 
 # The configuration of the checks is kept in memory: a redeploy of the module, or a restart, resets it
-conf() { G "{\"query\":\"{ contentIntegrity { integrityCheckById(id: \\\"$1\\\") { configure(name: \\\"$2\\\", value: \\\"$3\\\") } } }\"}" | grep -q '"configure":true' && echo "configured $1 $2=$3"; }
+conf() { G "{\"query\":\"mutation { contentIntegrity { integrityCheckById(id: \\\"$1\\\") { configure(name: \\\"$2\\\", value: \\\"$3\\\") } } }\"}" | grep -q '"configure":true' && echo "configured $1 $2=$3"; }
 conf FlatStorageCheck threshold 3
 conf VersionHistoryCheck threshold 2
 conf AceSanityCheck ace-count-threshold 5
@@ -71,7 +71,7 @@ conf WorkspaceSpecificDefinitionsCheck ws-live-specific-props j:liveProperties
 # Every check runs, the ones disabled by default included
 checks=$(G '{"query":"{ contentIntegrity { integrityChecks { id } } }"}' | python3 -c 'import json,sys;print(json.dumps([c["id"] for c in json.load(sys.stdin)["data"]["contentIntegrity"]["integrityChecks"]]))')
 scan() { # $1 root node, $2 workspace
-  q=$(python3 -c "import json,os,sys;print(json.dumps({'query':'query(\$c:[String], \$s:String, \$x:[String]){ contentIntegrity { integrityScan { scan(workspace: %s, startNode: \$s, excludedPaths: \$x, checksToRun: \$c) } } }' % sys.argv[2],'variables':{'c':$checks,'s':sys.argv[1],'x':['/sites/systemsite/files/content-integrity-reports'] + [p for p in os.environ.get('EXCLUDED_PATHS', '').split(',') if p]}}))" "$1" "$2")
+  q=$(python3 -c "import json,os,sys;print(json.dumps({'query':'mutation(\$c:[String], \$s:String, \$x:[String]){ contentIntegrity { integrityScan { scan(workspace: %s, startNode: \$s, excludedPaths: \$x, checksToRun: \$c) } } }' % sys.argv[2],'variables':{'c':$checks,'s':sys.argv[1],'x':['/sites/systemsite/files/content-integrity-reports'] + [p for p in os.environ.get('EXCLUDED_PATHS', '').split(',') if p]}}))" "$1" "$2")
   id=$(G "$q" | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["contentIntegrity"]["integrityScan"]["scan"])')
   for _ in $(seq 1 1800); do s=$(G "{\"query\":\"{ contentIntegrity { integrityScan(id: \\\"$id\\\") { status resultsID } } }\"}"); echo "$s" | grep -q '"running"' || break; sleep 2; done
   echo "scan $1 $2 -> $s"

@@ -104,7 +104,7 @@ describe('Scan reports stored in the JCR', () => {
             const resultsId = results.resultsId as string;
             const error = results.errors.find(e => e.fixable && !e.fixed);
             expect(error, 'A fixable error').to.exist;
-            graphql('query($id: String, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e) { fixed } } } }',
+            graphql('mutation($id: String!, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e) { fixed } } } }',
                 {id: resultsId, e: error.id}).its('integrity.results.error.fixed').should('equal', true);
             readStoredReport(resultsId).its('fixedErrors').should('include', error.id);
             graphql('query($id: String, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: errorById(id: $e) { fixed } } } }',

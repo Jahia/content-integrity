@@ -42,8 +42,8 @@ export const useFixError = (resultsId, onFixed) => {
     const fix = useCallback(fixes => {
         const previous = Object.fromEntries(fixes.map(({id}) => [id, states[id] === FIX_STATES.FIXING ? undefined : states[id]]));
         update(Object.fromEntries(fixes.map(({id}) => [id, FIX_STATES.FIXING])));
-        return client.query({
-            query: FIX_ERRORS,
+        return client.mutate({
+            mutation: FIX_ERRORS,
             variables: {resultsID: resultsId, ids: fixes.map(f => f.id), values: fixes.map(f => f.values || null)},
             fetchPolicy: 'no-cache'
         })

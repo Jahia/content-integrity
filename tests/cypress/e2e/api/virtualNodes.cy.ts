@@ -15,8 +15,8 @@ const pathsOfMountsScan = (skipMountPoints: boolean): Cypress.Chainable<string[]
             return execution.resultsID ? getErrors(execution.resultsID).then(errors => errors.map(e => e.nodePath)) : cy.wrap<string[]>([]);
         });
 
-const FIX_ERROR = 'query($id: String, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e) { fixed fixable virtualNode } } } }';
-const FIX_ALL = 'query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { fixAll: fixAllErrors { fixed skipped failed } } } }';
+const FIX_ERROR = 'mutation($id: String!, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e) { fixed fixable virtualNode } } } }';
+const FIX_ALL = 'mutation($id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { fixAll: fixAllErrors { fixed skipped failed } } } }';
 
 /**
  * A fix of an error of a virtual node would change its external source: BinaryPropertiesSanityCheck would delete the

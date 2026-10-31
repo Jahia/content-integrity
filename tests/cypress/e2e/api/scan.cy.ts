@@ -154,7 +154,7 @@ describe('Scan API', () => {
 
     it('returns null when fixing an error which does not exist', () => {
         scan(LOCKS, ['LockSanityCheck']).then(results => {
-            graphql('query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: "unknown-error") { id } } } }', {id: results.resultsId})
+            graphql('mutation($id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: "unknown-error") { id } } } }', {id: results.resultsId})
                 .then(data => expect(data.integrity.results.error).to.be.null);
         });
     });

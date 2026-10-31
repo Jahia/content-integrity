@@ -9,9 +9,9 @@ const LOCKS = `/sites/${SITE}/contents/locks`;
 const VIEWER = {username: `ci-${SITE}-viewer`, password: `ci-${SITE}-viewer-Pwd1!`};
 const FIXER = {username: `ci-${SITE}-fixer`, password: `ci-${SITE}-fixer-Pwd1!`};
 
-const FIX_ERROR = 'query($resultsId: String, $id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id) { fixed } } } }';
-const FIX_ERRORS = 'query($resultsId: String, $ids: [String]!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { errors: fixErrors(ids: $ids) { fixed } } } }';
-const FIX_ALL = 'query($resultsId: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { fixAll: fixAllErrors { fixed } } } }';
+const FIX_ERROR = 'mutation($resultsId: String!, $id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id) { fixed } } } }';
+const FIX_ERRORS = 'mutation($resultsId: String!, $ids: [String]!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { errors: fixErrors(ids: $ids) { fixed } } } }';
+const FIX_ALL = 'mutation($resultsId: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { fixAll: fixAllErrors { fixed } } } }';
 
 const expectPermissionError = (body: any) => {
     expect(body.errors, 'GraphQL errors').to.have.length.greaterThan(0);

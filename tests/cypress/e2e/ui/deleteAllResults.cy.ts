@@ -37,7 +37,7 @@ describe('Deletion of the results of all the scans', () => {
             registerSlowCheck();
             startScan(SLOW_SCAN).then(id => readExecution(id)).then(running => {
                 listResults().then(before => {
-                    graphql('{ integrity: contentIntegrity { deleted: deleteAllScanResults } }')
+                    graphql('mutation { integrity: contentIntegrity { deleted: deleteAllScanResults } }')
                         .its('integrity.deleted').should('equal', before.length - 1);
                 });
                 readStoredReport(first.resultsId as string).should('be.null');

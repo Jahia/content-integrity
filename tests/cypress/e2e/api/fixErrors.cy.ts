@@ -9,7 +9,7 @@ const CHECKS = ['PropertyDefinitionsSanityCheck'];
 
 const NODE_ERRORS = 'query($id: String, $filters: [String]!, $path: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { ' +
     'errors: nodeErrors(workspace: "default", path: $path) { id errorType fixed extraInfos { label value } } } } }';
-const FIX_ERRORS = 'query($id: String, $ids: [String]!, $values: [[String]]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { ' +
+const FIX_ERRORS = 'mutation($id: String!, $ids: [String]!, $values: [[String]]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { ' +
     'errors: fixErrors(ids: $ids, values: $values) { id fixed } } } }';
 
 const propertyOf = (error: { extraInfos: { label: string; value: string }[] }) => error.extraInfos.find(i => i.label === 'property-name')?.value;
@@ -41,7 +41,7 @@ describe('Fix of the errors of a node together', () => {
     it('does not fix one of two missing mandatory properties alone', () => {
         scan(ROOT, CHECKS).then(results => {
             const [width] = frameErrors(results);
-            requestAs(rootUser(), 'query($id: String, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e, values: ["640"]) { fixed } } } }',
+            requestAs(rootUser(), 'mutation($id: String!, $e: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { error: fixError(id: $e, values: ["640"]) { fixed } } } }',
                 {id: results.resultsId, e: width.id}).then(body => {
                 expect(body.errors, 'GraphQL errors').to.have.length(1);
                 expect(body.errors[0].message).to.contain('mandatory');
@@ -99,7 +99,7 @@ describe('Fix of the errors of a node together', () => {
             // No fix has run yet: the errors are skipped
             fixStatus(results.resultsId).should('deep.equal', {skipped: 2});
             // Without a value, the fix of a missing width runs, and can't guess the value
-            graphql('query($id: String, $ids: [String]!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errors: fixErrors(ids: $ids) { fixed fixFailed } } } }',
+            graphql('mutation($id: String!, $ids: [String]!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errors: fixErrors(ids: $ids) { fixed fixFailed } } } }',
                 {id: results.resultsId, ids: [width.id]}).its('integrity.results.errors').should('deep.equal', [{fixed: false, fixFailed: true}]);
             fixStatus(results.resultsId).should('deep.equal', {skipped: 1, notFixed: 1});
             graphql('query($id: String) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: ["fixStatus;notFixed"]) { errors(offset: 0, pageSize: 10) { id } } } }',

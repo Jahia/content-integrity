@@ -35,10 +35,10 @@ export const CheckConfigDialog = ({checkId, onClose}) => {
     const changed = configurations.filter(c => String(values[c.name] ?? '') !== String(c.value ?? ''));
     const invalid = configurations.filter(c => !isValid(c.type, values[c.name] ?? ''));
 
-    const run = (query, variables) => {
+    const run = (mutation, variables) => {
         setSaving(true);
         setSaveError(null);
-        client.query({query, variables, fetchPolicy: 'no-cache'})
+        client.mutate({mutation, variables, fetchPolicy: 'no-cache'})
             .then(({errors}) => {
                 if (errors?.length) {
                     throw new Error(errors.map(e => e.message).join(', '));

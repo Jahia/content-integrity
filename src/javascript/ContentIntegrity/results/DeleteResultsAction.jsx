@@ -13,7 +13,7 @@ import styles from '../ContentIntegrity.scss';
  * the confirmation, from the function it receives. onDeleted is called once the results are deleted: the page then
  * displays no results until a scan is chosen, as after a refresh.
  */
-const ConfirmedDeletion = ({trigger, labels, query, variables, requiresAcknowledgement = false, onDeleted}) => {
+const ConfirmedDeletion = ({trigger, labels, mutation, variables, requiresAcknowledgement = false, onDeleted}) => {
     const {t} = useTranslation('content-integrity');
     const client = useApolloClient();
     const [isConfirming, setConfirming] = useState(false);
@@ -23,7 +23,7 @@ const ConfirmedDeletion = ({trigger, labels, query, variables, requiresAcknowled
     const deleteResults = () => {
         setDeleting(true);
         setError(null);
-        client.query({query, variables, fetchPolicy: 'no-cache'})
+        client.mutate({mutation, variables, fetchPolicy: 'no-cache'})
             .then(() => {
                 setConfirming(false);
                 onDeleted();
@@ -62,7 +62,7 @@ ConfirmedDeletion.propTypes = {
         description: PropTypes.string.isRequired,
         confirm: PropTypes.string.isRequired
     }).isRequired,
-    query: PropTypes.object.isRequired,
+    mutation: PropTypes.object.isRequired,
     variables: PropTypes.object,
     requiresAcknowledgement: PropTypes.bool,
     onDeleted: PropTypes.func.isRequired
@@ -90,7 +90,7 @@ export const DeleteResultsAction = ({resultsId, scanLabel, onDeleted}) => {
                                description: t('label.deleteResults.description', {scan: scanLabel}),
                                confirm: t('label.deleteResults.confirm')
                            }}
-                           query={DELETE_SCAN_RESULTS}
+                           mutation={DELETE_SCAN_RESULTS}
                            variables={{id: resultsId}}
                            onDeleted={onDeleted}/>
     );
@@ -147,7 +147,7 @@ export const ResultsMenu = ({count, onDeleted}) => {
                                description: t('label.deleteAllResults.description', {count}),
                                confirm: t('label.deleteAllResults.confirm', {count})
                            }}
-                           query={DELETE_ALL_SCAN_RESULTS}
+                           mutation={DELETE_ALL_SCAN_RESULTS}
                            onDeleted={onDeleted}
                            requiresAcknowledgement/>
     );

@@ -136,7 +136,7 @@ export type ScanParameters = {
  * Starts a scan, without waiting for its end, and returns the ID of its execution.
  */
 export const startScan = ({startNode, checks, workspace = 'EDIT', excludedPaths, skipMountPoints}: ScanParameters): Cypress.Chainable<string> =>
-    graphql('query($workspace: WorkspaceToScan!, $startNode: String, $excludedPaths: [String], $skipMountPoints: Boolean, $checks: [String]) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, excludedPaths: $excludedPaths, skipMountPoints: $skipMountPoints, checksToRun: $checks) } } }',
+    graphql('mutation($workspace: WorkspaceToScan!, $startNode: String, $excludedPaths: [String], $skipMountPoints: Boolean, $checks: [String]) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, excludedPaths: $excludedPaths, skipMountPoints: $skipMountPoints, checksToRun: $checks) } } }',
         {workspace, startNode, excludedPaths, skipMountPoints, checks}).then(data => data.integrity.scan.id);
 
 /**
@@ -176,7 +176,7 @@ export const SLOW_SCAN: ScanParameters = {startNode: '/sites/systemsite/contents
 export const stopRunningScan = (): void => {
     readExecution().then(execution => {
         if (execution?.status === 'running') {
-            graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { stopRunningScan } } }', {id: execution.id});
+            graphql('mutation($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { stopRunningScan } } }', {id: execution.id});
             waitForExecution(execution.id);
         }
     });
@@ -284,7 +284,7 @@ export const getErrors = (resultsId: string, offset = 0, read: IntegrityError[] 
  */
 export const scan = (startNode: string, checks: string[], workspace: Workspace = 'EDIT'): Cypress.Chainable<ScanResults> => {
     cy.log(`Scan of ${startNode} in ${workspace} with ${checks.join(', ')}`);
-    return graphql('query($workspace: WorkspaceToScan!, $startNode: String, $checks: [String]) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, checksToRun: $checks) } } }',
+    return graphql('mutation($workspace: WorkspaceToScan!, $startNode: String, $checks: [String]) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, checksToRun: $checks) } } }',
         {workspace, startNode, checks})
         .then(data => waitForScan(data.integrity.scan.id))
         .then(resultsId => {
@@ -346,7 +346,7 @@ export const expectExtraInfo = (error: IntegrityError, label: string, value?: st
  * an administrator, for the errors fixed with values. A rejected value is returned as a message, not as a test failure.
  */
 export const fixError = (resultsId: string, errorId: string, values?: string[]): Cypress.Chainable<FixResult> =>
-    request('query($resultsId: String, $id: String!, $values: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id, values: $values) { fixed fixFailureMessage } } } }',
+    request('mutation($resultsId: String!, $id: String!, $values: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id, values: $values) { fixed fixFailureMessage } } } }',
         {resultsId, id: errorId, values})
         .then(response => {
             if (response.body.errors?.length) {
@@ -384,13 +384,13 @@ export const expectFixFails = (startNode: string, checks: string[], workspace: W
 };
 
 export const configureCheck = (checkId: string, name: string, value: string): void => {
-    graphql('query($id: String, $name: String!, $value: String!) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { configure(name: $name, value: $value) } } }',
+    graphql('mutation($id: String, $name: String!, $value: String!) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { configure(name: $name, value: $value) } } }',
         {id: checkId, name, value})
         .then(data => expect(data.integrity.check.configure, `Configuration ${name}=${value} of ${checkId}`).to.be.true);
 };
 
 export const resetCheckConfiguration = (checkId: string): void => {
-    graphql('query($id: String) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { resetAllConfigurations } } }', {id: checkId});
+    graphql('mutation($id: String) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { resetAllConfigurations } } }', {id: checkId});
 };
 
 /**

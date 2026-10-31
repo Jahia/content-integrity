@@ -16,14 +16,17 @@ const appendLogs = (logs, newLines) => {
     return all.length <= LOGS_HEAD_SIZE + LOGS_TAIL_SIZE + 1 ? all : [...all.slice(0, LOGS_HEAD_SIZE), LOGS_SKIPPED, ...all.slice(-LOGS_TAIL_SIZE)];
 };
 
-const runQuery = (client, query, variables) => client.query({query, variables, fetchPolicy: 'no-cache'})
-    .then(({data, errors}) => {
-        if (errors?.length) {
-            throw new Error(errors.map(e => e.message).join(', '));
-        }
+const dataOf = ({data, errors}) => {
+    if (errors?.length) {
+        throw new Error(errors.map(e => e.message).join(', '));
+    }
 
-        return data;
-    });
+    return data;
+};
+
+const runQuery = (client, query, variables) => client.query({query, variables, fetchPolicy: 'no-cache'}).then(dataOf);
+
+const runMutation = (client, mutation, variables) => client.mutate({mutation, variables, fetchPolicy: 'no-cache'}).then(dataOf);
 
 /**
  * Tracks one scan execution: start, stop, and its logs. On mount it attaches to the scan that is running, or else to
@@ -147,7 +150,7 @@ export const useScanExecution = () => {
     const start = useCallback(({rootPath, excludedPaths, workspace, includeVirtualNodes, checks}) => {
         setError(null);
         setStarting(true);
-        runQuery(client, RUN_SCAN, {
+        runMutation(client, RUN_SCAN, {
             path: rootPath,
             excludedPaths,
             ws: workspace,
@@ -181,7 +184,7 @@ export const useScanExecution = () => {
 
         setStopping(true);
         // The subscription delivers the end of the scan. Without one, the scan is polled
-        runQuery(client, STOP_SCAN, {id: execution.id})
+        runMutation(client, STOP_SCAN, {id: execution.id})
             .then(() => !unsubscribe.current && poll(execution.id))
             .catch(e => {
                 setStopping(false);

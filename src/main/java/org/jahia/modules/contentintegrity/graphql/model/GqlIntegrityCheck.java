@@ -84,10 +84,7 @@ public class GqlIntegrityCheck {
                 );
     }
 
-    @GraphQLField
-    @GraphQLName("configure")
-    public boolean setConfiguration(@GraphQLName("name") @GraphQLNonNull String name,
-                                 @GraphQLName("value") @GraphQLNonNull String value) {
+    public boolean setConfiguration(String name, String value) {
         if (service.isScanRunning()) return false;
 
         try {
@@ -100,9 +97,7 @@ public class GqlIntegrityCheck {
         }
     }
 
-    @GraphQLField
-    @GraphQLName("resetConfiguration")
-    public boolean resetConfiguration(@GraphQLName("name") @GraphQLNonNull String name) {
+    public boolean resetConfiguration(String name) {
         if (service.isScanRunning()) return false;
 
         try {
@@ -115,7 +110,6 @@ public class GqlIntegrityCheck {
         }
     }
 
-    @GraphQLField
     public boolean resetAllConfigurations() {
         if (service.isScanRunning()) return false;
 

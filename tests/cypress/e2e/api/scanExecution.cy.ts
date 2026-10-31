@@ -1,7 +1,7 @@
 import {graphql, readExecution, registerSlowCheck, SLOW_SCAN, startScan, stopRunningScan, unregisterSlowCheck, waitForExecution} from '../../support/integrity';
 
 const stopExecution = (id: string): Cypress.Chainable<boolean> =>
-    graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { stopRunningScan } } }', {id})
+    graphql('mutation($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { stopRunningScan } } }', {id})
         .then(data => data.integrity.scan.stopRunningScan);
 
 /**

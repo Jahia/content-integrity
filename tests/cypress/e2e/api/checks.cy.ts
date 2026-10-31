@@ -49,7 +49,7 @@ describe('Integrity checks', () => {
         it('resets a single configuration to its default value, and keeps the other ones', () => {
             configureCheck('ReferencesSanityCheck', 'validate-refs', 'false');
             configureCheck('ReferencesSanityCheck', 'validate-back-refs', 'true');
-            graphql('{ integrity: contentIntegrity { check: integrityCheckById(id: "ReferencesSanityCheck") { resetConfiguration(name: "validate-refs") } } }')
+            graphql('mutation { integrity: contentIntegrity { check: integrityCheckById(id: "ReferencesSanityCheck") { resetConfiguration(name: "validate-refs") } } }')
                 .its('integrity.check.resetConfiguration').should('be.true');
             readConfiguration('ReferencesSanityCheck', 'validate-refs').then(conf => expect(conf.value).to.equal(conf.defaultValue));
             readConfiguration('ReferencesSanityCheck', 'validate-back-refs').then(conf => expect(conf.value).to.equal('true'));
@@ -66,7 +66,7 @@ describe('Integrity checks', () => {
         });
 
         it('refuses a value which does not match the type of the configuration', () => {
-            graphql('{ integrity: contentIntegrity { check: integrityCheckById(id: "FlatStorageCheck") { configure(name: "threshold", value: "not a number") } } }')
+            graphql('mutation { integrity: contentIntegrity { check: integrityCheckById(id: "FlatStorageCheck") { configure(name: "threshold", value: "not a number") } } }')
                 .then(data => expect(data.integrity.check.configure).to.be.false);
             readConfiguration('FlatStorageCheck', 'threshold').then(conf => expect(conf.value).to.equal('500'));
         });

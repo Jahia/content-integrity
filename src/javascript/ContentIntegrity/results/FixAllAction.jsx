@@ -23,7 +23,7 @@ export const FixAllAction = ({resultsId, filterArgs, errorCount, onFixed}) => {
     const fixAll = () => {
         setFixing(true);
         setOutcome(null);
-        client.query({query: FIX_ALL_ERRORS, variables: {resultsID: resultsId, filters: filterArgs}, fetchPolicy: 'no-cache'})
+        client.mutate({mutation: FIX_ALL_ERRORS, variables: {resultsID: resultsId, filters: filterArgs}, fetchPolicy: 'no-cache'})
             .then(({data}) => {
                 const result = data?.integrity?.results?.fixAll;
                 // The errors already fixed are skipped as well

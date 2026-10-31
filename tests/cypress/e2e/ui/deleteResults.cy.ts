@@ -53,7 +53,7 @@ describe('Deletion of the results from the administration page', () => {
             cy.get('li.moonstone-menuItem').should('not.contain.text', label);
             closeMenu();
         });
-        cy.get<string>('@otherResults').then(id => graphql('query($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id}));
+        cy.get<string>('@otherResults').then(id => graphql('mutation($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id}));
     });
 
     it('opens without any results selected, also once the page is reloaded', () => {
@@ -67,7 +67,7 @@ describe('Deletion of the results from the administration page', () => {
             expectNothingSelected();
             cy.reload();
             expectNothingSelected();
-            graphql('query($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id: results.resultsId});
+            graphql('mutation($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id: results.resultsId});
         });
     });
 
@@ -80,7 +80,7 @@ describe('Deletion of the results from the administration page', () => {
             });
             cy.contains('Delete the results of all the scans').should('not.exist');
             readStoredReport(resultsId).should('not.be.null');
-            graphql('query($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id: resultsId});
+            graphql('mutation($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id: resultsId});
         });
     });
 
@@ -90,7 +90,7 @@ describe('Deletion of the results from the administration page', () => {
             getDialog(TITLE).within(() => cy.contains('button', 'Cancel').click());
             cy.contains(TITLE).should('not.exist');
             readStoredReport(resultsId).should('not.be.null');
-            graphql('query($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id: resultsId});
+            graphql('mutation($id: String!) { integrity: contentIntegrity { deleteScanResults(id: $id) } }', {id: resultsId});
         });
     });
 });

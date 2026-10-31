@@ -8,7 +8,8 @@ End-to-end tests of the content-integrity module, run against a Jahia server whe
   pages, filters and column values of its results, the execution of a scan (one at a time, and its stop), the fix of
   all the errors matching filters, the permission to fix the errors (in the API and in the administration screen), and
   the access to the scan reports, which only the server administrators may download, and the errors of the virtual nodes
-  of a mount point, which are not fixed, and which a scan with `skipMountPoints` skips. `karafCommands.cy.ts` runs the
+  of a mount point, which are not fixed, and which a scan with `skipMountPoints` skips. `mutations.cy.ts` checks that
+  the fields which change the server are mutations only, which a GET can't send. `karafCommands.cy.ts` runs the
   Karaf shell commands `jcr:integrity-*`, with each of their options, through `shell/karafCommand.groovy`, which
   captures what they print.
 * `cypress/e2e/ui`: the administration page: the new scan dialog (its defaults, the excluded paths, the parameters sent,
