@@ -126,11 +126,7 @@ public class GqlIntegrityService {
         return service.getExecutionLog(id);
     }
 
-    @GraphQLField
-    @GraphQLDescription("Deletes the stored results of a scan: its errors, its log, and its CSV and XLSX reports. Returns false if no results " +
-            "have this identifier. The results of a running scan are not deleted. Requires the permission adminContentIntegrityDelete, and " +
-            "the access to the reports, which only the server administrators read")
-    public boolean deleteScanResults(@GraphQLName("id") @GraphQLNonNull String id) {
+    public boolean deleteScanResults(String id) {
         checkDeletePermission();
         try {
             return service.deleteResults(id);
@@ -144,10 +140,6 @@ public class GqlIntegrityService {
         }
     }
 
-    @GraphQLField
-    @GraphQLDescription("Deletes the stored results of all the scans, with their errors, their logs and their CSV and XLSX reports, and returns " +
-            "their number. The results of a running scan are not deleted. Requires the permission adminContentIntegrityDelete, and the access " +
-            "to the reports, which only the server administrators read")
     public int deleteAllScanResults() {
         checkDeletePermission();
         try {

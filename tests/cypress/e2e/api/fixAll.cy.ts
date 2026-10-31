@@ -7,14 +7,14 @@ const MISSING_MANDATORY = `/sites/${SITE}/contents/property-definitions/missing-
 type FixAllResult = { fixed: number; failed: number; failedIds: string[]; skipped: number; alreadyFixed: number };
 
 const fixAll = (resultsId: string, filters: string[]): Cypress.Chainable<FixAllResult> =>
-    graphql('query($id: String, $filters: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { fixAll: fixAllErrors { fixed failed failedIds skipped alreadyFixed } } } }',
+    graphql('mutation($id: String!, $filters: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { fixAll: fixAllErrors { fixed failed failedIds skipped alreadyFixed } } } }',
         {id: resultsId, filters}).then(data => data.integrity.results.fixAll as FixAllResult);
 
 type FixAllReasons = { skippedReasons: { reason: string; count: number }[]; failures: { checkName: string; errorType: string; message: string; count: number }[] };
 
 // Why errors are skipped or not fixed: run again on errors that a fix all leaves as they are, the same reasons are given
 const fixAllReasons = (resultsId: string, filters: string[]): Cypress.Chainable<FixAllReasons> =>
-    graphql('query($id: String, $filters: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { ' +
+    graphql('mutation($id: String!, $filters: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { ' +
         'fixAll: fixAllErrors { skippedReasons { reason count } failures { checkName errorType message count } } } } }',
     {id: resultsId, filters}).then(data => data.integrity.results.fixAll as FixAllReasons);
 
@@ -149,7 +149,7 @@ describe('Fix of all the errors matching filters', () => {
     });
 
     it('returns no results for an unknown ID', () => {
-        graphql('{ integrity: contentIntegrity { results: scanResultsDetails(id: "default_unknown") { fixAll: fixAllErrors { fixed } } } }')
+        graphql('mutation { integrity: contentIntegrity { results: scanResultsDetails(id: "default_unknown") { fixAll: fixAllErrors { fixed } } } }')
             .then(data => expect(data.integrity.results).to.be.null);
     });
 });

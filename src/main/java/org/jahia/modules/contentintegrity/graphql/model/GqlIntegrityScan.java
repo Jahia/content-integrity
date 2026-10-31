@@ -1,10 +1,8 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
-import graphql.annotations.annotationTypes.GraphQLDefaultValue;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.reactivex.Flowable;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
@@ -19,7 +17,6 @@ import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.ScanReportLogger;
 import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
-import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRSessionFactory;
 import org.jahia.services.usermanager.JahiaUser;
@@ -54,7 +51,6 @@ public class GqlIntegrityScan {
     private static final Map<String, Instant> executionStart = new ConcurrentHashMap<>();
     // The executions asked to stop: they stay RUNNING until their scan has actually ended
     private static final Set<String> stopRequests = ConcurrentHashMap.newKeySet();
-    private static final String PATH_DESC = "Path of the node from which to start the scan. If not defined, the root node is used";
     private static final int LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE = 100;
     private static final int LOGS_LIMIT_CLIENT_SIDE_END_SIZE = 500;
     private static final int LOGS_LIMIT_CLIENT_SIDE_TOTAL_SIZE = LOGS_LIMIT_CLIENT_SIDE_INTRO_SIZE + LOGS_LIMIT_CLIENT_SIDE_END_SIZE + 1;
@@ -100,12 +96,7 @@ public class GqlIntegrityScan {
         }
     }
 
-    @GraphQLField
-    public String getScan(@GraphQLName("workspace") @GraphQLNonNull GqlIntegrityService.Workspace workspace,
-                          @GraphQLName("startNode") @GraphQLDescription(PATH_DESC) String path,
-                          @GraphQLName("excludedPaths") List<String> excludedPaths,
-                          @GraphQLName("skipMountPoints") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) Boolean skipMountPoints,
-                          @GraphQLName("checksToRun") List<String> checksToRun) {
+    public String startScan(GqlIntegrityService.Workspace workspace, String path, List<String> excludedPaths, Boolean skipMountPoints, List<String> checksToRun) {
         // Boxed: graphql-java 13 (Jahia 8.1) passes null for a declared variable left unset, instead of the default value
         final boolean skipMountPointsValue = Boolean.TRUE.equals(skipMountPoints);
         id = generateExecutionID();
@@ -301,7 +292,6 @@ public class GqlIntegrityScan {
         return scanResults.get(id);
     }
 
-    @GraphQLField
     public boolean stopRunningScan() {
         // Only this execution can be stopped: the scan which runs may have been started by another one.
         // Its status becomes INTERRUPTED once its scan has ended, so that no other scan is started in between.

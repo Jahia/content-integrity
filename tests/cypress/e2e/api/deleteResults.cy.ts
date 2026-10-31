@@ -24,7 +24,7 @@ const LOCKS = `/sites/${SITE}/contents/locks`;
 const VIEWER = {username: `ci-${SITE}-viewer`, password: `ci-${SITE}-viewer-Pwd1!`};
 const FIXER = {username: `ci-${SITE}-fixer`, password: `ci-${SITE}-fixer-Pwd1!`};
 
-const DELETE = 'query($id: String!) { integrity: contentIntegrity { deleted: deleteScanResults(id: $id) } }';
+const DELETE = 'mutation($id: String!) { integrity: contentIntegrity { deleted: deleteScanResults(id: $id) } }';
 
 const scanLocks = (): Cypress.Chainable<string> => scan(LOCKS, ['LockSanityCheck']).then(results => results.resultsId as string);
 
@@ -84,7 +84,7 @@ describe('Deletion of the results of a scan', () => {
 
     it('does not let a user without the permission adminContentIntegrityDelete delete all the results', () => {
         scanLocks().then(resultsId => {
-            requestAs(VIEWER, '{ integrity: contentIntegrity { deleteAllScanResults } }').then(body => {
+            requestAs(VIEWER, 'mutation { integrity: contentIntegrity { deleteAllScanResults } }').then(body => {
                 expect(body.errors, 'GraphQL errors').to.have.length.greaterThan(0);
                 expect(body.errors[0].message).to.contain('adminContentIntegrityDelete');
             });

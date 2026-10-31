@@ -35,7 +35,7 @@ export const GET_CHECK_CONFIGURATIONS = gql`
 `;
 
 export const RESET_CHECK_CONFIGURATIONS = gql`
-    query ContentIntegrityResetCheckConfigurations($id: String!) {
+    mutation ContentIntegrityResetCheckConfigurations($id: String!) {
         integrity: contentIntegrity {
             check: integrityCheckById(id: $id) {
                 resetAllConfigurations
@@ -50,10 +50,9 @@ export const buildSaveConfigurationsQuery = count => {
     const variables = indexes.map(i => `$n${i}: String!, $v${i}: String!`).join(', ');
     const calls = indexes.map(i => `c${i}: configure(name: $n${i}, value: $v${i})`).join('\n');
     return gql`
-        query ContentIntegritySaveCheckConfigurations($id: String!${count > 0 ? ', ' + variables : ''}) {
+        mutation ContentIntegritySaveCheckConfigurations($id: String!${count > 0 ? ', ' + variables : ''}) {
             integrity: contentIntegrity {
                 check: integrityCheckById(id: $id) {
-                    id
                     ${calls}
                 }
             }
@@ -62,7 +61,7 @@ export const buildSaveConfigurationsQuery = count => {
 };
 
 export const RUN_SCAN = gql`
-    query ContentIntegrityRunScan($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String], $skipMP: Boolean) {
+    mutation ContentIntegrityRunScan($path: String!, $excludedPaths: [String], $ws: WorkspaceToScan!, $checks: [String], $skipMP: Boolean) {
         integrity: contentIntegrity {
             scan: integrityScan {
                 id: scan(startNode: $path, excludedPaths: $excludedPaths, workspace: $ws, checksToRun: $checks, skipMountPoints: $skipMP)
@@ -97,7 +96,7 @@ export const GET_SCAN = gql`
 `;
 
 export const STOP_SCAN = gql`
-    query ContentIntegrityStopScan($id: String!) {
+    mutation ContentIntegrityStopScan($id: String!) {
         integrity: contentIntegrity {
             scan: integrityScan(id: $id) {
                 stopRunningScan
@@ -123,7 +122,7 @@ export const GET_SCAN_RESULTS_LIST = gql`
 `;
 
 export const DELETE_SCAN_RESULTS = gql`
-    query ContentIntegrityDeleteScanResults($id: String!) {
+    mutation ContentIntegrityDeleteScanResults($id: String!) {
         integrity: contentIntegrity {
             deleted: deleteScanResults(id: $id)
         }
@@ -131,7 +130,7 @@ export const DELETE_SCAN_RESULTS = gql`
 `;
 
 export const DELETE_ALL_SCAN_RESULTS = gql`
-    query ContentIntegrityDeleteAllScanResults {
+    mutation ContentIntegrityDeleteAllScanResults {
         integrity: contentIntegrity {
             deleted: deleteAllScanResults
         }
@@ -238,7 +237,7 @@ export const GET_NODE_ERRORS = gql`
 // Fixes errors together, each with the fix of the check which has detected it: the values of the errors of a node are
 // saved at once. 'fixed' tells, for each error, if its fix has succeeded.
 export const FIX_ERRORS = gql`
-    query ContentIntegrityFixErrors($resultsID: String!, $ids: [String]!, $values: [[String]]) {
+    mutation ContentIntegrityFixErrors($resultsID: String!, $ids: [String]!, $values: [[String]]) {
         integrity: contentIntegrity {
             results: scanResultsDetails(id: $resultsID) {
                 errors: fixErrors(ids: $ids, values: $values) {
@@ -269,7 +268,7 @@ export const GET_ADMIN_PANEL_NODE = gql`
 `;
 
 export const FIX_ALL_ERRORS = gql`
-    query ContentIntegrityFixAllErrors($resultsID: String!, $filters: [String]!) {
+    mutation ContentIntegrityFixAllErrors($resultsID: String!, $filters: [String]!) {
         integrity: contentIntegrity {
             results: scanResultsDetails(id: $resultsID, filters: $filters) {
                 fixAll: fixAllErrors {
