@@ -21,6 +21,9 @@ End-to-end tests of the content-integrity module, run against a Jahia server whe
 The tests need Jahia 8.1.5 or later with the module deployed, and a root password. They create their own sites, named
 `ci<Something>`, and their own users, named `ci-<site>-*`, then delete them.
 
+Yarn 4 is pinned by the `packageManager` field of `package.json`: run `corepack enable` once, with Node 18.12 or later,
+before the first `yarn install`.
+
 ```bash
 yarn install
 JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root yarn e2e:ci

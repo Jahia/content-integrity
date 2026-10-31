@@ -17,7 +17,7 @@ SHOTS=$TESTS/results/screenshots/checkScreenshots.cy.ts
 UI_SHOTS=$TESTS/results/screenshots/uiScreenshots.cy.ts
 
 rm -rf "$SHOTS" "$UI_SHOTS"
-(cd "$TESTS" && npx cypress run --config-file cypress.screenshots.config.ts --browser chrome --headless "$@") || exit 1
+(cd "$TESTS" && yarn cypress run --config-file cypress.screenshots.config.ts --browser chrome --headless "$@") || exit 1
 mkdir -p "$DOCS"
 # The screenshots are reduced to 256 colors, which they look the same with, at a quarter of their size. Only the new
 # ones: compressing again the screenshots already in the documentation would change them
