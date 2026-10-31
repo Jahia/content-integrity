@@ -6,7 +6,7 @@ import {Build, Button, Typography} from '@jahia/moonstone';
 import {ConfirmDialog} from '../common/ConfirmDialog';
 import {FIX_ALL_ERRORS} from '../ContentIntegrity.gql';
 import {FixOutcomeDialog} from './FixOutcomeDialog';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 /**
  * Fixes all the errors matching the active filters, each with the fix of the check which has detected it. A fix can

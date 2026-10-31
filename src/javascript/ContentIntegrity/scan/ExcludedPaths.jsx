@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
 import {Add, Button, Chip, Close, Input} from '@jahia/moonstone';
 import {FormField} from '../common/FormField';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 export const ExcludedPaths = ({paths, onChange, isDisabled}) => {
     const {t} = useTranslation('content-integrity');

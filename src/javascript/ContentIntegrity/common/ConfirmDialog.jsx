@@ -4,7 +4,7 @@ import {useTranslation} from 'react-i18next';
 import {Button, Typography} from '@jahia/moonstone';
 import {Checkbox} from './Checkbox';
 import {Dialog} from './Dialog';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 /**
  * The confirmation of an action which alters the data of the server, such as a fix or a deletion. With requiresAcknowledgement,

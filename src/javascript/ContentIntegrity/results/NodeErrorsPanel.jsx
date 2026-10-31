@@ -11,7 +11,7 @@ import {FixStatus} from './FixStatus';
 import {FixOutcomeDialog} from './FixOutcomeDialog';
 import {FixValuesForm, initialFixValues, typedFixValues} from './FixValuesForm';
 import {FIX_STATES} from './useFixError';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 const TITLE_ID = 'ci-node-errors-title';
 const LINKED = '__linked__';

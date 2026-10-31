@@ -7,13 +7,12 @@
   "license": "MIT",
   "packageManager": "yarn@4.18.1+sha512.b2e1e7524f654f2749d32b4ebcb4622473cb5bcbc485df2007e12a154e50162a4d795526768bc5f5b8f81717bfd79deb2472813d86fb5ae2eb551fa9c872b08f",
   "scripts": {
-    "build": "yarn webpack",
-    "build:dev": "yarn webpack",
-    "build:production": "yarn webpack --mode=production",
+    "build": "vite build",
+    "build:dev": "vite build",
+    "build:production": "vite build --mode production",
     "docs:pdf": "node docs/build-pdf.js",
-    "webpack": "node --max_old_space_size=2048 ./node_modules/webpack/bin/webpack.js",
-    "dev": "yarn webpack --watch",
-    "watch": "yarn webpack --watch",
+    "dev": "vite build --watch",
+    "watch": "vite build --watch",
     "clean": "rimraf --glob \"*.log\" src/main/resources/javascript/apps",
     "clean:all": "yarn clean && rimraf node_modules node"
   },
@@ -34,23 +33,11 @@
     "react-i18next": "^11.18.6"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.6",
-    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/preset-env": "^7.28.5",
-    "@babel/preset-react": "^7.28.5",
-    "@jahia/webpack-config": "^1.1.0",
-    "babel-loader": "^10.0.0",
-    "clean-webpack-plugin": "^4.0.0",
-    "copy-webpack-plugin": "^11.0.0",
-    "css-loader": "^6.8.1",
+    "@module-federation/vite": "1.23.7",
     "marked": "12.0.2",
     "rimraf": "^5.0.0",
     "sass": "^1.52.1",
-    "sass-loader": "^12.4.0",
-    "style-loader": "^3.3.1",
-    "webpack": "^5.91.0",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "webpack-cli": "^5.1.4"
+    "vite": "8.3.5"
   },
   "browserslist": {
     "production": [

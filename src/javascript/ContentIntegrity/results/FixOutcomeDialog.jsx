@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
 import {Button, Typography} from '@jahia/moonstone';
 import {Dialog} from '../common/Dialog';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 const sum = items => items.reduce((total, item) => total + item.count, 0);
 

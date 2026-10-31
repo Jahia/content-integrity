@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {useTranslation} from 'react-i18next';
 import {Add, Button, Typography} from '@jahia/moonstone';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 /**
  * The content of the results card when it displays no results: a title, a hint, and the button to run a new scan, the

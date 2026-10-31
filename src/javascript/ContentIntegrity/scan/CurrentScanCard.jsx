@@ -4,7 +4,7 @@ import {useTranslation} from 'react-i18next';
 import {Button, ChevronDown, ChevronRight, Loader, Typography} from '@jahia/moonstone';
 import {Card} from '../common/Card';
 import {ScanLogs} from './ScanLogs';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 // The scan which runs, started from this page or found running when it opened. Once it is over, the results card displays its outcome.
 export const CurrentScanCard = ({execution, isStopping}) => {

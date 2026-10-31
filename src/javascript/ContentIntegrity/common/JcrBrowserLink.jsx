@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {useApolloClient} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
 import {GET_ADMIN_PANEL_NODE} from '../ContentIntegrity.gql';
-import styles from '../ContentIntegrity.scss';
+import styles from '../ContentIntegrity.module.scss';
 
 const contextPath = () => window.contextJsParameters?.contextPath || '';
 
