@@ -18,6 +18,9 @@ repository.xml.generated
 /node_modules
 /node
 /src/main/resources/javascript/apps
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/releases
 
 # Custom
 TODO.md
