@@ -21,6 +21,13 @@ End-to-end tests of the content-integrity module, run against a Jahia server whe
 The tests need Jahia 8.1.5 or later with the module deployed, and a root password. They create their own sites, named
 `ci<Something>`, and their own users, named `ci-<site>-*`, then delete them.
 
+* On Jahia 8.2 or later, deploy the module `legacy-default-components` (1.2.0 or later 1.x,
+  [Jahia/legacy-default-components](https://github.com/Jahia/legacy-default-components)): the fixtures of
+  `PropertyDefinitionsSanityCheck` and of the fixes of a node create `jnt:frame` nodes, a type which the module `default`
+  no longer provides. Without it, these fixtures fail with `NoSuchNodeTypeException`, and so do 5 specs.
+* The specs of the administration page expect its English labels: the UI language of root (`preferredLanguage` of
+  `/users/root`) must be English, or they time out on the title of the page.
+
 Yarn 4 is pinned by the `packageManager` field of `package.json`: run `corepack enable` once, with Node 18.12 or later,
 before the first `yarn install`.
 
