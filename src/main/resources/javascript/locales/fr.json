@@ -1,7 +1,322 @@
 {
   "label": {
     "settings": {
-      "title": "Content Integrity"
+      "title": "Intégrité du contenu"
+    },
+    "contentIntegrity": {
+      "description": "Vérifier l'intégrité du contenu du référentiel"
+    },
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "acknowledge": "Attention, des données vont être modifiées dans cet environnement",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "reports": "Rapports",
+    "openInJcrBrowser": "Ouvrir dans le navigateur JCR",
+    "checks": {
+      "title": "Contrôles d'intégrité ({{selected}} sélectionnés sur {{total}})",
+      "selectAll": "Tout sélectionner",
+      "unselectAll": "Tout désélectionner",
+      "documentation": "Documentation du contrôle {{check}}",
+      "configure": "Configurer le contrôle {{check}}"
+    },
+    "config": {
+      "title": "Configuration du contrôle {{check}}",
+      "reset": "Rétablir les valeurs par défaut",
+      "none": "Ce contrôle n'a aucun paramètre.",
+      "integerExpected": "Saisissez un nombre entier"
+    },
+    "scan": {
+      "parameters": "Paramètres de l'analyse",
+      "rootNode": "Nœud racine",
+      "rootNodeHelper": "Tous les nœuds situés sous ce nœud sont analysés. Saisissez / pour analyser tout le référentiel.",
+      "excludedPaths": "Chemins exclus",
+      "excludedPathsHelper": "Les arborescences situées sous ces chemins ne sont pas analysées.",
+      "removeExcludedPath": "Retirer le chemin exclu {{path}}",
+      "workspace": {
+        "label": "Espace de travail",
+        "EDIT": "Édition (default)",
+        "LIVE": "Publié (live)",
+        "BOTH": "Les deux espaces de travail"
+      },
+      "includeVirtualNodes": "Inclure les nœuds virtuels",
+      "includeVirtualNodesHelper": "Décochez cette case pour ignorer les nœuds exposés par un fournisseur de données externe, comme un connecteur EDP.",
+      "run": "Lancer l'analyse",
+      "stop": "Arrêter",
+      "stopping": "Arrêt…",
+      "logs": "Journal de l'analyse",
+      "newScan": "Nouvelle analyse",
+      "newScanTitle": "Nouvelle analyse d'intégrité"
+    },
+    "results": {
+      "scan": "Analyse",
+      "scanOption": "{{date}} · {{workspace}}",
+      "selectScan": "Sélectionnez une analyse",
+      "allWorkspaces": "Tous les espaces de travail",
+      "status": {
+        "running": "En cours",
+        "finished": "Terminée",
+        "interrupted": "Interrompue",
+        "failed": "En échec"
+      },
+      "columns": "Colonnes",
+      "columnsCount": "Colonnes affichées : {{count}}",
+      "refresh": "Actualiser",
+      "all": "Toutes les valeurs",
+      "empty": "(vide)",
+      "noResults": "Lancez une analyse pour vérifier l'intégrité du contenu. Ses résultats s'affichent ici.",
+      "noSelectionTitle": "Aucune analyse sélectionnée",
+      "noSelection": "Choisissez une analyse ci-dessus pour afficher ses résultats, ou lancez une nouvelle analyse.",
+      "errorCount": "Erreurs : {{count}}",
+      "errorCountFiltered": "Erreurs : {{count}} (sur {{total}})",
+      "noError": "Cette analyse n'a trouvé aucune erreur.",
+      "interruptedScan": "L'analyse a été interrompue avant la fin, ses erreurs ne sont donc pas affichées. Lancez une nouvelle analyse pour vérifier tout le contenu.",
+      "runningScan": "L'analyse est en cours : ses erreurs s'affichent une fois terminée.",
+      "failedScan": "L'analyse a échoué, elle n'a donc aucune erreur à afficher.",
+      "tableLabel": "Erreurs d'intégrité",
+      "rowsPerPage": "Erreurs par page",
+      "of": "sur",
+      "title": "Résultats d'analyse",
+      "actions": "Actions sur les résultats",
+      "noResultsTitle": "Aucun résultat d'analyse",
+      "clearFilters": "Effacer les filtres",
+      "fixStatus": "Statut de la correction",
+      "nodeGroup": "Erreurs de {{path}} dans l'espace de travail {{workspace}}",
+      "expand": "Afficher les erreurs du nœud",
+      "collapse": "Masquer les erreurs du nœud"
+    },
+    "details": {
+      "title": "Erreurs du nœud",
+      "unknown": "Ce nœud n'a plus d'erreur dans les résultats de l'analyse.",
+      "virtualNode": "Le nœud est virtuel, servi par un fournisseur externe comme un point de montage : ses erreurs ne sont pas corrigées ici.",
+      "impactsImport": "Impacte l'import XML",
+      "errors": "Erreurs du nœud",
+      "noFix": "Pas de correction",
+      "nodeRemoved": "Nœud supprimé",
+      "nodeRemovedHelper": "Le nœud n'existe plus : il a été supprimé depuis l'analyse, par exemple par la correction d'une autre erreur. Lancez une nouvelle analyse pour mettre à jour les résultats."
+    },
+    "cluster": {
+      "title": "Dans un cluster",
+      "TemplatesIndexationCheck": {
+        "NOT_INDEXED_TEMPLATE": "Chaque serveur a son propre index de recherche : cette erreur concerne l'index du serveur qui a lancé l'analyse. Réindexez le template sur chaque serveur qui la signale."
+      },
+      "PagesSanityCheck": {
+        "MISSING_TEMPLATE": "Le template est résolu avec l'index de recherche et les modules démarrés sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, réindexez le template ou démarrez son module sur ce serveur plutôt que de modifier la page."
+      },
+      "AceSanityCheck": {
+        "MISSING_EXTERNAL_ACE": "Les entrées externes sont trouvées avec l'index de recherche du serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, réindexez l'entrée sur ce serveur plutôt que de la corriger.",
+        "ACE_NON_GRANT_WITH_EXTERNAL_ACE": "Les entrées externes sont trouvées avec l'index de recherche du serveur qui a lancé l'analyse, qui peut différer de l'index des autres serveurs : analysez chaque serveur."
+      },
+      "ReferencesSanityCheck": {
+        "INVALID_BACK_REF": "Les références au nœud sont trouvées avec l'index de recherche du serveur qui a lancé l'analyse, qui peut différer de l'index des autres serveurs : analysez chaque serveur."
+      },
+      "UndeclaredNodeTypesCheck": {
+        "UNDECLARED_NODE_TYPE": "Les types sont ceux des modules démarrés sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez sur ce serveur le module qui déclare le type plutôt que de corriger le nœud.",
+        "GHOST_NODE_TYPE": "Le type est déclaré par un module qui n'est pas démarré sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez le module sur ce serveur plutôt que de corriger le nœud."
+      },
+      "UndeployedModulesReferencesCheck": {
+        "UNDEPLOYED_MODULE_ON_SITE": "Le module n'est pas déployé sur le serveur qui a lancé l'analyse. S'il est déployé sur les autres serveurs, déployez-le sur celui-ci : la correction le retirerait du site pour tout le cluster."
+      },
+      "SiteLevelSystemGroupsCheck": {
+        "GROUP_DOES_NOT_EXIST": "La correction trouve les membres du groupe avec l'index de recherche du serveur qui la lance : corrigez l'erreur depuis un serveur dont l'index est à jour."
+      }
+    },
+    "column": {
+      "checkName": "Contrôle",
+      "errorType": "Type d'erreur",
+      "workspace": "Espace de travail",
+      "site": "Site",
+      "nodePath": "Chemin",
+      "nodeId": "UUID",
+      "nodePrimaryType": "Type principal",
+      "nodeMixins": "Mixins",
+      "locale": "Langue",
+      "message": "Message",
+      "extraInfosString": "Informations complémentaires",
+      "importError": "Impact sur l'import XML",
+      "fixStatus": "Statut de la correction"
+    },
+    "execution": {
+      "current": "Analyse en cours",
+      "stopping": "Arrêt de l'analyse",
+      "stoppingHelper": "L'analyse s'arrête à la fin de son étape en cours.",
+      "startedOn": "Lancée le {{date}}",
+      "background": "Elle se poursuit en arrière-plan si vous quittez cette page.",
+      "showLogs": "Afficher le journal",
+      "hideLogs": "Masquer le journal"
+    },
+    "fix": {
+      "fix": "Corriger",
+      "fixed": "Corrigée",
+      "failed": "Non corrigée",
+      "failedHelper": "La correction du contrôle n'a pas corrigé cette erreur. Elle doit être corrigée à la main.",
+      "fixCount": "Corriger {{count}} erreurs",
+      "nodeHelper": "Corriger ensemble les erreurs du nœud : leurs valeurs sont enregistrées en une fois",
+      "linkedHelper": "Les valeurs de ces erreurs sont enregistrées en une fois : le nœud n'est enregistré qu'une fois toutes ses propriétés obligatoires renseignées.",
+      "helper": "Corriger cette erreur avec la correction de {{check}}",
+      "withValuesHelper": "Corriger cette erreur avec la valeur saisie",
+      "fixAllNode": "Tout corriger ({{count}})",
+      "fixAllNodeHelper": "Corriger les erreurs du nœud qui peuvent l'être maintenant : une erreur corrigée avec des valeurs, une fois celles-ci saisies",
+      "confirmTitle": "Corriger les erreurs du nœud",
+      "confirmDescription": "Le correctif de son contrôle sera exécuté sur {{count}} erreurs du nœud {{path}}.",
+      "confirmWarning": "Certains correctifs suppriment du contenu, par exemple un nœud dont le type n'est plus déclaré."
+    },
+    "fixDescription": {
+      "AceSanityCheck": {
+        "NO_PRINCIPAL": "Définit l'utilisateur ou le groupe choisi comme principal de l'entrée de contrôle d'accès.",
+        "NO_ROLES_PROP": "Définit les rôles choisis sur l'entrée de contrôle d'accès.",
+        "INVALID_PRINCIPAL": "Retire les rôles accordés à ce principal sur le nœud. Corrigée dans l'espace default uniquement.",
+        "NO_ACE_TYPE_PROP": "Supprime l'entrée de contrôle d'accès. Une entrée standard supprimée dans l'espace default voit sa liste de contrôle d'accès publiée à nouveau, une entrée externe est supprimée dans les deux espaces.",
+        "INVALID_ACE_TYPE_PROP": "Supprime l'entrée de contrôle d'accès. Une entrée standard supprimée dans l'espace default voit sa liste de contrôle d'accès publiée à nouveau, une entrée externe est supprimée dans les deux espaces.",
+        "NO_SOURCE_ACE_PROP": "Supprime l'entrée de contrôle d'accès. Une entrée standard supprimée dans l'espace default voit sa liste de contrôle d'accès publiée à nouveau, une entrée externe est supprimée dans les deux espaces.",
+        "EMPTY_SOURCE_ACE_PROP": "Supprime l'entrée de contrôle d'accès. Une entrée standard supprimée dans l'espace default voit sa liste de contrôle d'accès publiée à nouveau, une entrée externe est supprimée dans les deux espaces.",
+        "SOURCE_ACE_BROKEN_REF": "Retire les entrées sources invalides de l'entrée de contrôle d'accès externe, et la supprime si aucune n'est valide.",
+        "SOURCE_ACE_NOT_TYPE_GRANT": "Retire les entrées sources invalides de l'entrée de contrôle d'accès externe, et la supprime si aucune n'est valide.",
+        "ROLES_DIFFER_ON_SOURCE_ACE": "Retire les entrées sources invalides de l'entrée de contrôle d'accès externe, et la supprime si aucune n'est valide.",
+        "INVALID_EXTERNAL_ACE_PATH": "Retire les entrées sources invalides de l'entrée de contrôle d'accès externe, et la supprime si aucune n'est valide.",
+        "MISSING_EXTERNAL_ACE": "Enregistre à nouveau l'entrée de contrôle d'accès, pour que Jahia crée l'entrée externe manquante, puis publie la liste de contrôle d'accès si l'entrée est publiée.",
+        "INVALID_NODENAME": "Renomme l'entrée de contrôle d'accès d'après son type et son principal. Non corrigée si une autre entrée porte déjà ce nom.",
+        "INVALID_ROLES_PROP": "Supprime l'entrée de contrôle d'accès externe, puis enregistre à nouveau ses entrées sources, pour que Jahia crée les bonnes entrées externes.",
+        "ROLE_DOESNT_EXIST": "Retire de l'entrée de contrôle d'accès les rôles qui n'existent pas. L'entrée est supprimée s'il ne lui reste aucun rôle, et une entrée externe est toujours supprimée."
+      },
+      "BinaryPropertiesSanityCheck": {
+        "INVALID_BINARY": "Supprime le fichier dont le binaire manque, ou le nœud qui porte la propriété binaire. Sur un nœud de traduction, seule la propriété est supprimée. C'est irréversible : restaurez plutôt le binaire depuis une sauvegarde s'il est important."
+      },
+      "ChildNodeDefinitionsSanityCheck": {
+        "NOT_ALLOWED_BY_PARENT_DEF": "Supprime le nœud et son sous-arbre. C'est irréversible."
+      },
+      "HomePageDeclarationCheck": {
+        "NO_HOME": "Définit la première page du site comme sa page d'accueil.",
+        "MULTIPLE_HOMES": "Garde une seule page d'accueil, la page nommée home si elle est marquée, et retire la marque des autres pages. En live, la page d'accueil de l'espace default est gardée : corrigez d'abord l'espace default.",
+        "FALLBACK_ON_NAME": "Marque la page nommée home comme page d'accueil du site."
+      },
+      "JCRLanguagePropertyCheck": {
+        "MISSING_JCR_LANGUAGE_PROP": "Définit jcr:language à la langue du nom du nœud de traduction.",
+        "INCONSISTENT_JCR_LANGUAGE_PROP": "Définit jcr:language à la langue du nom du nœud de traduction."
+      },
+      "LivePropertiesCheck": {
+        "LIVE_PROPERTIES": "Supprime la propriété j:liveProperties et le mixin jmix:liveProperties.",
+        "EMPTY_LIVE_PROPERTIES": "Supprime la propriété j:liveProperties et le mixin jmix:liveProperties."
+      },
+      "LockSanityCheck": {
+        "INCONSISTENT_LOCK": "Déverrouille le nœud et supprime ses propriétés de verrou. Une suppression en attente du nœud est annulée.",
+        "DELETION_LOCK_ON_I18N": "Supprime le verrou de suppression du nœud de traduction.",
+        "LOCK_OF_UNKNOWN_PROCESS": "Libère le verrou du processus de workflow qui n'existe plus, comme le fait le workflow à sa fin. Le nœud est déverrouillé une fois qu'aucun autre verrou ne reste.",
+        "LOCK_PROPERTIES_IN_LIVE": "Supprime les propriétés j:lockTypes et j:locktoken du nœud live, qui n'est pas verrouillé."
+      },
+      "MarkForDeletionCheck": {
+        "NO_ROOT_DELETION": "Retire la marque de suppression du nœud : sa suppression est annulée.",
+        "DELETION_MARK_IN_LIVE": "Retire la marque de suppression du nœud dans l'espace live.",
+        "DELETION_MARK_UNDER_USERS": "Retire la marque de suppression du nœud : sa suppression est annulée."
+      },
+      "NodeNameInfoSanityCheck": {
+        "MISSING_NODENAME": "Définit j:nodename au nom du nœud.",
+        "INVALID_NODENAME": "Définit j:nodename au nom du nœud.",
+        "INVALID_FULLPATH": "Définit j:fullpath au chemin du nœud."
+      },
+      "PagesSanityCheck": {
+        "MISSING_TEMPLATE": "Définit le template choisi sur la page, ou comme template par défaut du site."
+      },
+      "PropertyDefinitionsSanityCheck": {
+        "UNDECLARED_PROPERTY": "Supprime la propriété, que les types du nœud ne déclarent plus. Sa valeur est perdue.",
+        "EMPTY_MANDATORY_PROPERTY": "Définit la propriété à la valeur saisie, ou à la valeur par défaut de sa définition.",
+        "INVALID_VALUE_CONSTRAINT": "Remplace la valeur invalide par la valeur saisie, ou par la valeur par défaut de la définition. Les autres valeurs d'une propriété multiple sont gardées."
+      },
+      "PublicationSanityDefaultCheck": {
+        "NO_LIVE_NODE": "Marque le nœud comme non publié. Un nœud publié automatiquement, ou le contenu d'un module, est publié à nouveau à la place."
+      },
+      "PublicationSanityLiveCheck": {
+        "NO_DEFAULT_NODE": "Publie le nœud de l'espace live vers l'espace default, ce qui l'y restaure.",
+        "UNEXPECTED_UGC": "Définit j:originWS à default : le nœud n'est plus un contenu généré par les utilisateurs.",
+        "INCONSISTENT_UGC": "Définit j:originWS à default si le nœud existe dans l'espace default, sinon à live."
+      },
+      "ReferencesSanityCheck": {
+        "BROKEN_REF": "Supprime la référence au nœud manquant : la valeur manquante d'une propriété multiple, sinon toute la propriété.",
+        "BROKEN_REF_IN_FIELD": "Retire le lien cassé du texte, en gardant son texte, comme lorsqu'il est retiré dans CKEditor, et supprime son nœud de référence."
+      },
+      "SiteLevelSystemGroupsCheck": {
+        "GROUP_DOES_NOT_EXIST": "Crée à nouveau le groupe manquant, comme Jahia le fait pour un nouveau site : site-privileged est membre de privileged, et ses membres sont les utilisateurs et les groupes qui ont un rôle privilégié dans le site.",
+        "MISSING_MEMBERSHIP": "Ajoute le groupe site-privileged du site aux membres du groupe privileged."
+      },
+      "UndeclaredNodeTypesCheck": {
+        "UNDECLARED_NODE_TYPE": "Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible.",
+        "GHOST_NODE_TYPE": "Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible."
+      },
+      "UndeployedModulesReferencesCheck": {
+        "UNDEPLOYED_MODULE_ON_SITE": "Retire le module des modules du site, dans les deux espaces. Rien ne change si le module est à nouveau disponible. Un module installé mais non démarré n'est pas retiré : démarrez-le."
+      },
+      "UserAccountSanityCheck": {
+        "NOT_OWNER": "Accorde le rôle owner à l'utilisateur sur son compte."
+      },
+      "VersionHistoryCheck": {
+        "TOO_MANY_VERSIONS": "Purge les versions inutilisées du nœud. Non corrigée s'il reste plus de versions que le seuil."
+      },
+      "WipSanityCheck": {
+        "WIP_ON_TRANSLATION_NODE": "Supprime la propriété de travail en cours du nœud de traduction.",
+        "WIP_LEGACY_FORMAT": "Supprime l'ancienne propriété j:workInProgress.",
+        "WIP_UNEXPECTED_LANG": "Retire la langue des langues de travail en cours. Le nœud n'est plus en travail en cours s'il ne reste aucune langue.",
+        "WIP_MISSING_PROP": "Supprime le statut de travail en cours : le nœud n'est plus en travail en cours.",
+        "WIP_UNEXPECTED_PROP": "Supprime les langues de travail en cours.",
+        "WIP_INCONSISTENT_STATUS_PROP": "Supprime le statut et les langues de travail en cours : le nœud n'est plus en travail en cours.",
+        "WIP_IN_LIVE": "Supprime les propriétés de travail en cours du nœud live."
+      },
+      "WorkspaceSpecificDefinitionsCheck": {
+        "UNEXPECTED_TYPE": "Retire le mixin du nœud. Une marque de suppression est retirée en annulant la suppression.",
+        "UNEXPECTED_PROP": "Supprime la propriété du nœud.",
+        "UNEXPECTED_PROP_VALUE": "Supprime la propriété du nœud. Pour un statut de travail en cours, toutes les propriétés de travail en cours sont supprimées."
+      }
+    },
+    "fixValues": {
+      "title": "Corriger avec une valeur",
+      "description": "La propriété obligatoire {{property}} n'a pas de valeur. Saisissez la valeur à définir, puis cliquez sur Corriger.",
+      "type": "Type : {{type}}",
+      "constraints": "Contraintes : {{constraints}}",
+      "valueAt": "Valeur {{index}}",
+      "choose": "Choisir une valeur",
+      "add": "Ajouter une valeur",
+      "remove": "Supprimer cette valeur"
+    },
+    "fixAll": {
+      "button": "Tout corriger",
+      "title": "Corriger toutes les erreurs affichées",
+      "description": "Le correctif de son contrôle sera exécuté sur chacune des {{count}} erreurs correspondant aux filtres.",
+      "warning": "Certains correctifs suppriment du contenu, par exemple un nœud dont le type n'est plus déclaré. Les erreurs dont le contrôle ne fournit pas de correctif, et celles corrigées avec une valeur saisie, sont ignorées.",
+      "confirm": "Corriger {{count}} erreurs"
+    },
+    "deleteResults": {
+      "button": "Supprimer",
+      "title": "Supprimer les résultats de l'analyse",
+      "description": "Les résultats de l'analyse {{scan}} seront supprimés : ses erreurs, son journal, et ses rapports CSV et XLSX.",
+      "warning": "La suppression est définitive. Le contenu n'est pas modifié : les erreurs non corrigées seront de nouveau détectées par le prochain scan.",
+      "confirm": "Supprimer les résultats"
+    },
+    "deleteAllResults": {
+      "button": "Tout supprimer",
+      "title": "Supprimer les résultats de toutes les analyses",
+      "description": "Les résultats des {{count}} analyses seront supprimés : leurs erreurs, leurs journaux, et leurs rapports CSV et XLSX. Les résultats d'une analyse en cours sont conservés.",
+      "confirm": "Supprimer {{count}} résultats"
+    },
+    "fixOutcome": {
+      "title": "Résultat de la correction",
+      "fixed": "Corrigées : {{count}}",
+      "skipped": "Ignorées : {{count}}",
+      "failed": "Non corrigées : {{count}}",
+      "reason": {
+        "ALREADY_FIXED": "{{count}} déjà corrigées, par une correction précédente",
+        "NO_FIX": "{{count}} sans correction : leur contrôle n'en fournit pas",
+        "TAKES_VALUES": "{{count}} corrigées avec une valeur : ouvrez le panneau de leur nœud pour la saisir",
+        "VALUES_NOT_TYPED": "{{count}} en attente d'une valeur : saisissez-la au-dessus de leur bouton Corriger",
+        "VIRTUAL_NODE": "{{count}} sur un nœud virtuel, servi par un fournisseur externe tel qu'un point de montage",
+        "NODE_NOT_FOUND": "{{count}} dont le nœud n'existe plus, par exemple supprimé par la correction d'une autre erreur"
+      },
+      "failure": "{{check}} · {{type}} : {{count}}",
+      "noMessage": "La correction s'est exécutée sans corriger l'erreur. Les détails sont dans jahia.log.",
+      "fixDoes": "Ce que fait la correction :"
+    },
+    "fixStatus": {
+      "fixed": "Corrigées",
+      "skipped": "Ignorées",
+      "notFixed": "Non corrigées"
     }
   }
 }

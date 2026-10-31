@@ -1,7 +1,5 @@
 package org.jahia.modules.contentintegrity.jcrcommands;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
 import org.apache.karaf.shell.api.action.Command;
@@ -12,12 +10,10 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.table.ShellTable;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.ErrorIdCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
-import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -25,7 +21,8 @@ import java.util.List;
 @Service
 public class PrintErrorCommand extends JCRCommandSupport implements Action {
 
-    private static final Logger logger = LoggerFactory.getLogger(PrintErrorCommand.class);
+    @Reference
+    private ContentIntegrityService integrityService;
 
     @Reference
     Session session;
@@ -34,36 +31,19 @@ public class PrintErrorCommand extends JCRCommandSupport implements Action {
     @Completion(TestDateCompleter.class)
     private String testID;
 
-    @Argument(description = "ID of the error to fix. * for all", required = true, multiValued = true)
+    @Argument(description = "ID(s) of the error(s) to print", required = true, multiValued = true)
     @Completion(ErrorIdCompleter.class)
     private List<String> errorIDs;
 
     @Override
     public Object execute() throws Exception {
-        final ContentIntegrityResults results;
-        final String errorMsg;
-
-        if (StringUtils.isBlank(testID)) {
-            results = Utils.getContentIntegrityService().getLatestTestResults();
-            errorMsg = "No previous test results found";
-        } else {
-            results = Utils.getContentIntegrityService().getTestResults(testID);
-            errorMsg = "No previous test results found for this test ID";
-        }
-
-        if (results == null) {
-            System.out.println(errorMsg);
-            return null;
-        }
+        final ContentIntegrityResults results = loadTestResults(integrityService, testID);
+        if (results == null) return null;
 
         final List<ContentIntegrityError> errors = results.getErrors();
         for (String errorID : errorIDs) {
-            final int errorIdx = NumberUtils.toInt(errorID, -1);
-            if (errorIdx < 0 || errorIdx >= errors.size()) {
-                System.out.println(String.format("The specified error (id=%s) couldn't be found", errorID));
-                continue;
-            }
-            final ContentIntegrityError error = errors.get(errorIdx);
+            final ContentIntegrityError error = getError(errors, errorID);
+            if (error == null) continue;
             final ShellTable table = new ShellTable();
             table.column("1");
             table.column("2");

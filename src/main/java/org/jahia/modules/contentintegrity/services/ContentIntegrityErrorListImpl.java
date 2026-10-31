@@ -2,16 +2,12 @@ package org.jahia.modules.contentintegrity.services;
 
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class ContentIntegrityErrorListImpl implements ContentIntegrityErrorList {
-
-    private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityErrorListImpl.class);
 
     private final List<ContentIntegrityError> nestedErrors = new ArrayList<>();
 

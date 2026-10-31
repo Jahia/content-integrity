@@ -48,12 +48,13 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.CommandLine;
 import org.apache.karaf.shell.api.console.Completer;
 import org.apache.karaf.shell.api.console.Session;
+import org.jahia.api.content.JCRTemplate;
 import org.jahia.modules.contentintegrity.jcrcommands.JCRCommandSupport;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRCallback;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
-import org.jahia.services.content.JCRTemplate;
 
 import javax.jcr.RepositoryException;
 import java.util.List;
@@ -65,7 +66,7 @@ public class JCRNodeCompleter extends JCRCommandSupport implements Completer {
     @Override
     public int complete(final Session session, final CommandLine commandLine, final List<String> candidates) {
         try {
-            JCRTemplate.getInstance().doExecuteWithSystemSession(null, getCurrentWorkspace(session), null, new JCRCallback<Object>() {
+            BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, getCurrentWorkspace(session), null, new JCRCallback<Object>() {
                 @Override
                 public Object doInJCR(JCRSessionWrapper jcrsession) throws RepositoryException {
                     String arg = commandLine.getCursorArgument();

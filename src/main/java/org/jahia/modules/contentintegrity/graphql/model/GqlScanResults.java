@@ -1,19 +1,28 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
+import graphql.ErrorType;
+import graphql.annotations.annotationTypes.GraphQLDefaultValue;
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jahia.modules.graphql.provider.dxm.BaseGqlClientException;
+import org.jahia.modules.graphql.provider.dxm.node.GqlJcrWrongInputException;
+import org.jahia.modules.graphql.provider.dxm.util.GqlUtils;
 
+import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,18 +32,24 @@ import java.util.stream.Collectors;
 
 public class GqlScanResults {
 
-    private static final Logger logger = LoggerFactory.getLogger(GqlScanResults.class);
-
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String FIX_STATUS = "fixStatus";
+    private static final String FIXED = "fixed";
+    private static final String SKIPPED = "skipped";
+    private static final String NOT_FIXED = "notFixed";
 
     private final List<ContentIntegrityError> filteredErrors;
     private final List<ContentIntegrityError> allErrors;
     private final int errorCount, totalErrorCount;
     private final Collection<String> currentFilters;
     private final List<GqlScanReportFile> reports;
+    private final ContentIntegrityService service;
+    private final ContentIntegrityResults results;
 
-    public GqlScanResults(String id, Collection<String> filters) {
-        final ContentIntegrityResults all = Utils.getContentIntegrityService().getTestResults(id);
+    public GqlScanResults(ContentIntegrityService service, String id, Collection<String> filters) {
+        this.service = service;
+        final ContentIntegrityResults all = service.getTestResults(id);
+        results = all;
         if (all == null) {
             allErrors = null;
             filteredErrors = null;
@@ -48,12 +63,39 @@ public class GqlScanResults {
 
         currentFilters = filters;
         allErrors = all.getErrors();
-        filteredErrors = getFilteredErrors(null);
+        filteredErrors = sortByNode(getFilteredErrors(null));
         errorCount = filteredErrors.size();
         totalErrorCount = all.getErrors().size();
         reports = all.getReports().stream()
                 .map(GqlScanReportFile::new)
                 .collect(Collectors.toList());
+    }
+
+    /*
+     * The errors of a node are displayed together, by workspace then by path, in the order of the scan: a node is saved only
+     * once all its errors which can block each other are fixed, such as two missing mandatory properties.
+     */
+    private static List<ContentIntegrityError> sortByNode(List<ContentIntegrityError> errors) {
+        final List<ContentIntegrityError> sorted = new ArrayList<>(errors);
+        sorted.sort(Comparator.comparing(ContentIntegrityError::getWorkspace, Comparator.nullsFirst(Comparator.<String>naturalOrder()))
+                .thenComparing(ContentIntegrityError::getPath, Comparator.nullsFirst(GqlScanResults::comparePaths)));
+        return sorted;
+    }
+
+    /*
+     * The paths are compared name by name, whatever their case, then with their case: the subtree of a node follows it, its
+     * child nodes sorted as a tree displays them. Compared as strings, /a/b-c would come before /a/b/c, and every name in
+     * upper case before the ones in lower case.
+     */
+    static int comparePaths(String a, String b) {
+        final String[] namesA = StringUtils.split(a, '/');
+        final String[] namesB = StringUtils.split(b, '/');
+        for (int i = 0; i < Math.min(namesA.length, namesB.length); i++) {
+            int compared = String.CASE_INSENSITIVE_ORDER.compare(namesA[i], namesB[i]);
+            if (compared == 0) compared = namesA[i].compareTo(namesB[i]);
+            if (compared != 0) return compared;
+        }
+        return Integer.compare(namesA.length, namesB.length);
     }
 
     private List<ContentIntegrityError> getFilteredErrors(Collection<String> ignoredFilters) {
@@ -82,13 +124,13 @@ public class GqlScanResults {
     }
 
     @GraphQLField
-    public Collection<GqlScanResultsError> getErrors(@GraphQLName("offset") int offset, @GraphQLName("pageSize") int pageSize) {
+    public Collection<GqlScanResultsError> getErrors(@GraphQLName("offset") @GraphQLNonNull int offset, @GraphQLName("pageSize") @GraphQLNonNull int pageSize) {
         if (offset < 0 || offset >= getErrorCount() || pageSize < 1) return CollectionUtils.emptyCollection();
 
         return filteredErrors.stream()
                 .skip(offset)
                 .limit(Math.min(pageSize, MAX_PAGE_SIZE))
-                .map(GqlScanResultsError::new)
+                .map(error -> new GqlScanResultsError(service, error))
                 .collect(Collectors.toList());
     }
 
@@ -106,13 +148,134 @@ public class GqlScanResults {
     public GqlScanResultsError getErrorById(@GraphQLName("id") String id) {
         return filteredErrors.stream()
                 .filter(e -> StringUtils.equals(e.getErrorID(), id))
-                .map(GqlScanResultsError::new)
+                .map(error -> new GqlScanResultsError(service, error))
                 .findFirst().orElse(null);
     }
 
     @GraphQLField
-    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols, @GraphQLName("withErrorsOnly") boolean withErrorsOnly) {
-        final Map<String, Map<String, Long>> columnsData = cols.stream()
+    @GraphQLDescription("Fixes the error with the fix of the check which has detected it, and returns the error. Its field 'fixed' tells if the fix has succeeded. " +
+            "Requires the permission adminContentIntegrityFix")
+    public GqlScanResultsError fixError(@GraphQLName("id") @GraphQLNonNull String id,
+                                        @GraphQLName("values") @GraphQLDescription("The values to fix the error with, when its field 'fixWithValues' is true") List<String> values) {
+        checkFixPermission();
+        final ContentIntegrityError error = allErrors.stream()
+                .filter(e -> StringUtils.equals(e.getErrorID(), id))
+                .findFirst().orElse(null);
+        if (error == null) return null;
+        if (!error.isFixed()) {
+            if (values == null) {
+                service.fixError(error);
+            } else {
+                try {
+                    service.fixError(error, values);
+                } catch (RepositoryException e) {
+                    throw new GqlJcrWrongInputException(e.getMessage());
+                }
+            }
+            // The outcome of the fix is stored with the results, in the JCR
+            if (error.isFixed() || error.isFixFailed()) service.saveFixedErrors(results);
+        }
+        return new GqlScanResultsError(service, error);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The errors of a node, whatever the filters, in the order of the scan")
+    public List<GqlScanResultsError> getNodeErrors(@GraphQLName("workspace") @GraphQLNonNull String workspace,
+                                                   @GraphQLName("path") @GraphQLNonNull String path) {
+        if (allErrors == null) return Collections.emptyList();
+        return allErrors.stream()
+                .filter(e -> StringUtils.equals(e.getWorkspace(), workspace) && StringUtils.equals(e.getPath(), path))
+                .map(error -> new GqlScanResultsError(service, error))
+                .collect(Collectors.toList());
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Fixes several errors together, such as the errors of a node, which can block each other: a node is saved only once all " +
+            "its mandatory properties are set. Returns the errors, whose field 'fixed' tells if their fix has succeeded. " +
+            "Requires the permission adminContentIntegrityFix")
+    public List<GqlScanResultsError> fixErrors(@GraphQLName("ids") @GraphQLNonNull List<String> ids,
+                                               @GraphQLName("values") @GraphQLDescription("The values of each error, in the order of the IDs: null for an error fixed without values") List<List<String>> values) {
+        checkFixPermission();
+        if (values != null && values.size() != ids.size()) {
+            throw new GqlJcrWrongInputException("The values have to be given for each error, in the order of the IDs");
+        }
+        final List<ContentIntegrityError> errors = new ArrayList<>(ids.size());
+        final List<List<String>> errorsValues = new ArrayList<>(ids.size());
+        for (int i = 0; i < ids.size(); i++) {
+            final String id = ids.get(i);
+            final Optional<ContentIntegrityError> error = allErrors == null ? Optional.empty() : allErrors.stream()
+                    .filter(e -> StringUtils.equals(e.getErrorID(), id))
+                    .findFirst();
+            if (!error.isPresent()) continue;
+            errors.add(error.get());
+            errorsValues.add(values == null ? null : values.get(i));
+        }
+        try {
+            service.fixErrors(errors, errorsValues);
+        } catch (RepositoryException e) {
+            throw new GqlJcrWrongInputException(e.getMessage());
+        } finally {
+            // The outcome of the fixes is stored with the results, in the JCR, including the one of the errors fixed before a failure
+            if (errors.stream().anyMatch(e -> e.isFixed() || e.isFixFailed())) service.saveFixedErrors(results);
+        }
+        return errors.stream().map(error -> new GqlScanResultsError(service, error)).collect(Collectors.toList());
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Fixes all the errors matching the filters of these results, each with the fix of the check which has detected it. " +
+            "The errors whose check provides no fix, the ones fixed with values typed by an administrator, and the ones of a virtual node are skipped. " +
+            "Requires the permission adminContentIntegrityFix")
+    public GqlFixAllErrorsResult fixAllErrors() {
+        checkFixPermission();
+        final GqlFixAllErrorsResult result = new GqlFixAllErrorsResult();
+        if (filteredErrors == null) return result;
+
+        for (ContentIntegrityError error : filteredErrors) {
+            if (error.isFixed()) {
+                result.addAlreadyFixed();
+                continue;
+            }
+            final GqlFixAllErrorsResult.SkipReason skipReason = getSkipReason(error);
+            if (skipReason != null) {
+                result.addSkipped(skipReason);
+                continue;
+            }
+            service.fixError(error);
+            if (error.isFixed()) result.addFixed();
+            else result.addFailed(error);
+        }
+        // The outcome of the fixes is stored with the results, in the JCR
+        if (result.getFixed() > 0 || result.getFailed() > 0) service.saveFixedErrors(results);
+        return result;
+    }
+
+    /*
+     * Why the fix of all the errors skips an error, null if it fixes it. An error whose fix takes values is fixed with values
+     * chosen by an administrator. A fix can remove the node of another error of the list, which is then skipped.
+     */
+    private GqlFixAllErrorsResult.SkipReason getSkipReason(ContentIntegrityError error) {
+        if (service.isFixable(error)) {
+            return service.getFixValuesDefinition(error) == null ? null : GqlFixAllErrorsResult.SkipReason.TAKES_VALUES;
+        }
+        final ContentIntegrityCheck check = service.getContentIntegrityCheck(error.getIntegrityCheckID());
+        if (!(check instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix) || !((ContentIntegrityCheck.SupportsIntegrityErrorFix) check).isFixable(error)) {
+            return GqlFixAllErrorsResult.SkipReason.NO_FIX;
+        }
+        return Utils.isOnVirtualNode(error) ? GqlFixAllErrorsResult.SkipReason.VIRTUAL_NODE : GqlFixAllErrorsResult.SkipReason.NODE_NOT_FOUND;
+    }
+
+    private static void checkFixPermission() {
+        if (!Utils.canFixErrors()) {
+            throw new BaseGqlClientException("The current user is not allowed to fix the errors: the permission " + Utils.FIX_PERMISSION + " is required", ErrorType.DataFetchingException);
+        }
+    }
+
+    @GraphQLField
+    public Collection<GqlScanResultsColumn> getPossibleValues(@GraphQLName("names") Collection<String> cols,
+                                                              @GraphQLName("withErrorsOnly") @GraphQLDefaultValue(GqlUtils.SupplierFalse.class) Boolean withErrorsOnly) {
+        final boolean withErrorsOnlyValue = Boolean.TRUE.equals(withErrorsOnly);
+        final Map<String, Map<String, Long>> columnsData = CollectionUtils.emptyIfNull(cols).stream()
+                .distinct()
                 .collect(Collectors.toMap(Function.identity(),
                         name -> {
                             final List<ContentIntegrityError> errorsWithOtherFilters = getFilteredErrors(Collections.singleton(name));
@@ -121,7 +284,7 @@ public class GqlScanResults {
                                     .filter(Objects::nonNull)
                                     .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
-                            if (withErrorsOnly) return result;
+                            if (withErrorsOnlyValue) return result;
 
                             allErrors.stream()
                                     .map(error -> getColumnValue(error, name))
@@ -156,9 +319,20 @@ public class GqlScanResults {
                 return error.getConstraintMessage();
             case "importError":
                 return Optional.ofNullable(error.getErrorType()).map(ContentIntegrityErrorType::isBlockingImport).orElse(Boolean.FALSE).toString();
+            case FIX_STATUS:
+                return getFixStatus(error);
             default:
                 return StringUtils.EMPTY;
         }
+    }
+
+    /*
+     * As Fix all tells: an error is fixed, not fixed when its fix has run without fixing it, or skipped when no fix has run
+     * on it, for example because its check provides none.
+     */
+    private String getFixStatus(ContentIntegrityError error) {
+        if (error.isFixed()) return FIXED;
+        return error.isFixFailed() ? NOT_FIXED : SKIPPED;
     }
 
     private boolean columnValueMatches(ContentIntegrityError error, String column, String value) {

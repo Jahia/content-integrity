@@ -3,8 +3,6 @@ package org.jahia.modules.contentintegrity.jcrcommands.completers;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.CommandLine;
 import org.apache.karaf.shell.api.console.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -15,8 +13,6 @@ import java.util.List;
  */
 @Service
 public class BooleanCompleter extends SimpleCompleter {
-
-    private static final Logger logger = LoggerFactory.getLogger(BooleanCompleter.class);
 
     private static final List<String> VALUES = Arrays.asList("true", "false");
 

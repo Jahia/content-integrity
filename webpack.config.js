@@ -1,60 +1,85 @@
+const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
+const {DefinePlugin} = require('webpack');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const ModuleFederationPlugin = require('webpack/lib/container/ModuleFederationPlugin');
+const getModuleFederationConfig = require('@jahia/webpack-config/getModuleFederationConfig');
+const packageJson = require('./package.json');
 
-const MODULE_NAME = 'content-integrity';
+// The module runs on Jahia 8.1.5 and later. The shared versions, measured on the jahia-ui-root and app-shell bundles:
+// Jahia 8.1.5 shares React 16.14, Moonstone 1.6.2, i18next 19.9 and react-i18next 11.16 to 11.12;
+// Jahia 8.2.3 shares React 18.3, Moonstone 2.14 and react-i18next 11.18.
+const moduleFederationConfig = getModuleFederationConfig(packageJson);
+Object.entries({
+    react: '>=16.14.0 <19',
+    'react-dom': '>=16.14.0 <19',
+    '@jahia/moonstone': '>=1.6.2 <3',
+    i18next: '>=19.9.2 <22',
+    'react-i18next': '>=11.12.0 <12'
+}).forEach(([name, range]) => {
+    moduleFederationConfig.shared[name].requiredVersion = range;
+});
+// Jahia 8.1 shares react-apollo 3 for its UI and Jahia 8.2 @apollo/client 3: the module bundles @apollo/client and
+// provides its own client (src/javascript/ContentIntegrity/common/apolloClient.js).
+delete moduleFederationConfig.shared['@apollo/client'];
+
+// The checksum of each locale file. The app-shell requests a namespace listed in window.jahia.localeFiles as
+// locales/<lang>.v<checksum>.json, which its URL rewriting serves as locales/<lang>.json: an upgrade of the module
+// changes the URL, so a browser never keeps the labels of the previous version in its cache.
+const localesDir = path.resolve(__dirname, 'src/main/resources/javascript/locales');
+const localeFiles = Object.fromEntries(fs.readdirSync(localesDir)
+    .filter(file => file.endsWith('.json'))
+    .map(file => [file, crypto.createHash('md5').update(fs.readFileSync(path.join(localesDir, file))).digest('hex')]));
 
 module.exports = (env, argv) => {
     const config = {
         entry: {
-            main: [path.resolve(__dirname, 'src/main/javascript/index.js')]
+            main: path.resolve(__dirname, 'src/javascript/index')
         },
         output: {
-            path: path.resolve(__dirname, 'src/main/resources/javascript/ui/'),
-            filename: `${MODULE_NAME}.bundle.js`,
+            path: path.resolve(__dirname, 'src/main/resources/javascript/apps/'),
+            filename: 'content-integrity.bundle.js',
             chunkFilename: '[name].jahia.[chunkhash:6].js'
         },
         resolve: {
             mainFields: ['module', 'main'],
-            extensions: ['.mjs', '.js', '.jsx', 'json']
-        },
-        optimization: {
-            splitChunks: {
-                maxSize: 4000000
-            }
+            extensions: ['.mjs', '.js', '.jsx', '.json', '.scss'],
+            fallback: {url: false}
         },
         module: {
             rules: [
                 {
-                    test: /\.(js|jsx)$/,
-                    include: [path.join(__dirname, 'src')],
-                    exclude: /node_modules/,
+                    test: /\.m?js$/,
+                    type: 'javascript/auto'
+                },
+                {
+                    test: /\.jsx?$/,
+                    include: [path.join(__dirname, 'src/javascript')],
                     use: {
                         loader: 'babel-loader',
                         options: {
                             presets: [
-                                ['@babel/preset-env', {modules: false, targets: {safari: '7', ie: '10'}}],
-                                ["@babel/preset-react", {"runtime": "automatic"}]
+                                ['@babel/preset-env', {
+                                    modules: false,
+                                    targets: {chrome: '60', edge: '44', firefox: '54', safari: '12'}
+                                }],
+                                '@babel/preset-react'
                             ],
-                            plugins: [
-                                '@babel/plugin-syntax-dynamic-import'
-                            ]
+                            plugins: ['@babel/plugin-syntax-dynamic-import']
                         }
                     }
                 },
                 {
-                    test: /\.s[ac]ss$/i,
+                    test: /\.scss$/i,
                     sideEffects: true,
                     use: [
                         'style-loader',
                         {
                             loader: 'css-loader',
-                            options: {
-                                modules: {
-                                    mode: 'local'
-                                }
-                            }
+                            options: {modules: {localIdentName: 'ci_[local]'}}
                         },
                         'sass-loader'
                     ]
@@ -63,9 +88,13 @@ module.exports = (env, argv) => {
         },
         plugins: [
             new CleanWebpackPlugin({verbose: false}),
+            // React, Moonstone and i18next are shared singletons provided by the running Jahia (import: false),
+            // never bundled here. Apollo is not: see moduleFederationConfig below.
+            new ModuleFederationPlugin(moduleFederationConfig),
+            new DefinePlugin({CONTENT_INTEGRITY_LOCALE_FILES: JSON.stringify(localeFiles)}),
             new CopyWebpackPlugin({
                 patterns: [
-                    {from: './package.json', to: ''}
+                    {from: 'package.json', to: ''}
                 ]
             })
         ],

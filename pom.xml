@@ -49,39 +49,31 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>8.0.2.0</version>
+        <version>8.1.5.0</version>
     </parent>
+    <groupId>org.jahia.community</groupId>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
-    <version>3.36-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
-    <description>This is the custom module (Content Integrity) for running on a Digital Experience Manager server.</description>
+    <description>Scans the JCR repository of a Jahia server to detect the inconsistent content, and fixes it</description>
 
     <properties>
-        <!-- TODO: review the plugin version when changing the version of jahia-modules -->
-        <jahia.plugin.version>6.9</jahia.plugin.version>
-        <!-- TODO: clean when we drop the support of Jahia 7
-        dependency to serverSettings because we override the declaration of system-health in the admin navigation,
-        required to load the label from the resources bundle of this module
-        -->
+        <!-- serverSettings: the node which issues the tools token of the JCR browser links is declared in its templates -->
         <jahia-depends>default,graphql-dxm-provider,serverSettings</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
         <jahia-deploy-on-site>system</jahia-deploy-on-site>
-        <jahia-module-signature>MCwCFB54BnksprdsyjrX5YFUfqvQOdoXAhR7K8mdqHINdxxAI5fIxmvwD6marw==</jahia-module-signature>
-        <require-capability>osgi.extender;filter:="(osgi.extender=org.jahia.bundles.blueprint.extender.config)"</require-capability>
+        <export-package>org.jahia.modules.contentintegrity.api</export-package>
         <!--
-        TODO review when compiling against Jahia 8.1+
-        Jahia 8.0 provides graphql-java-annotations:6.1 and graphql-dxm-provider:2.x
-        Jahia 8.1 provides graphql-java-annotations:7.2.1 and graphql-dxm-provider:2.x
-        Jahia 8.2 provides graphql-java-annotations:21.1 and graphql-dxm-provider:3.x
-        As a consequence, we need to override the generated import-package to work with both versions
+        Built against Jahia 8.1.5 to run on 8.1.5 and later. Jahia 8.1 provides graphql-java 13, graphql-java-annotations
+        7.2.1 and graphql-dxm-provider 2.x; Jahia 8.2 provides graphql-java 21, graphql-java-annotations 21.1 and
+        graphql-dxm-provider 3.x. The generated ranges cover 8.1 only, so these imports are widened to both lines.
         -->
-        <import-package>graphql.annotations.annotationTypes;version="[6.1,22)",
-            org.jahia.modules.graphql.provider.dxm;version="[2.3,4)"
-        </import-package>
-        <export-package>org.jahia.modules.contentintegrity.api,
-            org.jahia.modules.contentintegrity.services.impl,
-            org.jahia.modules.contentintegrity.taglib</export-package>
+        <import-package>graphql;version="[13.0,22)",
+            graphql.annotations.annotationTypes;version="[7.2,22)",
+            org.jahia.modules.graphql.provider.dxm;version="[2.3,4)",
+            org.jahia.modules.graphql.provider.dxm.node;version="[2.3,4)",
+            org.jahia.modules.graphql.provider.dxm.util;version="[2.3,4)"</import-package>
         <graphql-dxm-provider.version>2.3.0</graphql-dxm-provider.version>
         <external-provider.version>4.0.0</external-provider.version>
         <yarn.arguments>build:production</yarn.arguments>
@@ -90,8 +82,9 @@
     <scm>
         <connection>scm:git:git@github.com:Jahia/content-integrity</connection>
         <developerConnection>scm:git:git@github.com:Jahia/content-integrity</developerConnection>
-      <tag>HEAD</tag>
-  </scm>
+        <url>https://github.com/Jahia/content-integrity</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <repositories>
         <repository>
@@ -121,13 +114,14 @@
 
     <build>
         <plugins>
+            <!-- Removes the built React application, which is generated in the sources -->
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>src/main/resources/javascript/apps/ui</directory>
+                            <directory>src/main/resources/javascript/apps</directory>
                             <includes>
                                 <include>*</include>
                             </includes>
@@ -142,7 +136,7 @@
                 <configuration>
                     <instructions>
                         <Karaf-Commands>*</Karaf-Commands>
-                        <_dsannotations>*</_dsannotations>
+                        <!-- Read at runtime: the version is logged with each scan and stored on the scan reports -->
                         <Content-Integrity-Version>${project.version}</Content-Integrity-Version>
                     </instructions>
                 </configuration>
@@ -150,44 +144,36 @@
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.15.0</version>
+                <version>1.15.4</version>
                 <executions>
                     <execution>
-                        <id>npm install node and yarn</id>
+                        <id>npm install node and corepack</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>install-node-and-yarn</goal>
+                            <goal>install-node-and-corepack</goal>
                         </goals>
                         <configuration>
                             <nodeVersion>v22.19.0</nodeVersion>
-                            <yarnVersion>v1.22.22</yarnVersion>
                         </configuration>
                     </execution>
                     <execution>
                         <id>yarn install</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>yarn</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>yarn post-install</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>yarn</goal>
+                            <goal>corepack</goal>
                         </goals>
                         <configuration>
-                            <arguments>${yarn.arguments}</arguments>
+                            <arguments>yarn install --immutable</arguments>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>sync-pom</id>
-                        <phase>none</phase>
+                        <id>yarn build</id>
+                        <phase>generate-resources</phase>
                         <goals>
-                            <goal>yarn</goal>
+                            <goal>corepack</goal>
                         </goals>
                         <configuration>
-                            <arguments>sync-pom</arguments>
+                            <arguments>yarn ${yarn.arguments}</arguments>
                         </configuration>
                     </execution>
                 </executions>
@@ -219,6 +205,27 @@
             <version>${graphql-java-annotations.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- The scan subscription is a Publisher. Jahia 8.1.5 and 8.2 both provide RxJava 2.1.5 and Reactive Streams 1.0.2 -->
+        <dependency>
+            <groupId>io.reactivex.rxjava2</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>2.1.5</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.reactivestreams</groupId>
+            <artifactId>reactive-streams</artifactId>
+            <version>1.0.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- The stored errors are written and read as a stream. The version of the parent is the one Jahia 8.1.5 provides,
+             Jahia 8.2 provides a later 2.x -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.core.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>javax.servlet.jsp</groupId>
             <artifactId>jsp-api</artifactId>
@@ -227,28 +234,8 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.2</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>content-integrity-ci</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.felix</groupId>
-                        <artifactId>maven-bundle-plugin</artifactId>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <instructions>
-                                <Jahia-CI-Purge>true</Jahia-CI-Purge>
-                            </instructions>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

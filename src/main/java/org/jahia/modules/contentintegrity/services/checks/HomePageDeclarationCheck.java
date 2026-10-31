@@ -1,12 +1,12 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
@@ -16,14 +16,14 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.RepositoryException;
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.EDIT_WORKSPACE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FALLBACK_NAME;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.HOME_PAGE_FLAG;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_PAGE;
+import static org.jahia.modules.contentintegrity.api.Constants.EDIT_WORKSPACE;
+import static org.jahia.modules.contentintegrity.api.Constants.HOME_PAGE_FALLBACK_NAME;
+import static org.jahia.modules.contentintegrity.api.Constants.HOME_PAGE_FLAG;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIANT_PAGE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIANT_VIRTUALSITE,
@@ -38,6 +38,9 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
     public static final ContentIntegrityErrorType FALLBACK_ON_NAME = createErrorType("FALLBACK_ON_NAME", String.format("The site has no page flagged as home, but one is named '%s'", HOME_PAGE_FALLBACK_NAME));
     public static final ContentIntegrityErrorType FALLBACK_ON_NAME_WRONG_TYPE = createErrorType("FALLBACK_ON_NAME_WRONG_TYPE", String.format("The site has no page flagged as home. It has a sub-node named '%s', but this node is not of type %s", HOME_PAGE_FALLBACK_NAME, JAHIANT_PAGE));
 
+    // A sub-node named home which is not a page needs an analysis: it is not fixed
+    private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(NO_HOME, MULTIPLE_HOMES, FALLBACK_ON_NAME);
+
     @Override
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         try {
@@ -45,7 +48,7 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
             final JCRNodeIteratorWrapper iterator = node.getNodes();
             while (iterator.hasNext()) {
                 final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
-                if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean())
+                if (isFlaggedAsHome(child))
                     pages.add(child.getName());
             }
             final int flaggedAsHomeCount = pages.size();
@@ -77,6 +80,11 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
     }
 
     @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return FIXABLE_ERRORS.contains(error.getErrorType());
+    }
+
+    @Override
     public boolean fixError(JCRNodeWrapper site, ContentIntegrityError integrityError) throws RepositoryException {
         final JCRNodeIteratorWrapper iterator;
         final ContentIntegrityErrorType errorType = integrityError.getErrorType();
@@ -96,26 +104,28 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                 JCRNodeWrapper home = null;
                 if (site.hasNode(HOME_PAGE_FALLBACK_NAME)) {
                     home = site.getNode(HOME_PAGE_FALLBACK_NAME);
-                    if (!(home.hasProperty(HOME_PAGE_FLAG) && home.getProperty(HOME_PAGE_FLAG).getBoolean())) {
+                    if (!hasHomeFlag(home)) {
                         home = null; // means it was actually not this one
                     }
                 }
                 iterator = site.getNodes();
                 while (iterator.hasNext()) {
                     final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
-                    if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
+                    if (isFlaggedAsHome(child)) {
                         if (home == null) home = child;
-                        else
+                        // The page kept as home is one of the children: its flag stays
+                        else if (!home.getIdentifier().equals(child.getIdentifier()))
                             child.getProperty(HOME_PAGE_FLAG).remove();
                     }
                 }
+                site.getSession().save();
                 return true;
             } else {
                 final JCRSessionWrapper session_default = JCRUtils.getSystemSession(EDIT_WORKSPACE, false);
                 JCRNodeWrapper home_default = null;
                 final JCRNodeWrapper site_default = session_default.getNode(site.getPath());
                 for (JCRNodeWrapper child : site_default.getNodes()) {
-                    if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
+                    if (isFlaggedAsHome(child)) {
                         if (home_default == null) home_default = child;
                         else {
                             logger.error("Impossible to fix the error in live. It needs to be fixed in default first."); // multiple home in default
@@ -136,7 +146,7 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
                 iterator = site.getNodes();
                 while (iterator.hasNext()) {
                     final JCRNodeWrapper child = (JCRNodeWrapper) iterator.nextNode();
-                    if (child.isNodeType(JAHIANT_PAGE) && child.hasProperty(HOME_PAGE_FLAG) && child.getProperty(HOME_PAGE_FLAG).getBoolean()) {
+                    if (isFlaggedAsHome(child)) {
                         if (home != null && home.getIdentifier().equals(child.getIdentifier())) continue;
                         child.getProperty(HOME_PAGE_FLAG).remove();
                     }
@@ -151,5 +161,13 @@ public class HomePageDeclarationCheck extends AbstractContentIntegrityCheck impl
             return true;
         }
         return false;
+    }
+
+    private static boolean hasHomeFlag(JCRNodeWrapper node) throws RepositoryException {
+        return node.hasProperty(HOME_PAGE_FLAG) && node.getProperty(HOME_PAGE_FLAG).getBoolean();
+    }
+
+    private static boolean isFlaggedAsHome(JCRNodeWrapper node) throws RepositoryException {
+        return node.isNodeType(JAHIANT_PAGE) && hasHomeFlag(node);
     }
 }

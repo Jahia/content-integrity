@@ -5,17 +5,22 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.value.InternalValue;
 import org.apache.jackrabbit.spi.commons.nodetype.constraint.ValueConstraint;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.AclPrincipals;
+import org.jahia.modules.contentintegrity.services.util.AclRoles;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.modules.external.ExternalNodeImpl;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRSessionFactory;
@@ -30,41 +35,53 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
+import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
+import javax.jcr.PathNotFoundException;
 import javax.jcr.Property;
 import javax.jcr.PropertyIterator;
 import javax.jcr.PropertyType;
 import javax.jcr.RepositoryException;
 import javax.jcr.Value;
+import javax.jcr.ValueFactory;
+import javax.jcr.ValueFormatException;
 import javax.jcr.nodetype.ConstraintViolationException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.PropertyDefinition;
 import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
 import javax.validation.groups.Default;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIANT_TRANSLATION;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIANT_TRANSLATION;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_NT + "=" + JAHIANT_TRANSLATION
 })
-public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
+public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyDefinitionsSanityCheck.class);
 
@@ -72,6 +89,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private static final String CHECK_NODE_VALIDATORS_KEY = "check-node-validators";
     private static final String BINARY_VALUE_STR = "<binary>";
     private static final String FAILED_TO_CALCULATE_VALUE_STR = "<calculation error>";
+    private static final Pattern REGEX_METACHARACTERS = Pattern.compile("[\\\\^$.|?*+()\\[\\]{}]");
     private static final String NON_I18N_PROP_VALIDATOR_ERROR_XTRA_MSG = "Non internationalized properties are tested for each available language. In case of constraint violation, the related errors might be duplicated if the validation does not involve internationalized properties";
 
     public static final ContentIntegrityErrorType EMPTY_MANDATORY_PROPERTY = createErrorType("EMPTY_MANDATORY_PROPERTY", "Missing mandatory property", true);
@@ -86,7 +104,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     private ExtendedNodeType jntTranslationNt;
     private final Map<String, Boolean> jntTranslationNtParents = new HashMap<>();
     private Map<String, Constructor<?>> validators;
-    private LocalValidatorFactoryBean validatorFactoryBean;
+    private Validator validatorFactoryBean;
 
     public PropertyDefinitionsSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
@@ -118,14 +136,14 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
         try {
-            jntTranslationNt = NodeTypeRegistry.getInstance().getNodeType(JAHIANT_TRANSLATION);
+            jntTranslationNt = BundleUtils.getOsgiService(NodeTypeRegistry.class, null).getNodeType(JAHIANT_TRANSLATION);
         } catch (NoSuchNodeTypeException e) {
             logger.error(String.format("Impossible to load the definition of %s", JAHIANT_TRANSLATION), e);
             setScanDurationDisabled(true);
         }
 
-        validators = JCRSessionFactory.getInstance().getDefaultProvider().getValidators();
-        validatorFactoryBean = JCRSessionFactory.getInstance().getValidatorFactoryBean();
+        validators = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getDefaultProvider().getValidators();
+        validatorFactoryBean = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getValidatorFactoryBean();
     }
 
     @Override
@@ -245,7 +263,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         }
 
         if (!propertyNode.hasProperty(pName)) {
-            trackMissingMandatoryValue(pName, propertyDefinition, node, locale, errors );
+            trackMissingMandatoryValue(pName, propertyDefinition, node, locale, errors);
             return;
         }
 
@@ -255,7 +273,7 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         }
     }
 
-    private boolean isPropertyEmpty (Property property) throws RepositoryException {
+    private boolean isPropertyEmpty(Property property) throws RepositoryException {
         boolean isEmpty = true;
         if (property.isMultiple()) {
             for (Value value : property.getValues()) {
@@ -439,9 +457,9 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
     }
 
     private void checkValue(Value value, int valueIdx,
-                               String pName, ExtendedPropertyDefinition epd,
-                               JCRNodeWrapper jahiaNode, String locale,
-                               ContentIntegrityErrorList errors) throws RepositoryException {
+                            String pName, ExtendedPropertyDefinition epd,
+                            JCRNodeWrapper jahiaNode, String locale,
+                            ContentIntegrityErrorList errors) throws RepositoryException {
         if (isValueEmpty(value)) return;
         if (!constraintIsValid(value, epd, errors, jahiaNode)) {
             trackInvalidValueConstraint(pName, epd, getPrintableValue(value, errors, jahiaNode), valueIdx, jahiaNode, locale, epd.getValueConstraints(), errors);
@@ -616,19 +634,18 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
         final HashMap<String, Object> customExtraInfos = new HashMap<>();
         String propertyName;
         final String propertyValue;
-        try {
-            final Method propertyNameGetter = constraintViolation.getConstraintDescriptor().getAnnotation().annotationType()
-                    .getMethod("propertyName");
-            propertyName = (String) propertyNameGetter.invoke(constraintViolation.getConstraintDescriptor().getAnnotation());
-        } catch (Exception e) {
-            propertyName = constraintViolation.getPropertyPath().toString();
-        }
+        // The constraints of the Jahia validators name the property they apply to in their attribute propertyName
+        final Object propertyNameAttribute = constraintViolation.getConstraintDescriptor().getAttributes().get("propertyName");
+        if (propertyNameAttribute instanceof String) propertyName = (String) propertyNameAttribute;
+        else propertyName = constraintViolation.getPropertyPath().toString();
 
         ExtendedPropertyDefinition propertyDefinition;
         final String errorLocale;
         if (StringUtils.isNotBlank(propertyName)) {
             final String finalPropertyName = propertyName;
-            propertyValue = JCRUtils.runJcrSupplierCallBack(() -> getPrintableValue(node.getProperty(finalPropertyName).getValue(), errors, node));
+            // A validator can report a missing property: it has no value to print
+            propertyValue = JCRUtils.runJcrSupplierCallBack(() -> node.hasProperty(finalPropertyName) ?
+                    getPrintableValue(node.getProperty(finalPropertyName).getValue(), errors, node) : null);
             try {
                 propertyDefinition = node.getApplicablePropertyDefinition(propertyName);
                 if (propertyDefinition == null) {
@@ -771,5 +788,251 @@ public class PropertyDefinitionsSanityCheck extends AbstractContentIntegrityChec
             errors.addError(createFrameworkError(checkedNode, e));
             return FAILED_TO_CALCULATE_VALUE_STR;
         }
+    }
+
+    /*
+     * From the jcr-scripts fixes:
+     * - an undeclared property is removed, at the Jackrabbit level since it has no definition;
+     * - an empty mandatory property, or a value which breaks a constraint, gets the default value of its
+     *   definition. Without a default value, the right value can't be guessed: the error is left to fix by hand
+     *   (the scripts read it from a values.txt file filled in by hand).
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        final String propertyName = (String) error.getExtraInfo("property-name");
+        if (StringUtils.isBlank(propertyName)) return false;
+        final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
+
+        if (error.getErrorType().equals(UNDECLARED_PROPERTY)) {
+            // A property already removed, for example by the fix of another error, is fixed
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removePropertyRaw(target, propertyName));
+            return true;
+        }
+        if (error.getErrorType().equals(EMPTY_MANDATORY_PROPERTY) || error.getErrorType().equals(INVALID_VALUE_CONSTRAINT)) {
+            if (StringUtils.startsWith(target.getPath(), "/modules/")) return false;
+            final ExtendedPropertyDefinition definition = getFixedPropertyDefinition(target, propertyName);
+            final Value[] defaultValues = definition == null ? null : definition.getDefaultValues();
+            if (defaultValues == null || defaultValues.length == 0) {
+                logger.info("No default value for the property {} on {}: the error has to be fixed by hand", propertyName, target.getPath());
+                return false;
+            }
+            RepairUtils.runWithListenersDisabled(() -> {
+                if (definition.isMultiple()) target.setProperty(propertyName, defaultValues);
+                else target.setProperty(propertyName, defaultValues[0]);
+                target.saveSession();
+            });
+            return true;
+        }
+        return false;
+    }
+
+    /*
+     * The right value of a value of the wrong type, or of a property whose single or multiple status changed, can't be guessed,
+     * and a node validator tells no value: these errors are not fixable.
+     */
+    @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return UNDECLARED_PROPERTY.equals(error.getErrorType()) || takesValues(error);
+    }
+
+    /*
+     * An empty mandatory property, and a value which breaks the constraints of its definition, take the values chosen or
+     * typed by an administrator: the constraints which list the accepted values are offered as choices.
+     */
+    private boolean takesValues(ContentIntegrityError error) {
+        return EMPTY_MANDATORY_PROPERTY.equals(error.getErrorType()) || INVALID_VALUE_CONSTRAINT.equals(error.getErrorType());
+    }
+
+    @Override
+    public FixValuesDefinition getFixValuesDefinition(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        if (!takesValues(error)) return null;
+        final String propertyName = (String) error.getExtraInfo("property-name");
+        if (StringUtils.isBlank(propertyName)) return null;
+        final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
+        final ExtendedPropertyDefinition definition = getFixedPropertyDefinition(target, propertyName);
+        if (definition == null) return null;
+
+        final int type = getFixValueType(definition);
+        final List<String> constraints = definition.getValueConstraints() == null ? Collections.emptyList() : Arrays.asList(definition.getValueConstraints());
+        // On a string, a constraint is a regular expression: a list of literals is a list of choices
+        final List<String> choices = type == PropertyType.STRING && !constraints.isEmpty() && constraints.stream().noneMatch(c -> REGEX_METACHARACTERS.matcher(c).find()) ?
+                constraints : Collections.emptyList();
+        final List<String> defaultValues = new ArrayList<>();
+        try {
+            final Value[] values = definition.getDefaultValues();
+            if (values != null) {
+                for (Value value : values) defaultValues.add(value.getString());
+            }
+        } catch (RepositoryException e) {
+            logger.debug("Impossible to read the default values of the property {}", propertyName, e);
+        }
+        if (AclPrincipals.isAcePrincipal(target, propertyName)) {
+            // The principal of an ACE gets its roles: it is chosen among the users and the groups which the ACE can name
+            return AclPrincipals.getFixValuesDefinition(target);
+        }
+        if (AclRoles.isAceRoles(target, propertyName)) {
+            // A role of an ACE gives permissions: it is chosen among the roles which can be given at the place of the ACE
+            return AclRoles.getFixValuesDefinition(target);
+        }
+        if (!INVALID_VALUE_CONSTRAINT.equals(error.getErrorType())) {
+            return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), choices, constraints, defaultValues);
+        }
+
+        final String description = String.format("The value %s of the property %s does not match the constraints of its definition. %s",
+                error.getExtraInfo("invalid-value"), propertyName,
+                choices.isEmpty() ? "Type a value which matches them instead." : "Choose one of the accepted values instead.");
+        return new FixValuesDefinition(propertyName, PropertyType.nameFromValue(type), definition.isMultiple(), choices, constraints,
+                getValuesToCorrect(target, propertyName, definition, defaultValues), null, description);
+    }
+
+    /*
+     * The values suggested to correct a value which breaks the constraints: on a multiple property, its other values are
+     * kept, and the ones which break the constraints are left empty, to be chosen. An empty value is not set.
+     */
+    private List<String> getValuesToCorrect(JCRNodeWrapper target, String propertyName, ExtendedPropertyDefinition definition, List<String> defaultValues) {
+        if (!definition.isMultiple()) return defaultValues.isEmpty() ? Collections.emptyList() : defaultValues.subList(0, 1);
+        try {
+            if (!target.hasProperty(propertyName)) return defaultValues;
+            final List<String> values = new ArrayList<>();
+            for (Value value : target.getProperty(propertyName).getValues()) {
+                values.add(constraintIsValid(value, definition, createEmptyErrorsList(), target) ? value.getString() : "");
+            }
+            return values;
+        } catch (RepositoryException e) {
+            logger.debug("Impossible to read the values of the property {} on {}", propertyName, target.getPath(), e);
+            return defaultValues;
+        }
+    }
+
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error, List<String> values) throws RepositoryException {
+        return fixErrors(node, Collections.singletonList(error), Collections.singletonList(values));
+    }
+
+    /*
+     * The values typed by an administrator are converted to the type of the definition, and checked against its constraints.
+     * All the values are written before the node is saved once: a node is saved only once all its mandatory properties are
+     * set, so two missing ones are fixed together.
+     */
+    @Override
+    public boolean fixErrors(JCRNodeWrapper node, List<ContentIntegrityError> errors, List<List<String>> values) throws RepositoryException {
+        final List<RepairUtils.JcrOperation> writes = new ArrayList<>(errors.size());
+        boolean onAce = false;
+        for (int i = 0; i < errors.size(); i++) {
+            final ContentIntegrityError error = errors.get(i);
+            if (!takesValues(error)) return false;
+            final JCRNodeWrapper target = RepairUtils.getErrorTarget(node, error);
+            writes.add(prepareFixValues(target, error, values.get(i)));
+            onAce |= target.isNodeType("jnt:ace");
+        }
+
+        try {
+            final RepairUtils.JcrOperation writeValues = () -> {
+                for (RepairUtils.JcrOperation write : writes) write.execute();
+                node.getSession().save();
+            };
+            // The ACL listener has to see a change of an ACE, for example to create the external ACE of a role
+            if (onAce) writeValues.execute();
+            else RepairUtils.runWithListenersDisabled(writeValues);
+        } catch (RepositoryException e) {
+            // The system session is shared: a rejected value must not stay pending in it
+            node.getSession().refresh(false);
+            throw e;
+        }
+        return true;
+    }
+
+    /*
+     * Checks the values which fix the error, and returns the operation which writes them on the node, without saving it.
+     */
+    private RepairUtils.JcrOperation prepareFixValues(JCRNodeWrapper target, ContentIntegrityError error, List<String> values) throws RepositoryException {
+        final String propertyName = (String) error.getExtraInfo("property-name");
+        if (StringUtils.isBlank(propertyName)) throw new RepositoryException("The error does not name its property");
+        if (StringUtils.startsWith(target.getPath(), "/modules/")) {
+            throw new RepositoryException("The nodes under /modules are not fixed: deploy a fixed version of the module instead");
+        }
+        final ExtendedPropertyDefinition definition = getFixedPropertyDefinition(target, propertyName);
+        if (definition == null) {
+            throw new RepositoryException(String.format("No definition of the property %s on %s", propertyName, target.getPath()));
+        }
+
+        final List<String> typedValues = values == null ? Collections.emptyList() : values.stream()
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toList());
+        if (typedValues.isEmpty()) throw new ValueFormatException(String.format("A value of the property %s is required", propertyName));
+        if (!definition.isMultiple() && typedValues.size() > 1) {
+            throw new ValueFormatException(String.format("The property %s takes a single value", propertyName));
+        }
+        if (AclPrincipals.isAcePrincipal(target, propertyName)) {
+            return () -> AclPrincipals.writePrincipal(target, typedValues);
+        }
+        if (AclRoles.isAceRoles(target, propertyName)) {
+            return () -> AclRoles.writeRoles(target, typedValues);
+        }
+        final int type = getFixValueType(definition);
+        final Value[] jcrValues = new Value[typedValues.size()];
+        for (int i = 0; i < jcrValues.length; i++) {
+            final String value = typedValues.get(i);
+            jcrValues[i] = createFixValue(target, type == PropertyType.STRING ? value : value.trim(), type);
+            if (!constraintIsValid(jcrValues[i], definition, createEmptyErrorsList(), target)) {
+                throw new ConstraintViolationException(String.format("The value %s does not match the constraints %s", value, Arrays.toString(definition.getValueConstraints())));
+            }
+        }
+        return () -> {
+            if (definition.isMultiple()) target.setProperty(propertyName, jcrValues);
+            else target.setProperty(propertyName, jcrValues[0]);
+        };
+    }
+
+    private ExtendedPropertyDefinition getFixedPropertyDefinition(JCRNodeWrapper target, String propertyName) throws RepositoryException {
+        final JCRNodeWrapper definitionHolder = target.isNodeType(JAHIANT_TRANSLATION) ? target.getParent() : target;
+        return definitionHolder.getApplicablePropertyDefinition(propertyName);
+    }
+
+    private int getFixValueType(ExtendedPropertyDefinition definition) {
+        return definition.getRequiredType() == PropertyType.UNDEFINED ? PropertyType.STRING : definition.getRequiredType();
+    }
+
+    private Value createFixValue(JCRNodeWrapper target, String value, int type) throws RepositoryException {
+        final ValueFactory valueFactory = target.getSession().getValueFactory();
+        switch (type) {
+            case PropertyType.BINARY:
+                throw new ValueFormatException("A binary value can't be typed: upload the file in the content editor instead");
+            case PropertyType.BOOLEAN:
+                // The value factory reads any other string as false
+                if (!StringUtils.equalsIgnoreCase(value, "true") && !StringUtils.equalsIgnoreCase(value, "false")) {
+                    throw new ValueFormatException(String.format("Invalid boolean %s, expected true or false", value));
+                }
+                return valueFactory.createValue(Boolean.parseBoolean(value.toLowerCase(Locale.ROOT)));
+            case PropertyType.DATE:
+                return valueFactory.createValue(parseDate(value));
+            case PropertyType.REFERENCE:
+            case PropertyType.WEAKREFERENCE:
+                // A reference is typed as the path or the identifier of the referenced node, which has to exist
+                try {
+                    final JCRNodeWrapper referenced = value.startsWith("/") ? target.getSession().getNode(value) : target.getSession().getNodeByIdentifier(value);
+                    return valueFactory.createValue(referenced.getIdentifier(), type);
+                } catch (ItemNotFoundException | PathNotFoundException e) {
+                    throw new ValueFormatException(String.format("No node %s in the workspace %s", value, target.getSession().getWorkspace().getName()));
+                }
+            default:
+                return valueFactory.createValue(value, type);
+        }
+    }
+
+    private Calendar parseDate(String value) throws ValueFormatException {
+        try {
+            return GregorianCalendar.from(ZonedDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME));
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return GregorianCalendar.from(LocalDateTime.parse(value).atZone(ZoneId.systemDefault()));
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return GregorianCalendar.from(LocalDate.parse(value).atStartOfDay(ZoneId.systemDefault()));
+        } catch (DateTimeParseException ignored) {
+        }
+        throw new ValueFormatException(String.format("Invalid date %s, expected an ISO 8601 date such as 2026-01-31 or 2026-01-31T12:00", value));
     }
 }

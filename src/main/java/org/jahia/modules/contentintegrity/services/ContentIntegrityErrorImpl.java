@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 
@@ -53,11 +54,19 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     private Map<String, Object> extraInfos;
     private Map<String, Object> specificExtraInfos;
     private boolean fixed = false;
+    private boolean fixFailed = false;
+    private String fixFailureMessage;
 
     private ContentIntegrityErrorImpl(String path, String uuid, String primaryType, String mixins, String workspace,
                                       String locale, ContentIntegrityErrorType errorType, String constraintMessage,
                                       String integrityCheckName, String integrityCheckID) {
-        id = UUID.randomUUID().toString();
+        this(UUID.randomUUID().toString(), path, uuid, primaryType, mixins, workspace, locale, errorType, constraintMessage, integrityCheckName, integrityCheckID);
+    }
+
+    private ContentIntegrityErrorImpl(String id, String path, String uuid, String primaryType, String mixins, String workspace,
+                                      String locale, ContentIntegrityErrorType errorType, String constraintMessage,
+                                      String integrityCheckName, String integrityCheckID) {
+        this.id = id;
         this.path = path;
         site = Optional.ofNullable(getSiteKey(path, true, MODULE_PREFIX::concat)).orElse(NO_SITE);
         this.uuid = uuid;
@@ -69,6 +78,25 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
         this.constraintMessage = constraintMessage;
         this.integrityCheckName = integrityCheckName;
         this.integrityCheckID = integrityCheckID;
+    }
+
+    /**
+     * Rebuilds an error read from the stored results, with its identifier and its extra infos as they were stored.
+     */
+    public static ContentIntegrityError restoreError(String id, String path, String uuid, String primaryType, String mixins, String workspace,
+                                                     String locale, ContentIntegrityErrorType errorType, String constraintMessage,
+                                                     String integrityCheckName, String integrityCheckID,
+                                                     Map<String, Object> extraInfos, Set<String> specificKeys, boolean fixed) {
+        final ContentIntegrityErrorImpl error = new ContentIntegrityErrorImpl(id, path, uuid, primaryType, mixins, workspace, locale,
+                errorType, constraintMessage, integrityCheckName, integrityCheckID);
+        // In their original order. The stored values are already shortened: they are not shortened again
+        extraInfos.forEach((key, value) -> error.addExtraInfo(key, value, specificKeys.contains(key), true));
+        error.setFixed(fixed);
+        return error;
+    }
+
+    static ContentIntegrityErrorType getFrameworkErrorType() {
+        return FRAMEWORK_ERROR;
     }
 
     public static ContentIntegrityError createError(JCRNodeWrapper node, String locale, ContentIntegrityErrorType errorType, String message, ContentIntegrityCheck integrityCheck) {
@@ -138,6 +166,28 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
     @Override
     public void setFixed(boolean fixed) {
         this.fixed = fixed;
+        if (fixed) setFixFailed(false);
+    }
+
+    @Override
+    public boolean isFixFailed() {
+        return fixFailed;
+    }
+
+    @Override
+    public void setFixFailed(boolean fixFailed) {
+        this.fixFailed = fixFailed;
+        if (!fixFailed) fixFailureMessage = null;
+    }
+
+    @Override
+    public String getFixFailureMessage() {
+        return fixFailureMessage;
+    }
+
+    @Override
+    public void setFixFailureMessage(String message) {
+        fixFailureMessage = message;
     }
 
     @Override
@@ -243,13 +293,6 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
             if (extraInfos == null) extraInfos = new TreeMap<>();
             extraInfos.put(key, storedValue);
         }
-        return this;
-    }
-
-    @Override
-    public ContentIntegrityError setErrorType(Object type) {
-        if (!(errorType instanceof ContentIntegrityErrorTypeImplLegacy)) throw new UnsupportedOperationException("The error type can't be changed afterwards");
-        ((ContentIntegrityErrorTypeImplLegacy)getErrorType()).setKeyLegacy(type.toString());
         return this;
     }
 
