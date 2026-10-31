@@ -5,6 +5,7 @@
   "main": "index.js",
   "author": "Jahia",
   "license": "MIT",
+  "packageManager": "yarn@4.18.1+sha512.b2e1e7524f654f2749d32b4ebcb4622473cb5bcbc485df2007e12a154e50162a4d795526768bc5f5b8f81717bfd79deb2472813d86fb5ae2eb551fa9c872b08f",
   "scripts": {
     "build": "vite build",
     "build:dev": "vite build",
@@ -12,7 +13,7 @@
     "docs:pdf": "node docs/build-pdf.js",
     "dev": "vite build --watch",
     "watch": "vite build --watch",
-    "clean": "rimraf *.log src/main/resources/javascript/apps",
+    "clean": "rimraf --glob \"*.log\" src/main/resources/javascript/apps",
     "clean:all": "yarn clean && rimraf node_modules node"
   },
   "jahia": {
