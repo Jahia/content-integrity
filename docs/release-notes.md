@@ -68,6 +68,7 @@ Required Jahia version: 8.1.5.0
   * [bugfix] `NodeNameInfoSanityCheck`: `j:nodename` is no longer checked under `/modules`, where the files of the modules are exposed in development mode by an external provider which does not store it
   * [bugfix] `AceSanityCheck`: an ACE without principal or without type was reported as a framework error instead of `NO_PRINCIPAL` or `NO_ACE_TYPE_PROP`
   * [bugfix] `AceSanityCheck`: the message of `NO_ROLES_PROP` read "ACEExternal ACE without property j:roles"
+  * [bugfix] `BinaryPropertiesSanityCheck`: the fix of `INVALID_BINARY` removes the file of the error, or the binary property of its translation node. When the path of the property was longer than 100 characters, it removed the folder of the file instead
   * [bugfix] `HomePageDeclarationCheck`: the fix of `MULTIPLE_HOMES` in the default workspace was not saved, and it also removed the flag of the page kept as home, which left the site without home page
   * [bugfix] `VersionHistoryCheck`: the fix of `TOO_MANY_VERSIONS` was reported as successful when the purge kept more versions than the threshold, since the versions used by the default and the live nodes can't be purged. It is now reported as not fixed
   * [bugfix] `AceSanityCheck`: the fix of `MISSING_EXTERNAL_ACE` was reported as successful when the ACL listener could not create the external ACE, for example because an external ACE for other permissions takes its place. It is now reported as not fixed, and the ACL is no longer published

@@ -117,20 +117,20 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
     /*
      * From the jcr-scripts fix: a broken binary can't be restored. The file holding it is removed, or only the
      * binary property when it is held by a translation node, so that the other languages are kept.
+     * The holder is the node of the error, never a node read from property-path: that extra info is cut to 100
+     * characters, so a long path would resolve to an ancestor folder of the file, which would be removed.
      */
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
         if (!error.getErrorType().equals(INVALID_BINARY)) return false;
-        final String propertyPath = (String) error.getExtraInfo("property-path");
-        if (StringUtils.isBlank(propertyPath)) return false;
+        final String propertyName = (String) error.getExtraInfo("property-name");
+        if (StringUtils.isBlank(propertyName) || !node.getRealNode().hasProperty(propertyName)) return false;
 
-        final JCRNodeWrapper holder = node.getSession().getNode(StringUtils.substringBeforeLast(propertyPath, "/"));
-        if (holder.isNodeType(Constants.JAHIANT_TRANSLATION)) {
-            final String propertyName = StringUtils.substringAfterLast(propertyPath, "/");
-            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removePropertyRaw(holder, propertyName));
+        if (node.isNodeType(Constants.JAHIANT_TRANSLATION)) {
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removePropertyRaw(node, propertyName));
             return true;
         }
-        final JCRNodeWrapper toRemove = StringUtils.equals(holder.getName(), JCR_CONTENT) ? holder.getParent() : holder;
+        final JCRNodeWrapper toRemove = StringUtils.equals(node.getName(), JCR_CONTENT) ? node.getParent() : node;
         RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeNodeRaw(toRemove));
         return true;
     }
