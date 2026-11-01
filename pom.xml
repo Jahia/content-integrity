@@ -154,6 +154,10 @@
                         </goals>
                         <configuration>
                             <nodeVersion>v22.19.0</nodeVersion>
+                            <!-- The version bundled with this node. The default, "provided", fails when node is already
+                                 installed in node/ without corepack, as by a build with Yarn 1: the plugin then
+                                 downloads a version named "provided", which does not exist -->
+                            <corepackVersion>0.34.0</corepackVersion>
                         </configuration>
                     </execution>
                     <execution>
