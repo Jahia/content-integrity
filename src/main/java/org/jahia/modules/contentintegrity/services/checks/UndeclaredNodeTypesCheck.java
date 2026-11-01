@@ -115,7 +115,7 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck impl
             final JahiaTemplatesPackage templatePackage = nodeType.getTemplatePackage();
 
             // No template package: the node type is either declared by Jahia core, then the node type registry is assumed to be
-            // consistent with the code definitions, or bound to a module which is not installed anymore
+            // consistent with the code definitions, or bound to a module with no started version, not installed anymore or stopped
             if (templatePackage == null) return new ExtendedNodeTypeWrapper(nodeType, !nodeType.getSystemId().startsWith(CORE_SYSTEM_ID_PREFIX));
 
             // The node type is declared by a stopped module or is not declared by the started version of the module
