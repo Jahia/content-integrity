@@ -1218,7 +1218,7 @@ Each node has a primary type, and can have been added some mixin types. If a typ
 
 The check runs on both workspaces. The details of an error give the type, as `primary type` or as `mixin type`.
 
-A type declared by a module is undeclared when its module is not started on the server which runs the scan, or when the started version of the module does not declare it. In a cluster, the modules are started on each server: run the check on every server. A type reported on one server only is declared by a module which is not started there: start it there, and do not fix the nodes.
+A type declared by a module is undeclared when its module is not installed, when it is not started on the server which runs the scan, or when the started version of the module does not declare it. In a cluster, the modules are started on each server: run the check on every server. A type reported on one server only is declared by a module which is not started there: start it there, and do not fix the nodes.
 
 ![UndeclaredNodeTypesCheck in the results of a scan](img/checks/UndeclaredNodeTypesCheck.png)
 
@@ -1248,7 +1248,7 @@ Otherwise, if the missing types have been decommissioned, then no node should re
 
 ![GHOST_NODE_TYPE in the results of a scan](img/checks/UndeclaredNodeTypesCheck/GHOST_NODE_TYPE.png)
 
-**Description**: the node type is still registered in the `NodeTypeRegistry`, but it is bound to a module which is not started, or which doesn't declare it anymore in its definitions file.
+**Description**: the node type is still registered in the `NodeTypeRegistry`, but it is bound to a module which is not installed anymore, which is not started, or which doesn't declare it anymore in its definitions file. A type of Jahia core, whose system ID starts with `system-`, is never reported.
 
 If the type has actually been deleted, in addition to the cleanup to be done on the JCR nodes (see `Error code: UNDECLARED_NODE_TYPE`), the type has to be purged from the `NodeTypeRegistry`. This can be achieved manually in the tools, using the "Definitions browser" (warning: this deletes the related nodes as well).
 

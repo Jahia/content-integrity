@@ -38,6 +38,9 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck impl
     public static final ContentIntegrityErrorType UNDECLARED_NODE_TYPE = createErrorType("UNDECLARED_NODE_TYPE", "Undeclared type", true);
     public static final ContentIntegrityErrorType GHOST_NODE_TYPE = createErrorType("GHOST_NODE_TYPE", "Ghost type", true);
 
+    // The systemId of the node types declared by Jahia core, such as system-jahia
+    private static final String CORE_SYSTEM_ID_PREFIX = "system-";
+
     private final Set<String> existingNodeTypes = new HashSet<>();
     private final Map<String, Boolean> missingNodeTypes = new HashMap<>();
     private final Set<String> existingMixins = new HashSet<>();
@@ -111,8 +114,9 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck impl
             final ExtendedNodeType nodeType = BundleUtils.getOsgiService(NodeTypeRegistry.class, null).getNodeType(type);
             final JahiaTemplatesPackage templatePackage = nodeType.getTemplatePackage();
 
-            // the node type is not declared by a module, let's assume that the node type registry is always consistent with the code definitions
-            if (templatePackage == null) return new ExtendedNodeTypeWrapper(nodeType, false);
+            // No template package: the node type is either declared by Jahia core, then the node type registry is assumed to be
+            // consistent with the code definitions, or bound to a module which is not installed anymore
+            if (templatePackage == null) return new ExtendedNodeTypeWrapper(nodeType, !nodeType.getSystemId().startsWith(CORE_SYSTEM_ID_PREFIX));
 
             // The node type is declared by a stopped module or is not declared by the started version of the module
             if (templatePackage.getState().getState() != ModuleState.State.STARTED)
