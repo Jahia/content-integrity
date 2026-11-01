@@ -22,6 +22,9 @@ repository.xml.generated
 !**/.yarn/patches
 !**/.yarn/releases
 
+# macOS
+.DS_Store
+
 # Custom
 TODO.md
 /.claude/settings.local.json
