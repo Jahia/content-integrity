@@ -4,6 +4,7 @@ import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -40,6 +41,8 @@ public class GqlIntegrityMutation {
             "never chosen by default, unlike the query of the same name")
     public GqlScanResultsMutation getScanResultsDetails(@GraphQLName("id") @GraphQLNonNull String id,
                                                         @GraphQLName("filters") Collection<String> filters) {
+        // A blank identifier passes the non-null check: it designates no results, rather than the latest ones
+        if (StringUtils.isBlank(id)) return null;
         return Optional.ofNullable(service.getScanResultsDetails(id, filters))
                 .map(GqlScanResultsMutation::new)
                 .orElse(null);

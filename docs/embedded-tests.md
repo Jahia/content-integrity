@@ -53,7 +53,8 @@ The roles are read under `/roles` in the `default` workspace when the scan start
 ### Dealing with errors
 
 Most of these errors are the consequence of an access control entry, or of a role, written or deleted without the listeners of Jahia: by a script, an import, or a module.  
-When an entry is deleted or altered in the `default` workspace, the change has to be published, otherwise the former permissions remain in `live`.
+When an entry is deleted or altered in the `default` workspace, the change has to be published, otherwise the former permissions remain in `live`.  
+A fix publishes the access control list it changed, or its node, only when this list was the same in `default` and in `live` before the fix. Otherwise its publication would also publish the other unpublished changes of the permissions, such as a grant which awaits a review: the list is left to the publication of its node, and a warning names it in the log.
 
 #### Missing principal
 
