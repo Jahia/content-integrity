@@ -25,9 +25,11 @@ try {
 } catch (ignored) {
 }
 BundleUtils.getOsgiService(JCRStoreService.class, null).deployDefinitions("content-integrity")
-try {
-    BundleUtils.getOsgiService(JCRStoreService.class, null).undeployDefinitions("content-integrity-tests-orphan")
-    registry.unregisterNodeTypes("content-integrity-tests-orphan")
-} catch (ignored) {
+["content-integrity-tests-orphan", "system-ci-tests-declared-again"].each { systemId ->
+    try {
+        BundleUtils.getOsgiService(JCRStoreService.class, null).undeployDefinitions(systemId)
+        registry.unregisterNodeTypes(systemId)
+    } catch (ignored) {
+    }
 }
 JcrSessionFilter.endRequest()

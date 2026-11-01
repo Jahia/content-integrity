@@ -1,7 +1,9 @@
 // Fixtures of UndeclaredNodeTypesCheck, under /sites/SITEKEY/contents/undeclared-node-types
 // - UNDECLARED_NODE_TYPE: nodes created with a primary type and a mixin which are then unregistered
 // - GHOST_NODE_TYPE: a node created with a type registered for the started module content-integrity, which does not declare it,
-//   and a node created with a type registered for a module which is not installed
+//   and a node created with a type registered for a module which is not installed, with a child and a reference from outside
+//   its subtree, which the error counts
+// - declared-again: a node whose type is unregistered, then declared again by UndeclaredNodeTypesCheck-declareAgain.groovy
 // - no error: the folder, of a type of Jahia core, and a node of a type declared by the started module default
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils
@@ -33,19 +35,24 @@ session.save()
 register(TESTS_SYSTEM_ID, """
 [jnt:ciTestUndeclared] > jnt:content, jmix:droppableContent
 [jmix:ciTestUndeclaredMixin] mixin
+[jnt:ciTestDeclaredAgain] > jnt:content, jmix:droppableContent
 """)
 register(GHOST_SYSTEM_ID, """
 [jnt:ciTestGhost] > jnt:content, jmix:droppableContent
 """)
 register(ORPHAN_SYSTEM_ID, """
 [jnt:ciTestOrphan] > jnt:content, jmix:droppableContent
+ + * (jmix:droppableContent)
 """)
 
 folder.addNode("undeclared-primary-type", "jnt:ciTestUndeclared")
 folder.addNode("undeclared-mixin", "jnt:text").addMixin("jmix:ciTestUndeclaredMixin")
 folder.addNode("ghost-type", "jnt:ciTestGhost")
-folder.addNode("orphan-type", "jnt:ciTestOrphan")
+def orphan = folder.addNode("orphan-type", "jnt:ciTestOrphan")
+orphan.addNode("child", "jnt:text")
+folder.addNode("reference-to-orphan", "jnt:contentReference").setProperty("j:node", orphan)
 folder.addNode("declared-type", "jnt:text")
+folder.addNode("declared-again", "jnt:ciTestDeclaredAgain")
 session.save()
 
 // The ghost and orphan types stay registered, the other ones are removed so that the nodes reference undeclared types

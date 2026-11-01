@@ -1216,11 +1216,19 @@ If you suspect that the issue is not related to a module deployment error, then 
 
 Each node has a primary type, and can have been added some mixin types. If a type assigned to a node can't be loaded, then you might encounter some issues when manipulating the node.
 
-The check runs on both workspaces. The details of an error give the type, as `primary type` or as `mixin type`.
+The check runs on both workspaces. The details of an error give the type, as `primary type` or as `mixin type`. For a primary type, they also give what the fix of the error deletes: `descendants-count`, the number of descendants of the node, and `references-count`, the number of references to the node or to one of its descendants from a node out of its subtree. A node in the subtree of a node already reported for its primary type gets no counts: the counts of its ancestor include it, and the fix of its ancestor deletes it. Filter the results on the type to see how many nodes of a type each workspace holds.
 
 A type declared by a module is undeclared when its module is not installed, when it is not started on the server which runs the scan, or when the started version of the module does not declare it. In a cluster, the modules are started on each server: run the check on every server. A type reported on one server only is declared by a module which is not started there: start it there, and do not fix the nodes.
 
 ![UndeclaredNodeTypesCheck in the results of a scan](img/checks/UndeclaredNodeTypesCheck.png)
+
+### Configuration
+
+| Name         |  Type  | Default Value | Description                                                                                                                                                                              |
+|--------------|:------:|:-------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| types-to-fix | string |               | Types whose errors the fix acts on: it deletes the nodes of such a primary type, and removes such a mixin from its nodes (comma separated, spaces allowed). The errors of the other types are not fixed |
+
+The errors are not fixed by default: a ghost type is often the type of a module which is only stopped, or which has been moved to another module, and the nodes of such a type must be kept. Name a type only once it is decommissioned, and once the counts of its errors tell what its fix deletes. The configuration is reset when the module is deployed again.
 
 ### Dealing with errors
 
@@ -1240,7 +1248,9 @@ Otherwise, if the missing types have been decommissioned, then no node should re
 
 **Mixin type**: you can remove the mixin from the nodes. If a few nodes are impacted, you can do it from the JCR browser. Otherwise, you will need to write a script. If the mixin used to define some properties, then you should clean them from the node as well. In such case, writing a script will be the best option. You might need to introduce back the removed mixin type definition for the good execution of the script, and then remove it forever.
 
-**Fix**: removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone. Restore the module first if the type is missing by mistake, since **Fix all** applies this fix too.
+**Fix**: only for a type named in the configuration `types-to-fix`. Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone. When the type is declared again since the scan, changes nothing, and reports the error as fixed.
+
+The fix doesn't remove the properties that a removed mixin defined: `PropertyDefinitionsSanityCheck` reports them as `UNDECLARED_PROPERTY`, and fixes them. The version history of a deleted node stays in the version storage, until the purge of the versions removes it. A strong reference to a deleted node makes the fix fail. A weak reference stays, and `ReferencesSanityCheck` then reports it as `BROKEN_REF`.
 
 #### Ghost type
 
@@ -1258,7 +1268,7 @@ If the type has been moved from a module to another one, but is still bound to t
 NodeTypeRegistry.getInstance().unregisterNodeType("mynt:movedType");
 ```
 
-**Fix**: removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone. Do not use it when the type has been moved to another module, or when its module is only stopped: the nodes would be lost, while restoring the declaration of the type preserves them.
+**Fix**: the same as the fix of `UNDECLARED_NODE_TYPE`, for a type named in the configuration `types-to-fix`. Do not name a type which has been moved to another module, or whose module is only stopped: the nodes would be lost, while restoring the declaration of the type preserves them.
 
 ## UndeployedModulesReferencesCheck
 
