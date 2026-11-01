@@ -298,6 +298,8 @@ A large number of entries impacts the performance of the permissions checks. Rev
 
 `Error code: ACE_OUTSIDE_ACL`
 
+![ACE_OUTSIDE_ACL in the results of a scan](img/checks/AceSanityCheck/ACE_OUTSIDE_ACL.png)
+
 **Description**: an access control entry, regular or external, which is not in the `j:acl` sub-node of a node, but for example directly under a page: a page accepts any child, so an editor can create such a node. The details tell the type of its parent node (`parent-type`).
 
 The ACL listener of Jahia only processes the entries of an ACL: this one grants nothing. The other errors of the check are not reported on it, since their fixes act on the ACL of the entry and on the node it secures: here its parent and its grandparent, for example a page which would be published.
