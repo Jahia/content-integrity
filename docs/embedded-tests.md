@@ -1097,6 +1097,8 @@ The link should be edited to point to an existing node, or removed from the text
 
 `Error code: INVALID_BACK_REF`
 
+![INVALID_BACK_REF in the results of a scan](img/checks/ReferencesSanityCheck/INVALID_BACK_REF.png)
+
 **Description**: the node is referenced by a node which is missing. This error is raised only when `validate-back-refs` is enabled. The details give the name of the referencing property (`property-name`) and the path of the referencing node (`referencing-node-path`).
 
 This can happen only when the node holding the reference is a virtual node, the property is not virtual, and this node is not exposed by the `DataSource` at the time of the scan.
