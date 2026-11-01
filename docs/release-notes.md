@@ -94,6 +94,9 @@ Required Jahia version: 8.1.5.0
   * `SiteLevelSystemGroupsCheck`: the fix of `GROUP_DOES_NOT_EXIST` makes members of the group `site-privileged` the principals of the entries of an ACL only, as the ACL listener does. The principal of an entry created outside of an ACL became a member, and could read the unpublished content of the site
   * `ReferencesSanityCheck`: the fix of `BROKEN_REF_IN_FIELD` finds the link in a time which grows linearly with the length of the text. On a text made of many unclosed tags, its pattern held the request for minutes. When the placeholder is in the text itself, outside of a tag, the fix fails and leaves the text unchanged; it was reported as fixed
   * The language of the errors of a translation node, and the translation their fixes change, are read from the name of the node, as Jahia does, and no longer from `jcr:language`, which a translator can change: a translator could make the fix of an error of their language change the translation of another one. `JCRUtils.getTranslationNodeLocale` returns the language of the node name
+  * `AceSanityCheck`, `SiteLevelSystemGroupsCheck`: a fix publishes the ACL it changed, or its node, only when the ACL was the same in `default` and in `live` before the fix. Otherwise the publication, done as root, also published the other unpublished changes of the permissions, such as a grant which awaits a review
+  * The GraphQL mutation `scanResultsDetails` finds no results for a blank identifier, instead of the latest ones, which its description excludes
+  * The Groovy script `makeDigitallInconsistent`, which corrupts the site Digitall to test the module, is listed by the extended Groovy console in the development mode only (`modules.contentIntegrity.devMode`), as before 4.0.0
 
 #### <a name="v3-35"></a>3.35
 

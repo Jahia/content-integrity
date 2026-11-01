@@ -53,4 +53,11 @@ describe('Mutations', () => {
             expect(body.errors?.[0]?.extensions?.classification).to.equal('ValidationError');
         });
     });
+
+    it('finds no results for a blank identifier, rather than the latest ones', () => {
+        requestAs(rootUser(), 'mutation { contentIntegrity { scanResultsDetails(id: " ") { fixAllErrors { fixed } } } }').then(body => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.contentIntegrity.scanResultsDetails).to.be.null;
+        });
+    });
 });
