@@ -4,6 +4,7 @@ import {
     deleteTestSite,
     expectError,
     expectExtraInfo,
+    expectFixFails,
     expectNoFix,
     expectNoError,
     fixFromTwoScans,
@@ -102,5 +103,33 @@ describe('ReferencesSanityCheck', () => {
     it('fixes BROKEN_REF by removing the broken value', () => {
         // Fixed from the first results, then from the second ones, where it is already fixed
         fixFromTwoScans(ROOT, CHECKS, 'EDIT', 'BROKEN_REF', `${ROOT}/broken-reference`);
+    });
+
+    // The value is written by an editor: a placeholder in the text itself is not a link which can be removed, and its
+    // many unclosed tags must not hold the fix
+    it('does not report BROKEN_REF_IN_FIELD as fixed when the placeholder is not in a tag, and leaves the text unchanged', () => {
+        const path = `${ROOT}/placeholder-in-text`;
+        expectError(results, 'BROKEN_REF_IN_FIELD', path);
+        expectFixFails(ROOT, CHECKS, 'EDIT', 'BROKEN_REF_IN_FIELD', path);
+        readText(path).should('match', /^\S+ (<a ){2000}$/);
+    });
+
+    // A translator can write jcr:language on the translation node of their language: the error is reported, then fixed, in
+    // the language of the translation node, as the platform resolves it from its name
+    it('reports BROKEN_REF of a translation in the language of its node name, whatever its jcr:language', () => {
+        expect(expectError(results, 'BROKEN_REF', `${ROOT}/i18n-reference`).locale).to.equal('fr');
+    });
+
+    it('fixes BROKEN_REF in the translation of the error only', () => {
+        const path = `${ROOT}/i18n-reference`;
+        const reference = (language: string): Cypress.Chainable<string> =>
+            graphql('query($path: String!, $language: String!) { jcr { nodeByPath(path: $path) { property(name: "j:node", language: $language) { value } } } }',
+                {path, language}).then(data => data.jcr.nodeByPath.property?.value ?? null);
+        reference('en').then(english => {
+            expect(english, 'English reference').to.not.be.null;
+            fixFromTwoScans(ROOT, CHECKS, 'EDIT', 'BROKEN_REF', path);
+            reference('en').should('equal', english);
+            reference('fr').should('be.null');
+        });
     });
 });

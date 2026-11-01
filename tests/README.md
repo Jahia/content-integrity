@@ -56,7 +56,7 @@ root logs them out after each test, so that their sessions do not hold the slots
 `demo/generate.sh` builds a demo of the module from the fixtures of the tests, to check the errors and their fixes by
 hand: the site `integrityDemo` with the faulty content of every check, three sites `integrityDemo*` for the home page and
 site group scenarios which exclude each other, the thresholds which make the threshold checks report, then four scans
-(the version storage, a node moved in live, the whole repository, the demo site). They cover 85 of the 87 error types:
+(the version storage, a node moved in live, the whole repository, the demo site). They cover 86 of the 88 error types:
 `HISTORY_WITHOUT_NODE_ID` and `INVALID_BACK_REF` can't be reproduced.
 
 ```bash
@@ -117,7 +117,7 @@ The Jahia API refuses to create inconsistent content, so the scripts write below
 |                                  | SOURCE_ACE_NOT_TYPE_GRANT, INVALID_EXTERNAL_ACE_PATH, ROLES_DIFFER_ON_SOURCE_ACE                                               |    ✅     | 🔧  |
 |                                  | INVALID_NODENAME, ROLE_DOESNT_EXIST, INVALID_ROLES_PROP, NO_ROLES_PROP and NO_PRINCIPAL (with a chosen value)                  |    ✅     | 🔧  |
 |                                  | MISSING_SITE_PRIVILEGED_GRP_MEMBER, ACE_NON_GRANT_WITH_EXTERNAL_ACE, INVALID_EXTERNAL_PERMISSIONS, DUPLICATED_REF_SRC_ACE      |    ✅     | ➖  |
-|                                  | TOO_MANY_ACE                                                                                                                   |    ✅     | ➖  |
+|                                  | TOO_MANY_ACE, ACE_OUTSIDE_ACL                                                                                                  |    ✅     | ➖  |
 | BinaryPropertiesSanityCheck      | INVALID_BINARY                                                                                                                 |    ✅     | 🔧  |
 | ChildNodeDefinitionsSanityCheck  | NOT_ALLOWED_BY_PARENT_DEF                                                                                                      |    ✅     | 🔧  |
 | FlatStorageCheck                 | TOO_MANY_CHILD_NODES                                                                                                           |    ✅     | ➖  |

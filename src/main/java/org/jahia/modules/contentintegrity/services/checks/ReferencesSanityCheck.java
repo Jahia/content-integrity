@@ -60,7 +60,8 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
     private static final Pattern REF_IN_FIELD_PLACEHOLDER = Pattern.compile("##ref:link([0-9]+)##");
     private static final String J_REFERENCE = "j:reference";
     // The HTML elements without content nor end tag: such an element whose link is broken is removed, the other ones are unwrapped
-    private static final Collection<String> VOID_ELEMENTS = Arrays.asList("area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr");
+    private static final Pattern TAG_NAME = Pattern.compile("<([a-zA-Z][a-zA-Z0-9]*)\\b");
+    private static final Collection<String> VOID_ELEMENTS =Arrays.asList("area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr");
 
     // A reference to a virtual node, and an invalid back reference, are not fixed
     private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(BROKEN_REF, BROKEN_REF_IN_FIELD);
@@ -309,16 +310,21 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
         // A link whose node has been referenced again since the scan is not broken anymore
         if (getReferencesInField(referencesNode, fieldName).contains(index)) return true;
 
+        // A placeholder outside of the attributes of a tag, in the text itself, is not a link which can be removed: the
+        // text is left unchanged, and the error is not fixed
+        final String placeholder = REF_IN_FIELD_PLACEHOLDER_PREFIX + index + "##";
+        final Property property = textNode.hasProperty(propertyName) ? textNode.getProperty(propertyName) : null;
+        final String[] fixed = property == null ? new String[0] : property.isMultiple() ?
+                Arrays.stream(property.getValues()).map(v -> JCRUtils.runJcrSupplierCallBack(v::getString)).map(v -> removeLink(v, index)).toArray(String[]::new) :
+                new String[]{removeLink(property.getString(), index)};
+        if (Arrays.stream(fixed).anyMatch(value -> StringUtils.contains(value, placeholder))) return false;
+
         RepairUtils.runWithListenersDisabled(() -> {
-            if (textNode.hasProperty(propertyName)) {
-                final Property property = textNode.getProperty(propertyName);
+            if (property != null) {
                 if (property.isMultiple()) {
-                    final Value[] values = property.getValues();
-                    final String[] fixed = new String[values.length];
-                    for (int i = 0; i < values.length; i++) fixed[i] = removeLink(values[i].getString(), index);
                     property.setValue(fixed);
                 } else {
-                    property.setValue(removeLink(property.getString(), index));
+                    property.setValue(fixed[0]);
                 }
             }
             final NodeIterator referenceNodes = referencesNode.getNodes(JAHIA_REFERENCE_IN_FIELD_PREFIX);
@@ -339,21 +345,24 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
     /*
      * Removes from the HTML the elements whose attributes hold the placeholder of the link: the start tag and its end
      * tag, keeping the content, or the whole element when it has no content.
+     * The value is written by the editors: the tags are found without a pattern which backtracks from each '<', since on a
+     * value made of many unclosed tags, its time would grow with the square of the length of the value.
      */
     static String removeLink(String html, long index) {
-        final Pattern startTag = Pattern.compile("<([a-zA-Z][a-zA-Z0-9]*)\\b[^>]*" + Pattern.quote(REF_IN_FIELD_PLACEHOLDER_PREFIX + index + "##") + "[^>]*>");
+        final String placeholder = REF_IN_FIELD_PLACEHOLDER_PREFIX + index + "##";
         String result = html;
-        Matcher matcher = startTag.matcher(result);
-        while (matcher.find()) {
-            final String tagName = matcher.group(1).toLowerCase();
-            final int start = matcher.start();
-            final int contentStart = matcher.end();
-            if (VOID_ELEMENTS.contains(tagName) || matcher.group().endsWith("/>")) {
+        int[] startTag;
+        while ((startTag = findStartTag(result, placeholder)) != null) {
+            final int start = startTag[0];
+            final int contentStart = startTag[1];
+            final String tagName = result.substring(start + 1, startTag[2]).toLowerCase();
+            if (VOID_ELEMENTS.contains(tagName) || result.charAt(contentStart - 2) == '/') {
                 result = result.substring(0, start) + result.substring(contentStart);
             } else {
-                // The end tag of the element, skipping the nested elements with the same name
-                final Matcher tags = Pattern.compile("<(/?)" + Pattern.quote(tagName) + "\\b[^>]*>", Pattern.CASE_INSENSITIVE).matcher(result);
-                tags.region(contentStart, result.length());
+                // The end tag of the element, skipping the nested elements with the same name. The search stops at the
+                // last '>', so that each candidate tag runs up to the next '>' at most, without backtracking.
+                final Matcher tags = Pattern.compile("<(/?)" + Pattern.quote(tagName) + "\\b[^>]*+>", Pattern.CASE_INSENSITIVE).matcher(result);
+                tags.region(contentStart, result.lastIndexOf('>') + 1);
                 int depth = 1;
                 int endStart = -1;
                 int endEnd = -1;
@@ -369,8 +378,34 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
                         result.substring(0, start) + result.substring(contentStart) :
                         result.substring(0, start) + result.substring(contentStart, endStart) + result.substring(endEnd);
             }
-            matcher = startTag.matcher(result);
         }
         return result;
+    }
+
+    /*
+     * The first start tag whose attributes hold the placeholder: a '<' followed by a tag name, then no '>' up to the
+     * placeholder, then the first '>' after it. Returns its start, its end and the end of its name, or null. The value is
+     * read once, from left to right.
+     */
+    private static int[] findStartTag(String html, String placeholder) {
+        final Matcher tagName = TAG_NAME.matcher(html).useTransparentBounds(true);
+        int tagStart = -1;
+        int nameEnd = -1;
+        for (int i = 0; i < html.length(); i++) {
+            final char c = html.charAt(i);
+            if (c == '>') {
+                tagStart = -1;
+            } else if (c == '<') {
+                if (tagStart < 0 && tagName.region(i, html.length()).lookingAt()) {
+                    tagStart = i;
+                    nameEnd = tagName.end();
+                    i = nameEnd - 1;
+                }
+            } else if (tagStart >= 0 && html.startsWith(placeholder, i)) {
+                final int tagEnd = html.indexOf('>', i + placeholder.length());
+                return tagEnd < 0 ? null : new int[]{tagStart, tagEnd + 1, nameEnd};
+            }
+        }
+        return null;
     }
 }

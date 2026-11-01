@@ -80,4 +80,14 @@ describe('SiteLevelSystemGroupsCheck', () => {
             grantsAtCreation.forEach(ace => roles(ace).should('include', 'privileged'));
         });
     });
+
+    // As the ACL listener, the fix reads the entries of the ACL only: an ACE created elsewhere grants nothing, and its
+    // principal must not become a member of the group, which reads the unpublished content of the site
+    it('does not add to the group created again the principal of an ACE outside of an ACL', () => {
+        const outsider = `ci-${SITE}-outsider`;
+        scenario('PLANTED_ACE');
+        scenario('GROUP_DOES_NOT_EXIST');
+        fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'GROUP_DOES_NOT_EXIST', SITE_PATH);
+        membersOf(SITE_PRIVILEGED).should('not.be.empty').and('not.include', outsider);
+    });
 });

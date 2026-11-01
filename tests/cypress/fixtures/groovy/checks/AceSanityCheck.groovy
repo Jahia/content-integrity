@@ -13,6 +13,9 @@
 // - INVALID_EXTERNAL_ACE_PATH: an external ACE moved to the ACL of another node
 // - ROLES_DIFFER_ON_SOURCE_ACE: the role of an ACE changed, while its external ACE is still for the former role
 // - TOO_MANY_ACE: raised on the site once the threshold of the check is configured
+// - ACE_OUTSIDE_ACL: an ACE, for a role which does not exist, and an external ACE without source, created directly under a
+//   page of the site, /sites/SITEKEY/home/ace-outside-acl, as an editor can do since a page accepts any child
+// - KEEPS_RESTRICTING_ACL: a node whose ACL breaks the inheritance, with a single entry, an external ACE without source
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
@@ -72,6 +75,15 @@ externalScenarios.eachWithIndex { scenario, idx ->
 // The ACL of this node receives the moved external ACE
 grant("external-ace-holder", regularUser, "reader")
 
+def home = session.getNode("/sites/" + SITE_KEY + "/home")
+if (home.hasNode("ace-outside-acl")) home.getNode("ace-outside-acl").remove()
+def outsideAcl = home.addNode("ace-outside-acl", "jnt:page")
+outsideAcl.setProperty("j:templateName", "home")
+def restricting = folder.addNode("KEEPS_RESTRICTING_ACL", "jnt:contentFolder")
+session.save()
+restricting.setAclInheritanceBreak(true)
+session.save()
+
 def groupManager = BundleUtils.getOsgiService(JahiaGroupManagerService.class, null)
 def sitePrivileged = groupManager.lookupGroup(SITE_KEY, "site-privileged", session)
 sitePrivileged.removeMember(userManager.lookupUser(privilegedUser, session))
@@ -114,6 +126,24 @@ try {
     duplicated.setProperty("j:sourceAce", [source, source] as Value[])
     externalAce("INVALID_ROLES_PROP").setProperty("j:roles", ["editor", "reviewer"] as String[])
     ace("ROLES_DIFFER_ON_SOURCE_ACE", externalUsers["ROLES_DIFFER_ON_SOURCE_ACE"]).setProperty("j:roles", ["reviewer"] as String[])
+
+    // An external ACE without source, under the given parent
+    def externalAceWithoutSource = { parent ->
+        def node = parent.addNode("REFeditor_currentSite-access_u_" + regularUser, "jnt:externalAce")
+        node.setProperty("j:aceType", "GRANT")
+        node.setProperty("j:principal", "u:" + regularUser)
+        node.setProperty("j:roles", ["editor"] as String[])
+        node.setProperty("j:externalPermissionsName", "currentSite-access")
+        node.setProperty("j:protected", false)
+    }
+    def page = realSession.getNode("/sites/" + SITE_KEY + "/home/ace-outside-acl")
+    def plantedAce = page.addNode("GRANT_u_" + regularUser, "jnt:ace")
+    plantedAce.setProperty("j:aceType", "GRANT")
+    plantedAce.setProperty("j:principal", "u:" + regularUser)
+    plantedAce.setProperty("j:roles", ["ci-role-which-does-not-exist"] as String[])
+    plantedAce.setProperty("j:protected", false)
+    externalAceWithoutSource(page)
+    externalAceWithoutSource(real.getNode("KEEPS_RESTRICTING_ACL/j:acl"))
     realSession.save()
 } finally {
     JCRObservationManager.setAllEventListenersDisabled(false)

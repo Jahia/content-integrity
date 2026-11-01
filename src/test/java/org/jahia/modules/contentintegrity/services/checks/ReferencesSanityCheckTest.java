@@ -1,5 +1,6 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.apache.commons.lang.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
@@ -58,6 +59,18 @@ public class ReferencesSanityCheckTest {
     @Test
     public void leavesATextWithoutTheLinkUnchanged() {
         assertRemoved("<p>no link</p>", "<p>no link</p>", 1);
+    }
+
+    // An editor's value made of many unclosed tags: a pattern which backtracks from each '<' took minutes on a few
+    // hundred kilobytes, while the fix of the administrator was waiting
+    @Test(timeout = 5000)
+    public void readsAValueOfManyUnclosedTagsInLinearTime() {
+        final String unclosed = "##ref:link1##" + StringUtils.repeat("<a ", 200_000);
+        assertRemoved(unclosed, unclosed, 1);
+        final String closedAtTheEnd = "<p>" + StringUtils.repeat("<a ", 100_000) + "##ref:link1##" + StringUtils.repeat("<a ", 100_000) + ">";
+        assertRemoved("<p>", closedAtTheEnd, 1);
+        final String manyEndTags = "<a href=\"" + LINK_1 + "\">" + StringUtils.repeat("<a ", 200_000) + ">";
+        assertRemoved(StringUtils.repeat("<a ", 200_000) + ">", manyEndTags, 1);
     }
 
     private void assertRemoved(String expected, String html, long index) {

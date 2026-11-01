@@ -27,6 +27,7 @@ import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -257,6 +258,16 @@ public final class Utils {
     public static boolean errorNodeExists(ContentIntegrityError error) {
         final JCRSessionWrapper session = JCRUtils.getSystemSession(error.getWorkspace(), false);
         return session != null && StringUtils.isNotBlank(error.getUuid()) && JCRUtils.nodeExists(error.getUuid(), session);
+    }
+
+    /**
+     * True if the ACE is an entry of an ACL: a child of the j:acl node of the node it secures. The ACL listener of the
+     * platform only processes those. An ACE created elsewhere, which a node type accepting any child allows an editor to
+     * do, grants nothing: its parent is not an ACL, and its grandparent not the node it would secure.
+     */
+    public static boolean isInAcl(Node ace) throws RepositoryException {
+        final Node parent = ace.getParent();
+        return Constants.ACL.equals(parent.getName()) && parent.isNodeType(Constants.JAHIANT_ACL);
     }
 
     public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, ExternalLogger externalLogger) {

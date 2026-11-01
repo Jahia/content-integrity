@@ -2,7 +2,10 @@
 // - BROKEN_REF: a reference to a node which does not exist
 // - BROKEN_REF_TO_VN: a reference to a virtual node, known in jahia_external_mapping, but which can't be resolved
 // - BROKEN_REF_IN_FIELD: a link of a text without a jnt:referenceInField node, and one whose jnt:referenceInField node has
-//   no j:reference, as left by the deletion of the linked node
+//   no j:reference, as left by the deletion of the linked node; and a placeholder in the text itself, outside of a tag,
+//   followed by many unclosed tags, which the fix can't remove
+// - BROKEN_REF in a translation whose jcr:language names another language: an i18n reference to a file in English, and
+//   to a file which does not exist in French, the French translation node declaring the language en
 // - INVALID_BACK_REF is not reproducible: the referencing node is always readable with the system session of the scan
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils
@@ -34,8 +37,19 @@ def folder = contents.addNode("references", "jnt:contentFolder")
 folder.getNode("valid-reference").setProperty("j:node", folder.addNode("target", "jnt:text"))
 session.save()
 def englishSession = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", Locale.ENGLISH, null)
-TEXTS.each { englishSession.getNode(folder.getPath()).addNode(it, "jnt:bigText").setProperty("text", "text") }
+(TEXTS + "placeholder-in-text").each { englishSession.getNode(folder.getPath()).addNode(it, "jnt:bigText").setProperty("text", "text") }
 englishSession.save()
+
+def files = session.getNode("/sites/SITEKEY/files")
+if (files.hasNode("i18n-target.txt")) files.getNode("i18n-target.txt").remove()
+def i18nTarget = files.uploadFile("i18n-target.txt", new ByteArrayInputStream("target".getBytes("UTF-8")), "text/plain")
+folder.addNode("i18n-reference", "jnt:fileI18nReference")
+session.save()
+["en", "fr"].each { lang ->
+    def langSession = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", new Locale(lang), null)
+    langSession.getNode(folder.getPath() + "/i18n-reference").setProperty("j:node", langSession.getNodeByIdentifier(i18nTarget.getIdentifier()))
+    langSession.save()
+}
 
 def conn = DatabaseUtils.getDatasource().getConnection()
 try {
@@ -58,6 +72,10 @@ try {
     realFolder.getNode("broken-reference").setProperty("j:node", factory.createValue(MISSING_UUID, PropertyType.WEAKREFERENCE))
     realFolder.getNode("broken-reference-to-virtual-node").setProperty("j:node", factory.createValue(VIRTUAL_UUID, PropertyType.WEAKREFERENCE))
     TEXTS.each { realFolder.getNode(it).getNode("j:translation_en").setProperty("text", LINK) }
+    realFolder.getNode("placeholder-in-text").getNode("j:translation_en").setProperty("text", "##ref:link1## " + "<a " * 2000)
+    def french = realFolder.getNode("i18n-reference").getNode("j:translation_fr")
+    french.setProperty("j:node", factory.createValue(MISSING_UUID, PropertyType.WEAKREFERENCE))
+    french.setProperty("jcr:language", "en")
     ["link-without-reference", "valid-link"].each {
         def text = realFolder.getNode(it)
         text.addMixin("jmix:referencesInField")

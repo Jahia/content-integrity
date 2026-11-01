@@ -98,7 +98,7 @@ If the principal exists, check if it is defined at site level, and if so, if its
 
 If the permissions of a regular entry are needed, grant the role again from the UI once the entry is deleted.
 
-**Fix**: deletes the access control entry. A regular entry is deleted with the listeners enabled, so that its external entries are cleaned as well, and in the `default` workspace, its access control list is published again: the whole node when it had no pending modification, only its ACL otherwise. An external entry is deleted from both workspaces, and an ACL left empty is deleted.
+**Fix**: deletes the access control entry. A regular entry is deleted with the listeners enabled, so that its external entries are cleaned as well, and in the `default` workspace, its access control list is published again: the whole node when it had no pending modification, only its ACL otherwise. An external entry is deleted from both workspaces, and an ACL left empty is deleted, unless it breaks the inheritance (`j:inherit` is `false`): without entry, it still denies the roles granted on the ancestors.
 
 #### Invalid node name
 
@@ -194,7 +194,7 @@ As for `MISSING_EXTERNAL_ACE`, the external entries are found by a query, answer
 
 Such an external entry gives permissions which no entry grants anymore.
 
-**Fix**: deletes the external access control entry, from both workspaces. An ACL left empty is deleted.
+**Fix**: deletes the external access control entry, from both workspaces. An ACL left empty is deleted, unless it breaks the inheritance (`j:inherit` is `false`).
 
 #### Broken reference to a source entry
 
@@ -293,6 +293,18 @@ try {
 A large number of entries impacts the performance of the permissions checks. Review the way the permissions are given on the site: grant the roles to groups rather than to individual users, and on the upper levels of the tree rather than node by node.
 
 **Fix**: no automatic fix: the permissions of the site have to be reviewed.
+
+#### Access control entry outside of an ACL
+
+`Error code: ACE_OUTSIDE_ACL`
+
+**Description**: an access control entry, regular or external, which is not in the `j:acl` sub-node of a node, but for example directly under a page: a page accepts any child, so an editor can create such a node. The details tell the type of its parent node (`parent-type`).
+
+The ACL listener of Jahia only processes the entries of an ACL: this one grants nothing. The other errors of the check are not reported on it, since their fixes act on the ACL of the entry and on the node it secures: here its parent and its grandparent, for example a page which would be published.
+
+Find who created the node and why, then delete it.
+
+**Fix**: no automatic fix: the node has to be analyzed, then deleted.
 
 ## BinaryPropertiesSanityCheck
 
@@ -513,7 +525,9 @@ This one needs to be defined, and its value can usually be deducted from the nod
 
 **Description**: translation node with a `jcr:language` property which is not compliant with the node name: the node is not named `j:translation_` followed by the value of the property. The details of the error tell the primary type of the parent node and the value of `jcr:language`.
 
-Usually, the property has to be modified accordingly to the node name. 
+Usually, the property has to be modified accordingly to the node name.
+
+As Jahia, which resolves the translation of a language and checks the permissions of a translator by the name of the translation node, the checks read the language of a translation node from its name, not from `jcr:language`: the errors of a translation, and their fixes, apply to the translation of its name, whatever its `jcr:language`. 
 
 **Fix**: sets `jcr:language` to the language in the name of the translation node. The property is written with the listeners disabled, in the workspace where the error is reported. The fix fails when no language can be read from the node name.
 
@@ -1074,7 +1088,7 @@ Such a link is rendered as `#`, and each rendering of the text logs a warning `C
 
 The link should be edited to point to an existing node, or removed from the text.
 
-**Fix**: removes the link from the text, as when it is removed in CKEditor: the element holding the placeholder is unwrapped, its content being kept (the text of a link), or removed when it has no content (an image). Its `jnt:referenceInField` subnode without `j:reference` is deleted. The other links of the text are kept. The text is updated at the JCR level, with the listeners disabled: the change is not published, fix the error in each workspace. To link to another node instead, edit the text.
+**Fix**: removes the link from the text, as when it is removed in CKEditor: the element holding the placeholder is unwrapped, its content being kept (the text of a link), or removed when it has no content (an image). Its `jnt:referenceInField` subnode without `j:reference` is deleted. The other links of the text are kept. The text is updated at the JCR level, with the listeners disabled: the change is not published, fix the error in each workspace. To link to another node instead, edit the text. When the placeholder is not in the attributes of a tag, but in the text itself, the fix fails and the text is left unchanged: edit it.
 
 #### Invalid back references
 

@@ -52,6 +52,11 @@ const externalAces: [string, string][] = [
     ['ROLES_DIFFER_ON_SOURCE_ACE', externalAce(user('ace-10'))]
 ];
 const errorPath = (errorType: string) => [...regularAces, ...externalAces].find(([type]) => type === errorType)[1];
+// An ACE and an external ACE created directly under a page, outside of its ACL
+const OUTSIDE_ACL = `${SITE_PATH}/home/ace-outside-acl`;
+const outsideAcl: string[] = [`${OUTSIDE_ACL}/GRANT_u_${user('ace')}`, `${OUTSIDE_ACL}/REFeditor_currentSite-access_u_${user('ace')}`];
+// The single entry of an ACL which breaks the inheritance
+const RESTRICTING_ACL = `${ROOT}/KEEPS_RESTRICTING_ACL/j:acl`;
 
 describe('AceSanityCheck', () => {
     before(() => {
@@ -102,6 +107,19 @@ describe('AceSanityCheck', () => {
         it('does not raise a framework error on an ACE without principal or type', () => {
             expect(results.errors.filter(e => e.errorType === 'FRAMEWORK_ERROR' && e.nodePath.startsWith(ROOT))).to.have.length(0);
         });
+
+        // Its parent is not an ACL and its grandparent not the node it would secure: the other errors, whose fixes act on
+        // them, are not reported
+        outsideAcl.forEach(path => {
+            it(`detects ACE_OUTSIDE_ACL, and only it, on ${path.substring(OUTSIDE_ACL.length + 1)}`, () => {
+                expectExtraInfo(expectError(results, 'ACE_OUTSIDE_ACL', path), 'parent-type', 'jnt:page');
+                expect(results.errors.filter(e => e.nodePath === path).map(e => e.errorType)).to.deep.equal(['ACE_OUTSIDE_ACL']);
+            });
+        });
+
+        it('does not report ACE_OUTSIDE_ACL on the entries of an ACL', () => {
+            expect(results.errors.filter(e => e.errorType === 'ACE_OUTSIDE_ACL').map(e => e.nodePath).sort()).to.deep.equal([...outsideAcl].sort());
+        });
     });
 
     describe('TOO_MANY_ACE', () => {
@@ -134,6 +152,22 @@ describe('AceSanityCheck', () => {
             it(`provides no fix for ${errorType}`, () => {
                 expectNoFix(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
             });
+        });
+
+        // An ACE outside of an ACL grants nothing: the fixes, which act on its ACL and on the node it secures, would act on
+        // its parent and its grandparent, for example publish them
+        it('provides no fix for ACE_OUTSIDE_ACL', () => {
+            outsideAcl.forEach(path => expectNoFix(SITE_PATH, CHECKS, 'EDIT', 'ACE_OUTSIDE_ACL', path));
+            outsideAcl.forEach(path => nodeExists(path).should('be.true'));
+        });
+
+        it('keeps the ACL which breaks the inheritance when its last entry is deleted', () => {
+            const entry = `${RESTRICTING_ACL}/REFeditor_currentSite-access_u_${user('ace')}`;
+            fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'NO_SOURCE_ACE_PROP', entry);
+            nodeExists(entry).should('be.false');
+            // Without entry, it still denies the roles granted on the ancestors
+            graphql(`{ jcr { nodeByPath(path: "${RESTRICTING_ACL}") { property(name: "j:inherit") { value } } } }`)
+                .its('jcr.nodeByPath.property.value').should('equal', 'false');
         });
 
         it('fixes INVALID_NODENAME by renaming the ACE after its type and its principal', () => {

@@ -6,6 +6,7 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.JCRUtils;
+import org.jahia.modules.contentintegrity.services.Utils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeIteratorWrapper;
@@ -226,6 +227,8 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck im
                 .execute().getNodes();
         while (aces.hasNext()) {
             final JCRNodeWrapper ace = (JCRNodeWrapper) aces.nextNode();
+            // As the ACL listener, only the entries of an ACL are read: an ACE created elsewhere grants nothing
+            if (!Utils.isInAcl(ace)) continue;
             if (ace.isNodeType(JNT_EXTERNAL_ACE) || !ace.hasProperty(J_PRINCIPAL) || !ace.hasProperty(J_ROLES)
                     || !ACE_TYPE_GRANT.equals(ace.getPropertyAsString(J_ACE_TYPE))) continue;
             final String principal = ace.getProperty(J_PRINCIPAL).getString();

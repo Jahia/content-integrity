@@ -95,6 +95,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     private static final String ACE_COUNT_THRESHOLD_KEY = "ace-count-threshold";
     private static final int ACE_COUNT_THRESHOLD_DEFAULT = 1000;
     private static final String JMIX_ACCESS_CONTROLLED = "jmix:accessControlled";
+    private static final String J_INHERIT = "j:inherit";
 
     public static final ContentIntegrityErrorType NO_PRINCIPAL = createErrorType("NO_PRINCIPAL", "ACE without principal");
     public static final ContentIntegrityErrorType INVALID_PRINCIPAL = createErrorType("INVALID_PRINCIPAL", "ACE with an invalid principal");
@@ -116,6 +117,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public static final ContentIntegrityErrorType ROLE_DOESNT_EXIST = createErrorType("ROLE_DOESNT_EXIST", "Reference to a role which does not exist");
     public static final ContentIntegrityErrorType MISSING_SITE_PRIVILEGED_GRP_MEMBER = createErrorType("MISSING_SITE_PRIVILEGED_GRP_MEMBER", "Missing member in the site privileged group");
     public static final ContentIntegrityErrorType TOO_MANY_ACE = createErrorType("TOO_MANY_ACE", "Too many ACE nodes");
+    public static final ContentIntegrityErrorType ACE_OUTSIDE_ACL = createErrorType("ACE_OUTSIDE_ACL", "ACE outside of an ACL");
 
     // The other errors of the ACL need an analysis, such as a role which does not exist: they are not fixed
     private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(
@@ -210,6 +212,13 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
     public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
         final ContentIntegrityErrorList errors = createEmptyErrorsList();
         try {
+            // An ACE outside of an ACL grants nothing, and the fixes, which act on its ACL and on the node it secures,
+            // would act on other nodes: it is only reported
+            if (!Utils.isInAcl(node)) {
+                errors.addError(createError(node, ACE_OUTSIDE_ACL)
+                        .addExtraInfo("parent-type", node.getParent().getPrimaryNodeTypeName()));
+                return errors;
+            }
             final boolean isExternalAce = node.isNodeType(JNT_EXTERNAL_ACE);
             checkPrincipalOnAce(node, errors);
             checkAceNodeName(node, isExternalAce, errors);
@@ -538,6 +547,8 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
      */
     @Override
     public boolean fixError(JCRNodeWrapper ace, ContentIntegrityError error) throws RepositoryException {
+        // The errors of a scan of a previous version can be stored on an ACE outside of an ACL
+        if (!Utils.isInAcl(ace)) return false;
         final ContentIntegrityErrorType errorType = error.getErrorType();
         if (errorType.equals(INVALID_PRINCIPAL)) {
             return removeRolesOfInvalidPrincipal(ace);
@@ -590,6 +601,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
      */
     @Override
     public boolean fixErrors(JCRNodeWrapper ace, List<ContentIntegrityError> errors, List<List<String>> values) throws RepositoryException {
+        if (!Utils.isInAcl(ace)) return false;
         final List<RepairUtils.JcrOperation> writes = new ArrayList<>(errors.size());
         for (int i = 0; i < errors.size(); i++) {
             final ContentIntegrityErrorType errorType = errors.get(i).getErrorType();
@@ -872,10 +884,14 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         });
     }
 
+    /*
+     * An ACL without entry which breaks the inheritance is kept: it still denies the roles granted on the ancestors
+     */
     private void removeAclIfEmpty(JCRNodeWrapper node) throws RepositoryException {
         if (!node.hasNode(ACL)) return;
         final JCRNodeWrapper acl = node.getNode(ACL);
         if (acl.getNodes().hasNext()) return;
+        if (acl.hasProperty(J_INHERIT) && !acl.getProperty(J_INHERIT).getBoolean()) return;
         acl.remove();
         if (node.isNodeType(JMIX_ACCESS_CONTROLLED)) node.removeMixin(JMIX_ACCESS_CONTROLLED);
     }

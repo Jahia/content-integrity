@@ -230,13 +230,13 @@ public class JCRUtils {
         }
     }
 
+    /**
+     * The locale of a translation node, read from its name, as the platform does to resolve the translation of a locale
+     * and to check the permissions of a translator. The property jcr:language is not read: it is editable by a translator
+     * of the node, while the errors of the node, and their fixes, must apply to the translation they were found on.
+     * A jcr:language which differs from the name is reported by JCRLanguagePropertyCheck.
+     */
     public static String getTranslationNodeLocale(Node translationNode) {
-        try {
-            if (translationNode.hasProperty(Constants.JCR_LANGUAGE))
-                return translationNode.getProperty(Constants.JCR_LANGUAGE).getString();
-        } catch (RepositoryException e) {
-            logger.error(String.format("Impossible to read the property %s on a translation node", Constants.JCR_LANGUAGE), e);
-        }
         return getTranslationNodeLocaleFromNodeName(translationNode);
     }
 
