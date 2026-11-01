@@ -3,8 +3,9 @@ import {graphql} from '../cypress/support/integrity';
 
 /**
  * The screenshots of the administration page in the README, docs/img/ui-<name>.png, taken from the results of one scan of
- * the demo: the last id of the Cypress env variable RESULTS, by default the latest stored scan, the one of the demo site
- * once generate.sh has run. Run by screenshots.sh.
+ * the demo: the last id of the Cypress env variable RESULTS, by default the latest stored scan which holds the errors of
+ * the node displayed in the details, the one of the demo site once generate.sh has run, whatever was scanned after it.
+ * Run by screenshots.sh.
  */
 
 // The node of the demo whose errors are displayed in the details: a value to choose among the accepted ones
@@ -23,11 +24,19 @@ describe('Screenshots of the administration page', () => {
     before(() => {
         cy.env(['RESULTS']).then(env => {
             const selected = String(env.RESULTS || '').split(',').map(v => v.trim()).filter(Boolean);
+            if (selected.length > 0) {
+                resultsId = selected[selected.length - 1];
+                return;
+            }
+
             graphql('{ integrity: contentIntegrity { scanResults: scanResultsSummaries { id status } } }').then(data => {
-                const finished = data.integrity.scanResults.filter((s: { status: string }) => s.status === 'finished').map((s: { id: string }) => s.id);
-                resultsId = selected.length > 0 ? selected[selected.length - 1] : finished[finished.length - 1];
-                expect(resultsId, 'Results of a finished scan').to.exist;
+                const finished: string[] = data.integrity.scanResults.filter((s: { status: string }) => s.status === 'finished').map((s: { id: string }) => s.id);
+                finished.forEach(id => graphql('query($id: String, $path: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { nodeErrors(workspace: "default", path: $path) { id } } } }',
+                    {id, path: DETAILS_PATH}).then(details => {
+                    if (details.integrity.results.nodeErrors.length > 0) resultsId = id;
+                }));
             });
+            cy.wrap(null).then(() => expect(resultsId, `Results of a finished scan with the errors of ${DETAILS_PATH}`).to.exist);
         });
     });
 

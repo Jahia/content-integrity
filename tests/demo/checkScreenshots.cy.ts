@@ -1,5 +1,5 @@
 import {clearFilters, getDropdown, getResultsTable, getScanLabel, openDropdown, openErrorDetails, selectInDropdown, visitAdmin} from '../cypress/support/adminPage';
-import {getErrors, graphql, IntegrityError} from '../cypress/support/integrity';
+import {graphql} from '../cypress/support/integrity';
 
 /**
  * The screenshots of the documentation of the checks, taken from the scans of the demo, with the details of the first
@@ -15,6 +15,18 @@ import {getErrors, graphql, IntegrityError} from '../cypress/support/integrity';
  */
 
 type Rank = { id: string; count: number; types: number };
+// The number of errors of each error type of each check, by scan
+type Counts = Record<string, Record<string, number>>;
+type ColumnValue = { name: string; count: number };
+
+/**
+ * The number of errors of each value of a column of the results, among the errors which match the filters, counted by the
+ * server: the scans of a server can hold hundreds of thousands of errors, too many to be read by the browser.
+ */
+const countBy = (resultsId: string, column: string, filters: string[] = []): Cypress.Chainable<ColumnValue[]> =>
+    graphql('query($id: String, $filters: [String], $names: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $id, filters: $filters) { possibleValues(names: $names, withErrorsOnly: true) { values { name count } } } } }',
+        {id: resultsId, filters, names: [column]})
+        .then(data => data.integrity.results.possibleValues[0]?.values || []);
 
 const toList = (value: unknown): string[] => String(value || '').split(',').map(v => v.trim()).filter(Boolean);
 // The lists of the env, read with cy.env() in the before hook
@@ -55,14 +67,15 @@ const capture = (resultsId: string, check: string, errorType: string | undefined
 };
 
 describe('Screenshots of the checks', () => {
-    const errorsByResults: Record<string, IntegrityError[]> = {};
+    const countsByResults: Record<string, Counts> = {};
     let checks: string[] = [];
 
-    // The scans of the demo, the one which shows the most error types first, then the one with the most errors
-    const rank = (matches: (e: IntegrityError) => boolean): Rank[] => Object.entries(errorsByResults)
-        .map(([id, errors]) => {
-            const matching = errors.filter(matches);
-            return {id, count: matching.length, types: new Set(matching.map(e => e.errorType)).size};
+    // The scans of the demo which hold errors of the check, and of the error type if given: the one which shows the most
+    // error types first, then the one with the most errors
+    const rank = (check: string, errorType?: string): Rank[] => Object.entries(countsByResults)
+        .map(([id, counts]) => {
+            const matching = Object.entries(counts[check] || {}).filter(([type]) => !errorType || type === errorType);
+            return {id, count: matching.reduce((sum, [, count]) => sum + count, 0), types: matching.length};
         })
         .filter(r => r.count > 0)
         .sort((a, b) => b.types - a.types || b.count - a.count);
@@ -75,9 +88,15 @@ describe('Screenshots of the checks', () => {
         });
         graphql('{ integrity: contentIntegrity { checks: integrityChecks { id } scanResults: scanResultsSummaries { id } } }').then(data => {
             checks = data.integrity.checks.map((c: { id: string }) => c.id).filter((id: string) => selectedChecks.length === 0 || selectedChecks.includes(id)).sort();
-            data.integrity.scanResults.filter((r: { id: string }) => selectedResults.length === 0 || selectedResults.includes(r.id)).forEach((r: { id: string }) => getErrors(r.id).then(errors => {
-                errorsByResults[r.id] = errors;
-            }));
+            data.integrity.scanResults.filter((r: { id: string }) => selectedResults.length === 0 || selectedResults.includes(r.id)).forEach((r: { id: string }) => {
+                const counts: Counts = {};
+                countsByResults[r.id] = counts;
+                countBy(r.id, 'checkName').then(values => values.filter(v => checks.includes(v.name)).forEach(v => {
+                    countBy(r.id, 'errorType', [`checkName;${v.name}`]).then(types => {
+                        counts[v.name] = Object.fromEntries(types.map(t => [t.name, t.count]));
+                    });
+                }));
+            });
         });
     });
 
@@ -85,7 +104,7 @@ describe('Screenshots of the checks', () => {
         cy.wrap(null).then(() => {
             if (selectedErrorTypes.length > 0) return;
             checks.forEach(check => {
-                const ranked = rank(e => e.checkName === check);
+                const ranked = rank(check);
                 if (ranked.length === 0) {
                     cy.log(`No error of ${check} in the scans of the demo: no screenshot`);
                     return;
@@ -99,10 +118,10 @@ describe('Screenshots of the checks', () => {
     it('captures every error type of every check', () => {
         cy.wrap(null).then(() => {
             checks.forEach(check => {
-                const types = [...new Set(Object.values(errorsByResults).flat().filter(e => e.checkName === check).map(e => e.errorType))]
+                const types = [...new Set(Object.values(countsByResults).flatMap(counts => Object.keys(counts[check] || {})))]
                     .filter(errorType => selectedErrorTypes.length === 0 || selectedErrorTypes.includes(errorType)).sort();
                 types.forEach(errorType => {
-                    const ranked = rank(e => e.checkName === check && e.errorType === errorType);
+                    const ranked = rank(check, errorType);
                     capture(ranked[0].id, check, errorType, ranked[0].count, `${check}/${errorType}`);
                 });
             });
