@@ -725,6 +725,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             logger.error(String.format("Impossible to fix %s since it has no property %s", ace.getPath(), J_ACE_TYPE));
             return false;
         }
+        final boolean aclInSync = RepairUtils.isAclInSyncWithLive(ace.getParent().getParent());
         ace.setProperty(J_ACE_TYPE, ace.getPropertyAsString(J_ACE_TYPE));
         ace.saveSession();
         final Object externalPermissions = error.getExtraInfos().get("external-permissions");
@@ -733,7 +734,7 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             return false;
         }
         if (JCRUtils.isInDefaultWorkspace(ace) && JCRUtils.nodeExists(ace.getIdentifier(), JCRUtils.getSystemSession(LIVE_WORKSPACE, true))) {
-            publish(Collections.singletonList(ace.getParent().getIdentifier()));
+            RepairUtils.publishAclAsRoot(ace.getParent(), aclInSync);
         }
         return true;
     }
@@ -757,12 +758,13 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
             return false;
         }
         final String destination = acl.getPath() + JCR_PATH_SEPARATOR + expectedName;
+        final boolean aclInSync = RepairUtils.isAclInSyncWithLive(acl.getParent());
         if (!executeWithDisabledListeners(() -> {
             ace.getSession().move(ace.getPath(), destination);
             ace.saveSession();
         })) return false;
         if (JCRUtils.isInDefaultWorkspace(acl) && JCRUtils.nodeExists(ace.getIdentifier(), JCRUtils.getSystemSession(LIVE_WORKSPACE, true))) {
-            publish(Collections.singletonList(acl.getIdentifier()));
+            RepairUtils.publishAclAsRoot(acl, aclInSync);
         }
         return true;
     }
@@ -792,13 +794,18 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
                 }
             }
         }
+        // Read before any change: an ACL which has other unpublished changes is not published by the fix
+        final Map<String, Boolean> aclsInSync = new HashMap<>();
+        for (JCRNodeWrapper source : sources) {
+            aclsInSync.put(source.getIdentifier(), RepairUtils.isAclInSyncWithLive(source.getParent().getParent()));
+        }
         if (!deleteExternalAce(externalAce)) return false;
         for (JCRNodeWrapper source : sources) {
             if (!source.hasProperty(J_ACE_TYPE) || !ACE_TYPE_GRANT.equals(source.getPropertyAsString(J_ACE_TYPE))) continue;
             source.setProperty(J_ACE_TYPE, ACE_TYPE_GRANT);
             source.saveSession();
             if (JCRUtils.isInDefaultWorkspace(source) && JCRUtils.nodeExists(source.getIdentifier(), JCRUtils.getSystemSession(LIVE_WORKSPACE, true))) {
-                publish(Collections.singletonList(source.getParent().getIdentifier()));
+                RepairUtils.publishAclAsRoot(source.getParent(), Boolean.TRUE.equals(aclsInSync.get(source.getIdentifier())));
             }
         }
         return true;
@@ -820,9 +827,10 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final JCRNodeWrapper acl = ace.getParent();
         final JCRNodeWrapper node = acl.getParent();
         final boolean hadPendingModifications = hasPendingModifications(node);
+        final boolean aclInSync = RepairUtils.isAclInSyncWithLive(node);
         ace.setProperty(J_ROLES, kept.toArray(new String[0]));
         node.saveSession();
-        if (JCRUtils.isInDefaultWorkspace(node)) republish(node, acl, hadPendingModifications);
+        if (JCRUtils.isInDefaultWorkspace(node)) republish(node, acl, hadPendingModifications, aclInSync);
         return true;
     }
 
@@ -838,14 +846,23 @@ public class AceSanityCheck extends AbstractContentIntegrityCheck implements
         final JCRNodeWrapper acl = ace.getParent();
         final JCRNodeWrapper node = acl.getParent();
         final boolean hadPendingModifications = hasPendingModifications(node);
+        final boolean aclInSync = RepairUtils.isAclInSyncWithLive(node);
         ace.remove();
         node.saveSession();
-        if (JCRUtils.isInDefaultWorkspace(node)) republish(node, acl, hadPendingModifications);
+        if (JCRUtils.isInDefaultWorkspace(node)) republish(node, acl, hadPendingModifications, aclInSync);
         return true;
     }
 
-    private void republish(JCRNodeWrapper node, JCRNodeWrapper acl, boolean hadPendingModifications) throws RepositoryException {
+    /*
+     * Neither the node nor its ACL is published when the ACL had other unpublished changes before the fix: their
+     * publication would publish those changes, such as a grant which awaits a review, with the one of the fix
+     */
+    private void republish(JCRNodeWrapper node, JCRNodeWrapper acl, boolean hadPendingModifications, boolean aclInSync) throws RepositoryException {
         if (node.isNodeType(JMIX_AUTO_PUBLISH)) return; // republished by the platform
+        if (!aclInSync) {
+            RepairUtils.publishAclAsRoot(acl, false);
+            return;
+        }
 
         if (!hadPendingModifications) {
             if (node.isNodeType(MIX_VERSIONABLE)) {

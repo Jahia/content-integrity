@@ -9,11 +9,15 @@ import org.apache.jackrabbit.core.state.NodeState;
 import org.apache.jackrabbit.spi.Name;
 import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.osgi.BundleUtils;
+import org.jahia.services.content.JCRNodeIteratorWrapper;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRObservationManager;
+import org.jahia.services.content.JCRPropertyWrapper;
 import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.decorator.JCRUserNode;
 import org.jahia.services.usermanager.JahiaUser;
 import org.jahia.services.usermanager.JahiaUserManagerService;
@@ -27,9 +31,13 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Value;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Operations shared by the fixError() implementations of the integrity checks. They come from the fix scripts
@@ -39,6 +47,9 @@ import java.util.Set;
 public final class RepairUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(RepairUtils.class);
+    private static final String J_INHERIT = "j:inherit";
+    // The properties of an access control entry, compared between the workspaces
+    private static final String[] ACE_PROPERTIES = {"j:aceType", "j:principal", "j:roles", "j:protected", "j:sourceAce", "j:externalPermissionsName"};
 
     private RepairUtils() {
     }
@@ -150,6 +161,61 @@ public final class RepairUtils {
      */
     public static void publishAsRoot(List<String> uuids, String sourceWorkspace, String destinationWorkspace) throws RepositoryException {
         runAsRoot(() -> BundleUtils.getOsgiService(JCRPublicationService.class, null).publish(uuids, sourceWorkspace, destinationWorkspace, false, null));
+    }
+
+    /**
+     * True if the ACL of the node is the same in the live workspace as in the default one: same j:inherit, same entries,
+     * and same values of their properties. Read before a fix changes the ACL, it tells whether publishing the ACL after the
+     * fix publishes the change of the fix only, or also other unpublished changes of the permissions, such as a grant
+     * which awaits a review.
+     */
+    public static boolean isAclInSyncWithLive(JCRNodeWrapper node) throws RepositoryException {
+        final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, true);
+        if (liveSession == null || !JCRUtils.nodeExists(node.getIdentifier(), liveSession)) return !node.hasNode(Constants.ACL);
+        final JCRNodeWrapper liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());
+        if (node.hasNode(Constants.ACL) != liveNode.hasNode(Constants.ACL)) return false;
+        return !node.hasNode(Constants.ACL) || describeAcl(node.getNode(Constants.ACL)).equals(describeAcl(liveNode.getNode(Constants.ACL)));
+    }
+
+    /**
+     * Publishes as root the ACL a fix has changed, when it was the same in both workspaces before the fix: otherwise its
+     * publication would publish the other unpublished changes of the permissions with the one of the fix, without the
+     * review they await. The ACL is then left to the publication of its node.
+     */
+    public static void publishAclAsRoot(JCRNodeWrapper acl, boolean wasInSyncWithLive) throws RepositoryException {
+        if (!wasInSyncWithLive) {
+            logger.warn("{} is not published by the fix, since it has other unpublished changes: publish it once they are reviewed", acl.getPath());
+            return;
+        }
+        publishAsRoot(Collections.singletonList(acl.getIdentifier()), Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
+    }
+
+    // The ACL as compared between the workspaces: j:inherit, then each entry with the values of its properties
+    private static Map<String, String> describeAcl(JCRNodeWrapper acl) throws RepositoryException {
+        final Map<String, String> description = new TreeMap<>();
+        description.put("", acl.hasProperty(J_INHERIT) ? acl.getPropertyAsString(J_INHERIT) : "");
+        final JCRNodeIteratorWrapper aces = acl.getNodes();
+        while (aces.hasNext()) {
+            final JCRNodeWrapper ace = (JCRNodeWrapper) aces.nextNode();
+            final StringBuilder values = new StringBuilder();
+            for (String name : ACE_PROPERTIES) {
+                values.append(name).append('=');
+                if (ace.hasProperty(name)) {
+                    final JCRPropertyWrapper property = ace.getProperty(name);
+                    final List<String> strings = new ArrayList<>();
+                    if (property.isMultiple()) {
+                        for (Value value : property.getValues()) strings.add(value.getString());
+                        Collections.sort(strings);
+                    } else {
+                        strings.add(property.getString());
+                    }
+                    values.append(String.join(",", strings));
+                }
+                values.append(';');
+            }
+            description.put(ace.getName(), values.toString());
+        }
+        return description;
     }
 
     /**

@@ -26,9 +26,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.jahia.modules.contentintegrity.api.Constants.ACE_TYPE_GRANT;
@@ -185,6 +187,13 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck im
             if (!sitePrivGroup.isMember(principal)) sitePrivGroup.addMember(principal);
         }
 
+        // Read before the grants: an ACL which has other unpublished changes is not published by the fix
+        final Map<String, Boolean> aclsInSync = new HashMap<>();
+        aclsInSync.put(site.getIdentifier(), RepairUtils.isAclInSyncWithLive(site));
+        for (String folder : SITE_PRIVILEGED_FOLDERS) {
+            if (site.hasNode(folder)) aclsInSync.put(site.getNode(folder).getIdentifier(), RepairUtils.isAclInSyncWithLive(site.getNode(folder)));
+        }
+
         final List<JCRNodeWrapper> securedNodes = new ArrayList<>();
         if (!SYSTEM_SITE_KEY.equals(siteKey)) {
             site.grantRoles("g:" + SITE_PRIVILEGED_GROUPNAME, Collections.singleton(PRIVILEGED_ROLE));
@@ -200,13 +209,11 @@ public class SiteLevelSystemGroupsCheck extends AbstractContentIntegrityCheck im
         session.save();
 
         final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(LIVE_WORKSPACE, false);
-        final List<String> acls = new ArrayList<>();
         for (JCRNodeWrapper securedNode : securedNodes) {
             if (securedNode.hasNode(ACL) && JCRUtils.nodeExists(securedNode.getIdentifier(), liveSession)) {
-                acls.add(securedNode.getNode(ACL).getIdentifier());
+                RepairUtils.publishAclAsRoot(securedNode.getNode(ACL), Boolean.TRUE.equals(aclsInSync.get(securedNode.getIdentifier())));
             }
         }
-        if (!acls.isEmpty()) RepairUtils.publishAsRoot(acls, EDIT_WORKSPACE, LIVE_WORKSPACE);
         return true;
     }
 
