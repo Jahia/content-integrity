@@ -40,6 +40,12 @@ describe('Integrity checks', () => {
         expect(checks.find(c => c.id === 'LockSanityCheck').configurable).to.be.false;
     });
 
+    it('refuses the configuration of a check which is not configurable, without error', () => {
+        graphql('mutation { integrity: contentIntegrity { check: integrityCheckById(id: "LockSanityCheck") { configure(name: "threshold", value: "1") resetConfiguration(name: "threshold") resetAllConfigurations } } }')
+            .its('integrity.check').should('deep.equal', {configure: false, resetConfiguration: false, resetAllConfigurations: false});
+        readConfiguration('LockSanityCheck', 'threshold').should('be.null');
+    });
+
     describe('Configuration', () => {
         after(() => {
             resetCheckConfiguration('FlatStorageCheck');

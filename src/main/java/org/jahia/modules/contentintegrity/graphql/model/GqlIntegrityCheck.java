@@ -76,6 +76,7 @@ public class GqlIntegrityCheck {
 
     @GraphQLField
     public GqlIntegrityCheckConfiguration getConfiguration(@GraphQLName("name") @GraphQLNonNull String name) {
+        if (!isConfigurable()) return null;
         return new GqlIntegrityCheckConfiguration(name,
                 configurations.getDescription(name),
                 configurations.getParameterDefaultValue(name),
@@ -84,8 +85,12 @@ public class GqlIntegrityCheck {
                 );
     }
 
+    /*
+     * A check which is not configurable has no configuration: its changes and its resets return false, as while a scan
+     * runs, instead of failing.
+     */
     public boolean setConfiguration(String name, String value) {
-        if (service.isScanRunning()) return false;
+        if (!isConfigurable() || service.isScanRunning()) return false;
 
         try {
             configurations.setParameter(name, value);
@@ -98,7 +103,7 @@ public class GqlIntegrityCheck {
     }
 
     public boolean resetConfiguration(String name) {
-        if (service.isScanRunning()) return false;
+        if (!isConfigurable() || service.isScanRunning()) return false;
 
         try {
             configurations.setParameter(name, null);
@@ -111,7 +116,7 @@ public class GqlIntegrityCheck {
     }
 
     public boolean resetAllConfigurations() {
-        if (service.isScanRunning()) return false;
+        if (!isConfigurable() || service.isScanRunning()) return false;
 
         configurations.getConfigurationNames().forEach(name -> configurations.setParameter(name, null));
         return true;

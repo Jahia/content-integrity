@@ -76,6 +76,7 @@ Required Jahia version: 8.1.5.0
   * [bugfix] `UndeclaredNodeTypesCheck`: the fix of an undeclared mixin failed, since Jackrabbit refuses to remove a mixin whose type is not registered
   * [bugfix] `ReferencesSanityCheck`: the path of the referencing node of `INVALID_BACK_REF` (`referencing-node-path`) is read from the real node: the path of the extension of a virtual node repeated the path of its mount point, such as `/mounts/m/mounts/m/file.txt`
 * [bugfix] GraphQL: the results of an unknown scan returned an error instead of null
+* [bugfix] GraphQL: the configuration fields of a check which is not configurable, `configuration`, `configure`, `resetConfiguration` and `resetAllConfigurations`, failed with an internal error; they return null or false
 * [bugfix] GraphQL: `possibleValues` returned an internal error when `withErrorsOnly` was omitted, now false by default, or when `names` was omitted or repeated a column. The arguments `offset` and `pageSize` of `errors` are now required, so a missing one is reported by name instead of an internal error
 * GraphQL: removed the argument `uploadResults` of the field `scan`: the CSV and XLSX reports of every scan are written in the JCR, next to its results
 * GraphQL: added the fields `choiceLabels`, `choiceGroups` and `description` to `fixValues`, the description of the values which fix an error
