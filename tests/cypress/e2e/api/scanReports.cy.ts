@@ -5,6 +5,8 @@ import {
     readExecution,
     readStoredReport,
     registerSlowCheck,
+    requestAs,
+    rootUser,
     runFixture,
     scan,
     SLOW_SCAN,
@@ -23,16 +25,19 @@ const readSummary = (resultsId: string): Cypress.Chainable<{ status: string; err
         .then(data => data.integrity.summaries.find((s: { id: string }) => s.id === resultsId) ?? null);
 
 /**
- * Waits until the stored report is deleted.
+ * Waits until the stored report is deleted. Only its path is read: the cleanup job deletes it in the background, and a
+ * request which reads it while it is deleted can fail (on Jahia 8.1.5, the query still finds the node, whose child nodes
+ * can't be listed any more), which means it is not deleted yet.
  */
 const waitForDeletion = (resultsId: string, attempt = 0): void => {
-    readStoredReport(resultsId).then(report => {
-        if (report !== null) {
-            expect(attempt, `The report ${resultsId} is still stored`).to.be.lessThan(30);
-            cy.wait(1000, {log: false});
-            waitForDeletion(resultsId, attempt + 1);
-        }
-    });
+    requestAs(rootUser(), `{ jcr { nodesByQuery(query: "SELECT * FROM [integrity:scanReport] WHERE [integrity:resultsId] = '${resultsId}'", queryLanguage: SQL2) { nodes { path } } } }`)
+        .then(body => {
+            if (body.errors || body.data.jcr.nodesByQuery.nodes.length > 0) {
+                expect(attempt, `The report ${resultsId} is still stored`).to.be.lessThan(30);
+                cy.wait(1000, {log: false});
+                waitForDeletion(resultsId, attempt + 1);
+            }
+        });
 };
 
 describe('Scan reports stored in the JCR', () => {
