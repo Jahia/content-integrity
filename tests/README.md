@@ -69,6 +69,9 @@ JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root demo/generate.sh
   stored scan report, then generates it again.
 * A redeploy of the module resets the thresholds, and removes the template of `TemplatesIndexationCheck`: generate the
   demo again after a redeploy.
+* `demo/cleanup.sh` removes the demo without generating it again, and resets the configuration of every check: the
+  thresholds of the demo stay configured until a redeploy, and make the tests of the default configuration fail. It
+  deletes every stored scan report with `--all-reports`, or the reports of the results ids given as arguments.
 
 `demo/screenshots.sh` then takes the screenshots of the documentation of the checks, with the details of the first
 displayed error open: `docs/img/checks/<check>.png`, the results of the demo scan with the most error types of the check,

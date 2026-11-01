@@ -37,15 +37,9 @@ restart, resets the check thresholds: generate the demo again after it.
 The thresholds which `generate.sh` sets (`FlatStorageCheck`, `VersionHistoryCheck`, `AceSanityCheck`,
 `PublicationSanityLiveCheck`, `WorkspaceSpecificDefinitionsCheck`) stay configured until a redeploy or a restart: the
 tests of the default configuration of these checks then fail. Once the screenshots are taken, unless the demo is kept,
-reset the configuration of every check. `resetAllConfigurations` resets the check it is called on only, so call it on
-each one (it returns `false` for a check without configuration):
-
-```bash
-G() { curl -s -u "root:$SUPER_USER_PASSWORD" -H "Origin: $JAHIA_URL" -H 'Content-Type: application/json' "$JAHIA_URL/modules/graphql" -d "$1"; }
-for c in $(G '{"query":"{ contentIntegrity { integrityChecks { id } } }"}' | python3 -c 'import json,sys;print(" ".join(c["id"] for c in json.load(sys.stdin)["data"]["contentIntegrity"]["integrityChecks"]))'); do
-  G "{\"query\":\"mutation { contentIntegrity { integrityCheckById(id: \\\"$c\\\") { resetAllConfigurations } } }\"}" > /dev/null
-done
-```
+remove it with `demo/cleanup.sh`, which also resets the configuration of every check (`resetAllConfigurations` resets
+the check it is called on only, so the script calls it on each one): `demo/cleanup.sh --all-reports` on a disposable
+Jahia which holds only the demo, `demo/cleanup.sh <results id> ...` with the ids of the demo scans otherwise.
 
 ## On a server holding other content, such as a copy of a customer dataset
 
@@ -59,9 +53,9 @@ done
   (`integrityDemo*`, `ci-*`, the modules of Jahia and `content-integrity`, the fixture histories) or generic Jahia nodes, and look at the images whose
   scan holds other errors: an image which shows a site, a group, a user or a principal of the server keeps its
   committed version.
-- Clean up afterwards, unless asked to keep the demo to check it by hand: the `*-cleanup.groovy` fixtures with
-  `SITEKEY=integrityDemo`, `vfsMount-cleanup.groovy`, the four `integrityDemo*` sites, the demo scans with
-  `deleteScanResults`, and the configuration of every check (see above).
+- Clean up afterwards, unless asked to keep the demo to check it by hand: `demo/cleanup.sh <results id> ...`, with the
+  ids of the demo scans, removes the data of the fixtures, the four `integrityDemo*` sites, these scans, and the
+  configuration of every check, and keeps the other scans of the server.
 
 ## Only some error types (fallback, when all the screenshots can't be regenerated)
 
