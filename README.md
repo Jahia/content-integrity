@@ -103,7 +103,7 @@ The errors are grouped by node: the errors of a node which has several of them f
 
 ![Errors of a node](./docs/img/ui-error-details.png)
 
-The results are stored in the JCR, under `/sites/systemsite/files/content-integrity-reports`, from the start of their scan: they remain available after a restart. The reports older than 30 days are deleted by a background job, configured by `org.jahia.modules.contentintegrity.reports` (`retentionDays`, 0 to keep them all, and `cleanupIntervalHours`).
+The results are stored in the JCR, under `/sites/systemsite/files/content-integrity-reports`, from the start of their scan: they remain available after a restart. The reports older than 30 days are deleted by a background job, configured by `org.jahia.modules.contentintegrity.reports` (`retentionDays`, 0 to keep them all, and `cleanupIntervalHours`). The CSV and XLSX reports uploaded in this folder by a version 3.x of the module are kept after an upgrade, readable by the server administrators only, but they are neither listed nor deleted by this job: delete them by hand once they are no longer needed.
 
 ### Karaf Shell commands
 The content integrity service is available through the [Karaf console](https://academy.jahia.com/documentation/system-administrator/jahia/8/installing-and-configuring-jahia/installing-configuring-and-troubleshooting-jahia/configuring-jahia-features#osgi-ssh-console).
