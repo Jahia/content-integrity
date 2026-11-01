@@ -46,11 +46,12 @@ if sites:
     print('Demo sites not deleted:', [s['path'] for s in sites], file=sys.stderr)
     sys.exit(1)
 
-# resetAllConfigurations resets the check it is called on only: it is called on each check, and returns false for a
-# check without configuration
-checks = graphql('{ contentIntegrity { integrityChecks { id } } }')['data']['contentIntegrity']['integrityChecks']
-graphql('mutation { contentIntegrity { ' + ' '.join('c%d: integrityCheckById(id: %s) { resetAllConfigurations }' % (i, json.dumps(c['id'])) for i, c in enumerate(checks)) + ' } }')
-print('configuration of the %d checks reset' % len(checks))
+# resetAllConfigurations resets the check it is called on only: it is called on each configurable check, the other
+# ones having no configuration
+checks = graphql('{ contentIntegrity { integrityChecks { id configurable } } }')['data']['contentIntegrity']['integrityChecks']
+checks = [c for c in checks if c['configurable']]
+reset = graphql('mutation { contentIntegrity { ' + ' '.join('c%d: integrityCheckById(id: %s) { resetAllConfigurations }' % (i, json.dumps(c['id'])) for i, c in enumerate(checks)) + ' } }')
+print(reset.get('errors') or 'configuration of the %d configurable checks reset' % len(checks))
 
 args = sys.argv[1:]
 if args == ['--all-reports']:

@@ -38,7 +38,7 @@ The thresholds which `generate.sh` sets (`FlatStorageCheck`, `VersionHistoryChec
 `PublicationSanityLiveCheck`, `WorkspaceSpecificDefinitionsCheck`) stay configured until a redeploy or a restart: the
 tests of the default configuration of these checks then fail. Once the screenshots are taken, unless the demo is kept,
 remove it with `demo/cleanup.sh`, which also resets the configuration of every check (`resetAllConfigurations` resets
-the check it is called on only, so the script calls it on each one): `demo/cleanup.sh --all-reports` on a disposable
+the check it is called on only, so the script calls it on each configurable one): `demo/cleanup.sh --all-reports` on a disposable
 Jahia which holds only the demo, `demo/cleanup.sh <results id> ...` with the ids of the demo scans otherwise.
 
 ## On a server holding other content, such as a copy of a customer dataset
