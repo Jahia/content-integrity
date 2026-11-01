@@ -1,30 +1,32 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.LIVE_WORKSPACE;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.MODULES_SUBTREE_PATH_PREFIX;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.PUBLISHED;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NODE_PATH;
+import static org.jahia.modules.contentintegrity.api.Constants.LIVE_WORKSPACE;
+import static org.jahia.modules.contentintegrity.api.Constants.MODULES_SUBTREE_PATH_PREFIX;
+import static org.jahia.modules.contentintegrity.api.Constants.PUBLISHED;
+import static org.jahia.modules.contentintegrity.api.Constants.ROOT_NODE_PATH;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.JAHIAMIX_LASTPUBLISHED,
@@ -32,7 +34,6 @@ import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NO
 })
 public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
-    private static final Logger logger = LoggerFactory.getLogger(PublicationSanityDefaultCheck.class);
     private static final String DIFFERENT_PATH_ROOT = "different-path-root";
     private static final String EXTRA_MSG_DIFFERENT_PATH_POTENTIAL_FP = "Warning: this node is the root of the scan, but not the root of the JCR. So the error might be a false positive, if the node is under a node which has been moved, but this move operation has not been published yet. To clarify this, you need to analyze the parent nodes, or redo the scan from a higher level";
     public static final ContentIntegrityErrorType NO_LIVE_NODE = createErrorType("NO_LIVE_NODE", "The live node with the same uuid is missing");
@@ -40,6 +41,9 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     public static final ContentIntegrityErrorType DIFFERENT_PATH_POTENTIAL_FP = createErrorType("DIFFERENT_PATH_POTENTIAL_FP", "Found a published node, with no pending modifications, but the path in live is different", true);
     public static final ContentIntegrityErrorType PATH_CONFLICT = createErrorType("PATH_CONFLICT", "Live node with same path but different uuid", true);
     public static final ContentIntegrityErrorType DIFFERENT_PT = createErrorType("DIFFERENT_PT", "Live node with same uuid but different primary type", true);
+
+    // A node at another path or of another type in live needs an analysis: only a missing live node is fixed
+    private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(NO_LIVE_NODE);
 
     private final Map<String, Object> inheritedErrors = new HashMap<>();
     private String scanRoot = null;
@@ -64,7 +68,8 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
             JCRNodeWrapper samePathLiveNode = null;
             try {
                 samePathLiveNode = liveSession.getNode(node.getPath());
-            } catch (PathNotFoundException ignored) {}
+            } catch (PathNotFoundException ignored) {
+            }
             if (samePathLiveNode != null) {
                 final String samePathLiveNodeIdentifier = samePathLiveNode.getIdentifier();
                 if (!StringUtils.equals(node.getIdentifier(), samePathLiveNodeIdentifier)) {
@@ -84,7 +89,7 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
                     liveNode = liveSession.getNodeByIdentifier(node.getIdentifier());
                 } catch (ItemNotFoundException infe) {
                     final String msg = String.format("Found a node %s, but no corresponding live node exists",
-                            flaggedPublished? "flagged as published" : "auto-published");
+                            flaggedPublished ? "flagged as published" : "auto-published");
                     final ContentIntegrityError error = createError(node, NO_LIVE_NODE, msg);
                     return trackError(errors, error);
                 }
@@ -141,12 +146,33 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     }
 
     @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return FIXABLE_ERRORS.contains(error.getErrorType());
+    }
+
+    /*
+     * NO_LIVE_NODE, from the jcr-scripts fixes: a node flagged as published but missing in live loses the flag.
+     * An auto-published node missing in live is published again.
+     */
+    @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
-        if (integrityError.getErrorType().equals(NO_LIVE_NODE)) {
-            node.getProperty(PUBLISHED).remove();
-            node.getSession().save();
-            return true;
+        if (!integrityError.getErrorType().equals(NO_LIVE_NODE)) return false;
+        // The content of the modules is published when they are deployed: like an auto-published node, it is published again
+        if (node.isNodeType(Constants.JMIX_AUTO_PUBLISH) || StringUtils.startsWith(node.getPath(), MODULES_SUBTREE_PATH_PREFIX)) {
+            final String uuid = node.getIdentifier();
+            RepairUtils.runWithListenersDisabled(() -> {
+                if (node.hasProperty(PUBLISHED)) {
+                    node.getProperty(PUBLISHED).remove();
+                    node.saveSession();
+                }
+                RepairUtils.runAsRoot(() -> BundleUtils.getOsgiService(JCRPublicationService.class, null).publishByMainId(uuid));
+            });
+            return JCRUtils.nodeExists(uuid, JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, true));
         }
-        return false;
+        // A node which is not flagged as published anymore is fixed
+        if (!node.hasProperty(PUBLISHED)) return true;
+        node.getProperty(PUBLISHED).remove();
+        node.getSession().save();
+        return true;
     }
 }

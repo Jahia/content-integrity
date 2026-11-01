@@ -7,7 +7,7 @@ import graphql.annotations.annotationTypes.GraphQLNonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
-import org.jahia.modules.contentintegrity.services.Utils;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,10 +22,12 @@ public class GqlIntegrityCheck {
 
     private static final String DOCUMENTATION_URL = "https://github.com/Jahia/content-integrity/blob/master/docs/embedded-tests.md#";
 
+    private final ContentIntegrityService service;
     private final ContentIntegrityCheck integrityCheck;
     private final ContentIntegrityCheckConfiguration configurations;
 
-    public GqlIntegrityCheck(ContentIntegrityCheck integrityCheck) {
+    public GqlIntegrityCheck(ContentIntegrityService service, ContentIntegrityCheck integrityCheck) {
+        this.service = service;
         this.integrityCheck = integrityCheck;
         if (isConfigurable()) {
             final ContentIntegrityCheck.IsConfigurable configurableCheck = (ContentIntegrityCheck.IsConfigurable) integrityCheck;
@@ -74,6 +76,7 @@ public class GqlIntegrityCheck {
 
     @GraphQLField
     public GqlIntegrityCheckConfiguration getConfiguration(@GraphQLName("name") @GraphQLNonNull String name) {
+        if (!isConfigurable()) return null;
         return new GqlIntegrityCheckConfiguration(name,
                 configurations.getDescription(name),
                 configurations.getParameterDefaultValue(name),
@@ -82,38 +85,38 @@ public class GqlIntegrityCheck {
                 );
     }
 
-    @GraphQLField
-    @GraphQLName("configure")
-    public boolean setConfiguration(@GraphQLName("name") @GraphQLNonNull String name,
-                                 @GraphQLName("value") @GraphQLNonNull String value) {
-        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+    /*
+     * A check which is not configurable has no configuration: its changes and its resets return false, as while a scan
+     * runs, instead of failing.
+     */
+    public boolean setConfiguration(String name, String value) {
+        if (!isConfigurable() || service.isScanRunning()) return false;
 
         try {
             configurations.setParameter(name, value);
             return true;
         } catch (IllegalArgumentException iae) {
-            logger.error("", iae);
+            // An invalid value typed by an administrator: the configuration is refused, the server has no failure to log
+            logger.warn("Configuration of {} refused: {}", getId(), iae.getMessage());
             return false;
         }
     }
 
-    @GraphQLField
-    @GraphQLName("resetConfiguration")
-    public boolean resetConfiguration(@GraphQLName("name") @GraphQLNonNull String name) {
-        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+    public boolean resetConfiguration(String name) {
+        if (!isConfigurable() || service.isScanRunning()) return false;
 
         try {
             configurations.setParameter(name, null);
             return true;
         } catch (IllegalArgumentException iae) {
-            logger.error("", iae);
+            // An invalid value typed by an administrator: the configuration is refused, the server has no failure to log
+            logger.warn("Configuration of {} refused: {}", getId(), iae.getMessage());
             return false;
         }
     }
 
-    @GraphQLField
     public boolean resetAllConfigurations() {
-        if (Utils.getContentIntegrityService().isScanRunning()) return false;
+        if (!isConfigurable() || service.isScanRunning()) return false;
 
         configurations.getConfigurationNames().forEach(name -> configurations.setParameter(name, null));
         return true;

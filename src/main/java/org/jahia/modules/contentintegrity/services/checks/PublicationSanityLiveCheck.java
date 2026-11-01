@@ -2,22 +2,21 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Property;
@@ -34,20 +33,18 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIAMIX_LASTPUBLISHED;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_DELETED_CHILDREN;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JMIX_LIVE_PROPERTIES;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.J_LIVE_PROPERTIES;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NODE_PATH;
-import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIAMIX_LASTPUBLISHED;
+import static org.jahia.modules.contentintegrity.api.Constants.JMIX_DELETED_CHILDREN;
+import static org.jahia.modules.contentintegrity.api.Constants.JMIX_LIVE_PROPERTIES;
+import static org.jahia.modules.contentintegrity.api.Constants.J_LIVE_PROPERTIES;
+import static org.jahia.modules.contentintegrity.api.Constants.ROOT_NODE_PATH;
+import static org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_WS + "=" + Constants.LIVE_WORKSPACE,
         ContentIntegrityCheck.ExecutionCondition.SKIP_ON_EXTERNAL_NODES + "=true"
 })
 public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
-
-    private static final Logger logger = LoggerFactory.getLogger(PublicationSanityLiveCheck.class);
 
     private static final String DEEP_COMPARE_PUBLISHED_NODES = "deep-compare-published-nodes";
     private static final String REPORT_LIVE_ONLY_UNDEFINED_UGC_NODES = "report-live-only-undefined-ugc-nodes";
@@ -84,6 +81,10 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     public static final ContentIntegrityErrorType DIFFERENT_PROP_VAL = createErrorType("DIFFERENT_PROP_VAL", "Different value for a property in default and live on a published node");
     public static final ContentIntegrityErrorType DIFFERENT_MIXINS = createErrorType("DIFFERENT_MIXINS", "Different mixins on a published node");
     public static final ContentIntegrityErrorType INCONSISTENT_UGC = createErrorType("INCONSISTENT_UGC", "Missing jmix:originWS property");
+    public static final ContentIntegrityErrorType UNEXPECTED_UGC = createErrorType("UNEXPECTED_UGC", "Node flagged as UGC, while it exists in the default workspace");
+
+    // The differences between a published node and its live node need an analysis: they are not fixed
+    private static final Collection<ContentIntegrityErrorType> FIXABLE_ERRORS = Arrays.asList(NO_DEFAULT_NODE, INCONSISTENT_UGC, UNEXPECTED_UGC);
 
     private final ContentIntegrityCheckConfiguration configurations;
 
@@ -113,8 +114,10 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
             final JCRSessionWrapper defaultSession = JCRUtils.getSystemSession(Constants.EDIT_WORKSPACE, true);
             final JCRUtils.UGC_STATE ugcState = JCRUtils.isUGCNode(node);
             if (ugcState == JCRUtils.UGC_STATE.UGC) {
-                // UGC
-                // TODO: check if there's a node with the same ID in default
+                // A node created in live has no counterpart in default: a node which exists in both is not UGC
+                if (JCRUtils.nodeExists(node.getIdentifier(), defaultSession)) {
+                    return createSingleError(createError(node, UNEXPECTED_UGC));
+                }
                 return null;
             }
             if (ugcState == JCRUtils.UGC_STATE.INCONSISTENT) {
@@ -336,11 +339,38 @@ public class PublicationSanityLiveCheck extends AbstractContentIntegrityCheck im
     }
 
     @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        return FIXABLE_ERRORS.contains(error.getErrorType());
+    }
+
+    /*
+     * From the jcr-scripts fixes:
+     * - NO_DEFAULT_NODE: the deletion of the node in default is considered as not published, and the node is
+     *   restored in default by publishing it from live (no content is lost);
+     * - INCONSISTENT_UGC: j:originWS is set, to default when the node exists in default, to live otherwise;
+     * - UNEXPECTED_UGC: the node exists in default, so it is flagged as non UGC: j:originWS is set to default
+     *   (from the clean-recursive script).
+     */
+    @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
-        if (integrityError.getErrorType().equals(NO_DEFAULT_NODE)) {// We assume here that the deletion has not been correctly published. An alternative fix would be to consider
-            // that this node is not correctly flagged as UGC, and so to flag it as such.
-            node.remove();
-            node.getSession().save();
+        final String uuid = node.getIdentifier();
+        if (integrityError.getErrorType().equals(NO_DEFAULT_NODE)) {
+            RepairUtils.publishAsRoot(Collections.singletonList(uuid), Constants.LIVE_WORKSPACE, Constants.EDIT_WORKSPACE);
+            return JCRUtils.nodeExists(uuid, JCRUtils.getSystemSession(Constants.EDIT_WORKSPACE, true));
+        }
+        if (integrityError.getErrorType().equals(UNEXPECTED_UGC)) {
+            RepairUtils.runWithListenersDisabled(() -> {
+                node.setProperty(Constants.ORIGIN_WORKSPACE, Constants.EDIT_WORKSPACE);
+                node.saveSession();
+            });
+            return true;
+        }
+        if (integrityError.getErrorType().equals(INCONSISTENT_UGC)) {
+            final boolean existsInDefault = JCRUtils.nodeExists(uuid, JCRUtils.getSystemSession(Constants.EDIT_WORKSPACE, true));
+            RepairUtils.runWithListenersDisabled(() -> {
+                node.setProperty(Constants.ORIGIN_WORKSPACE, existsInDefault ? Constants.EDIT_WORKSPACE : Constants.LIVE_WORKSPACE);
+                node.saveSession();
+            });
             return true;
         }
         return false;

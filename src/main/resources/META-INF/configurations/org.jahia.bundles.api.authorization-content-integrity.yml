@@ -1,0 +1,14 @@
+# Content integrity: the scopes of the security filter of Jahia
+#
+# The administration screen opens a node in the JCR browser of the tools area with a tool access token, issued by the
+# toolsToken.json view of its admin panel node. The profile "default" of the security filter, the one of Jahia 8.2,
+# refuses the JSON views not granted by a scope. The view itself requires adminContentIntegrity (requirePermissions).
+---
+content_integrity_tools_token:
+  description: "Can get a tool access token from the Content Integrity administration screen"
+  auto_apply:
+  - always: "true"
+  grants:
+  - api: "view.json.toolsToken"
+    node:
+      nodeType: "jnt:contentIntegrityAdminPanel"

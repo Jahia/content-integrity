@@ -7,16 +7,15 @@ import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.OutputLevelCompleter;
-import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Command(scope = "jcr", name = "integrity-printChecks", description = "Prints out the registered checks")
 @Service
 public class PrintRegisteredChecksCommand extends JCRCommandSupport implements Action {
 
-    private static final Logger logger = LoggerFactory.getLogger(PrintRegisteredChecksCommand.class);
+    @Reference
+    private ContentIntegrityService integrityService;
 
     @Reference
     Session session;
@@ -28,7 +27,7 @@ public class PrintRegisteredChecksCommand extends JCRCommandSupport implements A
     @Override
     public Object execute() throws Exception {
         final boolean fullOutput = "full".equalsIgnoreCase(listChecks);
-        for (String s : Utils.getContentIntegrityService().printIntegrityChecksList(!fullOutput)) {
+        for (String s : integrityService.printIntegrityChecksList(!fullOutput)) {
             System.out.println(s);
         }
         return null;

@@ -3,10 +3,13 @@ package org.jahia.modules.contentintegrity.services.checks;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.data.templates.JahiaTemplatesPackage;
 import org.jahia.data.templates.ModuleState;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
+import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRValueWrapper;
 import org.jahia.services.content.nodetypes.ExtendedNodeType;
@@ -14,13 +17,10 @@ import org.jahia.services.content.nodetypes.NodeTypeRegistry;
 import org.jahia.utils.Patterns;
 import org.osgi.framework.Bundle;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.nodetype.NoSuchNodeTypeException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,13 +29,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_MIXINTYPES;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PRIMARYTYPE;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_MIXINTYPES;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_PRIMARYTYPE;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
-public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
-
-    private static final Logger logger = LoggerFactory.getLogger(UndeclaredNodeTypesCheck.class);
+public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
     public static final ContentIntegrityErrorType UNDECLARED_NODE_TYPE = createErrorType("UNDECLARED_NODE_TYPE", "Undeclared type", true);
     public static final ContentIntegrityErrorType GHOST_NODE_TYPE = createErrorType("GHOST_NODE_TYPE", "Ghost type", true);
@@ -110,7 +108,7 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
 
     private ExtendedNodeTypeWrapper getNodeType(String type) {
         try {
-            final ExtendedNodeType nodeType = NodeTypeRegistry.getInstance().getNodeType(type);
+            final ExtendedNodeType nodeType = BundleUtils.getOsgiService(NodeTypeRegistry.class, null).getNodeType(type);
             final JahiaTemplatesPackage templatePackage = nodeType.getTemplatePackage();
 
             // the node type is not declared by a module, let's assume that the node type registry is always consistent with the code definitions
@@ -150,5 +148,26 @@ public class UndeclaredNodeTypesCheck extends AbstractContentIntegrityCheck {
         public boolean isGhostType() {
             return isGhostType;
         }
+    }
+
+    /*
+     * From the jcr-scripts fixes: an undeclared mixin is removed from the node. A node can't change its primary
+     * type, so a node whose primary type is undeclared is removed.
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        if (!error.getErrorType().equals(UNDECLARED_NODE_TYPE) && !error.getErrorType().equals(GHOST_NODE_TYPE)) return false;
+
+        final Object mixin = error.getExtraInfo("mixin type");
+        if (mixin != null) {
+            // A mixin already removed, for example by the fix of another error, is fixed
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeMixinRaw(node, (String) mixin));
+            return true;
+        }
+        if (error.getExtraInfo("primary type") != null) {
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeNodeRaw(node));
+            return true;
+        }
+        return false;
     }
 }

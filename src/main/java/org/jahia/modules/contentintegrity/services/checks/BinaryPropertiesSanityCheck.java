@@ -1,20 +1,20 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.data.DataStoreException;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl;
+import org.jahia.modules.contentintegrity.services.util.RepairUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.Binary;
 import javax.jcr.Property;
@@ -24,12 +24,12 @@ import javax.jcr.RepositoryException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_CONTENT;
+import static org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl.BOOLEAN_PARSER;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true)
-public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
+public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable, ContentIntegrityCheck.SupportsIntegrityErrorFix {
 
-    private static final Logger logger = LoggerFactory.getLogger(BinaryPropertiesSanityCheck.class);
     private static final String DOWNLOAD_STREAM = "download-stream";
     private static final String ACCEPT_ZERO_BYTE_BINARIES = "accept-zero-byte-binaries";
     private static final String EXTRA_MSG_ZERO_LENGTH_BINARY = "Warning: the binary length is zero byte. This can be a false positive if an empty file has been uploaded";
@@ -40,7 +40,7 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
     public BinaryPropertiesSanityCheck() {
         configurations = new ContentIntegrityCheckConfigurationImpl();
         getConfigurations().declareDefaultParameter(DOWNLOAD_STREAM, Boolean.FALSE, BOOLEAN_PARSER, "If true, each binary property is validated by reading its value as a stream (time consuming operation). Otherwise, only the length of the binary is read");
-        getConfigurations().declareDefaultParameter(ACCEPT_ZERO_BYTE_BINARIES, Boolean.TRUE, BOOLEAN_PARSER, "If true, the binary properties with a valid zero byte length value will not be reported as errors. Otherwise, the binary is considered as valid only if its length is greater than zero");
+        getConfigurations().declareDefaultParameter(ACCEPT_ZERO_BYTE_BINARIES, Boolean.FALSE, BOOLEAN_PARSER, "If true, the binary properties with a valid zero byte length value will not be reported as errors. Otherwise, the binary is considered as valid only if its length is greater than zero");
     }
 
     @Override
@@ -112,5 +112,26 @@ public class BinaryPropertiesSanityCheck extends AbstractContentIntegrityCheck i
             errors.addError(createFrameworkError(node, "Impossible to check the node " + node.getPath(), e));
         }
         return errors;
+    }
+
+    /*
+     * From the jcr-scripts fix: a broken binary can't be restored. The file holding it is removed, or only the
+     * binary property when it is held by a translation node, so that the other languages are kept.
+     * The holder is the node of the error, never a node read from property-path: that extra info is cut to 100
+     * characters, so a long path would resolve to an ancestor folder of the file, which would be removed.
+     */
+    @Override
+    public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
+        if (!error.getErrorType().equals(INVALID_BINARY)) return false;
+        final String propertyName = (String) error.getExtraInfo("property-name");
+        if (StringUtils.isBlank(propertyName) || !node.getRealNode().hasProperty(propertyName)) return false;
+
+        if (node.isNodeType(Constants.JAHIANT_TRANSLATION)) {
+            RepairUtils.runWithListenersDisabled(() -> RepairUtils.removePropertyRaw(node, propertyName));
+            return true;
+        }
+        final JCRNodeWrapper toRemove = StringUtils.equals(node.getName(), JCR_CONTENT) ? node.getParent() : node;
+        RepairUtils.runWithListenersDisabled(() -> RepairUtils.removeNodeRaw(toRemove));
+        return true;
     }
 }

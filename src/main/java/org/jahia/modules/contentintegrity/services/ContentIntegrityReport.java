@@ -1,11 +1,6 @@
 package org.jahia.modules.contentintegrity.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ContentIntegrityReport {
-
-    private static final Logger logger = LoggerFactory.getLogger(ContentIntegrityReport.class);
 
     public enum LOCATION {JCR, FILESYSTEM}
 

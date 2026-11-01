@@ -1,10 +1,11 @@
 import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.lang.StringUtils
 import org.jahia.api.Constants
+import org.jahia.api.content.JCRTemplate
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRCallback
 import org.jahia.services.content.JCRNodeWrapper
 import org.jahia.services.content.JCRSessionWrapper
-import org.jahia.services.content.JCRTemplate
 
 import javax.jcr.RepositoryException
 
@@ -14,7 +15,7 @@ if (Arrays.asList("default", "all").contains(workspace)) scan(path, Constants.ED
 if (Arrays.asList("live", "all").contains(workspace)) scan(path, Constants.LIVE_WORKSPACE, nodeTypes)
 
 void scan(String root, String ws, String nodeTypeFilter) {
-    JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, ws, null, new JCRCallback<Object>() {
+    BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, ws, null, new JCRCallback<Object>() {
 
         final long REFRESH_INTERVAL = 10000L
         long count = 0L

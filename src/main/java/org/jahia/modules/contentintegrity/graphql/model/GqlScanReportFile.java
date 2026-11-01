@@ -2,12 +2,8 @@ package org.jahia.modules.contentintegrity.graphql.model;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityReport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class GqlScanReportFile {
-
-    private static final Logger logger = LoggerFactory.getLogger(GqlScanReportFile.class);
 
     private final String name, location, uri, extension;
 

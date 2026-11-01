@@ -1,7 +1,6 @@
 package org.jahia.modules.contentintegrity.jcrcommands;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
@@ -16,9 +15,6 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.ErrorIdCompleter;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
-import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -26,9 +22,8 @@ import java.util.List;
 @Service
 public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Action {
 
-    private static final Logger logger = LoggerFactory.getLogger(FixIntegrityErrorsCommand.class);
-
-    private static final boolean devMode = Boolean.parseBoolean(getProperty("modules.contentIntegrity.devMode"));
+    @Reference
+    private ContentIntegrityService integrityService;
 
     @Reference
     Session session;
@@ -43,23 +38,14 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
 
     @Override
     public Object execute() throws Exception {
-        if (!devMode) {
-            System.out.println("Not yet available, coming soon!");
-            return null;
-        }
-
         if (CollectionUtils.isEmpty(errorIDs)) {
             System.out.println("No error specified");
             return null;
         }
 
-        final ContentIntegrityService contentIntegrityService = Utils.getContentIntegrityService();
-        final ContentIntegrityResults results = contentIntegrityService.getTestResults(testID);
-        if (results == null) {
-            if (StringUtils.isBlank(testID)) System.out.println("No test results found");
-            else System.out.println("The specified test results couldn't be found");
-            return null;
-        }
+        final ContentIntegrityService contentIntegrityService = integrityService;
+        final ContentIntegrityResults results = loadTestResults(contentIntegrityService, testID);
+        if (results == null) return null;
 
         final List<ContentIntegrityError> errors = results.getErrors();
         if (errorIDs.contains("*")) {
@@ -70,19 +56,17 @@ public class FixIntegrityErrorsCommand extends JCRCommandSupport implements Acti
             }
         } else {
             for (String errorID : errorIDs) {
-                final int errorIdx = NumberUtils.toInt(errorID, -1);
-                if (errorIdx < 0 || errorIdx >= errors.size()) {
-                    System.out.println(String.format("The specified error (id=%s) couldn't be found", errorID));
-                    continue;
-                }
-                final ContentIntegrityError error = errors.get(errorIdx);
+                final ContentIntegrityError error = getError(errors, errorID);
+                if (error == null) continue;
                 if (error.isFixed()) {
                     System.out.println(String.format("The error (id=%s) is already fixed", errorID));
                     continue;
                 }
-                fixSingleError(error, errorIdx, contentIntegrityService);
+                fixSingleError(error, NumberUtils.toInt(errorID), contentIntegrityService);
             }
         }
+        // The fixed status is stored with the results, in the JCR
+        contentIntegrityService.saveFixedErrors(results);
 
         return null;
     }

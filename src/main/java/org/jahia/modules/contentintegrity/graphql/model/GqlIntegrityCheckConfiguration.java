@@ -3,14 +3,10 @@ package org.jahia.modules.contentintegrity.graphql.model;
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @GraphQLName("IntegrityCheckConfig")
 @GraphQLDescription("Configuration related to an Integrity Check")
 public class GqlIntegrityCheckConfiguration {
-
-    private static final Logger logger = LoggerFactory.getLogger(GqlIntegrityCheckConfiguration.class);
 
     private final String name;
     private final String description;
