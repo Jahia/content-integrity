@@ -28,7 +28,8 @@ screen, since every screenshot displays it. Then build the PDF again (`yarn docs
 is built, deployed and its tests pass, and commit the images separately from the code.
 
 How to do it is the skill `regenerate-screenshots` (`.claude/skills/regenerate-screenshots/SKILL.md`). Its safety rules
-apply even without it: run `demo/regenerate.sh` only on a disposable Jahia (it deletes EVERY stored scan report), never
+apply even without it: list the sites and the modules of the server first, since a disposable Jahia can hold other
+content, run `demo/regenerate.sh` only on a disposable Jahia (it deletes EVERY stored scan report), never
 pass the password on the command line, and never keep an image which shows a site, a group, a user or a principal of a
 server holding other content, such as a customer dataset.
 
