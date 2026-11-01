@@ -114,7 +114,7 @@
       },
       "UndeclaredNodeTypesCheck": {
         "UNDECLARED_NODE_TYPE": "The types are the ones of the modules started on the server which ran the scan. If the other servers don't report this error, start the module which declares the type on this server rather than fixing the node.",
-        "GHOST_NODE_TYPE": "The type is declared by a module which is not started on the server which ran the scan. If the other servers don't report this error, start the module on this server rather than fixing the node."
+        "GHOST_NODE_TYPE": "The type is declared by a module which is not installed or not started on the server which ran the scan. If the other servers don't report this error, install or start the module on this server rather than fixing the node."
       },
       "UndeployedModulesReferencesCheck": {
         "UNDEPLOYED_MODULE_ON_SITE": "The module is not deployed on the server which ran the scan. If it is deployed on the other servers, deploy it on this one: the fix would remove it from the site for the whole cluster."

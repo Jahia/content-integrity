@@ -1,4 +1,4 @@
-import {createTestSite, deleteTestSite, expectError, expectExtraInfo, fixAndVerify, fixFromTwoScans, runFixture, scan, ScanResults} from '../../support/integrity';
+import {createTestSite, deleteTestSite, expectError, expectExtraInfo, expectNoError, fixAndVerify, fixFromTwoScans, runFixture, scan, ScanResults} from '../../support/integrity';
 
 const SITE = 'ciUndeclaredTypesCheck';
 const ROOT = `/sites/${SITE}/contents/undeclared-node-types`;
@@ -32,6 +32,17 @@ describe('UndeclaredNodeTypesCheck', () => {
         it('detects GHOST_NODE_TYPE on a node whose type is not declared by its module', () => {
             expectExtraInfo(expectError(results, 'GHOST_NODE_TYPE', `${ROOT}/ghost-type`), 'primary type', 'jnt:ciTestGhost');
         });
+
+        it('detects GHOST_NODE_TYPE on a node whose type is bound to a module which is not installed', () => {
+            expectExtraInfo(expectError(results, 'GHOST_NODE_TYPE', `${ROOT}/orphan-type`), 'primary type', 'jnt:ciTestOrphan');
+        });
+
+        it('does not report a node of a type of Jahia core, nor of a type declared by a started module', () => {
+            ['UNDECLARED_NODE_TYPE', 'GHOST_NODE_TYPE'].forEach(errorType => {
+                expectNoError(results, errorType, ROOT);
+                expectNoError(results, errorType, `${ROOT}/declared-type`);
+            });
+        });
     });
 
     describe('Fix', () => {
@@ -50,6 +61,10 @@ describe('UndeclaredNodeTypesCheck', () => {
 
         it('fixes GHOST_NODE_TYPE by removing the node', () => {
             fixAndVerify(ROOT, CHECKS, 'EDIT', 'GHOST_NODE_TYPE', `${ROOT}/ghost-type`);
+        });
+
+        it('fixes GHOST_NODE_TYPE of a module which is not installed by removing the node', () => {
+            fixAndVerify(ROOT, CHECKS, 'EDIT', 'GHOST_NODE_TYPE', `${ROOT}/orphan-type`);
         });
     });
 });
