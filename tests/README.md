@@ -56,8 +56,8 @@ root logs them out after each test, so that their sessions do not hold the slots
 `demo/generate.sh` builds a demo of the module from the fixtures of the tests, to check the errors and their fixes by
 hand: the site `integrityDemo` with the faulty content of every check, three sites `integrityDemo*` for the home page and
 site group scenarios which exclude each other, the thresholds which make the threshold checks report, then four scans
-(the version storage, a node moved in live, the whole repository, the demo site). They cover 86 of the 88 error types:
-`HISTORY_WITHOUT_NODE_ID` and `INVALID_BACK_REF` can't be reproduced.
+(the version storage, a node moved in live, the whole repository, the demo site). They cover 87 of the 88 error types:
+`HISTORY_WITHOUT_NODE_ID` can't be reproduced.
 
 ```bash
 JAHIA_URL=http://localhost:8080 SUPER_USER_PASSWORD=root demo/generate.sh
@@ -137,7 +137,7 @@ The Jahia API refuses to create inconsistent content, so the scripts write below
 |                                  | MISSING_PROP_LIVE, MISSING_PROP_DEFAULT, DIFFERENT_PROP_VAL, DIFFERENT_MIXINS                                                  |    ✅     | ➖  |
 | ReferencesSanityCheck            | BROKEN_REF                                                                                                                     |    ✅     | 🔧  |
 |                                  | BROKEN_REF_TO_VN                                                                                                               |    ✅     | ➖  |
-|                                  | INVALID_BACK_REF                                                                                                               |    ⏸     |     |
+|                                  | INVALID_BACK_REF                                                                                                               |    ✅     | ➖  |
 | SiteLevelSystemGroupsCheck       | GROUP_DOES_NOT_EXIST (group site-privileged), MISSING_MEMBERSHIP                                                               |    ✅     | 🔧  |
 | StaticInternalLinksCheck         | HARDCODED_DOMAIN                                                                                                               |    ✅     | ➖  |
 | TemplatesIndexationCheck         | NOT_INDEXED_TEMPLATE                                                                                                           |    ✅     | ➖  |
@@ -154,6 +154,4 @@ The Jahia API refuses to create inconsistent content, so the scripts write below
 
 Not reproducible:
 
-* `INVALID_BACK_REF`: the back references are read with the system session of the scan, which can always read the
-  referencing node. Jackrabbit leaves out the references from a node which does not exist anymore.
 * `HISTORY_WITHOUT_NODE_ID`: `jcr:versionableUuid` is a protected property, set by the version manager.

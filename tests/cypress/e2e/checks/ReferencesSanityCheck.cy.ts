@@ -77,8 +77,31 @@ describe('ReferencesSanityCheck', () => {
         resetCheckConfiguration(CHECK);
     });
 
-    // The back references are read with the system session of the scan, which can always read the referencing node
-    it.skip('detects INVALID_BACK_REF (not reproducible)');
+    it('does not check the back references by default', () => {
+        expectNoError(results, 'INVALID_BACK_REF', `${ROOT}/back-referenced`);
+    });
+
+    it('detects INVALID_BACK_REF on a node referenced by an extension of a virtual node gone from its source', () => {
+        configureCheck(CHECK, 'validate-back-refs', 'true');
+        scan(`${ROOT}/back-referenced`, CHECKS).then(r => {
+            const error = expectError(r, 'INVALID_BACK_REF', `${ROOT}/back-referenced`);
+            expectExtraInfo(error, 'property-name', 'j:defaultCategory');
+            expectExtraInfo(error, 'referencing-node-path', /\/linked\.txt$/);
+        });
+        resetCheckConfiguration(CHECK);
+    });
+
+    it('does not report INVALID_BACK_REF on a node referenced by a node which exists', () => {
+        configureCheck(CHECK, 'validate-back-refs', 'true');
+        scan(`${ROOT}/target`, CHECKS).then(r => expectNoError(r, 'INVALID_BACK_REF', `${ROOT}/target`));
+        resetCheckConfiguration(CHECK);
+    });
+
+    it('provides no fix for INVALID_BACK_REF', () => {
+        configureCheck(CHECK, 'validate-back-refs', 'true');
+        expectNoFix(`${ROOT}/back-referenced`, CHECKS, 'EDIT', 'INVALID_BACK_REF', `${ROOT}/back-referenced`);
+        resetCheckConfiguration(CHECK);
+    });
 
     it('provides no fix for BROKEN_REF_TO_VN', () => {
         expectNoFix(ROOT, CHECKS, 'EDIT', 'BROKEN_REF_TO_VN', `${ROOT}/broken-reference-to-virtual-node`);

@@ -6,7 +6,8 @@
 //   followed by many unclosed tags, which the fix can't remove
 // - BROKEN_REF in a translation whose jcr:language names another language: an i18n reference to a file in English, and
 //   to a file which does not exist in French, the French translation node declaring the language en
-// - INVALID_BACK_REF is not reproducible: the referencing node is always readable with the system session of the scan
+// - INVALID_BACK_REF: a node referenced by a category, stored in the JCR as an extension of a file of a VFS mount point,
+//   whose file is then deleted from the disk: the reference is left, from a node which can't be read anymore
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
@@ -34,6 +35,7 @@ def contents = session.getNode("/sites/SITEKEY/contents")
 if (contents.hasNode("references")) contents.getNode("references").remove()
 def folder = contents.addNode("references", "jnt:contentFolder")
 ["broken-reference", "broken-reference-to-virtual-node", "valid-reference"].each { folder.addNode(it, "jnt:contentReference") }
+folder.addNode("back-referenced", "jnt:contentFolder")
 folder.getNode("valid-reference").setProperty("j:node", folder.addNode("target", "jnt:text"))
 session.save()
 def englishSession = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", Locale.ENGLISH, null)
@@ -88,3 +90,26 @@ try {
     JCRObservationManager.setAllEventListenersDisabled(false)
 }
 JcrSessionFilter.endRequest()
+
+// INVALID_BACK_REF: a file of a VFS mount point gets a category which references back-referenced, stored in the JCR as an
+// extension of the virtual node, then the file is deleted from the disk
+def mountFolder = new File(System.getProperty("java.io.tmpdir"), "SITEKEY-backref")
+mountFolder.mkdirs()
+new File(mountFolder, "linked.txt").text = "linked"
+session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
+def mounts = session.getNode("/mounts")
+if (mounts.hasNode("SITEKEY-backref-mount")) {
+    mounts.getNode("SITEKEY-backref-mount").remove()
+    session.save()
+}
+mounts.addNode("SITEKEY-backref-mount", "jnt:vfsMountPoint").setProperty("j:rootPath", mountFolder.toURI().toString())
+session.save()
+JcrSessionFilter.endRequest()
+session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession("default", null, null)
+def linked = session.getNode("/mounts/SITEKEY-backref/linked.txt")
+linked.addMixin("jmix:categorized")
+def backReferenced = session.getNode("/sites/SITEKEY/contents/references/back-referenced")
+linked.setProperty("j:defaultCategory", [session.getValueFactory().createValue(backReferenced, true)] as javax.jcr.Value[])
+session.save()
+JcrSessionFilter.endRequest()
+new File(mountFolder, "linked.txt").delete()
