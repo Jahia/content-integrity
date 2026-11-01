@@ -114,7 +114,7 @@
       },
       "UndeclaredNodeTypesCheck": {
         "UNDECLARED_NODE_TYPE": "Les types sont ceux des modules démarrés sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez sur ce serveur le module qui déclare le type plutôt que de corriger le nœud.",
-        "GHOST_NODE_TYPE": "Le type est déclaré par un module qui n'est pas démarré sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez le module sur ce serveur plutôt que de corriger le nœud."
+        "GHOST_NODE_TYPE": "Le type est déclaré par un module qui n'est pas installé ou pas démarré sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, installez ou démarrez le module sur ce serveur plutôt que de corriger le nœud."
       },
       "UndeployedModulesReferencesCheck": {
         "UNDEPLOYED_MODULE_ON_SITE": "Le module n'est pas déployé sur le serveur qui a lancé l'analyse. S'il est déployé sur les autres serveurs, déployez-le sur celui-ci : la correction le retirerait du site pour tout le cluster."
@@ -241,8 +241,8 @@
         "MISSING_MEMBERSHIP": "Ajoute le groupe site-privileged du site aux membres du groupe privileged."
       },
       "UndeclaredNodeTypesCheck": {
-        "UNDECLARED_NODE_TYPE": "Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible.",
-        "GHOST_NODE_TYPE": "Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible."
+        "UNDECLARED_NODE_TYPE": "Uniquement pour un type nommé dans la configuration types-to-fix de la vérification. Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible. Ne change rien si le type est de nouveau déclaré depuis l'analyse.",
+        "GHOST_NODE_TYPE": "Uniquement pour un type nommé dans la configuration types-to-fix de la vérification. Retire du nœud le mixin non déclaré. Si le type primaire n'est pas déclaré, supprime le nœud et son sous-arbre, ce qui est irréversible. Ne change rien si le type est de nouveau déclaré depuis l'analyse."
       },
       "UndeployedModulesReferencesCheck": {
         "UNDEPLOYED_MODULE_ON_SITE": "Retire le module des modules du site, dans les deux espaces. Rien ne change si le module est à nouveau disponible. Un module installé mais non démarré n'est pas retiré : démarrez-le."

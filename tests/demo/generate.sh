@@ -68,6 +68,7 @@ conf AceSanityCheck ace-count-threshold 5
 conf PublicationSanityLiveCheck deep-compare-published-nodes true
 conf WorkspaceSpecificDefinitionsCheck ws-live-specific-props j:liveProperties
 conf ReferencesSanityCheck validate-back-refs true
+conf UndeclaredNodeTypesCheck types-to-fix jnt:ciTestUndeclared,jmix:ciTestUndeclaredMixin,jnt:ciTestGhost,jnt:ciTestOrphan,jnt:ciTestDeclaredAgain
 
 # Every check runs, the ones disabled by default included
 checks=$(G '{"query":"{ contentIntegrity { integrityChecks { id } } }"}' | python3 -c 'import json,sys;print(json.dumps([c["id"] for c in json.load(sys.stdin)["data"]["contentIntegrity"]["integrityChecks"]]))')

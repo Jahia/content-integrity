@@ -114,7 +114,7 @@
       },
       "UndeclaredNodeTypesCheck": {
         "UNDECLARED_NODE_TYPE": "The types are the ones of the modules started on the server which ran the scan. If the other servers don't report this error, start the module which declares the type on this server rather than fixing the node.",
-        "GHOST_NODE_TYPE": "The type is declared by a module which is not started on the server which ran the scan. If the other servers don't report this error, start the module on this server rather than fixing the node."
+        "GHOST_NODE_TYPE": "The type is declared by a module which is not installed or not started on the server which ran the scan. If the other servers don't report this error, install or start the module on this server rather than fixing the node."
       },
       "UndeployedModulesReferencesCheck": {
         "UNDEPLOYED_MODULE_ON_SITE": "The module is not deployed on the server which ran the scan. If it is deployed on the other servers, deploy it on this one: the fix would remove it from the site for the whole cluster."
@@ -241,8 +241,8 @@
         "MISSING_MEMBERSHIP": "Adds the group site-privileged of the site to the members of the group privileged."
       },
       "UndeclaredNodeTypesCheck": {
-        "UNDECLARED_NODE_TYPE": "Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone.",
-        "GHOST_NODE_TYPE": "Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone."
+        "UNDECLARED_NODE_TYPE": "Only for a type named in the configuration types-to-fix of the check. Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone. Changes nothing when the type is declared again since the scan.",
+        "GHOST_NODE_TYPE": "Only for a type named in the configuration types-to-fix of the check. Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone. Changes nothing when the type is declared again since the scan."
       },
       "UndeployedModulesReferencesCheck": {
         "UNDEPLOYED_MODULE_ON_SITE": "Removes the module from the modules of the site, in both workspaces. Nothing changes if the module is available again. A module installed but not started is not removed: start it."

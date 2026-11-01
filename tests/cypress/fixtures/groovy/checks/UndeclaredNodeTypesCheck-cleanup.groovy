@@ -1,4 +1,4 @@
-// Unregisters the ghost type of the UndeclaredNodeTypesCheck fixtures, once the nodes using it are deleted
+// Unregisters the ghost and orphan types of the UndeclaredNodeTypesCheck fixtures, once the nodes using them are deleted
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRObservationManager
@@ -25,4 +25,11 @@ try {
 } catch (ignored) {
 }
 BundleUtils.getOsgiService(JCRStoreService.class, null).deployDefinitions("content-integrity")
+["content-integrity-tests-orphan", "system-ci-tests-declared-again"].each { systemId ->
+    try {
+        BundleUtils.getOsgiService(JCRStoreService.class, null).undeployDefinitions(systemId)
+        registry.unregisterNodeTypes(systemId)
+    } catch (ignored) {
+    }
+}
 JcrSessionFilter.endRequest()
