@@ -82,8 +82,7 @@ public class GqlIntegrityScan {
         FINISHED("finished"),
         INTERRUPTED("interrupted"),
         FAILED("failed"),
-        UNKNOWN("Unknown execution ID"),
-        NONE("No scan currently running");
+        UNKNOWN("Unknown execution ID");
 
         private final String description;
 

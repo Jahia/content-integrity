@@ -95,10 +95,6 @@ public class ContentIntegrityErrorImpl implements ContentIntegrityError {
         return error;
     }
 
-    static ContentIntegrityErrorType getFrameworkErrorType() {
-        return FRAMEWORK_ERROR;
-    }
-
     public static ContentIntegrityError createError(JCRNodeWrapper node, String locale, ContentIntegrityErrorType errorType, String message, ContentIntegrityCheck integrityCheck) {
         return createError(node, locale, errorType, message, integrityCheck.getName(), integrityCheck.getId());
     }

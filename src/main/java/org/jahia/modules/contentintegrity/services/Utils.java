@@ -73,7 +73,7 @@ public final class Utils {
     }
 
     public enum LOG_LEVEL {
-        TRACE, INFO, WARN, ERROR, DEBUG
+        INFO, WARN, ERROR, DEBUG
     }
 
     /**
@@ -125,14 +125,6 @@ public final class Utils {
     public static void log(String message, LOG_LEVEL logLevel, Logger log, Throwable t, ExternalLogger... externalLoggers) {
         if (log != null) {
             switch (logLevel) {
-                case TRACE:
-                    if (!log.isTraceEnabled()) return;
-                    if (t == null) {
-                        log.trace(message);
-                    } else {
-                        log.trace(message, t);
-                    }
-                    break;
                 case INFO:
                     if (!log.isInfoEnabled()) return;
                     if (t == null) {
