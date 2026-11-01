@@ -38,6 +38,7 @@ Required Jahia version: 8.1.5.0
   * Results: a filter on the fix status, to display the errors fixed, the ones skipped, on which no fix has run, or the ones not fixed, whose fix has run without fixing them. The three statuses are always offered, with their number of errors. The failure of a fix is stored with the results, as their fixed status, and the row of the error tells it once the page is reloaded
   * The page fills the screen, with the margins of the administration: the results card reaches the bottom of the screen, with the pagination at its bottom
   * The icons of the screen are displayed in a single size
+  * Results: a path or an identifier opens its node in the JCR browser, in a new window; when the browser blocks the window, or the access token can't be issued, a message next to the link tells it, instead of nothing happening
   * Added French labels
   * Removed the legacy jQuery screen, its JSP views and the `contentIntegrity.ui` configuration
 * The command `jcr:integrity-fix` is now available, without the `modules.contentIntegrity.devMode` system property

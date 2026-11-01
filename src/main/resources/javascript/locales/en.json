@@ -13,6 +13,8 @@
     "save": "Save",
     "reports": "Reports",
     "openInJcrBrowser": "Open in the JCR browser",
+    "jcrBrowserBlocked": "The browser blocked the window of the JCR browser: allow the popups of this site, then click again.",
+    "jcrBrowserFailed": "The JCR browser could not be opened.",
     "checks": {
       "title": "Integrity checks ({{selected}} of {{total}} selected)",
       "selectAll": "Select all",

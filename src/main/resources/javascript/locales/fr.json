@@ -13,6 +13,8 @@
     "save": "Enregistrer",
     "reports": "Rapports",
     "openInJcrBrowser": "Ouvrir dans le navigateur JCR",
+    "jcrBrowserBlocked": "Le navigateur a bloqué la fenêtre du navigateur JCR : autorisez les fenêtres pop-up de ce site, puis cliquez à nouveau.",
+    "jcrBrowserFailed": "Le navigateur JCR n'a pas pu être ouvert.",
     "checks": {
       "title": "Contrôles d'intégrité ({{selected}} sélectionnés sur {{total}})",
       "selectAll": "Tout sélectionner",

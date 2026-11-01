@@ -173,6 +173,16 @@ describe('Results table', () => {
         cy.wrap(popup.close).should('not.have.been.called');
     });
 
+    it('tells that the browser blocked the window of the JCR browser', () => {
+        // A blocked popup: window.open returns null, and a click must not silently do nothing
+        cy.window().then(win => {
+            cy.stub(win, 'open').as('open').returns(null);
+        });
+        getNodeRow(MISSING_TEMPLATE).find('button').filter((i, button) => button.title === `${MISSING_TEMPLATE}\nOpen in the JCR browser`).first().click();
+        cy.get('@open').should('have.been.calledWith', 'about:blank', '_blank');
+        getNodeRow(MISSING_TEMPLATE).find('[role="alert"]').should('contain.text', 'The browser blocked the window of the JCR browser');
+    });
+
     it('always displays the filters, and displays only the errors which block an XML import by default', () => {
         getFilters().within(() => {
             cy.contains('label', 'Impact on XML import').should('be.visible');
