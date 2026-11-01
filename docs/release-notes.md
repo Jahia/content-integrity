@@ -73,6 +73,7 @@ Required Jahia version: 8.1.5.0
   * [bugfix] `VersionHistoryCheck`: the fix of `TOO_MANY_VERSIONS` was reported as successful when the purge kept more versions than the threshold, since the versions used by the default and the live nodes can't be purged. It is now reported as not fixed
   * [bugfix] `AceSanityCheck`: the fix of `MISSING_EXTERNAL_ACE` was reported as successful when the ACL listener could not create the external ACE, for example because an external ACE for other permissions takes its place. It is now reported as not fixed, and the ACL is no longer published
   * [bugfix] `UndeclaredNodeTypesCheck`: the fix of an undeclared mixin failed, since Jackrabbit refuses to remove a mixin whose type is not registered
+  * [bugfix] `ReferencesSanityCheck`: the path of the referencing node of `INVALID_BACK_REF` (`referencing-node-path`) is read from the real node: the path of the extension of a virtual node repeated the path of its mount point, such as `/mounts/m/mounts/m/file.txt`
 * [bugfix] GraphQL: the results of an unknown scan returned an error instead of null
 * [bugfix] GraphQL: `possibleValues` returned an internal error when `withErrorsOnly` was omitted, now false by default, or when `names` was omitted or repeated a column. The arguments `offset` and `pageSize` of `errors` are now required, so a missing one is reported by name instead of an internal error
 * GraphQL: removed the argument `uploadResults` of the field `scan`: the CSV and XLSX reports of every scan are written in the JCR, next to its results

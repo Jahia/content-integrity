@@ -247,10 +247,21 @@ public class ReferencesSanityCheck extends AbstractContentIntegrityCheck impleme
                 if (errors == null) errors = createEmptyErrorsList();
                 errors.addError(createError(checkedNode, INVALID_BACK_REF)
                         .addExtraInfo("property-name", JCRUtils.runJcrCallBack(property, Item::getName, CALCULATION_ERROR))
-                        .addExtraInfo("referencing-node-path", JCRUtils.runJcrSupplierCallBack(() -> property.getParent().getPath(), CALCULATION_ERROR), true));
+                        .addExtraInfo("referencing-node-path", getReferencingNodePath(property, checkedNode), true));
             }
         }
         return errors;
+    }
+
+    /*
+     * The path of the referencing node, read from the real node, by its identifier: through the wrapper, the path of the
+     * extension of a virtual node repeats the path of its mount point, such as /mounts/m/mounts/m/file.txt. The real
+     * session finds the extension, stored in the JCR, even when the provider no longer serves the virtual node.
+     */
+    private static String getReferencingNodePath(Property property, JCRNodeWrapper checkedNode) {
+        final String realPath = JCRUtils.runJcrSupplierCallBack(() -> checkedNode.getRealNode().getSession()
+                .getNodeByIdentifier(property.getParent().getIdentifier()).getPath(), null, false);
+        return realPath != null ? realPath : JCRUtils.runJcrSupplierCallBack(() -> property.getParent().getPath(), CALCULATION_ERROR);
     }
 
     @Override

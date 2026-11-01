@@ -86,7 +86,7 @@ describe('ReferencesSanityCheck', () => {
         scan(`${ROOT}/back-referenced`, CHECKS).then(r => {
             const error = expectError(r, 'INVALID_BACK_REF', `${ROOT}/back-referenced`);
             expectExtraInfo(error, 'property-name', 'j:defaultCategory');
-            expectExtraInfo(error, 'referencing-node-path', /\/linked\.txt$/);
+            expectExtraInfo(error, 'referencing-node-path', `/mounts/${SITE}-backref/linked.txt`);
         });
         resetCheckConfiguration(CHECK);
     });
