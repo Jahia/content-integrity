@@ -110,10 +110,12 @@ export const closeDetailsPanel = (): void => {
 };
 
 /**
- * An item of an opened menu, such as the one of a dropdown. The menu is displayed above the page.
+ * An item of an opened menu, such as the one of a dropdown. The menu is displayed above the page, and scrolls when it is
+ * longer than the screen, such as the list of the scans of a server which keeps many of them: the item is scrolled into
+ * view first.
  */
 export const getMenuItem = (label: string | RegExp): Cypress.Chainable<JQuery<HTMLElement>> =>
-    cy.contains('li.moonstone-menuItem', label).should('be.visible');
+    cy.contains('li.moonstone-menuItem', label).scrollIntoView().should('be.visible');
 
 /**
  * The filters of the results table, which are always displayed.
