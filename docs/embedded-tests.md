@@ -754,6 +754,8 @@ The check is enabled by default and runs on the nodes of type `jmix:hasTemplateN
 
 The templates are resolved as Jahia does to render the page, on the server which runs the scan: with the modules started on this server, its search index and its cache `RenderService.TemplatesCache`. In a cluster, run the check on every server: a template missing on one server only is not indexed there (see [TemplatesIndexationCheck](#templatesindexationcheck)), or its module is not started there, and the page must not be changed.
 
+The template of a page is valid when it is resolved as a template stored in the JCR, or when it is one of the templates offered to the editors for the page: the templates of a JavaScript module, declared in its code with `componentType: "template"`, are not stored in the JCR.
+
 If the template is implemented in a module which is mistakenly missing, then installing this module back will fix the error.  
 Otherwise, the page has to be edited to select another template. Note: the new template might use some different areas, and those related to the former template might need to be renamed or deleted.
 

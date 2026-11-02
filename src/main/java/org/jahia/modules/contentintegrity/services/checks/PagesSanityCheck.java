@@ -94,6 +94,11 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
         clearCaches();
     }
 
+    /*
+     * The template resolved by the render service, which reads the templates stored in the JCR, or one of the templates
+     * offered to the editors: the templates of a JavaScript module are declared to its engine, not stored in the JCR, so the
+     * render service does not resolve them, while the pages render with them.
+     */
     private boolean isTemplateValid(String templateName, JCRNodeWrapper node, ContentIntegrityErrorList errors) {
         if (templates.contains(templateName)) return true;
         if (missingTemplates.contains(templateName)) return false;
@@ -101,7 +106,8 @@ public class PagesSanityCheck extends AbstractContentIntegrityCheck implements C
         final Resource resource = new Resource(node, TEMPLATE_TYPE_HTML, null, null);
         final RenderContext renderContext = new RenderContext(null, null, null);
         try {
-            if (BundleUtils.getOsgiService(RenderService.class, null).resolveTemplate(resource, renderContext) != null) {
+            if (BundleUtils.getOsgiService(RenderService.class, null).resolveTemplate(resource, renderContext) != null
+                    || getAvailableTemplates(node, TEMPLATE_NAME).containsKey(templateName)) {
                 templates.add(templateName);
                 return true;
             }

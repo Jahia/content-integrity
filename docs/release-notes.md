@@ -63,6 +63,7 @@ Required Jahia version: 8.1.5.0
   * [bugfix] `jcr:integrity-check`: the checks prefixed with `:` in `-c` are skipped, they were run anyway
   * [bugfix] `jcr:integrity-printError` and `jcr:integrity-printTestResults`: the descriptions of their arguments, an error to print and the ID of a scan, were wrong. The commands which load the results of a scan print the same message when they can't be found, and the completion of an option value no longer fails when the option is the last typed word
   * [bugfix] `PagesSanityCheck`: the default template of a site, `j:defaultTemplateName`, is checked against the page templates available to the site; it was never checked
+  * [bugfix] `PagesSanityCheck`: `MISSING_TEMPLATE` was reported on every page of a site built on a template set which is a JavaScript module, since its templates, declared in its code, are not stored in the JCR: a template is valid as well when it is one of the templates offered to the editors, the ones its fix offers
   * [bugfix] `UndeployedModulesReferencesCheck`: the fix of a module installed but not started reports the error as not fixed, and tells to start the module; it reported it as fixed without any change
   * [bugfix] `PublicationSanityDefaultCheck`: the fix of `NO_LIVE_NODE` on the content of a module publishes it; it reported it as fixed without any change
   * [bugfix] UI: on Jahia 8.1.5, a dropdown of the values of a fix which groups its choices, such as the principal of an ACE, displays the chosen or suggested value
