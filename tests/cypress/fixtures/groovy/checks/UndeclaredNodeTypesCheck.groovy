@@ -3,7 +3,7 @@
 // - GHOST_NODE_TYPE: a node created with a type registered for the started module content-integrity, which does not declare it,
 //   and a node created with a type registered for a module which is not installed, with a child and a reference from outside
 //   its subtree, which the error counts
-// - declared-again: a node whose type is unregistered, then declared again by UndeclaredNodeTypesCheck-declareAgain.groovy
+// - declared-again: a node whose type is unregistered, then declared again by nodeTypes/declareAgain.groovy
 // - no error: the folder, of a type of Jahia core, and a node of a type declared by the started module default
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils

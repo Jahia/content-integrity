@@ -110,7 +110,7 @@ describe('UndeclaredNodeTypesCheck', () => {
             it('keeps the node when its type is declared again after the scan', () => {
                 scan(ROOT, CHECKS).then(r => {
                     const error = expectError(r, 'UNDECLARED_NODE_TYPE', `${ROOT}/declared-again`);
-                    runFixture('checks/UndeclaredNodeTypesCheck-declareAgain.groovy');
+                    runFixture('nodeTypes/declareAgain.groovy');
                     fixError(r.resultsId, error.id).then(result => {
                         expect(result.fixed, `Fix of UNDECLARED_NODE_TYPE on ${error.nodePath}${result.message ? ': ' + result.message : ''}`).to.be.true;
                     });
