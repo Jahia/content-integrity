@@ -896,7 +896,7 @@ If the node is of type `jmix:autoPublish`, but there's no live node with the sam
 
 If the node is under `/modules`, deploying the module again should publish it.
 
-**Fix**: marks the node as not published, by removing the property `j:published`. A node of type `jmix:autoPublish`, and a node under `/modules`, whose content the deployment of its module publishes, are published again instead; the error is fixed only if the node then exists in `live`.
+**Fix**: marks the node as not published, by removing the property `j:published`. A node of type `jmix:autoPublish`, and a node under `/modules`, whose content the deployment of its module publishes, are published again instead, with their translations only: their references and their sub-nodes are not published, so a node does not bring to `live` the unpublished content it references. The error is fixed only if the node then exists in `live`. The fix first checks the error again: a node which exists in `live` by then is left as it is.
 
 #### Different path in live
 

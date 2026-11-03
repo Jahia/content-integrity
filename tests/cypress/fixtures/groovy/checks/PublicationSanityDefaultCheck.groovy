@@ -1,5 +1,7 @@
 // Fixtures of PublicationSanityDefaultCheck, under /sites/SITEKEY/contents/publication-default
 // - NO_LIVE_NODE: a node flagged as published, which has never been published
+// - NO_LIVE_NODE: an auto-published reference which is not in live, to a text which has never been published, and which
+//   its fix must not publish
 // - DIFFERENT_PATH: a published node, moved in live only (scanned from a parent node)
 // - DIFFERENT_PATH_POTENTIAL_FP: the same error, when the moved node is the root of the scan
 // - PATH_CONFLICT: a node of the default workspace, and another node with the same path in live
@@ -58,11 +60,20 @@ publish(folder.getIdentifier())
 def neverPublished = folder.addNode("flagged-as-published", "jnt:text")
 neverPublished.setProperty("text", "Flagged as published, but never published")
 session.save()
+def draft = folder.addNode("referenced-draft", "jnt:text")
+draft.setProperty("text", "Never published, referenced by an auto-published node")
+def reference = folder.addNode("auto-published-reference", "jnt:contentReference")
+reference.setProperty("j:node", draft)
+session.save()
 
 withoutListeners {
     def realFlagged = neverPublished.getRealNode()
     realFlagged.setProperty("j:published", true)
     realFlagged.getSession().save()
+    // Made auto-published with the listeners disabled, so that it is not published
+    def realReference = reference.getRealNode()
+    realReference.addMixin("jmix:autoPublish")
+    realReference.getSession().save()
 
     def live = factory.getCurrentSystemSession("live", null, null)
     def realLive = live.getNode(FOLDER).getRealNode()

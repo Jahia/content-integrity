@@ -9,18 +9,20 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.RepairUtils;
-import org.jahia.osgi.BundleUtils;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRPublicationService;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
 
 import javax.jcr.ItemNotFoundException;
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.jahia.modules.contentintegrity.api.Constants.LIVE_WORKSPACE;
@@ -153,19 +155,31 @@ public class PublicationSanityDefaultCheck extends AbstractContentIntegrityCheck
     /*
      * NO_LIVE_NODE, from the jcr-scripts fixes: a node flagged as published but missing in live loses the flag.
      * An auto-published node missing in live is published again.
+     * The error is checked again first: a node which exists in live by then is left as it is. The node may have been
+     * changed since the scan, for example made auto-published by an editor, who may set j:published as well.
+     * Only the node and its translations are published: a publication by main id also publishes its references and
+     * its sub-nodes, such as the unpublished content of another editor referenced by the node.
      */
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
         if (!integrityError.getErrorType().equals(NO_LIVE_NODE)) return false;
+        final String uuid = node.getIdentifier();
+        if (JCRUtils.nodeExists(uuid, JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, true))) return true;
         // The content of the modules is published when they are deployed: like an auto-published node, it is published again
         if (node.isNodeType(Constants.JMIX_AUTO_PUBLISH) || StringUtils.startsWith(node.getPath(), MODULES_SUBTREE_PATH_PREFIX)) {
-            final String uuid = node.getIdentifier();
+            final List<String> uuids = new ArrayList<>();
+            uuids.add(uuid);
+            final NodeIterator children = node.getRealNode().getNodes();
+            while (children.hasNext()) {
+                final Node child = children.nextNode();
+                if (child.getName().startsWith(Constants.TRANSLATION_NODE_PREFIX)) uuids.add(child.getIdentifier());
+            }
             RepairUtils.runWithListenersDisabled(() -> {
                 if (node.hasProperty(PUBLISHED)) {
                     node.getProperty(PUBLISHED).remove();
                     node.saveSession();
                 }
-                RepairUtils.runAsRoot(() -> BundleUtils.getOsgiService(JCRPublicationService.class, null).publishByMainId(uuid));
+                RepairUtils.publishAsRoot(uuids, Constants.EDIT_WORKSPACE, Constants.LIVE_WORKSPACE);
             });
             return JCRUtils.nodeExists(uuid, JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, true));
         }
