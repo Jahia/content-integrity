@@ -182,7 +182,7 @@
         "ROLE_DOESNT_EXIST": "Removes the roles which don't exist from the access control entry. The entry is deleted when no role is left, and an external entry is always deleted."
       },
       "BinaryPropertiesSanityCheck": {
-        "INVALID_BINARY": "Deletes the file whose binary is missing, or the node which holds the binary property. On a translation node, only the property is removed. This can't be undone: restore the binary from a backup instead if it matters."
+        "INVALID_BINARY": "Deletes the file whose binary is missing. When the binary property is not held by the content of a file, only the property is removed, or its node when the property is mandatory and the node has no sub-node. This can't be undone: restore the binary from a backup instead if it matters."
       },
       "ChildNodeDefinitionsSanityCheck": {
         "NOT_ALLOWED_BY_PARENT_DEF": "Deletes the node and its subtree. This can't be undone."
