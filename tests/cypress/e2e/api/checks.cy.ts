@@ -34,7 +34,7 @@ describe('Integrity checks', () => {
 
     it('tells which checks are configurable', () => {
         ['AceSanityCheck', 'BinaryPropertiesSanityCheck', 'FlatStorageCheck', 'PropertyDefinitionsSanityCheck', 'PublicationSanityLiveCheck',
-            'ReferencesSanityCheck', 'StaticInternalLinksCheck', 'VersionHistoryCheck', 'WorkspaceSpecificDefinitionsCheck'].forEach(id => {
+            'ReferencesSanityCheck', 'StaticInternalLinksCheck', 'UndeclaredNodeTypesCheck', 'VersionHistoryCheck', 'WorkspaceSpecificDefinitionsCheck'].forEach(id => {
             expect(checks.find(c => c.id === id).configurable, `${id} is configurable`).to.be.true;
         });
         expect(checks.find(c => c.id === 'LockSanityCheck').configurable).to.be.false;

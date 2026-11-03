@@ -241,8 +241,8 @@
         "MISSING_MEMBERSHIP": "Adds the group site-privileged of the site to the members of the group privileged."
       },
       "UndeclaredNodeTypesCheck": {
-        "UNDECLARED_NODE_TYPE": "Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone.",
-        "GHOST_NODE_TYPE": "Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone."
+        "UNDECLARED_NODE_TYPE": "Only for a type named in the configuration types-to-fix of the check. Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone. Changes nothing when the type is declared again since the scan.",
+        "GHOST_NODE_TYPE": "Only for a type named in the configuration types-to-fix of the check. Removes the undeclared mixin from the node. When the primary type is undeclared, deletes the node and its subtree, which can't be undone. Changes nothing when the type is declared again since the scan."
       },
       "UndeployedModulesReferencesCheck": {
         "UNDEPLOYED_MODULE_ON_SITE": "Removes the module from the modules of the site, in both workspaces. Nothing changes if the module is available again. A module installed but not started is not removed: start it."
