@@ -114,7 +114,7 @@
       },
       "UndeclaredNodeTypesCheck": {
         "UNDECLARED_NODE_TYPE": "Les types sont ceux des modules démarrés sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez sur ce serveur le module qui déclare le type plutôt que de corriger le nœud.",
-        "GHOST_NODE_TYPE": "Le type est déclaré par un module qui n'est pas démarré sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez le module sur ce serveur plutôt que de corriger le nœud."
+        "GHOST_NODE_TYPE": "Le type est déclaré par un module qui n'est pas installé ou pas démarré sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, installez ou démarrez le module sur ce serveur plutôt que de corriger le nœud."
       },
       "UndeployedModulesReferencesCheck": {
         "UNDEPLOYED_MODULE_ON_SITE": "Le module n'est pas déployé sur le serveur qui a lancé l'analyse. S'il est déployé sur les autres serveurs, déployez-le sur celui-ci : la correction le retirerait du site pour tout le cluster."
