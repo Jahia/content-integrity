@@ -373,13 +373,13 @@ The check is enabled by default and runs on every node except the root node, in 
 
 ![NOT_ALLOWED_BY_PARENT_DEF in the results of a scan](img/checks/ChildNodeDefinitionsSanityCheck/NOT_ALLOWED_BY_PARENT_DEF.png)
 
-**Description**: the parent node has no child node definition which accepts the node, with its name and any of its types. The details of the error tell the primary type of the parent node.
+**Description**: the parent node has no child node definition which accepts the node, with its name and any of its types. A node which the repository accepts through a residual definition is not reported, even when the parent declares a child definition of another type with the same name, for example a page named `j:conditionalVisibility`. The details of the error tell the primary type of the parent node.
 
 Usually, such issue appears after a modification of some definitions. If the name of the child node has been modified in the definitions, then the related nodes should be renamed accordingly in the JCR.
 
 If the child node is of a type that is not allowed anymore by its parent, then such node should be deleted or moved to a new parent.
 
-**Fix**: deletes the node and its subtree. The node is removed at the Jackrabbit level, since the regular API can't load its definition, with the listeners disabled, in the workspace where the error is reported. This can't be undone: if the content has to be kept, rename or move the node instead, as explained above. **Fix all** applies this fix as well.
+**Fix**: deletes the node, when it has no sub-node other than its translations and its ACL. A node with sub-nodes is not fixed: rename it, move it, or delete it yourself, after checking what its subtree holds. The fix first checks the error again, and leaves a node which is allowed by then. The node is removed at the Jackrabbit level, since the regular API can't load its definition, with the listeners disabled, in the workspace where the error is reported. This can't be undone: if the content has to be kept, rename or move the node instead, as explained above. **Fix all** applies this fix as well.
 
 ## FlatStorageCheck
 

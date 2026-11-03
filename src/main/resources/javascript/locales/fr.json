@@ -185,7 +185,7 @@
         "INVALID_BINARY": "Supprime le fichier dont le binaire manque. Quand la propriété binaire n'est pas portée par le contenu d'un fichier, seule la propriété est supprimée, ou son nœud si la propriété est obligatoire et que le nœud n'a pas de sous-nœud. C'est irréversible : restaurez plutôt le binaire depuis une sauvegarde s'il est important."
       },
       "ChildNodeDefinitionsSanityCheck": {
-        "NOT_ALLOWED_BY_PARENT_DEF": "Supprime le nœud et son sous-arbre. C'est irréversible."
+        "NOT_ALLOWED_BY_PARENT_DEF": "Supprime le nœud, s'il n'a pas d'autre sous-nœud que ses traductions et son ACL. C'est irréversible."
       },
       "HomePageDeclarationCheck": {
         "NO_HOME": "Définit la première page du site comme sa page d'accueil.",

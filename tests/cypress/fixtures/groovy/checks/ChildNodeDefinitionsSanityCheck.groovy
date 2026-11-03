@@ -1,6 +1,7 @@
 // Fixtures of ChildNodeDefinitionsSanityCheck, under /sites/SITEKEY/contents/child-node-definitions
 // - NOT_ALLOWED_BY_PARENT_DEF: a node created when its type was droppable content, then its type stops being droppable,
 //   so that its parent, a jnt:contentFolder, does not accept it anymore
+// - NOT_ALLOWED_BY_PARENT_DEF, not fixed: the same, on a node which has a sub-node, which the fix must not delete
 import org.jahia.bin.filters.jcr.JcrSessionFilter
 import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
@@ -29,9 +30,10 @@ def session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurre
 def contents = session.getNode("/sites/SITEKEY/contents")
 if (contents.hasNode("child-node-definitions")) contents.getNode("child-node-definitions").remove()
 def folder = contents.addNode("child-node-definitions", "jnt:contentFolder")
-register("[jnt:ciTestChild] > jnt:content, jmix:droppableContent")
+register("[jnt:ciTestChild] > jnt:content, jmix:droppableContent\n + * (jnt:text)")
 folder.addNode("not-allowed", "jnt:ciTestChild")
+folder.addNode("not-allowed-with-children", "jnt:ciTestChild").addNode("kept", "jnt:text")
 folder.addNode("allowed", "jnt:text")
 session.save()
-register("[jnt:ciTestChild] > jnt:content")
+register("[jnt:ciTestChild] > jnt:content\n + * (jnt:text)")
 JcrSessionFilter.endRequest()
