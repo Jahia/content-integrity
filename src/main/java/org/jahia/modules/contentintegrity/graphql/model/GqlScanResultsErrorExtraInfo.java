@@ -1,12 +1,8 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
 import graphql.annotations.annotationTypes.GraphQLField;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class GqlScanResultsErrorExtraInfo {
-
-    private static final Logger logger = LoggerFactory.getLogger(GqlScanResultsErrorExtraInfo.class);
 
     private final String key;
     private final String label;

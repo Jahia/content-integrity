@@ -2,20 +2,17 @@ package org.jahia.modules.contentintegrity.services.reporting;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jahia.api.settings.SettingsBean;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
-import org.jahia.settings.SettingsBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jahia.osgi.BundleUtils;
 
 public class CsvReport extends Report {
-
-    private static final Logger logger = LoggerFactory.getLogger(CsvReport.class);
 
     private static final String REPORT_COLUMN_NAMES_CONF = "modules.contentIntegrity.csv.header";
     private static final String CSV_SEPARATOR = ";";
@@ -48,7 +45,7 @@ public class CsvReport extends Report {
 
     private List<String> toCSVFileContent(List<ContentIntegrityError> errors) {
         final List<String> lines = getReportContent(errors);
-        String header = SettingsBean.getInstance().getString(REPORT_COLUMN_NAMES_CONF, null);
+        String header = BundleUtils.getOsgiService(SettingsBean.class, null).getString(REPORT_COLUMN_NAMES_CONF, null);
         if (StringUtils.isBlank(header)) {
             header = toCSVLine(getColumns());
         }

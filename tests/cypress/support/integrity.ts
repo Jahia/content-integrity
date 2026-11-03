@@ -1,0 +1,473 @@
+import {createSite, deleteSite} from '@jahia/cypress';
+
+/**
+ * Helpers to drive the content-integrity GraphQL API: run a scan, read its errors, fix them and configure the checks.
+ * The scans run in the background on the server, so a scan is polled until it ends.
+ */
+
+export type Workspace = 'EDIT' | 'LIVE' | 'BOTH';
+
+export type IntegrityError = {
+    id: string;
+    checkName: string;
+    errorType: string;
+    workspace: string;
+    nodePath: string;
+    nodeId: string;
+    locale: string;
+    message: string;
+    fixed: boolean;
+    fixable: boolean;
+    fixWithValues: boolean;
+    extraInfos: { label: string; value: string }[];
+};
+
+export type ScanResults = {
+    resultsId: string | null;
+    errors: IntegrityError[];
+};
+
+export type FixResult = {
+    fixed: boolean;
+    message?: string;
+};
+
+export type PathMatcher = string | RegExp;
+
+const SCAN_POLLING_INTERVAL = 500;
+const SCAN_POLLING_ATTEMPTS = 240;
+
+const ERROR_FIELDS = 'id checkName errorType workspace nodePath nodeId locale message fixed fixable fixWithValues extraInfos { label value }';
+
+export type User = { username: string; password: string };
+
+// The root password, read with cy.env() before the tests of each spec: cy.env() is a command, it yields the value later
+// in the chain, whereas the helpers need it where they build a request. The hook is registered here, not in e2e.ts:
+// Cypress bundles the support file and each spec apart, so each has its own copy of this module, and the specs read theirs
+let rootPassword: string;
+
+before(() => {
+    cy.env<{ SUPER_USER_PASSWORD: string }>(['SUPER_USER_PASSWORD']).then(env => {
+        rootPassword = env.SUPER_USER_PASSWORD;
+    });
+});
+
+export const rootUser = (): User => ({username: 'root', password: rootPassword});
+
+const post = (user: User, query: string, variables: Record<string, unknown>): Cypress.Chainable<Cypress.Response<any>> => cy.request({
+    method: 'POST',
+    url: '/modules/graphql',
+    auth: user,
+    headers: {Origin: Cypress.config().baseUrl},
+    body: {query, variables},
+    log: false
+});
+
+const request = (query: string, variables: Record<string, unknown> = {}): Cypress.Chainable<Cypress.Response<any>> => post(rootUser(), query, variables);
+
+/**
+ * Runs a GraphQL query as a user, and yields the body of the response, with its errors, which the test asserts.
+ */
+export const requestAs = (user: User, query: string, variables: Record<string, unknown> = {}): Cypress.Chainable<any> =>
+    post(user, query, variables).its('body');
+
+/**
+ * Runs a GraphQL query as root, and fails the test if the response carries errors.
+ */
+export const graphql = (query: string, variables: Record<string, unknown> = {}): Cypress.Chainable<any> =>
+    request(query, variables).then(response => {
+        expect(response.body.errors, `GraphQL errors: ${JSON.stringify(response.body.errors)}`).to.be.undefined;
+        return response.body.data;
+    });
+
+/**
+ * Runs the fixtures script of the test, with the replacements, and fails the test if the script fails.
+ */
+export const runFixture = (script: string, replacements: Record<string, string> = {}): void => {
+    cy.executeGroovy(`groovy/${script}`, replacements).then((result: unknown) => {
+        expect(result, `Result of the script ${script}`).to.equal('.installed');
+    });
+};
+
+/**
+ * Creates the site used by the tests of a check: the default template set, with the languages en and fr.
+ */
+export const createTestSite = (siteKey: string): void => {
+    deleteSite(siteKey);
+    createSite(siteKey, {templateSet: 'templates-system', serverName: 'localhost', locale: 'en', languages: 'en,fr'});
+};
+
+export const deleteTestSite = (siteKey: string): void => {
+    deleteSite(siteKey);
+};
+
+const waitForScan = (executionId: string, attempt = 0): Cypress.Chainable<string | null> =>
+    graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { status resultsID logs } } }', {id: executionId})
+        .then(data => {
+            const {status, resultsID, logs} = data.integrity.scan;
+            if (status === 'running') {
+                expect(attempt, `The scan ${executionId} is still running`).to.be.lessThan(SCAN_POLLING_ATTEMPTS);
+                cy.wait(SCAN_POLLING_INTERVAL, {log: false});
+                return waitForScan(executionId, attempt + 1);
+            }
+
+            expect(status, `Status of the scan ${executionId}. Logs: ${(logs || []).join(' | ')}`).to.equal('finished');
+            return cy.wrap(resultsID as string | null, {log: false});
+        });
+
+export type Execution = {
+    id: string;
+    status: string;
+    startDate: string | null;
+    resultsID: string | null;
+    logs: string[];
+    reports: { name: string; extension: string; location: string; uri: string }[] | null;
+};
+
+export type ScanParameters = {
+    startNode: string;
+    checks: string[];
+    workspace?: Workspace;
+    excludedPaths?: string[];
+    skipMountPoints?: boolean;
+};
+
+/**
+ * Starts a scan, without waiting for its end, and returns the ID of its execution.
+ */
+export const startScan = ({startNode, checks, workspace = 'EDIT', excludedPaths, skipMountPoints}: ScanParameters): Cypress.Chainable<string> =>
+    graphql('mutation($workspace: WorkspaceToScan!, $startNode: String, $excludedPaths: [String], $skipMountPoints: Boolean, $checks: [String]) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, excludedPaths: $excludedPaths, skipMountPoints: $skipMountPoints, checksToRun: $checks) } } }',
+        {workspace, startNode, excludedPaths, skipMountPoints, checks}).then(data => data.integrity.scan.id);
+
+/**
+ * Reads an execution. Without ID, the API returns the scan which runs, or else the last one.
+ */
+export const readExecution = (id?: string): Cypress.Chainable<Execution> =>
+    graphql('query($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { id status startDate resultsID logs reports { name extension location uri } } } }', {id})
+        .then(data => data.integrity.scan as Execution);
+
+/**
+ * Waits for the end of an execution, whatever its outcome, and returns it.
+ */
+export const waitForExecution = (id: string, attempt = 0): Cypress.Chainable<Execution> => readExecution(id).then(execution => {
+    if (execution.status === 'running') {
+        expect(attempt, `The scan ${id} is still running`).to.be.lessThan(SCAN_POLLING_ATTEMPTS);
+        cy.wait(SCAN_POLLING_INTERVAL, {log: false});
+        return waitForExecution(id, attempt + 1);
+    }
+
+    return cy.wrap(execution, {log: false});
+});
+
+// The scan reports are stored under the system site, and their number grows with every scan
+export const REPORTS_PATH = '/sites/systemsite/files/content-integrity-reports';
+
+/**
+ * A scan which lasts while a test acts, once CiSlowCheck is registered: it scans the subtree created with a fixed number of
+ * nodes by scan/slowCheck.groovy, so that its length does not depend on the content of the instance, nor on the number of
+ * scans run before. It excludes the stored reports, as a scan of the system site does.
+ */
+export const SLOW_SCAN: ScanParameters = {startNode: '/sites/systemsite/contents/ci-slow-scan', checks: ['CiSlowCheck'], excludedPaths: [REPORTS_PATH]};
+
+/**
+ * Stops the scan which runs, if any, and waits for its end: a test which fails while a scan runs must not leave it
+ * running, as no other scan could start.
+ */
+export const stopRunningScan = (): void => {
+    readExecution().then(execution => {
+        if (execution?.status === 'running') {
+            graphql('mutation($id: String) { integrity: contentIntegrity { scan: integrityScan(id: $id) { stopRunningScan } } }', {id: execution.id});
+            waitForExecution(execution.id);
+        }
+    });
+};
+
+export type ScanProgress = {
+    id: string;
+    status: string;
+    startDate: string | null;
+    resultsID: string | null;
+    logs: string[];
+};
+
+export type SubscriptionOutcome = {
+    events: ScanProgress[];
+    completed: boolean;
+    errors: string[];
+};
+
+/**
+ * Follows a scan through the subscription contentIntegrityScan, as the administration page does: over the GraphQL
+ * WebSocket endpoint, with the protocol of subscriptions-transport-ws and the session of the page. Resolves once the
+ * server ends the subscription, refuses it, or after the timeout. A page of the server must be opened first.
+ */
+export const followScan = (id: string, timeoutMs = 120000): Cypress.Chainable<SubscriptionOutcome> =>
+    cy.window({log: false}).then({timeout: timeoutMs + 5000}, win => new Cypress.Promise<SubscriptionOutcome>(resolve => {
+        const outcome: SubscriptionOutcome = {events: [], completed: false, errors: []};
+        const socket = new win.WebSocket(`${Cypress.config().baseUrl.replace(/^http/, 'ws')}/modules/graphqlws`, 'graphql-ws');
+        const timer = setTimeout(() => socket.close(), timeoutMs);
+        socket.onopen = () => socket.send(JSON.stringify({type: 'connection_init', payload: {}}));
+        socket.onmessage = message => {
+            const data = JSON.parse(message.data);
+            if (data.type === 'connection_ack') {
+                socket.send(JSON.stringify({
+                    id: '1',
+                    type: 'start',
+                    payload: {query: 'subscription($id: String!) { contentIntegrityScan(id: $id) { id status startDate resultsID logs } }', variables: {id}}
+                }));
+            } else if (data.type === 'data' && data.payload?.data?.contentIntegrityScan) {
+                outcome.events.push(data.payload.data.contentIntegrityScan);
+            } else if (data.type === 'data' || data.type === 'error') {
+                outcome.errors.push(...(data.payload?.errors || [data.payload]).map((e: { message?: string }) => e?.message || JSON.stringify(e)));
+                socket.close();
+            } else if (data.type === 'complete') {
+                outcome.completed = true;
+                socket.close();
+            }
+        };
+        socket.onclose = () => {
+            clearTimeout(timer);
+            resolve(outcome);
+        };
+    }));
+
+export type StoredReport = {
+    path: string;
+    status: string | null;
+    files: string[];
+    fixedErrors: string[];
+};
+
+/**
+ * The report node of results in the JCR, found by their identifier, or null.
+ */
+export const readStoredReport = (resultsId: string): Cypress.Chainable<StoredReport | null> =>
+    graphql(`{ jcr { nodesByQuery(query: "SELECT * FROM [integrity:scanReport] WHERE [integrity:resultsId] = '${resultsId}'", queryLanguage: SQL2) {
+        nodes { path status: property(name: "integrity:status") { value } fixed: property(name: "integrity:fixedErrors") { values } children { nodes { name } } } } } }`)
+        .then(data => {
+            const node = data.jcr.nodesByQuery.nodes[0];
+            return node ? {
+                path: node.path,
+                status: node.status?.value ?? null,
+                files: node.children.nodes.map((c: { name: string }) => c.name),
+                fixedErrors: node.fixed?.values ?? []
+            } : null;
+        });
+
+/**
+ * Registers CiSlowCheck, a check which finds no error but waits on every node: a scan with it lasts as long as a test
+ * needs to act while it runs. SLOW_SCAN with a delay of 200 ms lasts about 15 seconds.
+ */
+export const registerSlowCheck = (delayMs = 200): void => runFixture('scan/slowCheck.groovy', {DELAY: String(delayMs)});
+
+export const unregisterSlowCheck = (): void => runFixture('scan/slowCheck-cleanup.groovy');
+
+// The API returns at most 100 errors per page
+const ERRORS_PAGE_SIZE = 100;
+
+/**
+ * Reads all the errors of scan results, page after page.
+ */
+export const getErrors = (resultsId: string, offset = 0, read: IntegrityError[] = []): Cypress.Chainable<IntegrityError[]> =>
+    graphql(`query($id: String, $offset: Int!) { integrity: contentIntegrity { results: scanResultsDetails(id: $id) { errorCount errors(offset: $offset, pageSize: ${ERRORS_PAGE_SIZE}) { ${ERROR_FIELDS} } } } }`,
+        {id: resultsId, offset})
+        .then(data => {
+            const errors = [...read, ...data.integrity.results.errors as IntegrityError[]];
+            return errors.length < data.integrity.results.errorCount && errors.length > read.length ?
+                getErrors(resultsId, errors.length, errors) :
+                cy.wrap(errors, {log: false});
+        });
+
+/**
+ * Scans the subtree of a node with the given checks, waits for the end of the scan and returns its errors.
+ * The checks are run even when they are disabled by default.
+ */
+export const scan = (startNode: string, checks: string[], workspace: Workspace = 'EDIT'): Cypress.Chainable<ScanResults> => {
+    cy.log(`Scan of ${startNode} in ${workspace} with ${checks.join(', ')}`);
+    return graphql('mutation($workspace: WorkspaceToScan!, $startNode: String, $checks: [String]) { integrity: contentIntegrity { scan: integrityScan { id: scan(workspace: $workspace, startNode: $startNode, checksToRun: $checks) } } }',
+        {workspace, startNode, checks})
+        .then(data => waitForScan(data.integrity.scan.id))
+        .then(resultsId => {
+            if (!resultsId) {
+                return cy.wrap({resultsId: null, errors: []} as ScanResults, {log: false});
+            }
+
+            return getErrors(resultsId).then(errors => ({resultsId, errors} as ScanResults));
+        });
+};
+
+const matchesPath = (error: IntegrityError, path?: PathMatcher): boolean => {
+    if (path === undefined) {
+        return true;
+    }
+
+    return typeof path === 'string' ? error.nodePath === path : path.test(error.nodePath);
+};
+
+/**
+ * The errors of a type, optionally on a node.
+ */
+const errorsOf = (results: ScanResults, errorType: string, path?: PathMatcher): IntegrityError[] =>
+    results.errors.filter(e => e.errorType === errorType && matchesPath(e, path));
+
+const describeErrors = (results: ScanResults): string => results.errors.map(e => `${e.errorType} on ${e.nodePath}`).join(', ') || 'no error';
+
+/**
+ * Asserts that the scan has detected an error of the type on the node, and returns it.
+ */
+export const expectError = (results: ScanResults, errorType: string, path: PathMatcher): IntegrityError => {
+    const errors = errorsOf(results, errorType, path);
+    expect(errors, `${errorType} on ${path}, among: ${describeErrors(results)}`).to.have.length.greaterThan(0);
+    return errors[0];
+};
+
+/**
+ * Asserts that the scan has not detected any error of the type on the node.
+ */
+export const expectNoError = (results: ScanResults, errorType: string, path: PathMatcher): void => {
+    expect(errorsOf(results, errorType, path), `${errorType} on ${path}, among: ${describeErrors(results)}`).to.have.length(0);
+};
+
+/**
+ * Asserts that the error carries the extra information, with the value when one is given.
+ */
+export const expectExtraInfo = (error: IntegrityError, label: string, value?: string | RegExp): void => {
+    const info = error.extraInfos.find(i => i.label === label);
+    expect(info, `Extra information ${label} of ${error.errorType}`).to.not.be.undefined;
+    if (value instanceof RegExp) {
+        expect(info.value).to.match(value);
+    } else if (value !== undefined) {
+        expect(info.value).to.equal(value);
+    }
+};
+
+/**
+ * Fixes an error of scan results, with the fix of the check which has detected it. The values are the ones typed by
+ * an administrator, for the errors fixed with values. A rejected value is returned as a message, not as a test failure.
+ */
+export const fixError = (resultsId: string, errorId: string, values?: string[]): Cypress.Chainable<FixResult> =>
+    request('mutation($resultsId: String!, $id: String!, $values: [String]) { integrity: contentIntegrity { results: scanResultsDetails(id: $resultsId) { error: fixError(id: $id, values: $values) { fixed fixFailureMessage } } } }',
+        {resultsId, id: errorId, values})
+        .then(response => {
+            if (response.body.errors?.length) {
+                return {fixed: false, message: response.body.errors.map((e: { message: string }) => e.message).join(', ')};
+            }
+
+            // The reason why the fix of its check has failed, when it tells one
+            const error = response.body.data.integrity.results.error;
+            return {fixed: error.fixed === true, message: error.fixFailureMessage ?? undefined};
+        });
+
+/**
+ * Scans, fixes the error of the type on the node, then scans again to check that the error is gone.
+ */
+export const fixAndVerify = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
+    scan(startNode, checks, workspace).then(results => {
+        const error = expectError(results, errorType, path);
+        expect(error.fixable, `${errorType} is fixable`).to.be.true;
+        fixError(results.resultsId, error.id).then(result => {
+            expect(result.fixed, `Fix of ${errorType} on ${error.nodePath}${result.message ? ': ' + result.message : ''}`).to.be.true;
+        });
+    });
+    scan(startNode, checks, workspace).then(results => expectNoError(results, errorType, path));
+};
+
+/**
+ * Asserts that the fix of the check does not fix the error, because the right value can't be guessed.
+ */
+export const expectFixFails = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
+    scan(startNode, checks, workspace).then(results => {
+        const error = expectError(results, errorType, path);
+        fixError(results.resultsId, error.id).then(result => expect(result.fixed, `Fix of ${errorType} on ${error.nodePath}`).to.be.false);
+    });
+    scan(startNode, checks, workspace).then(results => expectError(results, errorType, path));
+};
+
+export const configureCheck = (checkId: string, name: string, value: string): void => {
+    graphql('mutation($id: String, $name: String!, $value: String!) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { configure(name: $name, value: $value) } } }',
+        {id: checkId, name, value})
+        .then(data => expect(data.integrity.check.configure, `Configuration ${name}=${value} of ${checkId}`).to.be.true);
+};
+
+export const resetCheckConfiguration = (checkId: string): void => {
+    graphql('mutation($id: String) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { resetAllConfigurations } } }', {id: checkId});
+};
+
+/**
+ * Yields whether a node exists in the default workspace: reading a missing node returns an error, not null.
+ */
+export const nodeExists = (path: string): Cypress.Chainable<boolean> =>
+    request('query($path: String!) { jcr { nodeByPath(path: $path) { uuid } } }', {path})
+        .then(response => Boolean(response.body.data?.jcr?.nodeByPath));
+
+/**
+ * Asserts that the check which has detected the error does not provide any fix.
+ */
+export const expectNotFixable = (results: ScanResults, errorType: string, path: PathMatcher): void => {
+    const error = expectError(results, errorType, path);
+    expect(error.fixable, `${errorType} is fixable`).to.be.false;
+};
+
+/**
+ * Scans twice, then fixes the error from both results: from the second ones, it is already fixed, as when it was fixed from
+ * other results or by the fix of another error. Both fixes report it fixed, then a scan checks that the error is gone.
+ */
+export const fixFromTwoScans = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
+    scan(startNode, checks, workspace).then(first => {
+        scan(startNode, checks, workspace).then(second => {
+            const error = expectError(first, errorType, path);
+            expect(error.fixable, `${errorType} is fixable`).to.be.true;
+            fixError(first.resultsId, error.id).then(result => expect(result.fixed, `Fix of ${errorType}: ${result.message}`).to.be.true);
+            fixError(second.resultsId, expectError(second, errorType, path).id).then(result => {
+                expect(result.fixed, `Fix of ${errorType} already fixed: ${result.message}`).to.be.true;
+            });
+        });
+    });
+    scan(startNode, checks, workspace).then(results => expectNoError(results, errorType, path));
+};
+
+/**
+ * Scans, checks that the error of the type on the node is not fixable, that a fix does not change it, then scans again to
+ * check that the error is still there.
+ */
+export const expectNoFix = (startNode: string, checks: string[], workspace: Workspace, errorType: string, path: PathMatcher): void => {
+    scan(startNode, checks, workspace).then(results => {
+        expectNotFixable(results, errorType, path);
+        fixError(results.resultsId, expectError(results, errorType, path).id).its('fixed').should('be.false');
+    });
+    scan(startNode, checks, workspace).then(results => expectError(results, errorType, path));
+};
+
+/**
+ * Asserts the status of a check: the checks disabled by default are run only when they are explicitly selected.
+ */
+export const expectCheckEnabled = (checkId: string, enabled: boolean): void => {
+    graphql('query($id: String) { integrity: contentIntegrity { check: integrityCheckById(id: $id) { id enabled } } }', {id: checkId})
+        .then(data => expect(data.integrity.check.enabled, `${checkId} is enabled`).to.equal(enabled));
+};
+
+/**
+ * True if the results are listed among the stored results.
+ */
+export const isListed = (resultsId: string): Cypress.Chainable<boolean> =>
+    graphql('{ integrity: contentIntegrity { summaries: scanResultsSummaries { id } } }')
+        .then(data => data.integrity.summaries.some((s: { id: string }) => s.id === resultsId));
+
+/**
+ * The order of the paths of the errors table: name by name, whatever their case, then with their case.
+ */
+export const comparePaths = (a: string, b: string): number => {
+    const namesA = a.split('/').filter(Boolean);
+    const namesB = b.split('/').filter(Boolean);
+    for (let i = 0; i < Math.min(namesA.length, namesB.length); i++) {
+        const lowerA = namesA[i].toLowerCase();
+        const lowerB = namesB[i].toLowerCase();
+        if (lowerA !== lowerB) {
+            return lowerA < lowerB ? -1 : 1;
+        }
+        if (namesA[i] !== namesB[i]) {
+            return namesA[i] < namesB[i] ? -1 : 1;
+        }
+    }
+    return namesA.length - namesB.length;
+};

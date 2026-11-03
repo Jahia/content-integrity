@@ -1,0 +1,375 @@
+import {
+    configureCheck,
+    createTestSite,
+    deleteTestSite,
+    expectError,
+    expectExtraInfo,
+    expectFixFails,
+    expectNoError,
+    expectNoFix,
+    fixAndVerify,
+    fixError,
+    graphql,
+    nodeExists,
+    resetCheckConfiguration,
+    runFixture,
+    scan,
+    ScanResults
+} from '../../support/integrity';
+
+const SITE = 'ciAceCheck';
+const SITE_PATH = `/sites/${SITE}`;
+const ROOT = `${SITE_PATH}/contents/ace`;
+const CHECK = 'AceSanityCheck';
+const CHECKS = [CHECK];
+
+// See the fixtures script: each scenario is a node named after the error type, granted to its own user when it alters an external ACE
+const user = (suffix: string) => `ci-${SITE}-${suffix}`;
+const ace = (scenario: string, username: string) => `${ROOT}/${scenario}/j:acl/GRANT_u_${username}`;
+const externalAce = (username: string) => `${SITE_PATH}/j:acl/REFeditor_currentSite-access_u_${username}`;
+
+const regularAces: [string, string][] = [
+    ['NO_PRINCIPAL', ace('NO_PRINCIPAL', user('ace'))],
+    ['NO_ACE_TYPE_PROP', ace('NO_ACE_TYPE_PROP', user('ace'))],
+    ['NO_ROLES_PROP', ace('NO_ROLES_PROP', user('ace'))],
+    ['INVALID_PRINCIPAL', `${ROOT}/INVALID_PRINCIPAL/j:acl/GRANT_u_ci-user-which-does-not-exist`],
+    ['INVALID_NODENAME', `${ROOT}/INVALID_NODENAME/j:acl/GRANT_u_another-name`],
+    ['ROLE_DOESNT_EXIST', ace('ROLE_DOESNT_EXIST', user('ace'))],
+    ['MISSING_SITE_PRIVILEGED_GRP_MEMBER', ace('MISSING_SITE_PRIVILEGED_GRP_MEMBER', user('ace-privileged'))],
+    ['MISSING_EXTERNAL_ACE', ace('MISSING_EXTERNAL_ACE', user('ace-0'))],
+    ['ACE_NON_GRANT_WITH_EXTERNAL_ACE', ace('ACE_NON_GRANT_WITH_EXTERNAL_ACE', user('ace-1'))]
+];
+const externalAces: [string, string][] = [
+    ['SOURCE_ACE_NOT_TYPE_GRANT', externalAce(user('ace-1'))],
+    ['INVALID_ACE_TYPE_PROP', externalAce(user('ace-2'))],
+    ['NO_SOURCE_ACE_PROP', externalAce(user('ace-3'))],
+    ['EMPTY_SOURCE_ACE_PROP', externalAce(user('ace-4'))],
+    ['SOURCE_ACE_BROKEN_REF', externalAce(user('ace-5'))],
+    ['INVALID_EXTERNAL_PERMISSIONS', externalAce(user('ace-6'))],
+    ['INVALID_EXTERNAL_ACE_PATH', `${ROOT}/external-ace-holder/j:acl/REFeditor_currentSite-access_u_${user('ace-7')}`],
+    ['DUPLICATED_REF_SRC_ACE', externalAce(user('ace-8'))],
+    ['INVALID_ROLES_PROP', externalAce(user('ace-9'))],
+    ['ROLES_DIFFER_ON_SOURCE_ACE', externalAce(user('ace-10'))]
+];
+const errorPath = (errorType: string) => [...regularAces, ...externalAces].find(([type]) => type === errorType)[1];
+// An ACE and an external ACE created directly under a page, outside of its ACL
+const OUTSIDE_ACL = `${SITE_PATH}/home/ace-outside-acl`;
+const outsideAcl: string[] = [`${OUTSIDE_ACL}/GRANT_u_${user('ace')}`, `${OUTSIDE_ACL}/REFeditor_currentSite-access_u_${user('ace')}`];
+// The single entry of an ACL which breaks the inheritance
+const RESTRICTING_ACL = `${ROOT}/KEEPS_RESTRICTING_ACL/j:acl`;
+
+describe('AceSanityCheck', () => {
+    before(() => {
+        createTestSite(SITE);
+        runFixture('checks/AceSanityCheck.groovy', {SITEKEY: SITE});
+    });
+
+    after(() => {
+        resetCheckConfiguration(CHECK);
+        deleteTestSite(SITE);
+        runFixture('checks/AceSanityCheck-cleanup.groovy', {SITEKEY: SITE});
+    });
+
+    describe('Detection', () => {
+        let results: ScanResults;
+
+        before(() => {
+            scan(SITE_PATH, CHECKS).then(r => {
+                results = r;
+            });
+        });
+
+        regularAces.forEach(([errorType, path]) => {
+            it(`detects ${errorType} on the ACE`, () => {
+                expectError(results, errorType, path);
+            });
+        });
+
+        externalAces.forEach(([errorType, path]) => {
+            it(`detects ${errorType} on the external ACE`, () => {
+                expectError(results, errorType, path);
+            });
+        });
+
+        it('reports the expected name of an ACE with an invalid name', () => {
+            expectExtraInfo(expectError(results, 'INVALID_NODENAME', errorPath('INVALID_NODENAME')), 'expected-nodename', `GRANT_u_${user('ace')}`);
+        });
+
+        it('reports the role which does not exist', () => {
+            expectExtraInfo(expectError(results, 'ROLE_DOESNT_EXIST', errorPath('ROLE_DOESNT_EXIST')), 'role', 'ci-role-which-does-not-exist');
+        });
+
+        it('reports the expected path of an external ACE at an invalid location', () => {
+            expectExtraInfo(expectError(results, 'INVALID_EXTERNAL_ACE_PATH', errorPath('INVALID_EXTERNAL_ACE_PATH')),
+                'external-ace-expected-path', externalAce(user('ace-7')));
+        });
+
+        it('does not raise a framework error on an ACE without principal or type', () => {
+            expect(results.errors.filter(e => e.errorType === 'FRAMEWORK_ERROR' && e.nodePath.startsWith(ROOT))).to.have.length(0);
+        });
+
+        // Its parent is not an ACL and its grandparent not the node it would secure: the other errors, whose fixes act on
+        // them, are not reported
+        outsideAcl.forEach(path => {
+            it(`detects ACE_OUTSIDE_ACL, and only it, on ${path.substring(OUTSIDE_ACL.length + 1)}`, () => {
+                expectExtraInfo(expectError(results, 'ACE_OUTSIDE_ACL', path), 'parent-type', 'jnt:page');
+                expect(results.errors.filter(e => e.nodePath === path).map(e => e.errorType)).to.deep.equal(['ACE_OUTSIDE_ACL']);
+            });
+        });
+
+        it('does not report ACE_OUTSIDE_ACL on the entries of an ACL', () => {
+            expect(results.errors.filter(e => e.errorType === 'ACE_OUTSIDE_ACL').map(e => e.nodePath).sort()).to.deep.equal([...outsideAcl].sort());
+        });
+    });
+
+    describe('TOO_MANY_ACE', () => {
+        afterEach(() => resetCheckConfiguration(CHECK));
+
+        it('is not raised under the threshold', () => {
+            scan(SITE_PATH, CHECKS).then(results => {
+                expect(results.errors.filter(e => e.errorType === 'TOO_MANY_ACE')).to.have.length(0);
+            });
+        });
+
+        it('is raised on the site once the number of ACE reaches the threshold', () => {
+            configureCheck(CHECK, 'ace-count-threshold', '5');
+            scan(SITE_PATH, CHECKS).then(results => {
+                expectExtraInfo(expectError(results, 'TOO_MANY_ACE', SITE_PATH), 'ace-count');
+            });
+        });
+
+        // The number of ACE tells to review the ACL of the site: the check provides no fix for it
+        it('provides no fix for TOO_MANY_ACE', () => {
+            configureCheck(CHECK, 'ace-count-threshold', '5');
+            expectNoFix(SITE_PATH, CHECKS, 'EDIT', 'TOO_MANY_ACE', SITE_PATH);
+        });
+    });
+
+    describe('Fix', () => {
+        // These errors need an analysis: the check provides no fix for them
+        ['MISSING_SITE_PRIVILEGED_GRP_MEMBER', 'ACE_NON_GRANT_WITH_EXTERNAL_ACE', 'INVALID_EXTERNAL_PERMISSIONS',
+            'DUPLICATED_REF_SRC_ACE'].forEach(errorType => {
+            it(`provides no fix for ${errorType}`, () => {
+                expectNoFix(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
+            });
+        });
+
+        // An ACE outside of an ACL grants nothing: the fixes, which act on its ACL and on the node it secures, would act on
+        // its parent and its grandparent, for example publish them
+        it('provides no fix for ACE_OUTSIDE_ACL', () => {
+            outsideAcl.forEach(path => expectNoFix(SITE_PATH, CHECKS, 'EDIT', 'ACE_OUTSIDE_ACL', path));
+            outsideAcl.forEach(path => nodeExists(path).should('be.true'));
+        });
+
+        it('keeps the ACL which breaks the inheritance when its last entry is deleted', () => {
+            const entry = `${RESTRICTING_ACL}/REFeditor_currentSite-access_u_${user('ace')}`;
+            fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'NO_SOURCE_ACE_PROP', entry);
+            nodeExists(entry).should('be.false');
+            // Without entry, it still denies the roles granted on the ancestors
+            graphql(`{ jcr { nodeByPath(path: "${RESTRICTING_ACL}") { property(name: "j:inherit") { value } } } }`)
+                .its('jcr.nodeByPath.property.value').should('equal', 'false');
+        });
+
+        it('fixes INVALID_NODENAME by renaming the ACE after its type and its principal', () => {
+            const acl = `${ROOT}/INVALID_NODENAME/j:acl`;
+            fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'INVALID_NODENAME', new RegExp(`^${acl}/`));
+            nodeExists(errorPath('INVALID_NODENAME')).should('be.false');
+            nodeExists(`${acl}/GRANT_u_${user('ace')}`).should('be.true');
+        });
+
+        it('does not rename an external ACE whose external permissions are unknown', () => {
+            // Its name can't be calculated from permissions its role does not declare
+            expectFixFails(SITE_PATH, CHECKS, 'EDIT', 'INVALID_NODENAME', errorPath('INVALID_EXTERNAL_PERMISSIONS'));
+        });
+
+        it('fixes ROLE_DOESNT_EXIST by removing the role, and the ACE left without role', () => {
+            fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'ROLE_DOESNT_EXIST', errorPath('ROLE_DOESNT_EXIST'));
+            nodeExists(errorPath('ROLE_DOESNT_EXIST')).should('be.false');
+        });
+
+        it('fixes INVALID_ROLES_PROP by replacing the external ACE with the ones of the roles of its source ACE', () => {
+            const source = ace('INVALID_ROLES_PROP', user('ace-9'));
+            fixAndVerify(SITE_PATH, CHECKS, 'EDIT', 'INVALID_ROLES_PROP', errorPath('INVALID_ROLES_PROP'));
+            scan(SITE_PATH, CHECKS).then(results => expectNoError(results, 'MISSING_EXTERNAL_ACE', source));
+            graphql(`{ jcr { nodeByPath(path: "${errorPath('INVALID_ROLES_PROP')}") { property(name: "j:roles") { values } } } }`)
+                .its('jcr.nodeByPath.property.values').should('deep.equal', ['editor']);
+        });
+
+        it('does not report MISSING_EXTERNAL_ACE as fixed while an external ACE for other permissions takes its place', () => {
+            // The external ACE of the ACE names unknown permissions: the ACL listener keeps it, and creates no other one
+            expectFixFails(SITE_PATH, CHECKS, 'EDIT', 'MISSING_EXTERNAL_ACE', ace('INVALID_EXTERNAL_PERMISSIONS', user('ace-6')));
+        });
+
+        ['NO_PRINCIPAL', 'NO_ACE_TYPE_PROP', 'INVALID_PRINCIPAL', 'MISSING_EXTERNAL_ACE', 'SOURCE_ACE_NOT_TYPE_GRANT', 'INVALID_ACE_TYPE_PROP',
+            'NO_SOURCE_ACE_PROP', 'EMPTY_SOURCE_ACE_PROP', 'SOURCE_ACE_BROKEN_REF', 'INVALID_EXTERNAL_ACE_PATH', 'ROLES_DIFFER_ON_SOURCE_ACE'].forEach(errorType => {
+            it(`fixes ${errorType}`, () => {
+                fixAndVerify(SITE_PATH, CHECKS, 'EDIT', errorType, errorPath(errorType));
+            });
+        });
+    });
+
+    describe('Roles chosen to fill the missing j:roles of an ACE', () => {
+        const NO_ROLES = ace('NO_ROLES_PROP', user('ace'));
+        const DEFINITIONS = ['PropertyDefinitionsSanityCheck'];
+
+        type FixValues = { name: string; multiple: boolean; choices: string[]; choiceLabels: string[]; description: string };
+        const readFixValues = (resultsId: string, errorId: string): Cypress.Chainable<FixValues> =>
+            graphql('query($r: String, $id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $r) { error: errorById(id: $id) { fixValues { name multiple choices choiceLabels description } } } } }',
+                {r: resultsId, id: errorId}).then(data => data.integrity.results.error.fixValues as FixValues);
+
+        before(() => runFixture('checks/AceSanityCheck.groovy', {SITEKEY: SITE}));
+
+        it('offers the roles which can be given on content, with a description of what they grant', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => {
+                const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES);
+                expect(error.fixable).to.be.true;
+                readFixValues(results.resultsId, error.id).then(fixValues => {
+                    expect(fixValues.name).to.equal('j:roles');
+                    expect(fixValues.multiple).to.be.true;
+                    expect(fixValues.choices).to.include.members(['editor', 'reader', 'owner']);
+                    // A site or server role is not given on content
+                    expect(fixValues.choices).to.not.include('site-administrator');
+                    expect(fixValues.choices).to.not.include('server-administrator');
+                    // The roles given on content are the ones of the groups edit-role and live-role, a hidden role being set by
+                    // the platform: the roles of the instance tell which ones, a project may add some or change a group
+                    graphql('{ jcr { nodesByQuery(query: "select * from [jnt:role]") { nodes { name hidden: property(name: "j:hidden") { value } ' +
+                        'group: property(name: "j:roleGroup") { value } } } } }').then(data => {
+                        const expected = data.jcr.nodesByQuery.nodes
+                            .filter((role: any) => role.hidden?.value !== 'true' && ['edit-role', 'live-role'].includes(role.group?.value))
+                            .map((role: any) => role.name);
+                        expect([...fixValues.choices].sort(), 'roles offered').to.deep.equal([...new Set(expected)].sort());
+                    });
+                    expect(fixValues.choiceLabels).to.have.length(fixValues.choices.length);
+                    expect(fixValues.choiceLabels).to.include('Editor (editor)');
+                    expect(fixValues.description).to.contain(`Choose the roles to grant to the user ${user('ace')} on this node and its sub-nodes`);
+                });
+            });
+        });
+
+        it('refuses a role which can not be given on content', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => {
+                const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES);
+                ['server-administrator', 'ci-role-which-does-not-exist'].forEach(role => {
+                    fixError(results.resultsId, error.id, [role]).then(result => {
+                        expect(result.fixed).to.be.false;
+                        expect(result.message).to.contain(`The role ${role} can't be given on this access control entry`);
+                    });
+                });
+            });
+        });
+
+        it('offers the same roles for NO_ROLES_PROP, which is not fixed without them', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => {
+                const error = expectError(results, 'NO_ROLES_PROP', NO_ROLES);
+                expect(error.fixable).to.be.true;
+                expect(error.fixWithValues).to.be.true;
+                readFixValues(results.resultsId, error.id).then(fixValues => {
+                    expect(fixValues.name).to.equal('j:roles');
+                    expect(fixValues.multiple).to.be.true;
+                    expect(fixValues.choices).to.include.members(['editor', 'reader']);
+                    expect(fixValues.choices).to.not.include('server-administrator');
+                    expect(fixValues.description).to.contain(`Choose the roles to grant to the user ${user('ace')}`);
+                });
+                // The right roles can't be guessed
+                fixError(results.resultsId, error.id).its('fixed').should('be.false');
+                fixError(results.resultsId, error.id, ['server-administrator']).then(result => {
+                    expect(result.fixed).to.be.false;
+                    expect(result.message).to.contain("The role server-administrator can't be given on this access control entry");
+                });
+            });
+        });
+
+        it('fixes NO_ROLES_PROP with the chosen roles', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => {
+                fixError(results.resultsId, expectError(results, 'NO_ROLES_PROP', NO_ROLES).id, ['editor'])
+                    .then(result => expect(result.fixed, result.message).to.be.true);
+            });
+            scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => expectNoError(results, 'NO_ROLES_PROP', NO_ROLES));
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => expectNoError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES));
+            graphql(`{ jcr { nodeByPath(path: "${NO_ROLES}") { property(name: "j:roles") { values } } } }`)
+                .its('jcr.nodeByPath.property.values').should('deep.equal', ['editor']);
+            runFixture('checks/AceSanityCheck.groovy', {SITEKEY: SITE});
+        });
+
+        it('fixes the ACE with the chosen roles', () => {
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => {
+                const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES);
+                fixError(results.resultsId, error.id, ['reader', 'editor']).then(result => expect(result.fixed, result.message).to.be.true);
+            });
+            scan(`${ROOT}/NO_ROLES_PROP`, DEFINITIONS).then(results => expectNoError(results, 'EMPTY_MANDATORY_PROPERTY', NO_ROLES));
+            scan(`${ROOT}/NO_ROLES_PROP`, CHECKS).then(results => expectNoError(results, 'NO_ROLES_PROP', NO_ROLES));
+            graphql(`{ jcr { nodeByPath(path: "${NO_ROLES}") { property(name: "j:roles") { values } } } }`)
+                .its('jcr.nodeByPath.property.values').should('deep.equal', ['reader', 'editor']);
+        });
+    });
+
+    describe('Principal chosen for an ACE without principal', () => {
+        const NO_PRINCIPAL = ace('NO_PRINCIPAL', user('ace'));
+        const DEFINITIONS = ['PropertyDefinitionsSanityCheck'];
+
+        type FixValues = { name: string; multiple: boolean; choices: string[]; choiceLabels: string[]; choiceGroups: string[]; defaultValues: string[]; description: string };
+        const readError = (resultsId: string, errorId: string): Cypress.Chainable<{ fixable: boolean; fixWithValues: boolean; fixValues: FixValues }> =>
+            graphql('query($r: String, $id: String!) { integrity: contentIntegrity { results: scanResultsDetails(id: $r) { error: errorById(id: $id) { fixable fixWithValues fixValues { name multiple choices choiceLabels choiceGroups defaultValues description } } } } }',
+                {r: resultsId, id: errorId}).then(data => data.integrity.results.error);
+
+        const expectPrincipalChoices = (fixValues: FixValues) => {
+            expect(fixValues.name).to.equal('j:principal');
+            expect(fixValues.multiple).to.be.false;
+            // The users and the groups of the server, and the ones of the site of the ACE
+            expect(fixValues.choices).to.include.members([`u:${user('ace')}`, 'u:root', 'g:site-privileged', 'g:privileged']);
+            expect(fixValues.choiceLabels).to.have.length(fixValues.choices.length);
+            expect(fixValues.choiceLabels[fixValues.choices.indexOf(`u:${user('ace')}`)]).to.equal(user('ace'));
+            expect(fixValues.choiceLabels[fixValues.choices.indexOf('g:site-privileged')]).to.equal(`site-privileged (site ${SITE})`);
+            // Two groups in the dropdown: the users, then the groups
+            expect(fixValues.choiceGroups).to.deep.equal(fixValues.choices.map(c => (c.startsWith('u:') ? 'Users' : 'Groups')));
+            expect(fixValues.choiceGroups.lastIndexOf('Users')).to.be.lessThan(fixValues.choiceGroups.indexOf('Groups'));
+            // The name of the ACE tells its principal: it is suggested
+            expect(fixValues.defaultValues).to.deep.equal([`u:${user('ace')}`]);
+            expect(fixValues.description).to.contain('has no principal');
+            expect(fixValues.description).to.contain(`Its name suggests the user ${user('ace')}`);
+        };
+
+        before(() => runFixture('checks/AceSanityCheck.groovy', {SITEKEY: SITE}));
+
+        it('offers the users and the groups the ACE can name for the missing j:principal, and suggests the one of its name', () => {
+            scan(`${ROOT}/NO_PRINCIPAL`, DEFINITIONS).then(results => {
+                const error = expectError(results, 'EMPTY_MANDATORY_PROPERTY', NO_PRINCIPAL);
+                readError(results.resultsId, error.id).then(details => {
+                    expect(details.fixable).to.be.true;
+                    expect(details.fixWithValues).to.be.true;
+                    expectPrincipalChoices(details.fixValues);
+                });
+            });
+        });
+
+        it('offers the same choice for NO_PRINCIPAL, instead of deleting the ACE', () => {
+            scan(`${ROOT}/NO_PRINCIPAL`, CHECKS).then(results => {
+                const error = expectError(results, 'NO_PRINCIPAL', NO_PRINCIPAL);
+                readError(results.resultsId, error.id).then(details => {
+                    expect(details.fixWithValues).to.be.true;
+                    expectPrincipalChoices(details.fixValues);
+                });
+            });
+        });
+
+        it('refuses a principal which the ACE can not name', () => {
+            scan(`${ROOT}/NO_PRINCIPAL`, CHECKS).then(results => {
+                fixError(results.resultsId, expectError(results, 'NO_PRINCIPAL', NO_PRINCIPAL).id, ['u:ci-user-which-does-not-exist']).then(result => {
+                    expect(result.fixed).to.be.false;
+                    expect(result.message).to.contain('u:ci-user-which-does-not-exist is not a user or a group which this access control entry can name');
+                });
+            });
+        });
+
+        it('fixes the ACE with the chosen principal', () => {
+            scan(`${ROOT}/NO_PRINCIPAL`, CHECKS).then(results => {
+                fixError(results.resultsId, expectError(results, 'NO_PRINCIPAL', NO_PRINCIPAL).id, [`u:${user('ace')}`])
+                    .then(result => expect(result.fixed, result.message).to.be.true);
+            });
+            scan(`${ROOT}/NO_PRINCIPAL`, CHECKS).then(results => expectNoError(results, 'NO_PRINCIPAL', NO_PRINCIPAL));
+            scan(`${ROOT}/NO_PRINCIPAL`, DEFINITIONS).then(results => expectNoError(results, 'EMPTY_MANDATORY_PROPERTY', NO_PRINCIPAL));
+            graphql(`{ jcr { nodeByPath(path: "${NO_PRINCIPAL}") { property(name: "j:principal") { value } } } }`)
+                .its('jcr.nodeByPath.property.value').should('equal', `u:${user('ace')}`);
+        });
+    });
+});

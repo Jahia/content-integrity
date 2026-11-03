@@ -1,16 +1,14 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 
@@ -18,8 +16,6 @@ import javax.jcr.RepositoryException;
         ContentIntegrityCheck.PRIORITY + "=0" // For performances purpose, the result of getNodes() will be stored in the JR low level cache and will fasten any other check using it as well
 })
 public class FlatStorageCheck extends AbstractContentIntegrityCheck implements ContentIntegrityCheck.IsConfigurable {
-
-    private static final Logger logger = LoggerFactory.getLogger(FlatStorageCheck.class);
 
     public static final ContentIntegrityErrorType TOO_MANY_CHILD_NODES = createErrorType("TOO_MANY_CHILD_NODES", "The node has too many child nodes");
 

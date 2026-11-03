@@ -3,28 +3,31 @@ package org.jahia.modules.contentintegrity.services;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.FastDateFormat;
+import org.jahia.api.content.JCRTemplate;
 import org.jahia.bin.Jahia;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.modules.contentintegrity.services.reporting.CsvReport;
 import org.jahia.modules.contentintegrity.services.reporting.ExcelReport;
 import org.jahia.modules.contentintegrity.services.reporting.Report;
 import org.jahia.modules.contentintegrity.services.reporting.ReportWriter;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.services.content.JCRAutoSplitUtils;
 import org.jahia.services.content.JCRNodeWrapper;
-import org.jahia.services.content.JCRTemplate;
+import org.jahia.services.content.JCRSessionFactory;
+import org.jahia.services.content.JCRSessionWrapper;
+import org.jahia.services.content.JCRStoreProvider;
+import org.jahia.services.usermanager.JahiaGroupManagerService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -33,39 +36,69 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR_CHAR;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.NODE_UNDER_SITE_PATH_PREFIX;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
+import static org.jahia.modules.contentintegrity.api.Constants.ACE_TYPE_DENY;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_PATH_SEPARATOR_CHAR;
+import static org.jahia.modules.contentintegrity.api.Constants.NODE_UNDER_MODULES_PATH_PREFIX;
+import static org.jahia.modules.contentintegrity.api.Constants.NODE_UNDER_SITE_PATH_PREFIX;
+import static org.jahia.modules.contentintegrity.api.Constants.TAB_LVL_1;
+import static org.jahia.modules.contentintegrity.api.Constants.TAB_LVL_2;
 
-public class Utils {
+public final class Utils {
 
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
-    private static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
-    private static final String ALL_WORKSPACES = "all-workspaces";
+    static final String JCR_REPORTS_FOLDER_NAME = "content-integrity-reports";
+    static final String REPORTS_FOLDER_PARENT_PATH = "/sites/systemsite/files";
+    private static final String PRIVILEGED_GROUP_PRINCIPAL = "g:" + JahiaGroupManagerService.PRIVILEGED_GROUPNAME;
+    private static final String PRIVILEGED_ROLE = "privileged";
+    public static final String ALL_WORKSPACES = "all-workspaces";
     private static final long APPROXIMATE_COUNT_FACTOR = 10L;
     private static final List<Report> reportGenerators = Arrays.asList(new CsvReport(), new ExcelReport());
     public static final String JAVA_ERROR_PREFIX = "[java error]";
+    public static final String FIX_PERMISSION = "adminContentIntegrityFix";
+    public static final String DELETE_PERMISSION = "adminContentIntegrityDelete";
 
-    public enum LOG_LEVEL {
-        TRACE, INFO, WARN, ERROR, DEBUG
+    private Utils() {
     }
 
-    public static ContentIntegrityService getContentIntegrityService() {
-        return BundleUtils.getOsgiService(ContentIntegrityService.class, null);
+    public enum LOG_LEVEL {
+        INFO, WARN, ERROR, DEBUG
+    }
+
+    /**
+     * Tells if the current user may fix the errors. A fix writes to the repository with a system session, so the access
+     * to the module, which allows to scan and read the results, is not enough: the permission is checked on the root node.
+     */
+    public static boolean canFixErrors() {
+        return hasRootPermission(FIX_PERMISSION);
+    }
+
+    /**
+     * Tells if the current user may delete the stored results of the scans, with their reports. The deletion can't be
+     * undone, so the access to the module is not enough: the permission is checked on the root node.
+     */
+    public static boolean canDeleteResults() {
+        return hasRootPermission(DELETE_PERMISSION);
+    }
+
+    private static boolean hasRootPermission(String permission) {
+        try {
+            return BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentUserSession().getNode("/").hasPermission(permission);
+        } catch (RepositoryException e) {
+            logger.error("Impossible to check the permission " + permission, e);
+            return false;
+        }
     }
 
     public static void log(String message, Logger log, ExternalLogger... externalLoggers) {
@@ -92,14 +125,6 @@ public class Utils {
     public static void log(String message, LOG_LEVEL logLevel, Logger log, Throwable t, ExternalLogger... externalLoggers) {
         if (log != null) {
             switch (logLevel) {
-                case TRACE:
-                    if (!log.isTraceEnabled()) return;
-                    if (t == null) {
-                        log.trace(message);
-                    } else {
-                        log.trace(message, t);
-                    }
-                    break;
                 case INFO:
                     if (!log.isInfoEnabled()) return;
                     if (t == null) {
@@ -167,19 +192,84 @@ public class Utils {
         }
     }
 
+    /**
+     * Restricts the reports folder, created before this protection existed, to the server administrators. Run when the
+     * module starts, so that the reports written by a previous version are protected without waiting for a new scan.
+     */
+    public static void restrictReportsFolderAccess() {
+        try {
+            BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+                final String path = REPORTS_FOLDER_PARENT_PATH + JCR_PATH_SEPARATOR_CHAR + JCR_REPORTS_FOLDER_NAME;
+                if (session.nodeExists(path) && restrictReportsFolderAccess(session.getNode(path))) {
+                    session.save();
+                    logger.info("Restricted the access to the reports folder {}", path);
+                }
+                return null;
+            });
+        } catch (RepositoryException e) {
+            logger.error("Impossible to restrict the access to the reports folder", e);
+        }
+    }
+
+    /**
+     * A report describes the whole scanned repository, while the API of the module is restricted to the server
+     * administrators. In every site but the system site, the core denies the role privileged, granted at the root of the
+     * repository to the group privileged, which every editor of every site belongs to (JahiaSitesService). The reports
+     * folder is under the system site: the role is denied on it the same way, so that only the server administrators,
+     * through their own role, read the reports.
+     *
+     * @return true if the ACL has been changed, and the session has to be saved
+     */
+    static boolean restrictReportsFolderAccess(JCRNodeWrapper reportsFolder) throws RepositoryException {
+        final String folderPath = reportsFolder.getPath();
+        final boolean alreadyDenied = Optional.ofNullable(reportsFolder.getAclEntries().get(PRIVILEGED_GROUP_PRINCIPAL))
+                .map(entries -> entries.stream().anyMatch(entry -> StringUtils.equals(entry[0], folderPath)
+                        && StringUtils.equals(entry[1], ACE_TYPE_DENY)
+                        && StringUtils.equals(entry[2], PRIVILEGED_ROLE)))
+                .orElse(false);
+        if (alreadyDenied) return false;
+        reportsFolder.denyRoles(PRIVILEGED_GROUP_PRINCIPAL, Collections.singleton(PRIVILEGED_ROLE));
+        return true;
+    }
+
+    /**
+     * True if the node of the error is virtual: served by an external provider, such as a mount point, and not stored in
+     * the JCR. Its errors are not fixed, as a fix would change the external source, for example delete a file.
+     */
+    public static boolean isOnVirtualNode(ContentIntegrityError error) {
+        final String path = error.getPath();
+        if (StringUtils.isBlank(path)) return false;
+        final JCRStoreProvider provider = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getProvider(path, false);
+        return provider != null && !provider.isDefault();
+    }
+
+    /**
+     * True if the node of the error still exists in its workspace. A node removed since the scan, for example by the fix of
+     * another error, leaves nothing to fix. Without its node, an error can't tell either whether its fix takes values.
+     */
+    public static boolean errorNodeExists(ContentIntegrityError error) {
+        final JCRSessionWrapper session = JCRUtils.getSystemSession(error.getWorkspace(), false);
+        return session != null && StringUtils.isNotBlank(error.getUuid()) && JCRUtils.nodeExists(error.getUuid(), session);
+    }
+
+    /**
+     * True if the ACE is an entry of an ACL: a child of the j:acl node of the node it secures. The ACL listener of the
+     * platform only processes those. An ACE created elsewhere, which a node type accepting any child allows an editor to
+     * do, grants nothing: its parent is not an ACL, and its grandparent not the node it would secure.
+     */
+    public static boolean isInAcl(Node ace) throws RepositoryException {
+        final Node parent = ace.getParent();
+        return Constants.ACL.equals(parent.getName()) && parent.isNodeType(Constants.JAHIANT_ACL);
+    }
+
     public static boolean writeDumpInTheJCR(ContentIntegrityResults results, boolean excludeFixedErrors, ExternalLogger externalLogger) {
         try {
-            return JCRTemplate.getInstance().doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
+            return BundleUtils.getOsgiService(JCRTemplate.class, null).doExecuteWithSystemSessionAsUser(null, Constants.EDIT_WORKSPACE, null, session -> {
                 final String resultsSignature = results.getSignature(excludeFixedErrors);
                 final JCRNodeWrapper outputDir;
                 try {
-                    final JCRNodeWrapper filesFolder = session.getNode("/sites/systemsite/files");
-                    final JCRNodeWrapper reportsFolder = JCRUtils.getOrCreateNode(filesFolder, JCR_REPORTS_FOLDER_NAME, Constants.JAHIANT_FOLDER);
-                    final String splitConfig = FastDateFormat.getInstance("'constant,'yyyy';constant,'MM").format(results.getTestDate());
-                    outputDir = JCRAutoSplitUtils.addNodeWithAutoSplitting(reportsFolder, resultsSignature, Constants.JAHIANT_FOLDER, splitConfig, Constants.JAHIANT_FOLDER, null);
-                    outputDir.addMixin(Constants.JAHIAMIX_NOLIVE);
-                    outputDir.getParent().addMixin(Constants.JAHIAMIX_NOLIVE);
-                    outputDir.getParent().getParent().addMixin(Constants.JAHIAMIX_NOLIVE);
+                    // The full reports go to the report node of the scan, stored since its start
+                    outputDir = ResultsStore.getOrCreateReportNode(session, results, resultsSignature);
                     writeReportMetadata(outputDir, results);
                 } catch (RepositoryException re) {
                     logger.error("Impossible to retrieve the reports folder", re);
@@ -263,7 +353,7 @@ public class Utils {
         return reportsCount.get() == reportGenerators.size();
     }
 
-    private static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
+    static void writeReportMetadata(JCRNodeWrapper reportNode, ContentIntegrityResults results) throws RepositoryException {
         reportNode.addMixin("integrity:scanReport");
         reportNode.setProperty("integrity:errorsCount", results.getErrors().size());
         final String workspace = results.getWorkspace();
@@ -334,27 +424,23 @@ public class Utils {
         return false;
     }
 
-    public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results) {
-        if (CollectionUtils.isEmpty(results)) return null;
-        if (results.size() == 1) return results.iterator().next();
-
-        final ContentIntegrityService contentIntegrityService = Utils.getContentIntegrityService();
-        final Long testDate = results.stream()
-                .map(ContentIntegrityResults::getTestDate)
-                .sorted().findFirst().orElse(0L);
+    /**
+     * Merges the results of the workspaces scanned by one scan into the results of the scan, which keep the date of its
+     * start, so that they keep the identifier of its report. The results of the scan are interrupted if those of one
+     * workspace are.
+     *
+     * @param testDate  the date of the start of the scan
+     * @param workspace the scanned workspace, or ALL_WORKSPACES when the scan covered several
+     */
+    public static ContentIntegrityResults mergeResults(Collection<ContentIntegrityResults> results, long testDate, String workspace) {
         final Long duration = results.stream().map(ContentIntegrityResults::getTestDuration).reduce(0L, Long::sum);
-        final Set<String> workspaces = results.stream().map(ContentIntegrityResults::getWorkspace).collect(Collectors.toSet());
-        final String workspace = workspaces.size() == 1 ? workspaces.stream().findAny().get() : ALL_WORKSPACES;
         final List<ContentIntegrityError> errors = results.stream()
-                .peek(contentIntegrityService::removeErrorsFromCache)
                 .map(ContentIntegrityResults::getErrors)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
         final List<String> executionLog = results.stream().map(ContentIntegrityResults::getExecutionLog).flatMap(List::stream).collect(Collectors.toList());
-
-        final ContentIntegrityResults mergedResults = new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog);
-        contentIntegrityService.storeErrorsInCache(mergedResults);
-        return mergedResults;
+        final boolean interrupted = results.stream().anyMatch(ContentIntegrityResults::isInterrupted);
+        return new ContentIntegrityResults(testDate, duration, workspace, errors, executionLog).setInterrupted(interrupted);
     }
 
     public static ContentIntegrityErrorList mergeErrorLists(ContentIntegrityErrorList... errorLists) {
@@ -422,19 +508,5 @@ public class Utils {
                 .map(ContentIntegrityError::getSite)
                 .collect(Collectors.groupingBy(Function.identity(), TreeMap::new, Collectors.counting()))
                 .forEach((site, count) -> log(String.format("%s%s: %s errors", TAB_LVL_2, site, count), LOG_LEVEL.WARN, logger, externalLoggers));
-    }
-
-    @Deprecated
-    public static void detectLegacyErrorTypes(List<ContentIntegrityError> errors, Logger logger, ExternalLogger... externalLoggers) {
-        final List<String> checksUsingLegacyAPI = errors.stream()
-                .filter(e -> e.getErrorType() instanceof ContentIntegrityErrorTypeImplLegacy)
-                .map(ContentIntegrityError::getIntegrityCheckName)
-                .distinct()
-                .collect(Collectors.toList());
-        if (checksUsingLegacyAPI.isEmpty()) return;
-        log("Some checks are using a deprecated API for the error types. Please refactor them before this API is dropped", LOG_LEVEL.WARN, logger, externalLoggers);
-        checksUsingLegacyAPI.stream()
-                .map(TAB_LVL_1::concat)
-                .forEach(msg -> log(msg, LOG_LEVEL.WARN, logger, externalLoggers));
     }
 }

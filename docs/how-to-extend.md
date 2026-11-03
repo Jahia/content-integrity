@@ -23,9 +23,9 @@ You need to declare a Maven dependency to the core module.
 
     <dependencies>
         <dependency>
-            <groupId>org.jahia.modules</groupId>
+            <groupId>org.jahia.community</groupId>
             <artifactId>content-integrity</artifactId>
-            <version>3.0</version>
+            <version>4.0.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -41,7 +41,7 @@ You need to declare a Jahia level dependency to the core module. If your module 
 then it is relevant to flag it as a system module as enabling it on a website would not carry any additional effect out.
 
     <properties>
-        <jahia-depends>default,content-integrity</jahia-depends>
+        <jahia-depends>content-integrity</jahia-depends>
         <jahia-module-type>system</jahia-module-type>
     </properties>    
 
@@ -67,18 +67,33 @@ You need as well to configure the BND plugin to scan the OSGi declarative servic
 #### Java code
 You have to write a java class to implement your custom check.
 
+    import org.jahia.api.Constants;
+    import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+    import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
+    import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+    import org.jahia.services.content.JCRNodeWrapper;
+    import org.jahia.services.content.JCRSessionFactory;
+
+    import javax.jcr.RepositoryException;
+
     public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {
-    
+
+        public static final ContentIntegrityErrorType PARTIALLY_DELETED = createErrorType("PARTIALLY_DELETED", "The site has been partially deleted");
+
         @Override
         public ContentIntegrityErrorList checkIntegrityBeforeChildren(JCRNodeWrapper node) {
             try {
-                JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, false).getNode(node.getPath());
+                if (!JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.LIVE_WORKSPACE, null, null).nodeExists(node.getPath()))
+                    return createSingleError(createError(node, PARTIALLY_DELETED));
             } catch (RepositoryException e) {
-                return createSingleError(node, "The site has been partially deleted");
+                return createSingleError(createError(node, PARTIALLY_DELETED, e.getMessage()));
             }
             return null;
         }
-    }       
+    }
+
+The module exports the package `org.jahia.modules.contentintegrity.api` only: a custom check can use its classes, but not
+the other classes of the module, which are internal.
 
 The most convenient way is to extend `AbstractContentIntegrityCheck`.
 Then you will want to overwrite `checkIntegrityBeforeChildren(JCRNodeWrapper node)` and/or
@@ -91,6 +106,7 @@ If one (or several) integrity error is detected on the scanned node, return an i
 If no error is found, return `null` or an instance of `ContentIntegrityErrorList` which contains no error.
 
 If your class extends `AbstractContentIntegrityCheck`, several factory methods can be used:
+- `createErrorType()` : method to declare a type of error, with its key and its default message
 - `createError()` : methods to create individual `ContentIntegrityError` Objects
 - `createEmptyErrorsList()` : method to create a new empty error list. Errors can be added to this list afterward
 - `createSingleError()` : method to create a new error list, initialized with the specified error. More errors can be added to this list afterward  
@@ -103,8 +119,9 @@ injection of your Component: `@Component(service = ContentIntegrityCheck.class, 
 
 **Example:**
 
+    import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
     import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
-    import org.osgi.service.component.annotations.Component;     
+    import org.osgi.service.component.annotations.Component;
     
     @Component(service = ContentIntegrityCheck.class, immediate = true)
     public class FailedSiteDeletionCheck extends AbstractContentIntegrityCheck {

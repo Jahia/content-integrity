@@ -4,16 +4,16 @@ import org.apache.jackrabbit.core.SessionImpl;
 import org.apache.jackrabbit.core.id.NodeId;
 import org.apache.jackrabbit.core.version.InternalVersionHistory;
 import org.apache.jackrabbit.core.version.InternalVersionManager;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheckConfiguration;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
+import org.jahia.modules.contentintegrity.services.ContentIntegrityCheckConfigurationImpl;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
-import org.jahia.modules.contentintegrity.services.impl.ContentIntegrityCheckConfigurationImpl;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.external.ExtensionNode;
 import org.jahia.modules.external.ExternalNodeImpl;
 import org.jahia.services.content.JCRNodeWrapper;
@@ -29,7 +29,8 @@ import javax.jcr.RepositoryException;
 import java.util.Collections;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
-        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.MIX_VERSIONABLE
+        ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + Constants.MIX_VERSIONABLE,
+        ContentIntegrityCheck.ENABLED + "=false"
 })
 public class VersionHistoryCheck extends AbstractContentIntegrityCheck implements
         ContentIntegrityCheck.SupportsIntegrityErrorFix,
@@ -66,18 +67,14 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
             return null;
 
         try {
-            final JCRSessionWrapper session = node.getSession();
-            final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode(Constants.ROOT_NODE_PATH).getProvider());
-            final InternalVersionManager vm = providerSession.getInternalVersionManager();
-            final InternalVersionHistory history;
+            final int numVersions;
             try {
-                history = vm.getVersionHistoryOfNode(NodeId.valueOf(identifier));
+                numVersions = countVersions(node, identifier);
             } catch (ItemNotFoundException infe) {
                 final ContentIntegrityErrorList errors = createSingleError(createFrameworkError(node, infe));
                 if (logger.isDebugEnabled()) logger.debug("Impossible to load the version history for the node " + node.getPath(), infe);
                 return errors;
             }
-            final int numVersions = history.getNumVersions();
             final int threshold = getThreshold();
             if (numVersions > threshold)
                 return createSingleError(createError(node, TOO_MANY_VERSIONS, String.format("The node has over %s versions", threshold))
@@ -91,9 +88,27 @@ public class VersionHistoryCheck extends AbstractContentIntegrityCheck implement
         return null;
     }
 
+    private int countVersions(JCRNodeWrapper node, String identifier) throws RepositoryException {
+        final JCRSessionWrapper session = node.getSession();
+        final SessionImpl providerSession = (SessionImpl) session.getProviderSession(session.getNode(Constants.ROOT_NODE_PATH).getProvider());
+        final InternalVersionManager vm = providerSession.getInternalVersionManager();
+        final InternalVersionHistory history = vm.getVersionHistoryOfNode(NodeId.valueOf(identifier));
+        return history.getNumVersions();
+    }
+
+    /*
+     * The purge removes the versions which are not used anymore: the versions still used, for example by the live
+     * node, are kept. The error is fixed only when the remaining versions are not over the threshold anymore.
+     */
     @Override
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError error) throws RepositoryException {
-        NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(node.getIdentifier()));
+        final String identifier = node.getIdentifier();
+        NodeVersionHistoryHelper.purgeVersionHistoryForNodes(Collections.singleton(identifier));
+        final int remaining = countVersions(node, identifier);
+        if (remaining > getThreshold()) {
+            logger.warn("{} versions of {} are still used after the purge, over the threshold {}", remaining, node.getPath(), getThreshold());
+            return false;
+        }
         return true;
     }
 

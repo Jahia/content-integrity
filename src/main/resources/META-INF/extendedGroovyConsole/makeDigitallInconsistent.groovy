@@ -1,8 +1,9 @@
 import org.jahia.api.Constants
+import org.jahia.osgi.BundleUtils
 import org.jahia.services.content.JCRSessionFactory
 import org.jahia.services.content.JCRSessionWrapper
 
-final JCRSessionWrapper session = JCRSessionFactory.getInstance().getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null)
+final JCRSessionWrapper session = BundleUtils.getOsgiService(JCRSessionFactory.class, null).getCurrentSystemSession(Constants.EDIT_WORKSPACE, null, null)
 session.getNode("/sites/digitall/home/j:translation_de").setProperty("jcr:language", "it")
 def home_fr = session.getNode("/sites/digitall/home/j:translation_fr")
 if (home_fr.hasProperty("jcr:language")) home_fr.getProperty("jcr:language").remove()

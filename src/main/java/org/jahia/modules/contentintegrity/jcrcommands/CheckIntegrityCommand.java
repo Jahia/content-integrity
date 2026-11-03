@@ -24,6 +24,9 @@ import java.util.stream.Collectors;
 @Service
 public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
 
+    @Reference
+    private ContentIntegrityService integrityService;
+
     private static final char SKIP_MARKER = ':';
     @Reference
     Session session;
@@ -48,7 +51,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
     @Override
     public Object execute() throws Exception {
         final String currentPath = StringUtils.defaultString(getCurrentPath(session), "/");
-        final ContentIntegrityService service = Utils.getContentIntegrityService();
+        final ContentIntegrityService service = integrityService;
         final ContentIntegrityResults integrityResults;
         try {
             integrityResults = service.validateIntegrity(currentPath, excludedPaths, skipMP, getCurrentWorkspace(session), getChecksToExecute(service), CONSOLE);
@@ -66,7 +69,7 @@ public class CheckIntegrityCommand extends JCRCommandSupport implements Action {
         final Map<Boolean, List<String>> checkIDs = checks.stream().collect(Collectors.partitioningBy(id -> id.trim().charAt(0) != SKIP_MARKER));
         final List<String> whiteList = checkIDs.get(true);
         final List<String> blackList = checkIDs.get(false).stream()
-                .map(id -> id.trim().substring(1)).filter(StringUtils::isBlank).collect(Collectors.toList());
+                .map(id -> id.trim().substring(1)).filter(StringUtils::isNotBlank).collect(Collectors.toList());
 
         return Utils.getChecksToExecute(service, whiteList, blackList, CONSOLE);
     }

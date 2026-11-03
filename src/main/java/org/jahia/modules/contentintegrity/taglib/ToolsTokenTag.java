@@ -1,6 +1,7 @@
 package org.jahia.modules.contentintegrity.taglib;
 
-import org.jahia.settings.SettingsBean;
+import org.jahia.api.settings.SettingsBean;
+import org.jahia.osgi.BundleUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -26,7 +27,7 @@ public class ToolsTokenTag extends TagSupport {
 
     public ToolsTokenTag() {
         super();
-        tokenExpiration = SettingsBean.getInstance().getLong("toolsTokenExpiration", 20L);
+        tokenExpiration = BundleUtils.getOsgiService(SettingsBean.class, null).getLong("toolsTokenExpiration", 20L);
     }
 
     @Override
