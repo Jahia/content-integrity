@@ -118,9 +118,66 @@ export const getMenuItem = (label: string | RegExp): Cypress.Chainable<JQuery<HT
     cy.contains('li.moonstone-menuItem', label).scrollIntoView().should('be.visible');
 
 /**
- * The filters of the results table, which are always displayed.
+ * The filter bar of the results table, a Moonstone CollectionBar.
  */
 export const getFilters = (): Cypress.Chainable<JQuery<HTMLElement>> => cy.get('#ci-filters', {timeout: 30000}).should('be.visible');
+
+// The key of each filter, which the CollectionBar puts on its chip, on its item of Add filter and on its selector
+const FILTER_KEYS: Record<string, string> = {
+    Workspace: 'workspace',
+    'Check name': 'checkName',
+    'Error type': 'errorType',
+    Site: 'site',
+    'Primary type': 'nodePrimaryType',
+    Locale: 'locale',
+    Message: 'message',
+    'Impact on XML import': 'importError',
+    'Fix status': 'fixStatus'
+};
+
+/**
+ * The chip of a filter, which shows its name, then its value once applied. An added filter has a chip while it is applied.
+ */
+export const getFilterChip = (name: string): Cypress.Chainable<JQuery<HTMLElement>> =>
+    getFilters().find(`[data-filter="${FILTER_KEYS[name]}"] button[aria-haspopup="dialog"]`);
+
+/**
+ * The selector of a filter, which lists its values with the count of their errors.
+ */
+export const getFilterSelector = (name: string): Cypress.Chainable<JQuery<HTMLElement>> =>
+    cy.get(`[role="dialog"][data-filter="${FILTER_KEYS[name]}"]`).should('be.visible');
+
+/**
+ * Opens the selector of a filter, from its chip, or from Add filter when the filter has no chip.
+ */
+export const openFilter = (name: string): void => {
+    getFilters().then(bar => {
+        if (bar.find(`[data-filter="${FILTER_KEYS[name]}"]`).length > 0) {
+            getFilterChip(name).click();
+        } else {
+            cy.wrap(bar).contains('button', 'Add filter').click();
+            cy.get(`li[data-filter="${FILTER_KEYS[name]}"]`).click();
+        }
+    });
+    getFilterSelector(name);
+};
+
+/**
+ * Closes the open selector of a filter with its Close button.
+ */
+export const closeFilter = (): void => {
+    cy.get('[role="dialog"][data-filter]').contains('button', 'Close').click();
+    cy.get('[role="dialog"][data-filter]').should('not.exist');
+};
+
+/**
+ * Selects a value of a filter, found by its label and the count of its errors, then closes the selector.
+ */
+export const selectFilter = (name: string, value: string | RegExp): void => {
+    openFilter(name);
+    getFilterSelector(name).contains('label', value).click();
+    closeFilter();
+};
 
 /**
  * Removes the filters of the results table, including the default one, which displays only the errors which block an

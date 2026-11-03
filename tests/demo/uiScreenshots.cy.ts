@@ -1,4 +1,4 @@
-import {getDetailsPanel, getDialog, getDropdown, getResultsTable, getScanLabel, openDropdown, openErrorDetails, selectInDropdown, visitAdmin} from '../cypress/support/adminPage';
+import {getDetailsPanel, getDialog, getFilterChip, getResultsTable, getScanLabel, openErrorDetails, selectFilter, selectInDropdown, visitAdmin} from '../cypress/support/adminPage';
 import {graphql} from '../cypress/support/integrity';
 
 /**
@@ -47,9 +47,8 @@ describe('Screenshots of the administration page', () => {
 
     it('captures the errors of a node', () => {
         openResults();
-        openDropdown('Check name');
-        cy.contains('li.moonstone-menuItem', new RegExp(`^${DETAILS_CHECK} \\(`)).click({force: true});
-        getDropdown('Check name').should('contain.text', DETAILS_CHECK);
+        selectFilter('Check name', new RegExp(`^${DETAILS_CHECK} \\(`));
+        getFilterChip('Check name').should('contain.text', DETAILS_CHECK);
         openErrorDetails(DETAILS_PATH);
         getDetailsPanel().should('contain.text', 'Fix with a value');
         cy.screenshot('ui-error-details', {capture: 'viewport', overwrite: true});

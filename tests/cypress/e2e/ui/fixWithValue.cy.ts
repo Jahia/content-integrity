@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, graphql, runFixture, scan} from '../../support/integrity';
-import {closeDetailsPanel, confirmFix, getDetailsPanel, getDialog, getNodeErrorRows, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
+import {closeDetailsPanel, confirmFix, getDetailsPanel, getDialog, getNodeErrorRows, getRow, openErrorDetails, selectFilter, visitLatestResults} from '../../support/adminPage';
 
 const SITE = 'ciUiFixWithValue';
 const ROOT = `/sites/${SITE}/contents/property-definitions`;
@@ -66,7 +66,7 @@ describe('Fix of a missing mandatory property with a typed value', () => {
     });
 
     it('fixes a value which breaks the constraints with a value chosen among the accepted ones, apart from the other errors of its node', () => {
-        selectInDropdown('Error type', /^INVALID_VALUE_CONSTRAINT/);
+        selectFilter('Error type', /^INVALID_VALUE_CONSTRAINT/);
         openErrorDetails(INVALID_VALUES);
         // The panel displays all the errors of the node, whatever the filters. A single one takes a value: each has its own fix
         getDetailsPanel().within(() => {

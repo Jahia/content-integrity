@@ -7,7 +7,7 @@ import {
     ChevronDown,
     ChevronRight,
     Chip,
-    Close,
+    CollectionBar,
     Dropdown,
     Loader,
     Table,
@@ -23,6 +23,7 @@ import {Card} from '../common/Card';
 import {GET_SCAN_RESULTS, GET_SCAN_RESULTS_LIST, GET_SCAN_RESULTS_LOGS} from '../ContentIntegrity.gql';
 import {ScanLogs} from '../scan/ScanLogs';
 import {COLUMNS, DEFAULT_FILTERS, DEFAULT_VISIBLE_COLUMNS, FILTERABLE_COLUMNS, FIX_STATUS_FILTER, FIX_STATUS_VALUES, formatCell, PAGE_SIZES, toFilterArgs} from './columns';
+import {FilterOptions} from './FilterOptions';
 import {NodeErrorsPanel} from './NodeErrorsPanel';
 import {FixStatus} from './FixStatus';
 import {FixAllAction} from './FixAllAction';
@@ -33,7 +34,6 @@ import {ReportLinks} from '../common/ReportLinks';
 import {EmptyState} from '../common/EmptyState';
 import styles from '../ContentIntegrity.scss';
 
-const ALL = '__all__';
 const ALL_WORKSPACES = 'all-workspaces';
 const STATUS_COLORS = {running: 'accent', finished: 'success', interrupted: 'warning', failed: 'danger'};
 // The message which replaces the errors of the results of a scan which is not finished
@@ -55,47 +55,32 @@ const EMPTY = '__empty__';
 const toOptionValue = name => (name === null || name === undefined || name === '' ? EMPTY : String(name));
 const fromOptionValue = value => (value === EMPTY ? '' : value);
 
-const FilterDropdown = ({column, values, active, onChange}) => {
-    const {t} = useTranslation('content-integrity');
-    // The values of the fix status are keys, the other ones are displayed as they are
-    const labelOf = name => {
-        if (toOptionValue(name) === EMPTY) {
-            return t('label.results.empty');
-        }
+// The filters whose chip is always in the filter bar. Add filter puts the other ones in the bar
+const DISPLAYED_FILTERS = ['workspace', 'checkName', 'errorType'];
+// CollectionBar puts the name of the filter where its labels hold {{name}}, so i18next keeps that placeholder
+const KEEP_NAME = {name: '{{name}}', interpolation: {escapeValue: false}};
 
-        return column === FIX_STATUS_FILTER ? t(`label.fixStatus.${name}`) : name;
-    };
+// The values of the fix status are keys, the other ones are displayed as they are
+const valueLabelOf = (t, column, name) => {
+    if (toOptionValue(name) === EMPTY) {
+        return t('label.results.empty');
+    }
 
+    return column === FIX_STATUS_FILTER ? t(`label.fixStatus.${name}`) : String(name);
+};
+
+const optionsOf = (t, column, values, active) => {
     // A value which matches no error with the other filters is not offered, except the fix statuses, which are all offered
     const counted = column === FIX_STATUS_FILTER ?
         FIX_STATUS_VALUES.map(name => ({name, count: (values || []).find(v => v.name === name)?.count || 0})) :
         (values || []).filter(v => v.count > 0);
-    const options = counted.map(v => ({value: toOptionValue(v.name), label: `${labelOf(v.name)} (${v.count})`}));
+    const options = counted.map(v => ({value: toOptionValue(v.name), label: `${valueLabelOf(t, column, v.name)} (${v.count})`}));
     // Keep the active value selectable even when the other filters leave it no match.
     if (active !== undefined && !options.some(o => o.value === toOptionValue(active))) {
-        options.push({value: toOptionValue(active), label: `${labelOf(active)} (0)`});
+        options.push({value: toOptionValue(active), label: `${valueLabelOf(t, column, active)} (0)`});
     }
 
-    const data = [{value: ALL, label: t('label.results.all')}, ...options];
-    const current = active === undefined ? ALL : toOptionValue(active);
-    return (
-        <div className={styles.filter}>
-            <Typography variant="caption" weight="semiBold" component="label">{t(`label.column.${column}`)}</Typography>
-            <Dropdown data={data}
-                      value={current}
-                      variant="outlined"
-                      size="small"
-                      hasSearch={data.length > 10}
-                      onChange={(e, item) => onChange(column, item.value === ALL ? undefined : fromOptionValue(item.value))}/>
-        </div>
-    );
-};
-
-FilterDropdown.propTypes = {
-    column: PropTypes.string.isRequired,
-    values: PropTypes.array,
-    active: PropTypes.string,
-    onChange: PropTypes.func.isRequired
+    return options;
 };
 
 export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, onRequestConsumed, onResultsDeleted, onNewScan}) => {
@@ -322,8 +307,26 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
         );
     };
 
-    const activeFilterCount = Object.values(filters).filter(v => v !== undefined).length;
-    const columnsData = COLUMNS.map(c => ({value: c.key, label: t(`label.column.${c.key}`)}));
+    // The applied value of a filter is named on its chip. A filter on the empty value is applied too: its chip says "(empty)"
+    const barFilters = FILTERABLE_COLUMNS.map(column => {
+        const label = t(`label.column.${column}`);
+        const active = filters[column];
+        return {
+            key: column,
+            label,
+            valueLabel: active === undefined ? '' : valueLabelOf(t, column, active),
+            isDisplayedByDefault: DISPLAYED_FILTERS.includes(column),
+            onClear: () => onFilterChange(column, undefined),
+            selector: (
+                <FilterOptions column={column}
+                               label={label}
+                               options={optionsOf(t, column, possibleValues[column], active)}
+                               value={active === undefined ? '' : toOptionValue(active)}
+                               onChange={value => onFilterChange(column, fromOptionValue(value))}/>
+            )
+        };
+    });
+    const columnChoices = COLUMNS.map(c => ({key: c.key, label: t(`label.column.${c.key}`)}));
 
     if (list.loading && !list.data) {
         return <div className={styles.centered}><Loader size="big"/></div>;
@@ -399,19 +402,6 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                                                               onDeleted={onResultsDeleted}/>
                                      )}/>
                     )}
-                    <div className={styles.spacer}/>
-                    {showErrors && (
-                        <div className={styles.filter}>
-                            <Typography variant="caption" weight="semiBold" component="label">{t('label.results.columns')}</Typography>
-                            <Dropdown data={columnsData}
-                                      values={visibleColumns}
-                                      placeholder={t('label.results.columnsCount', {count: visibleColumns.length})}
-                                      variant="outlined"
-                                      onChange={(e, item) => setVisibleColumns(prev => (prev.includes(item.value) ?
-                                          prev.filter(k => k !== item.value) :
-                                          COLUMNS.map(c => c.key).filter(k => prev.includes(k) || k === item.value)))}/>
-                        </div>
-                    )}
                 </div>
                 {isLogsExpanded && (
                     <div id="ci-results-logs" className={styles.resultsLogs}>
@@ -430,27 +420,30 @@ export const ResultsPanel = ({requestedResultsId, refreshCount, isScanLocked, on
                 {selectedSummary && !statusMessage && !hasErrors && <Typography className={styles.noError}>{t('label.results.noError')}</Typography>}
                 {showErrors && (
                     <>
-                    <div id="ci-filters">
-                        <div className={styles.filters}>
-                            {FILTERABLE_COLUMNS.map(column => (
-                                <FilterDropdown key={column}
-                                                column={column}
-                                                values={possibleValues[column]}
-                                                active={filters[column]}
-                                                onChange={onFilterChange}/>
-                            ))}
-                        </div>
-                        {activeFilterCount > 0 && (
-                            <Button className={styles.clearFilters}
-                                    label={t('label.results.clearFilters')}
-                                    icon={<Close/>}
-                                    variant="ghost"
-                                    onClick={() => {
-                                        setFilters({});
-                                        setPage(1);
-                                    }}/>
-                        )}
-                    </div>
+                    {/* The bar returns the visible columns in the order of COLUMNS */}
+                    <CollectionBar id="ci-filters"
+                                   className={styles.filterBar}
+                                   filters={barFilters}
+                                   columns={columnChoices}
+                                   visibleColumns={visibleColumns}
+                                   i18n={{
+                                       toolbarLabel: t('label.results.filterBar'),
+                                       addFilter: t('label.results.addFilter'),
+                                       filterName: t('label.results.chipName', KEEP_NAME),
+                                       clearFilter: t('label.results.clearFilter', KEEP_NAME),
+                                       clearAll: t('label.results.clearFilters'),
+                                       closeButton: t('label.close'),
+                                       columnButton: t('label.results.columnButton'),
+                                       visibleColumns: t('label.results.visibleColumns'),
+                                       hiddenColumns: t('label.results.hiddenColumns'),
+                                       searchLabel: t('label.results.searchColumns'),
+                                       searchEmptyText: t('label.results.noColumnMatch')
+                                   }}
+                                   onVisibleColumnsChange={setVisibleColumns}
+                                   onClearAll={() => {
+                                       setFilters({});
+                                       setPage(1);
+                                   }}/>
 
                     <div className={`${styles.sectionHeader} ${styles.resultsHeader}`}>
                         <Typography variant="subheading" weight="bold">
