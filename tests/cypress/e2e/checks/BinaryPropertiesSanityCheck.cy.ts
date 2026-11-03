@@ -20,6 +20,8 @@ const CHECKS = [CHECK];
 // The path of the binary of this file is longer than the 100 characters an extra info is cut to
 const LONG_PATH = `${ROOT}/long-path`;
 const LONG_NAME = `${'empty-file-with-a-long-name-'.padEnd(86, 'x')}.txt`;
+// A page which holds an empty resource named jcr:content, as an editor can create under a page
+const PLANTED = `/sites/${SITE}/home/planted-content`;
 
 describe('BinaryPropertiesSanityCheck', () => {
     let results: ScanResults;
@@ -66,6 +68,13 @@ describe('BinaryPropertiesSanityCheck', () => {
         fixAndVerify(LONG_PATH, CHECKS, 'EDIT', 'INVALID_BINARY', `${LONG_PATH}/${LONG_NAME}/jcr:content`);
         nodeExists(`${LONG_PATH}/${LONG_NAME}`).should('be.false');
         nodeExists(`${LONG_PATH}/kept.txt`).should('be.true');
+    });
+
+    it('fixes INVALID_BINARY of a jcr:content which is not the content of a file by deleting this node only, not the page', () => {
+        fixAndVerify(PLANTED, CHECKS, 'EDIT', 'INVALID_BINARY', `${PLANTED}/jcr:content`);
+        nodeExists(`${PLANTED}/jcr:content`).should('be.false');
+        nodeExists(PLANTED).should('be.true');
+        nodeExists(`${PLANTED}/child`).should('be.true');
     });
 
     it('fixes INVALID_BINARY by deleting the file', () => {

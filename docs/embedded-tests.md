@@ -340,7 +340,7 @@ Usually, the missing binary will be the value of the `jcr:data` property of the 
 If the number of errors is important, then it is probably the consequence of an inappropriate system operation. Then, a generic solution should be evaluated.  
 Since the binary data can be store either in the database or on the filesystem (choice done at Jahia installation time), the way to deal with the errors differs depending on the type of storage.
 
-**Fix**: deletes the file whose binary is missing, or the node which holds the binary property. On a translation node, only the property is removed, so that the other languages are kept. When the property is held by the `jcr:content` sub-node of a file, the whole file node is deleted. The deletion is done with the listeners disabled, in the workspace where the error is reported. This can't be undone: restore the binary from a backup instead if it matters, as explained below. **Fix all** applies this fix as well.
+**Fix**: when the property is held by the `jcr:content` sub-node of a file (`nt:file`), the whole file node is deleted. Otherwise, only the binary property is removed, and the node is kept with its subtree: on a translation node, the other languages are kept. When the property is mandatory, it can't be removed alone: the node which holds it is deleted if it has no sub-node, and the error is not fixed otherwise. So a `jcr:content` node created under a page never makes the fix delete the page. The fix first checks the binary again, by reading its stream: a binary which is valid by then is left as it is. The deletion is done with the listeners disabled, in the workspace where the error is reported. This can't be undone: restore the binary from a backup instead if it matters, as explained below. **Fix all** applies this fix as well.
 
 #### Database storage
 
@@ -896,7 +896,7 @@ If the node is of type `jmix:autoPublish`, but there's no live node with the sam
 
 If the node is under `/modules`, deploying the module again should publish it.
 
-**Fix**: marks the node as not published, by removing the property `j:published`. A node of type `jmix:autoPublish`, and a node under `/modules`, whose content the deployment of its module publishes, are published again instead; the error is fixed only if the node then exists in `live`.
+**Fix**: marks the node as not published, by removing the property `j:published`. A node of type `jmix:autoPublish`, and a node under `/modules`, whose content the deployment of its module publishes, are published again instead, with their translations only: their references and their sub-nodes are not published, so a node does not bring to `live` the unpublished content it references. The error is fixed only if the node then exists in `live`. The fix first checks the error again: a node which exists in `live` by then is left as it is.
 
 #### Different path in live
 
@@ -1220,7 +1220,7 @@ Each node has a primary type, and can have been added some mixin types. If a typ
 
 The check runs on both workspaces. The details of an error give the type, as `primary type` or as `mixin type`.
 
-A type declared by a module is undeclared when its module is not started on the server which runs the scan, or when the started version of the module does not declare it. In a cluster, the modules are started on each server: run the check on every server. A type reported on one server only is declared by a module which is not started there: start it there, and do not fix the nodes.
+A type declared by a module is undeclared when its module is not installed, when it is not started on the server which runs the scan, or when the started version of the module does not declare it. In a cluster, the modules are started on each server: run the check on every server. A type reported on one server only is declared by a module which is not started there: start it there, and do not fix the nodes.
 
 ![UndeclaredNodeTypesCheck in the results of a scan](img/checks/UndeclaredNodeTypesCheck.png)
 
@@ -1250,7 +1250,7 @@ Otherwise, if the missing types have been decommissioned, then no node should re
 
 ![GHOST_NODE_TYPE in the results of a scan](img/checks/UndeclaredNodeTypesCheck/GHOST_NODE_TYPE.png)
 
-**Description**: the node type is still registered in the `NodeTypeRegistry`, but it is bound to a module which is not started, or which doesn't declare it anymore in its definitions file.
+**Description**: the node type is still registered in the `NodeTypeRegistry`, but it is bound to a module which is not installed anymore, which is not started, or which doesn't declare it anymore in its definitions file. A type of Jahia core, whose system ID starts with `system-`, is never reported.
 
 If the type has actually been deleted, in addition to the cleanup to be done on the JCR nodes (see `Error code: UNDECLARED_NODE_TYPE`), the type has to be purged from the `NodeTypeRegistry`. This can be achieved manually in the tools, using the "Definitions browser" (warning: this deletes the related nodes as well).
 
