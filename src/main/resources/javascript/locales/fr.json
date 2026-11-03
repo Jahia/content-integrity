@@ -114,7 +114,7 @@
       },
       "UndeclaredNodeTypesCheck": {
         "UNDECLARED_NODE_TYPE": "Les types sont ceux des modules démarrés sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez sur ce serveur le module qui déclare le type plutôt que de corriger le nœud.",
-        "GHOST_NODE_TYPE": "Le type est déclaré par un module qui n'est pas démarré sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, démarrez le module sur ce serveur plutôt que de corriger le nœud."
+        "GHOST_NODE_TYPE": "Le type est déclaré par un module qui n'est pas installé ou pas démarré sur le serveur qui a lancé l'analyse. Si les autres serveurs ne signalent pas cette erreur, installez ou démarrez le module sur ce serveur plutôt que de corriger le nœud."
       },
       "UndeployedModulesReferencesCheck": {
         "UNDEPLOYED_MODULE_ON_SITE": "Le module n'est pas déployé sur le serveur qui a lancé l'analyse. S'il est déployé sur les autres serveurs, déployez-le sur celui-ci : la correction le retirerait du site pour tout le cluster."
@@ -182,7 +182,7 @@
         "ROLE_DOESNT_EXIST": "Retire de l'entrée de contrôle d'accès les rôles qui n'existent pas. L'entrée est supprimée s'il ne lui reste aucun rôle, et une entrée externe est toujours supprimée."
       },
       "BinaryPropertiesSanityCheck": {
-        "INVALID_BINARY": "Supprime le fichier dont le binaire manque, ou le nœud qui porte la propriété binaire. Sur un nœud de traduction, seule la propriété est supprimée. C'est irréversible : restaurez plutôt le binaire depuis une sauvegarde s'il est important."
+        "INVALID_BINARY": "Supprime le fichier dont le binaire manque. Quand la propriété binaire n'est pas portée par le contenu d'un fichier, seule la propriété est supprimée, ou son nœud si la propriété est obligatoire et que le nœud n'a pas de sous-nœud. C'est irréversible : restaurez plutôt le binaire depuis une sauvegarde s'il est important."
       },
       "ChildNodeDefinitionsSanityCheck": {
         "NOT_ALLOWED_BY_PARENT_DEF": "Supprime le nœud et son sous-arbre. C'est irréversible."
