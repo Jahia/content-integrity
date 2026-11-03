@@ -185,7 +185,7 @@
         "INVALID_BINARY": "Deletes the file whose binary is missing, or the node which holds the binary property. On a translation node, only the property is removed. This can't be undone: restore the binary from a backup instead if it matters."
       },
       "ChildNodeDefinitionsSanityCheck": {
-        "NOT_ALLOWED_BY_PARENT_DEF": "Deletes the node and its subtree. This can't be undone."
+        "NOT_ALLOWED_BY_PARENT_DEF": "Deletes the node, when it has no sub-node other than its translations and its ACL. This can't be undone."
       },
       "HomePageDeclarationCheck": {
         "NO_HOME": "Sets the first page of the site as its home page.",
