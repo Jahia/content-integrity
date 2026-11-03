@@ -12,11 +12,16 @@ const packageJson = require('./package.json');
 // The module runs on Jahia 8.1.5 and later. The shared versions, measured on the jahia-ui-root and app-shell bundles:
 // Jahia 8.1.5 shares React 16.14, Moonstone 1.6.2, i18next 19.9 and react-i18next 11.16 to 11.12;
 // Jahia 8.2.3 shares React 18.3, Moonstone 2.14 and react-i18next 11.18.
-const moduleFederationConfig = getModuleFederationConfig(packageJson);
+// The filter bar of the results is the Moonstone CollectionBar, which no Jahia version shares yet: package.json takes the
+// preview package of Jahia/moonstone#1625 by URL, and the shared config reads the version of a dependency as a semver range.
+const moduleFederationConfig = getModuleFederationConfig({
+    ...packageJson,
+    dependencies: {...packageJson.dependencies, '@jahia/moonstone': '^2.21.0'}
+});
 Object.entries({
     react: '>=16.14.0 <19',
     'react-dom': '>=16.14.0 <19',
-    '@jahia/moonstone': '>=1.6.2 <3',
+    '@jahia/moonstone': '>=2.21.0 <3',
     i18next: '>=19.9.2 <22',
     'react-i18next': '>=11.12.0 <12'
 }).forEach(([name, range]) => {

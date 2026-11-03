@@ -2,13 +2,16 @@ import {comparePaths, createTestSite, deleteTestSite, runFixture, scan} from '..
 import {
     clearFilters,
     closeDetailsPanel,
+    closeFilter,
     closeMenu,
     confirmFix,
     getColumnLabels,
     getDetailsPanel,
     getDialog,
     getDropdown,
+    getFilterChip,
     getFilters,
+    getFilterSelector,
     getMenuItem,
     getNodeErrorRows,
     getNodeRow,
@@ -17,6 +20,8 @@ import {
     getScanLabel,
     openDropdown,
     openErrorDetails,
+    openFilter,
+    selectFilter,
     selectInDropdown,
     visitLatestResults
 } from '../../support/adminPage';
@@ -71,14 +76,13 @@ describe('Results table', () => {
     });
 
     it('adds and removes columns, which keep their order', () => {
-        // The menu stays open, so that several columns are toggled at once
-        openDropdown('Columns');
+        // The column menu of the filter bar stays open, so that several columns are toggled at once
+        getFilters().find('button[aria-label="Choose the columns"]').click();
         getMenuItem('Site').click();
         getMenuItem('Primary type').click();
-        // A displayed column is removed from the menu, or from its tag
         getMenuItem('Workspace').click();
+        getMenuItem('Message').click();
         closeMenu();
-        getDropdown('Columns').contains('button', 'Message').click();
         getColumnLabels().should('deep.equal', ['Path', 'Check name', 'Error type', 'Site', 'Primary type']);
         // The only error of a node is displayed in a single row, which tells the node as well
         getNodeRow(MISSING_TEMPLATE).should('have.attr', 'data-error-id');
@@ -94,26 +98,26 @@ describe('Results table', () => {
     });
 
     it('filters the errors on the value of a column, and counts the errors of each value', () => {
-        selectInDropdown('Check name', 'PagesSanityCheck (1)');
+        selectFilter('Check name', 'PagesSanityCheck (1)');
         cy.contains(/^Errors: 1 \(total: \d+\)$/).should('be.visible');
         getRow(MISSING_TEMPLATE).should('exist');
         getResultsTable().find(`tr[data-node-path="${MISSING_LANGUAGE}"]`).should('not.exist');
         // The values of the other columns are counted on the filtered errors: a value without error is not offered
-        openDropdown('Error type');
-        getMenuItem('MISSING_TEMPLATE (1)');
-        cy.get('li.moonstone-menuItem').filter(':contains("MISSING_JCR_LANGUAGE_PROP")').should('not.exist');
-        closeMenu();
+        openFilter('Error type');
+        getFilterSelector('Error type').should('contain.text', 'MISSING_TEMPLATE (1)').and('not.contain.text', 'MISSING_JCR_LANGUAGE_PROP');
+        closeFilter();
 
         clearFilters();
-        getDropdown('Check name').should('contain.text', 'All');
-        getDropdown('Impact on XML import').should('contain.text', 'All');
+        // A chip with no value shows the name of its filter only, and an added filter leaves the bar
+        getFilterChip('Check name').should('have.text', 'Check name');
+        getFilterChip('Impact on XML import').should('not.exist');
     });
 
     it('clears the results once refreshed, without reloading the page, and lists the results of a new scan', () => {
         getResultsTable().should('be.visible');
         // A filter and an open panel, which the refresh clears
         clearFilters();
-        selectInDropdown('Check name', /^PagesSanityCheck \(1\)$/);
+        selectFilter('Check name', /^PagesSanityCheck \(1\)$/);
         openErrorDetails(MISSING_TEMPLATE);
         // A reload of the page would lose this mark
         cy.window().then(win => {
@@ -147,8 +151,8 @@ describe('Results table', () => {
                     selectInDropdown('Scan', added);
                     getDropdown('Scan').should('contain.text', added);
                 });
-                getDropdown('Check name').should('contain.text', 'All');
-                getDropdown('Impact on XML import').should('contain.text', 'All');
+                getFilterChip('Check name').should('have.text', 'Check name');
+                getFilterChip('Impact on XML import').should('not.exist');
                 getRow(INCONSISTENT_LOCK).should('exist');
                 // The previous results are still listed
                 getScanLabel(resultsId).then(previous => {
@@ -183,11 +187,8 @@ describe('Results table', () => {
         getNodeRow(MISSING_TEMPLATE).find('[role="alert"]').should('contain.text', 'The browser blocked the window of the JCR browser');
     });
 
-    it('always displays the filters, and displays only the errors which block an XML import by default', () => {
-        getFilters().within(() => {
-            cy.contains('label', 'Impact on XML import').should('be.visible');
-            cy.contains('true (3)').should('be.visible');
-        });
+    it('displays only the errors which block an XML import by default', () => {
+        getFilterChip('Impact on XML import').should('contain.text', 'Impact on XML import').and('contain.text', 'true');
         cy.contains(/^Errors: 3 \(total: \d+\)$/).should('be.visible');
         getRow(MISSING_LANGUAGE).should('exist');
         getRow(MISSING_TEMPLATE).should('exist');
@@ -235,24 +236,23 @@ describe('Results table', () => {
     it('filters the errors fixed, skipped or not fixed, the three statuses being always offered', () => {
         clearFilters();
         // No fix has run yet: every error is skipped, and the other statuses are offered without error
-        openDropdown('Fix status');
-        cy.get('li.moonstone-menuItem').then(items => {
+        openFilter('Fix status');
+        getFilterSelector('Fix status').find('label').then(items => {
             const labels = items.toArray().map(item => item.textContent.trim());
-            expect(labels[0]).to.equal('All');
-            expect(labels[1]).to.equal('Fixed (0)');
-            expect(labels[2]).to.match(/^Skipped \(\d+\)$/);
-            expect(labels[3]).to.equal('Not fixed (0)');
+            expect(labels[0]).to.equal('Fixed (0)');
+            expect(labels[1]).to.match(/^Skipped \(\d+\)$/);
+            expect(labels[2]).to.equal('Not fixed (0)');
         });
-        closeMenu();
+        closeFilter();
         openErrorDetails(INCONSISTENT_LOCK);
         getDetailsPanel().contains('button', /^Fix$/).click();
         confirmFix(1);
         getDetailsPanel().contains('Fixed').should('be.visible');
         closeDetailsPanel();
-        selectInDropdown('Fix status', 'Fixed (1)');
+        selectFilter('Fix status', 'Fixed (1)');
         getRow(INCONSISTENT_LOCK).should('exist');
         getResultsTable().find(`tr[data-node-path="${MISSING_LANGUAGE}"]`).should('not.exist');
-        selectInDropdown('Fix status', /^Skipped \(\d+\)$/);
+        selectFilter('Fix status', /^Skipped \(\d+\)$/);
         getResultsTable().find(`tr[data-node-path="${INCONSISTENT_LOCK}"]`).should('not.exist');
         getRow(MISSING_LANGUAGE).should('exist');
         runFixture('checks/LockSanityCheck.groovy', {SITEKEY: SITE});

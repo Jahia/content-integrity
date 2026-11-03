@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.8.2",
-    "@jahia/moonstone": "~2.14.2",
+    "@jahia/moonstone": "https://pkg.pr.new/@jahia/moonstone@2c2c864",
     "@jahia/ui-extender": "^1.0.0",
     "graphql": "^15.8.0",
     "i18next": "^21.6.14",

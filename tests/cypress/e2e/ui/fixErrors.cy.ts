@@ -11,7 +11,7 @@ import {
     getResultsTable,
     getRow,
     openErrorDetails,
-    selectInDropdown,
+    selectFilter,
     visitLatestResults
 } from '../../support/adminPage';
 
@@ -102,7 +102,7 @@ describe('Fix of the errors', () => {
         scan(`/sites/${SITE}`, [...CHECKS, 'HomePageDeclarationCheck']);
         visitLatestResults();
         clearFilters();
-        selectInDropdown('Error type', /^NO_HOME \(1\)$/);
+        selectFilter('Error type', /^NO_HOME \(1\)$/);
         cy.contains('button', 'Fix all').click();
         confirmFix(1);
         // The fix has run without fixing the error: the dialog tells what the fix does, which says when it can't fix
@@ -128,7 +128,7 @@ describe('Fix of the errors', () => {
         // The failure is stored with the results: it is told again once the page is reloaded, and filtered
         visitLatestResults();
         clearFilters();
-        selectInDropdown('Fix status', /^Not fixed \(1\)$/);
+        selectFilter('Fix status', /^Not fixed \(1\)$/);
         getResultsTable().find('tr[data-error-id]').should('have.length', 1);
         getRow(SITE_PATH).should('contain.text', 'NO_HOME').within(() => cy.contains('Not fixed').should('be.visible'));
         runFixture('checks/HomePageDeclarationCheck.groovy', {SITEKEY: SITE, SCENARIO: 'RESTORE'});

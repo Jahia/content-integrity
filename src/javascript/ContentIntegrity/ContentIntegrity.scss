@@ -318,15 +318,18 @@
   border-top: 1px solid var(--color-gray40);
 }
 
-.clearFilters {
-  margin-top: var(--spacing-small);
+.filterBar {
+  margin-top: var(--spacing-medium);
 }
 
-.filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--spacing-small) var(--spacing-medium);
-  margin-top: var(--spacing-medium);
+// The values of a filter in its selector: a long list scrolls inside the selector
+.filterOptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  min-width: 220px;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .filter {
