@@ -1,6 +1,6 @@
-# After a merge to master: builds the module, runs every Cypress spec against a Jahia started for
-# the run, then regenerates every screenshot of the documentation on that same Jahia and pushes
-# them to master in a commit of their own.
+# After a merge to master: builds the module and runs every Cypress spec against a Jahia started
+# for the run. The screenshots of the documentation are regenerated on a nightly schedule instead,
+# see nightly.yml.
 name: On Merge to Master
 
 on:
@@ -9,9 +9,6 @@ on:
       - 'master'
     tags-ignore:
       - '**'
-
-permissions:
-  contents: write
 
 jobs:
   build:
@@ -44,106 +41,3 @@ jobs:
       artifact_prefix: ci
       skip_notifications: true
       should_skip_testrail: true
-
-  regenerate-screenshots:
-    name: Regenerate and push screenshots
-    needs: integration-tests-standalone
-    runs-on: self-hosted
-    timeout-minutes: 75
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: build-artifacts
-          path: ci-build-artifacts
-
-      # docker-compose v1, as the reusable integration-tests workflow uses
-      - uses: KengoTODA/actions-setup-docker-compose@477353946803dd64eaa44008b865b6bfc88cab4e #v1.2.4
-        with:
-          version: '1.29.2'
-
-      # The registries of the Jahia images, as the integration-tests action logs into before it
-      # pulls them: ghcr.io for jahia-ee-dev, Docker Hub for the base image of the tests image
-      - name: Docker login
-        run: |
-          echo '${{ secrets.GH_PACKAGES_TOKEN }}' | docker login ghcr.io -u '${{ secrets.GH_PACKAGES_USERNAME }}' --password-stdin
-          echo '${{ secrets.DOCKERHUB_PASSWORD }}' | docker login docker.io -u '${{ secrets.DOCKERHUB_USERNAME }}' --password-stdin
-
-      # The same stack as the integration-tests job: a fresh Jahia, the manifest, the module built
-      # by the build job, then ci.screenshots.sh inside the tests container
-      - name: Build the tests image
-        run: |
-          cd tests
-          mkdir -p artifacts
-          # The sources jar is not a bundle: only the module jar is installed on the server
-          find ../ci-build-artifacts -name 'content-integrity-*-SNAPSHOT.jar' ! -name '*-sources.jar' -exec cp {} artifacts/ \;
-          docker build -t jahia/content-integrity:latest .
-
-      - name: Start Jahia
-        env:
-          JAHIA_LICENSE: ${{ secrets.JAHIA_LICENSE_8X_FULL }}
-          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
-        run: |
-          cd tests
-          export JAHIA_IMAGE=ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
-          # Not the tag the integration-tests action uses: this job builds its own image
-          export TESTS_IMAGE=jahia/content-integrity:latest
-          export MANIFEST=provisioning-manifest-build.yml
-          export SUPER_USER_PASSWORD=root1234
-          bash ci.startup.sh notests
-
-      - name: Provision the module and regenerate the screenshots
-        env:
-          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
-        run: |
-          cd tests
-          # The network of the compose stack, read from the running Jahia container
-          NETWORK=$(docker inspect jahia -f '{{range $k, $v := .NetworkSettings.Networks}}{{ $k }}{{ end }}')
-          # root: screenshots.sh writes to ../docs/img, which resolves outside /home/jahians
-          docker run --user root --name cypress-screenshots --network "$NETWORK" \
-            -e JAHIA_URL=http://jahia:8080 -e JAHIA_PROCESSING_URL=http://jahia:8080 \
-            -e SUPER_USER_PASSWORD=root1234 \
-            -e NEXUS_USERNAME -e NEXUS_PASSWORD \
-            -e MANIFEST=provisioning-manifest-build.yml -e MODULE_ID=content-integrity \
-            jahia/content-integrity:latest \
-            bash -c 'bash node_modules/@jahia/cypress/env.provision.sh && bash ci.screenshots.sh'
-
-      - name: Copy the screenshots out of the container
-        if: always()
-        run: |
-          cd tests
-          mkdir -p results/docs-img
-          # The container works out of /home/jahians (= the tests folder): its ../docs/img is
-          # /home/docs/img
-          docker cp cypress-screenshots:/home/docs/img results/docs-img/ || true
-          docker rm -f cypress-screenshots || true
-
-      - name: Stop Jahia
-        if: always()
-        run: docker-compose -f tests/docker-compose.yml down -v || true
-
-      - name: Copy the screenshots into the documentation
-        run: bash tests/ci.postrun.sh
-
-      - name: Commit and push the screenshots
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/img
-          if git diff --cached --quiet; then
-            echo 'No screenshot changed: nothing to push'
-          else
-            git commit -m 'chore(ci): regenerate the screenshots of the documentation [skip ci]'
-            # A merge may have landed while the screenshots were taken: rebase the commit on the
-            # current master before pushing it (the checkout is a detached HEAD)
-            git fetch origin master
-            git rebase origin/master
-            git push origin HEAD:master
-          fi

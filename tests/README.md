@@ -57,9 +57,9 @@ root logs them out after each test, so that their sessions do not hold the slots
 ## CI
 
 Every pull request, and every push to `master`, builds the module and runs every spec against a Jahia
-started for the run (`.github/workflows/on-code-change.yml` and `on-merge.yml`). On `master`, once the
-tests pass, the screenshots of the documentation are regenerated on the same server and pushed to
-`master` in a commit of their own.
+started for the run (`.github/workflows/on-code-change.yml` and `on-merge.yml`). Every night, on top
+of the build, the screenshots of the documentation are regenerated on a fresh Jahia and pushed to
+`master` when they changed (`nightly.yml`, on a schedule or by hand with `workflow_dispatch`).
 
 * `provisioning-manifest-build.yml` declares the external dependencies of the tests
   (`legacy-default-components`, `external-provider-vfs`); the module under test comes from the
