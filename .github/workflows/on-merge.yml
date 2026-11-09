@@ -63,7 +63,7 @@ jobs:
           path: ci-build-artifacts
 
       # docker-compose v1, as the reusable integration-tests workflow uses
-      - uses: KengoTODA/actions-setup-docker-compose@477353946803dd64eaa44008b865b6bfc88cab4c #v1.2.4
+      - uses: KengoTODA/actions-setup-docker-compose@477353946803dd64eaa44008b865b6bfc88cab4e #v1.2.4
         with:
           version: '1.29.2'
 
