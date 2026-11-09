@@ -1,6 +1,5 @@
 package org.jahia.modules.contentintegrity.jcrcommands;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
 import org.apache.karaf.shell.api.action.Command;
@@ -9,26 +8,26 @@ import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.Session;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.jcrcommands.completers.TestDateCompleter;
 import org.jahia.modules.contentintegrity.services.ContentIntegrityResults;
 import org.jahia.modules.contentintegrity.services.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Command(scope = "jcr", name = "integrity-printTestResults", description = "Reprints the result of some previous test")
 @Service
 public class PrintPreviousTestCommand extends JCRCommandSupport implements Action {
 
-    private static final Logger logger = LoggerFactory.getLogger(PrintPreviousTestCommand.class);
+    @Reference
+    private ContentIntegrityService integrityService;
 
     public static final String LAST_PRINTED_TEST = "lastPrintedTest";
 
     @Reference
     Session session;
 
-    @Argument(description = "Test date")
+    @Argument(description = "ID of the test whose results to print. Latest test used if not defined.")
     @Completion(TestDateCompleter.class)
-    private String testDate;
+    private String testID;
 
     @Option(name = "-l", aliases = "--limit", description = "Maximum number of lines to print.")
     private String limit;
@@ -46,23 +45,10 @@ public class PrintPreviousTestCommand extends JCRCommandSupport implements Actio
 
     @Override
     public Object execute() throws Exception {
-        final ContentIntegrityResults results;
-        final String errorMsg;
+        final ContentIntegrityResults results = loadTestResults(integrityService, testID);
+        if (results == null) return null;
 
-        if (StringUtils.isBlank(testDate)) {
-            results = Utils.getContentIntegrityService().getLatestTestResults();
-            errorMsg = "No previous test results found";
-        } else {
-            results = Utils.getContentIntegrityService().getTestResults(testDate);
-            errorMsg = "No previous test results found for this date";
-        }
-
-        if (results == null) {
-            System.out.println(errorMsg);
-            return null;
-        }
-
-        session.put(LAST_PRINTED_TEST, testDate);
+        session.put(LAST_PRINTED_TEST, testID);
         if (dumpToCSV) {
             if (uploadDump) {
                 if (!Utils.writeDumpInTheJCR(results, excludeFixedErrors, CONSOLE)) {

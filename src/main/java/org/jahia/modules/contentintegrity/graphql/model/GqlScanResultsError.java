@@ -1,13 +1,14 @@
 package org.jahia.modules.contentintegrity.graphql.model;
 
+import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
+import org.jahia.modules.contentintegrity.services.Utils;
 
 import java.util.List;
 import java.util.Map;
@@ -16,12 +17,27 @@ import java.util.stream.Collectors;
 
 public class GqlScanResultsError {
 
-    private static final Logger logger = LoggerFactory.getLogger(GqlScanResultsError.class);
-
+    private final ContentIntegrityService service;
     private final ContentIntegrityError error;
+    // Read once: the description of the values reads the node of the error
+    private boolean fixValuesRead = false;
+    private GqlFixValuesDefinition fixValues;
 
-    public GqlScanResultsError(ContentIntegrityError error) {
+    public GqlScanResultsError(ContentIntegrityService service, ContentIntegrityError error) {
+        this.service = service;
         this.error = error;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the fix of the error has run, and has not fixed it")
+    public boolean isFixFailed() {
+        return error.isFixFailed() && !error.isFixed();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("Why the last fix of the error has failed, when it raised an exception: null otherwise, and once the results are read again")
+    public String getFixFailureMessage() {
+        return isFixFailed() ? error.getFixFailureMessage() : null;
     }
 
     @GraphQLField
@@ -32,6 +48,42 @@ public class GqlScanResultsError {
     @GraphQLField
     public boolean isFixed() {
         return error.isFixed();
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the node of the error is virtual: served by an external provider, such as a mount point. Its errors are not fixed")
+    public boolean isVirtualNode() {
+        return Utils.isOnVirtualNode(error);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the node of the error still exists in its workspace. A node removed since the scan, for example by the fix of another error, leaves nothing to fix")
+    public boolean isNodeExists() {
+        return Utils.errorNodeExists(error);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the check which has detected the error provides a fix for it, the error is not fixed yet, its node is not virtual, and it still exists")
+    public boolean isFixable() {
+        return !error.isFixed() && service.isFixable(error);
+    }
+
+    @GraphQLField
+    @GraphQLDescription("True if the fix of the error takes values, which are described by the field 'fixValues'. Reads the node of the error")
+    public boolean isFixWithValues() {
+        return getFixValues() != null;
+    }
+
+    @GraphQLField
+    @GraphQLDescription("The values to provide to fix the error, null if its fix doesn't take values. Reads the node of the error")
+    public GqlFixValuesDefinition getFixValues() {
+        if (!fixValuesRead) {
+            fixValuesRead = true;
+            fixValues = error.isFixed() ? null : Optional.ofNullable(service.getFixValuesDefinition(error))
+                    .map(GqlFixValuesDefinition::new)
+                    .orElse(null);
+        }
+        return fixValues;
     }
 
     @GraphQLField

@@ -1,0 +1,40 @@
+# Builds the module and runs every Cypress spec against a Jahia started for the run, on every
+# pull request (a push to master, direct or through a merge, is covered by on-merge.yml, which
+# also regenerates the screenshots).
+name: On Code Change (PR)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  build:
+    name: Build Module
+    runs-on: self-hosted
+    env:
+      NEXUS_INTERNAL_URL: ${{ secrets.NEXUS_INTERNAL_URL }}
+    container:
+      image: ghcr.io/jahia/jahia-docker-mvn-cache:11-jdk-noble-mvn-loaded
+      credentials:
+        username: ${{ secrets.GH_PACKAGES_USERNAME }}
+        password: ${{ secrets.GH_PACKAGES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: jahia/jahia-modules-action/build@v2
+        with:
+          mvn_settings_filepath: '.github/maven.settings.xml'
+          nexus_username: ${{ secrets.NEXUS_USERNAME }}
+          nexus_password: ${{ secrets.NEXUS_PASSWORD }}
+
+  integration-tests-standalone:
+    uses: Jahia/jahia-modules-action/.github/workflows/reusable-integration-tests.yml@v2
+    needs: build
+    secrets: inherit
+    with:
+      jahia_image: ghcr.io/jahia/jahia-ee-dev:8-SNAPSHOT
+      module_id: content-integrity
+      module_branch: ${{ github.head_ref }}
+      provisioning_manifest: provisioning-manifest-build.yml
+      artifact_prefix: ci
+      skip_notifications: true
+      should_skip_testrail: true

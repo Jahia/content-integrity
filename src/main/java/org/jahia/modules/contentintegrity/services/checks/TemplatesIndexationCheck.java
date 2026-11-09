@@ -1,30 +1,26 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.lang.StringUtils;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.query.QueryResultWrapper;
 import org.jahia.services.query.QueryWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_PATH_SEPARATOR;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=jnt:template",
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_SUBTREES + "=" + "/modules"
 })
 public class TemplatesIndexationCheck extends AbstractContentIntegrityCheck {
-
-    private static final Logger logger = LoggerFactory.getLogger(TemplatesIndexationCheck.class);
 
     public static final ContentIntegrityErrorType NOT_INDEXED_TEMPLATE = createErrorType("NOT_INDEXED_TEMPLATE", "The template is not correctly indexed");
 

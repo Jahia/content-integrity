@@ -2,15 +2,16 @@ package org.jahia.modules.contentintegrity.services.checks;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.jahia.data.templates.JahiaTemplatesPackage;
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
+import org.jahia.modules.contentintegrity.api.Constants;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.Constants;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.osgi.BundleUtils;
-import org.jahia.registries.ServicesRegistry;
 import org.jahia.services.content.JCRNodeWrapper;
+import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.content.decorator.JCRSiteNode;
 import org.jahia.services.templates.JahiaTemplateManagerService;
 import org.osgi.framework.Bundle;
@@ -44,7 +45,7 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
 
     @Override
     protected void initializeIntegrityTestInternal(JCRNodeWrapper node, Collection<String> excludedPaths) {
-        final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
+        final JahiaTemplateManagerService jahiaTemplateManagerService = BundleUtils.getOsgiService(JahiaTemplateManagerService.class, null);
         jahiaTemplateManagerService.getAvailableTemplatePackages().stream()
                 .map(JahiaTemplatesPackage::getId)
                 .collect(Collectors.toCollection(() -> availableModules));
@@ -67,24 +68,43 @@ public class UndeployedModulesReferencesCheck extends AbstractContentIntegrityCh
     public boolean fixError(JCRNodeWrapper node, ContentIntegrityError integrityError) throws RepositoryException {
         final JCRSiteNode site = (JCRSiteNode) node;
         final String missingModule = (String) integrityError.getExtraInfo("module");
-        final JahiaTemplateManagerService jahiaTemplateManagerService = ServicesRegistry.getInstance().getJahiaTemplateManagerService();
+        final JahiaTemplateManagerService jahiaTemplateManagerService = BundleUtils.getOsgiService(JahiaTemplateManagerService.class, null);
+        // Available as the scan expects it: the error is gone
+        if (jahiaTemplateManagerService.getAvailableTemplatePackages().stream().map(JahiaTemplatesPackage::getId).anyMatch(missingModule::equals)) {
+            logger.info(String.format("The module %s has not been unreferenced from the site %s since it is now available on the server",
+                    missingModule, site.getSiteKey()));
+            return true;
+        }
+        // Installed but not available, such as a module which is not started: the site most likely needs it, it is not
+        // unreferenced, and the error stays until the module is started
         final Set<Bundle> bundles = jahiaTemplateManagerService.getModuleStates().keySet();
         final Collection<String> installedModuleIDs = CollectionUtils.collect(bundles, BundleUtils::getModuleId);
         if (installedModuleIDs.contains(missingModule)) {
-            logger.info(String.format("The module %s has not been unreferenced from the site %s since it is now installed on the server",
-                    missingModule, site.getSiteKey()));
-            return true;
+            throw new RepositoryException(String.format("The module %s is installed but not available, for example not started: start it, " +
+                    "or uninstall it to unreference it from the site %s", missingModule, site.getSiteKey()));
         }
+        unreferenceModule(site, missingModule);
+        // From the jcr-scripts fix: the error is reported in the default workspace only, but the site node is
+        // auto-published, so the module is unreferenced from the live site node as well.
+        if (JCRUtils.isInDefaultWorkspace(site)) {
+            final JCRSessionWrapper liveSession = JCRUtils.getSystemSession(Constants.LIVE_WORKSPACE, true);
+            if (JCRUtils.nodeExists(site.getIdentifier(), liveSession)) {
+                unreferenceModule((JCRSiteNode) liveSession.getNodeByIdentifier(site.getIdentifier()), missingModule);
+            }
+        }
+        return true;
+    }
+
+    private void unreferenceModule(JCRSiteNode site, String missingModule) throws RepositoryException {
+        final String workspace = site.getSession().getWorkspace().getName();
         final List<String> siteModules = site.getInstalledModules();
-        final boolean remove = siteModules.remove(missingModule);
-        if (!remove) {
-            logger.info(String.format("The module %s is already unreferenced from the site %s",
-                    missingModule, site.getSiteKey()));
-            return true;
+        if (!siteModules.remove(missingModule)) {
+            logger.info(String.format("The module %s is already unreferenced from the site %s in %s",
+                    missingModule, site.getSiteKey(), workspace));
+            return;
         }
         site.setInstalledModules(siteModules);
         site.getSession().save();
-        logger.info(String.format("Unreferenced the module %s from the site %s", missingModule, site.getSiteKey()));
-        return true;
+        logger.info(String.format("Unreferenced the module %s from the site %s in %s", missingModule, site.getSiteKey(), workspace));
     }
 }

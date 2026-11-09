@@ -37,6 +37,24 @@ public interface ContentIntegrityError {
 
     void setFixed(boolean fixed);
 
+    /**
+     * @return true if the fix of the error has run, and has not fixed it. A fixed error is not failed
+     */
+    boolean isFixFailed();
+
+    void setFixFailed(boolean fixFailed);
+
+    /**
+     * @return why the last fix of the error has failed, when it raised an exception, null otherwise. Not stored with the
+     * results: a check whose fix only returns false tells no reason
+     */
+    default String getFixFailureMessage() {
+        return null;
+    }
+
+    default void setFixFailureMessage(String message) {
+    }
+
     JSONObject toJSON();
 
     Object getExtraInfo(String key);
@@ -63,9 +81,6 @@ public interface ContentIntegrityError {
      * @return the current error
      */
     ContentIntegrityError addExtraInfo(String key, Object value, boolean isErrorSpecific);
-
-    @Deprecated
-    ContentIntegrityError setErrorType(Object type);
 
     ContentIntegrityErrorType getErrorType();
 

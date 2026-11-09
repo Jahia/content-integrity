@@ -17,7 +17,16 @@ repository.xml.generated
 # JS
 /node_modules
 /node
-/src/main/resources/javascript/ui
+/src/main/resources/javascript/apps
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/releases
+
+# macOS
+.DS_Store
 
 # Custom
 TODO.md
+/.claude/settings.local.json
+/docs/embedded-tests.pdf
+/README.pdf

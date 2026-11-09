@@ -1,7 +1,5 @@
 package org.jahia.modules.contentintegrity.services;
 
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jahia.bin.Jahia;
@@ -13,12 +11,11 @@ import org.jahia.modules.contentintegrity.api.ContentIntegrityError;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityService;
 import org.jahia.modules.contentintegrity.api.ExternalLogger;
+import org.jahia.modules.contentintegrity.api.FixValuesDefinition;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.modules.contentintegrity.services.exceptions.ConcurrentExecutionException;
 import org.jahia.modules.contentintegrity.services.exceptions.InterruptedScanException;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
 import org.jahia.modules.contentintegrity.services.util.ProgressMonitor;
-import org.jahia.services.SpringContextSingleton;
-import org.jahia.services.cache.ehcache.EhCacheProvider;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.utils.DateUtils;
@@ -34,22 +31,20 @@ import org.slf4j.Logger;
 import javax.jcr.RepositoryException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JCR_PATH_SEPARATOR;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.ROOT_NODE_PATH;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_1;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TAB_LVL_2;
+import static org.jahia.modules.contentintegrity.api.Constants.JCR_PATH_SEPARATOR;
+import static org.jahia.modules.contentintegrity.api.Constants.ROOT_NODE_PATH;
+import static org.jahia.modules.contentintegrity.api.Constants.TAB_LVL_1;
+import static org.jahia.modules.contentintegrity.api.Constants.TAB_LVL_2;
 
 @Component(name = "org.jahia.modules.contentintegrity.service", service = ContentIntegrityService.class, property = {
         Constants.SERVICE_PID + "=org.jahia.modules.contentintegrity.service",
@@ -64,10 +59,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private static final String INTERRUPT_PROP_NAME = "modules.contentIntegrity.interrupt";
 
     private final List<ContentIntegrityCheck> integrityChecks = new ArrayList<>();
-    private Cache errorsCache;
-    private EhCacheProvider ehCacheProvider;
-    private final String errorsCacheName = "ContentIntegrityService-errors";
-    private final long errorsCacheTti = 5L * 7L * 24L * 3600L; // 5 weeks;
+    // The results are stored in the JCR. The last ones read are kept in memory, as browsing them reads them page by page
+    private static final int LOADED_RESULTS_MAX_SIZE = 3;
+    private final Map<String, ContentIntegrityResults> loadedResults = Collections.synchronizedMap(new LinkedHashMap<String, ContentIntegrityResults>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, ContentIntegrityResults> eldest) {
+            return size() > LOADED_RESULTS_MAX_SIZE;
+        }
+    });
     private long nbNodesToScanCalculationDuration = 0L;
     private long ownTime = 0L;
     private long ownTimeIntervalStart = 0L;
@@ -76,23 +75,16 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Activate
     public void start() throws JahiaInitializationException {
-        if (ehCacheProvider == null)
-            ehCacheProvider = (EhCacheProvider) SpringContextSingleton.getBean("bigEhCacheProvider");
-        if (errorsCache == null) {
-            errorsCache = ehCacheProvider.getCacheManager().getCache(errorsCacheName);
-            if (errorsCache == null) {
-                ehCacheProvider.getCacheManager().addCache(errorsCacheName);
-                errorsCache = ehCacheProvider.getCacheManager().getCache(errorsCacheName);
-                errorsCache.getCacheConfiguration().setTimeToIdleSeconds(errorsCacheTti);
-            }
-        }
-
+        Utils.restrictReportsFolderAccess();
+        // A scan this server was running when it stopped will never end
+        final int abandonedScans = ResultsStore.interruptAbandonedScans();
+        if (abandonedScans > 0) logger.info("{} scan(s) running when the server stopped marked as interrupted", abandonedScans);
         logger.info("Content integrity service started ({})", Utils.getContentIntegrityVersion());
     }
 
     @Deactivate
     public void stop() throws JahiaException {
-        if (errorsCache != null) errorsCache.flush();
+        loadedResults.clear();
 
         logger.info("Content integrity service stopped ({})", Utils.getContentIntegrityVersion());
     }
@@ -137,19 +129,34 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
 
     @Override
     public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger externalLogger) throws ConcurrentExecutionException {
-        return validateIntegrity(path, excludedPaths, skipMountPoints, workspace, checksToExecute, externalLogger, false);
+        return validateIntegrity(path, excludedPaths, skipMountPoints, workspace, checksToExecute, externalLogger, true);
     }
 
-    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger externalLogger, boolean fixErrors) throws ConcurrentExecutionException {
+    @Override
+    public ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger externalLogger, boolean persistResults) throws ConcurrentExecutionException {
+        return validateIntegrity(path, excludedPaths, skipMountPoints, workspace, checksToExecute, externalLogger, false, persistResults);
+    }
+
+    private ContentIntegrityResults validateIntegrity(String path, List<String> excludedPaths, boolean skipMountPoints, String workspace, List<String> checksToExecute, ExternalLogger callerLogger, boolean fixErrors, boolean persistResults) throws ConcurrentExecutionException {
         if (!semaphore.tryAcquire()) {
             throw new ConcurrentExecutionException();
         }
 
+        ScanReportLogger reportLogger = null;
+        ContentIntegrityResults finalResults = null;
         try {
             JcrSessionFilter.endRequest();
             final JCRSessionWrapper session = JCRUtils.getSystemSession(workspace);
             if (session == null) return null;
 
+            final long start = System.currentTimeMillis();
+            if (persistResults) {
+                // The report of the scan is stored from its start, then updated with its log until its end
+                reportLogger = new ScanReportLogger(callerLogger, new ContentIntegrityResults(start, 0L, workspace, new ArrayList<>(), new ArrayList<>())
+                        .setStatus(ContentIntegrityResults.Status.RUNNING));
+                reportLogger.flush();
+            }
+            final ExternalLogger externalLogger = reportLogger != null ? reportLogger : callerLogger;
             try {
                 if (!session.nodeExists(path)) {
                     Utils.log(String.format("The node %s does not exist in the workspace %s", path, session.getWorkspace().getName()), logger, externalLogger);
@@ -160,7 +167,6 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                         excludedPaths.stream().collect(Collectors.joining(" , ", " (excluded paths: ", " )")) : StringUtils.EMPTY;
                 Utils.log(String.format("Starting to check the integrity under %s in the workspace %s%s with %s", path, workspace, excludedPathsDesc, Utils.getContentIntegrityVersion()), logger, externalLogger);
                 final List<ContentIntegrityError> errors = new ArrayList<>();
-                final long start = System.currentTimeMillis();
                 resetCounters();
                 final Set<String> trimmedExcludedPaths = new HashSet<>();
                 if (CollectionUtils.isNotEmpty(excludedPaths)) {
@@ -188,7 +194,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                     return null;
                 }
                 validateIntegrity(node, trimmedExcludedPaths, skipMountPoints, activeChecks, errors, externalLogger, fixErrors);
-                if (System.getProperty(INTERRUPT_PROP_NAME) != null) {
+                final boolean interrupted = System.getProperty(INTERRUPT_PROP_NAME) != null;
+                if (interrupted) {
                     Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
                 }
                 for (ContentIntegrityCheck integrityCheck : activeChecks) {
@@ -202,20 +209,28 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 Utils.log(msg, logger, externalLogger, summaryLogger);
                 final List<ExternalLogger> externalLoggers = new ArrayList<>();
                 externalLoggers.add(summaryLogger);
-                if (externalLogger.includeSummary()) externalLoggers.add(externalLogger);
+                if (externalLogger != null && externalLogger.includeSummary()) externalLoggers.add(externalLogger);
                 final ExternalLogger[] externalLoggersArray = externalLoggers.toArray(new ExternalLogger[0]);
                 printChecksDuration(testDuration, activeChecks, externalLoggersArray);
                 Utils.validateImportCompatibility(errors, logger, externalLoggersArray);
-                Utils.detectLegacyErrorTypes(errors, logger, externalLoggersArray);
-                final ContentIntegrityResults results = new ContentIntegrityResults(start, testDuration, workspace, errors, summary);
-                storeErrorsInCache(results);
-                return results;
+                finalResults = new ContentIntegrityResults(start, testDuration, workspace, errors, summary).setInterrupted(interrupted);
+                if (reportLogger != null) saveResults(finalResults, reportLogger.getLines(), true);
+                return finalResults;
             } catch (RepositoryException e) {
                 Utils.log("", Utils.LOG_LEVEL.ERROR, logger, e, externalLogger);
             } catch (InterruptedScanException e) {
                 Utils.log("Scan interrupted before the end", Utils.LOG_LEVEL.WARN, logger, externalLogger);
+                // Stopped while the nodes to scan were counted, so before any node was checked: the results record the interrupted scan
+                finalResults = new ContentIntegrityResults(start, System.currentTimeMillis() - start, workspace, new ArrayList<>(), new ArrayList<>()).setInterrupted(true);
+                if (reportLogger != null) saveResults(finalResults, reportLogger.getLines(), true);
+                return finalResults;
             }
         } finally {
+            // A scan which ended without results failed: its report keeps the log which tells why
+            if (reportLogger != null && finalResults == null) {
+                reportLogger.getReport().setStatus(ContentIntegrityResults.Status.FAILED);
+                reportLogger.flush();
+            }
             JcrSessionFilter.endRequest();
             System.clearProperty(INTERRUPT_PROP_NAME);
             semaphore.release();
@@ -449,7 +464,8 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     private void handleResult(ContentIntegrityErrorList checkResult, JCRNodeWrapper node, boolean executeFix, ContentIntegrityCheck integrityCheck, List<ContentIntegrityError> errors, ExternalLogger externalLogger) {
         if (checkResult == null || !checkResult.hasErrors()) return;
         for (ContentIntegrityError integrityError : checkResult.getNestedErrors()) {
-            if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)
+            if (executeFix && integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix
+                    && ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).isFixable(integrityError))
                 try {
                     integrityError.setFixed(((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, integrityError));
                 } catch (RepositoryException e) {
@@ -467,6 +483,7 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
         fixErrors(Collections.singletonList(error));
     }
 
+    @Override
     public void fixErrors(List<ContentIntegrityError> errors) {
         for (ContentIntegrityError error : errors) {
             final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
@@ -475,6 +492,14 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 continue;
             }
             if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix)) continue;
+            if (!((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).isFixable(error)) {
+                logger.info("The error {} is not fixed: its check provides no fix for {}", error.getErrorID(), error.getErrorType());
+                continue;
+            }
+            if (Utils.isOnVirtualNode(error)) {
+                logger.warn("The error {} is not fixed: its node is virtual", error.getErrorID());
+                continue;
+            }
 
             final String workspace = error.getWorkspace();
             final JCRSessionWrapper session = JCRUtils.getSystemSession(workspace);
@@ -484,12 +509,122 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
                 final String uuid = error.getUuid();
                 final JCRNodeWrapper node = session.getNodeByUUID(uuid);
                 final boolean fixed = ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).fixError(node, error);
-                if (fixed) error.setFixed(true);
-                else logger.error(String.format("Failed to fix the error %s", error.toJSON()));
+                if (fixed) {
+                    error.setFixed(true);
+                } else {
+                    error.setFixFailed(true);
+                    error.setFixFailureMessage(null);
+                    logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
+                }
             } catch (RepositoryException e) {
+                error.setFixFailed(true);
+                error.setFixFailureMessage(e.getMessage());
                 logger.error(String.format("Failed to fix the error %s", error.toJSON()), e);
             }
         }
+    }
+
+    @Override
+    public void fixError(ContentIntegrityError error, List<String> values) throws RepositoryException {
+        final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = getCheckFixingWithValues(error);
+        final JCRNodeWrapper node = getErrorNode(error);
+        if (check.getFixValuesDefinition(node, error) == null) {
+            throw new RepositoryException("This error is not fixed with values");
+        }
+        // A value refused with an exception is corrected by the administrator: only a fix which runs without fixing has failed
+        if (check.fixError(node, error, values)) {
+            error.setFixed(true);
+        } else {
+            error.setFixFailed(true);
+            logger.warn("The fix of its check has not fixed the error {}", error.toJSON());
+        }
+    }
+
+    /*
+     * The errors of a node can block each other: a node is saved only once all its mandatory properties are set. So the
+     * errors fixed with values are fixed first, check by check and node by node, each check writing all the values before it
+     * saves the node once. Then the other errors are fixed one by one.
+     */
+    @Override
+    public void fixErrors(List<ContentIntegrityError> errors, List<List<String>> values) throws RepositoryException {
+        final Map<String, List<Integer>> withValues = new LinkedHashMap<>();
+        final List<ContentIntegrityError> withoutValues = new ArrayList<>();
+        for (int i = 0; i < errors.size(); i++) {
+            final ContentIntegrityError error = errors.get(i);
+            if (error.isFixed()) continue;
+            if (values == null || values.get(i) == null) {
+                withoutValues.add(error);
+            } else {
+                getCheckFixingWithValues(error);
+                withValues.computeIfAbsent(String.join("|", error.getIntegrityCheckID(), error.getWorkspace(), error.getUuid()), k -> new ArrayList<>()).add(i);
+            }
+        }
+
+        for (List<Integer> indexes : withValues.values()) {
+            final ContentIntegrityError first = errors.get(indexes.get(0));
+            final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = getCheckFixingWithValues(first);
+            final JCRNodeWrapper node = getErrorNode(first);
+            final List<ContentIntegrityError> nodeErrors = new ArrayList<>(indexes.size());
+            final List<List<String>> nodeValues = new ArrayList<>(indexes.size());
+            for (int index : indexes) {
+                final ContentIntegrityError error = errors.get(index);
+                if (check.getFixValuesDefinition(node, error) == null) {
+                    throw new RepositoryException(String.format("The error %s is not fixed with values", error.getErrorType()));
+                }
+                nodeErrors.add(error);
+                nodeValues.add(values.get(index));
+            }
+            if (check.fixErrors(node, nodeErrors, nodeValues)) {
+                nodeErrors.forEach(error -> error.setFixed(true));
+            } else {
+                nodeErrors.forEach(error -> error.setFixFailed(true));
+                logger.warn("The fix of its check has not fixed the errors {}", nodeErrors.stream().map(ContentIntegrityError::toJSON).collect(Collectors.toList()));
+            }
+        }
+        fixErrors(withoutValues);
+    }
+
+    private ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues getCheckFixingWithValues(ContentIntegrityError error) throws RepositoryException {
+        final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+        if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues)) {
+            throw new RepositoryException("The check which has detected the error doesn't fix it with values");
+        }
+        final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = (ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) integrityCheck;
+        if (Utils.isOnVirtualNode(error)) {
+            throw new RepositoryException("The errors of a virtual node, served by an external provider, are not fixed");
+        }
+        if (!check.isFixable(error)) {
+            throw new RepositoryException("The check which has detected the error provides no fix for it");
+        }
+        return check;
+    }
+
+    @Override
+    public boolean isFixable(ContentIntegrityError error) {
+        final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+        return integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFix
+                && ((ContentIntegrityCheck.SupportsIntegrityErrorFix) integrityCheck).isFixable(error)
+                && !Utils.isOnVirtualNode(error)
+                && Utils.errorNodeExists(error);
+    }
+
+    @Override
+    public FixValuesDefinition getFixValuesDefinition(ContentIntegrityError error) {
+        final ContentIntegrityCheck integrityCheck = getContentIntegrityCheck(error.getIntegrityCheckID());
+        if (!(integrityCheck instanceof ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) || !isFixable(error)) return null;
+        final ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues check = (ContentIntegrityCheck.SupportsIntegrityErrorFixWithValues) integrityCheck;
+        try {
+            return check.getFixValuesDefinition(getErrorNode(error), error);
+        } catch (RepositoryException e) {
+            logger.error(String.format("Impossible to describe the values to fix the error %s", error.toJSON()), e);
+            return null;
+        }
+    }
+
+    private JCRNodeWrapper getErrorNode(ContentIntegrityError error) throws RepositoryException {
+        final JCRSessionWrapper session = JCRUtils.getSystemSession(error.getWorkspace());
+        if (session == null) throw new RepositoryException("Impossible to open a session on the workspace " + error.getWorkspace());
+        return session.getNodeByUUID(error.getUuid());
     }
 
     @Override
@@ -521,14 +656,20 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public void storeErrorsInCache(ContentIntegrityResults results) {
-        final Element element = new Element(results.getID(), results);
-        errorsCache.put(element);
+    public boolean saveResults(ContentIntegrityResults results, List<String> executionLog, boolean withErrors) {
+        final boolean saved = ResultsStore.save(results, executionLog, withErrors);
+        if (withErrors) loadedResults.put(results.getID(), results);
+        return saved;
     }
 
     @Override
-    public void removeErrorsFromCache(ContentIntegrityResults results) {
-        errorsCache.remove(results.getID());
+    public void saveFixedErrors(ContentIntegrityResults results) {
+        ResultsStore.saveFixedErrors(results);
+    }
+
+    @Override
+    public List<ContentIntegrityResultsSummary> getResultsSummaries() {
+        return ResultsStore.list();
     }
 
     @Override
@@ -537,23 +678,59 @@ public class ContentIntegrityServiceImpl implements ContentIntegrityService {
     }
 
     @Override
-    public ContentIntegrityResults getTestResults(String testDate) {
-        final List<String> keys = getTestIDs();
-        if (CollectionUtils.isEmpty(keys)) return null;
-        if (StringUtils.isNotBlank(testDate)) {
-            return (ContentIntegrityResults) errorsCache.get(testDate).getObjectValue();
+    public ContentIntegrityResults getTestResults(String testID) {
+        final String id;
+        if (StringUtils.isNotBlank(testID)) {
+            id = testID;
+        } else {
+            // The latest results with errors to read: those of a scan which is over
+            final List<ContentIntegrityResultsSummary> summaries = getResultsSummaries();
+            id = summaries.stream()
+                    .filter(s -> s.getStatus() == ContentIntegrityResults.Status.FINISHED || s.getStatus() == ContentIntegrityResults.Status.INTERRUPTED)
+                    .reduce((a, b) -> b)
+                    .map(ContentIntegrityResultsSummary::getID)
+                    .orElse(null);
+            if (id == null) return null;
         }
-        final TreeMap<Long, String> testDates = keys.stream().collect(Collectors.toMap(k -> ((ContentIntegrityResults) errorsCache.get(k).getObjectValue()).getTestDate(), Function.identity(), throwingMerger(), TreeMap::new));
-        return (ContentIntegrityResults) errorsCache.get(testDates.lastEntry().getValue()).getObjectValue();
+
+        final ContentIntegrityResults loaded = loadedResults.get(id);
+        if (loaded != null) {
+            // Another server may have fixed some errors since they were read
+            final Set<String> fixedErrors = ResultsStore.loadFixedErrors(id);
+            final Set<String> failedErrors = ResultsStore.loadFailedErrors(id);
+            loaded.getErrors().stream().filter(e -> !e.isFixed() && fixedErrors.contains(e.getErrorID())).forEach(e -> e.setFixed(true));
+            loaded.getErrors().stream().filter(e -> !e.isFixed() && failedErrors.contains(e.getErrorID())).forEach(e -> e.setFixFailed(true));
+            return loaded;
+        }
+        final ContentIntegrityResults results = ResultsStore.load(id);
+        // The results of a scan which runs change until its end
+        if (results != null && results.getStatus() != ContentIntegrityResults.Status.RUNNING) loadedResults.put(id, results);
+        return results;
     }
 
-    private static <T> BinaryOperator<T> throwingMerger() {
-        return (u, v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); };
+    @Override
+    public boolean deleteResults(String testID) throws RepositoryException {
+        final boolean deleted = ResultsStore.delete(testID);
+        if (deleted) loadedResults.remove(testID);
+        return deleted;
+    }
+
+    @Override
+    public int deleteAllResults() throws RepositoryException {
+        final int deleted = ResultsStore.deleteAll();
+        // The results of a running scan are not kept in memory
+        loadedResults.clear();
+        return deleted;
+    }
+
+    @Override
+    public List<String> getExecutionLog(String testID) {
+        return ResultsStore.loadExecutionLog(testID);
     }
 
     @Override
     public List<String> getTestIDs() {
-        return errorsCache.getKeys();
+        return getResultsSummaries().stream().map(ContentIntegrityResultsSummary::getID).collect(Collectors.toList());
     }
 
     @Override

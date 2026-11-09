@@ -1,30 +1,26 @@
 package org.jahia.modules.contentintegrity.services.checks;
 
+import org.jahia.modules.contentintegrity.api.AbstractContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityCheck;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorList;
 import org.jahia.modules.contentintegrity.api.ContentIntegrityErrorType;
-import org.jahia.modules.contentintegrity.services.impl.AbstractContentIntegrityCheck;
-import org.jahia.modules.contentintegrity.services.impl.JCRUtils;
+import org.jahia.modules.contentintegrity.api.JCRUtils;
 import org.jahia.services.content.JCRNodeWrapper;
 import org.jahia.services.content.JCRSessionWrapper;
 import org.osgi.service.component.annotations.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 
-import static org.jahia.modules.contentintegrity.services.impl.Constants.JAHIA_MIX_I18N;
-import static org.jahia.modules.contentintegrity.services.impl.Constants.TRANSLATION_NODE_PREFIX;
+import static org.jahia.modules.contentintegrity.api.Constants.JAHIA_MIX_I18N;
+import static org.jahia.modules.contentintegrity.api.Constants.TRANSLATION_NODE_PREFIX;
 
 @Component(service = ContentIntegrityCheck.class, immediate = true, property = {
         ContentIntegrityCheck.ExecutionCondition.APPLY_ON_NT + "=" + JAHIA_MIX_I18N
 })
 public class UnreadablePublicationStatusCheck extends AbstractContentIntegrityCheck {
-
-    private static final Logger logger = LoggerFactory.getLogger(UnreadablePublicationStatusCheck.class);
 
     public static final ContentIntegrityErrorType UNREADABLE_PUBLICATION_STATUS =
             createErrorType("UNREADABLE_PUBLICATION_STATUS",

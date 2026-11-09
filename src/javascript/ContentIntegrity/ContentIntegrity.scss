@@ -1,0 +1,777 @@
+// Layout and spacing only: colours, radius and spacing come from the Moonstone design tokens.
+
+// The page fills the content area of the administration, whose padding is the margin. It grows to the
+// bottom of the screen, and the content area scrolls when the page is taller.
+.root {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+// min-width: 0 lets a wide table scroll inside its card instead of widening the page.
+.panel {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+  min-width: 0;
+}
+
+// While the errors of a node are displayed, the results leave the room of the side panel: the fix status, in the last
+// column of the table, stays visible
+.panelWithDetails {
+  margin-right: 520px;
+}
+
+// The results card takes the height left below the last scan, so the pagination stays at the bottom of the screen.
+.resultsCard {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.resultsCard .emptyState {
+  flex: 1;
+  justify-content: center;
+}
+
+// Moonstone's Paper and LayoutContent, which Moonstone 1.6 (Jahia 8.1.5) does not have: see common/Card.jsx and
+// common/PageLayout.jsx. Declared before .card and .dialogPaper, which adjust their padding.
+.paper {
+  padding: var(--spacing-large);
+  border-radius: var(--radius);
+  background-color: var(--color-white);
+  box-shadow: #32325d40 0 2px 5px -1px, #0000004d 0 1px 3px -1px;
+}
+
+.pageLayout {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pageLayoutContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--spacing-large);
+  overflow: auto;
+  background-color: var(--color-gray_light40);
+}
+
+.card {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-medium) var(--spacing-large);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-small);
+  margin-bottom: var(--spacing-small);
+}
+
+.sectionTitle {
+  margin-bottom: var(--spacing-small);
+}
+
+// The title of the results card, directly followed by the menu of the actions on all the results
+.resultsTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-nano);
+  min-height: 32px;
+  margin-bottom: var(--spacing-small);
+}
+
+.resultsMenu {
+  display: inline-flex;
+}
+
+// A destructive item of a menu, such as the deletion of all the results, displayed as the Delete action of the reports
+.dangerMenuItem,
+.dangerMenuItem * {
+  color: var(--color-danger) !important;
+  fill: var(--color-danger) !important;
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-small);
+}
+
+.checksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-nano) var(--spacing-medium);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: 0 var(--spacing-nano);
+  border-radius: var(--radius);
+
+  &:hover {
+    background: var(--color-gray_light40, var(--color-light));
+  }
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-small);
+  min-width: 0;
+  cursor: pointer;
+}
+
+.checkName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkActions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--spacing-nano);
+}
+
+// Same box as a Moonstone ghost icon button, so that the icons of a row line up
+.iconLink,
+.iconSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-gray);
+  border-radius: var(--radius);
+
+  &:hover,
+  &:focus-visible {
+    color: var(--color-accent);
+  }
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: var(--spacing-medium) var(--spacing-large);
+  align-items: start;
+}
+
+.inlineField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-nano);
+  // Same indent as the content of a Moonstone Field (32px padding + 3px border).
+  padding: var(--spacing-medium) 0 0 35px;
+}
+
+// The layout of Moonstone's Field, which Moonstone 2.5 (Jahia 8.1) does not have: see common/FormField.jsx
+.field {
+  display: flex;
+  flex-direction: column;
+  padding-left: 32px;
+  border-left: 3px solid transparent;
+}
+
+.fieldError {
+  border-color: var(--color-warning);
+}
+
+.fieldHelper {
+  margin-top: 2px;
+  color: var(--color-gray_dark_plain60, #7e8386);
+}
+
+.fieldChildren {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  margin-top: var(--spacing-small);
+}
+
+.fieldErrorMessage {
+  color: var(--color-warning);
+}
+
+.helper {
+  color: var(--color-gray);
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.inputWithButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-small);
+}
+
+.inputWithButtonInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-nano);
+  margin: var(--spacing-small) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chipButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
+.logs {
+  height: 360px;
+  margin: var(--spacing-small) 0 0;
+  padding: var(--spacing-small) var(--spacing-medium);
+  overflow: auto;
+  font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-light);
+  background: var(--color-dark);
+  border-radius: var(--radius);
+}
+
+.reportList {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-medium);
+  // Same height as the outlined dropdowns of the toolbar, so the links are centered on them.
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reportLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-nano);
+  color: var(--color-accent);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// An action of the reports, such as their deletion, displayed as their links
+.reportAction {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-danger);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-medium);
+}
+
+.resultsHeader {
+  margin-top: var(--spacing-large);
+  padding-top: var(--spacing-medium);
+  border-top: 1px solid var(--color-gray40);
+}
+
+.clearFilters {
+  margin-top: var(--spacing-small);
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-small) var(--spacing-medium);
+  margin-top: var(--spacing-medium);
+}
+
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-nano);
+  min-width: 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+// A row opens the details of its error in the side panel
+.clickableRow {
+  cursor: pointer;
+}
+
+.fixStatusCell {
+  overflow: hidden;
+}
+
+// The fix status, in the last column, stays visible at the right of the table when it scrolls, for example while the side
+// panel takes the right of the page. It takes the background of its row, which is white unless Moonstone colors the row.
+.fixStatusCell,
+.fixStatusHeadCell {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background-color: inherit;
+}
+
+:where(.table) tr {
+  background-color: var(--color-white);
+}
+
+// The row of a node in the tree of the errors, above the rows of its errors
+.nodeRow {
+  font-weight: 600;
+}
+
+// The chevron which expands or collapses the errors of a node: it keeps its size, and a long path ends with an ellipsis
+.treeToggle {
+  min-width: 0;
+  cursor: pointer;
+
+  > svg {
+    flex: 0 0 auto;
+  }
+
+  > div {
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
+// The row whose error is displayed first in the panel, among the rows of the selected node
+.focusedRow {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+// The errors of the selected node, above the right of the page
+.sidePanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8000;
+  display: flex;
+  flex-direction: column;
+  width: 520px;
+  max-width: 100vw;
+  background-color: var(--color-white);
+  box-shadow: #0000004d -4px 0 16px;
+  outline: none;
+  animation: sidePanelIn 150ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes sidePanelIn {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.sidePanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-small);
+  padding: var(--spacing-medium) var(--spacing-large);
+  border-bottom: 1px solid var(--color-gray40);
+}
+
+.sidePanelFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  padding: var(--spacing-medium) var(--spacing-large);
+  border-top: 1px solid var(--color-gray40);
+}
+
+.sidePanelBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--spacing-large);
+  overflow-y: auto;
+}
+
+.fixActionRow {
+  display: flex;
+}
+
+// The fix spans the width of the panel, so that it is seen right after the summary of the error
+.fixButton {
+  flex: 1;
+  justify-content: center;
+
+  // Moonstone stretches the label, which would leave the icon alone at the left: both stay centered together
+  > span {
+    flex: 0 1 auto;
+  }
+}
+
+.tableWrapper {
+  // width: 0 + min-width: 100% gives the scroll container no intrinsic width: it takes the card's
+  // width and scrolls, instead of reporting the table's width up the flex layout.
+  flex: 1 0 auto;
+  width: 0;
+  min-width: 100%;
+  overflow-x: auto;
+}
+
+// Moonstone tables are flex rows: a cell with a `width` keeps it, the others share what is left.
+// A long path or message is truncated with an ellipsis (full value in the tooltip and in the
+// details panel) instead of widening the page.
+.table {
+  width: 100%;
+}
+
+.cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkButton {
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--color-accent);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.cell .linkButton {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detailsList .linkButton {
+  text-align: left;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-large);
+}
+
+.detailsSummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  padding-bottom: var(--spacing-large);
+  border-bottom: 1px solid var(--color-gray40);
+}
+
+.detailsMessage {
+  line-height: 1.3;
+}
+
+.detailsChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-small);
+}
+
+// Labels and values in the font and the size of the page: the labels are lighter. One label width for every section,
+// so the values line up from one section to the next, and a long value wraps on its own lines, aligned with its label.
+.detailsList {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: var(--spacing-medium) var(--spacing-medium);
+  align-items: start;
+  margin: 0;
+
+  dt,
+  dd {
+    margin: 0;
+    line-height: 1.45;
+  }
+}
+
+.detailsLabel {
+  color: var(--color-gray_dark);
+}
+
+// A value without a natural break, such as a UUID, still wraps instead of widening the panel
+.detailsValue {
+  overflow-wrap: anywhere;
+}
+
+// The errors of the node, one after the other: the one of the clicked row is marked
+.nodeErrors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+}
+
+.nodeError {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  padding: var(--spacing-medium);
+  border: 1px solid var(--color-gray40);
+  border-radius: 4px;
+}
+
+/* What the fix of an error changes, above its Fix button: set apart from the details, as it describes a write */
+// A wrapper, not the Typography itself, holds the padding: the style of the Typography of Moonstone would reset it
+.fixDescription {
+  padding-left: var(--spacing-medium);
+  border-left: 3px solid var(--color-danger);
+}
+
+// What a cluster changes to an error which depends on a resource of the server, such as its search index
+.clusterHelper {
+  padding-left: var(--spacing-medium);
+  border-left: 3px solid var(--color-warning);
+}
+
+.nodeErrorFocused {
+  border-color: var(--color-accent);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.centered {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-large);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.configItem {
+  margin-bottom: var(--spacing-medium);
+}
+
+/* The outcome of a fix of several errors: fixed, skipped and not fixed, each with its reasons */
+.fixOutcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-nano);
+
+  & + & {
+    margin-top: var(--spacing-medium);
+  }
+}
+
+.fixOutcomeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  margin: 0;
+  padding-left: var(--spacing-large);
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-large);
+  background: rgba(19, 28, 33, 0.6);
+}
+
+.dialog {
+  display: flex;
+  width: 560px;
+  max-width: 100%;
+  max-height: 90vh;
+}
+
+.dialogLarge {
+  width: 800px;
+}
+
+.dialogXLarge {
+  width: 1100px;
+}
+
+.dialogSections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-large);
+}
+
+.titleWithStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-small);
+}
+
+// The log stored with the selected results, under the scan selector.
+.resultsLogs {
+  margin-bottom: var(--spacing-medium);
+}
+
+// The scan selector and the status of the selected scan, on one line.
+.scanSelector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-small);
+}
+
+// The menu of a dropdown is as wide as the dropdown: wide enough for the longest label, 'All workspaces' in French.
+.scanDropdown {
+  min-width: 26rem;
+}
+
+// The outcome of a scan without errors to display, laid out as the empty states of the results card
+.noError {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-huge) var(--spacing-large);
+  color: var(--color-gray);
+  text-align: center;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-small);
+  padding: var(--spacing-huge) var(--spacing-large);
+  text-align: center;
+}
+
+.dialogPaper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 90vh;
+  box-shadow: var(--shadow);
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-medium);
+}
+
+.dialogBody {
+  flex: 1;
+  overflow: auto;
+}
+
+// The description, the warning and the acknowledgement of a confirmation, spaced to be read one after the other
+.confirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+}
+
+.dialogActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-small);
+  margin-top: var(--spacing-medium);
+}
+
+// The fix is an action, not a detail: framed apart from the sections above it.
+.fixValuesSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  padding: var(--spacing-medium);
+  border: 1px solid var(--color-gray_light);
+  border-radius: 4px;
+  // Moonstone 2.5 (Jahia 8.1) does not define this token
+  background-color: var(--color-gray_light20, rgba(218, 218, 218, .2));
+}
+
+// Moonstone indents a field for a leading control this one doesn't have.
+.fixValuesField.fixValuesField {
+  padding-left: 0;
+}
+
+.fixValues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+}
+
+.fixValuesRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-nano);
+}
+
+.fixValuesInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.fixAll {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-small);
+}
