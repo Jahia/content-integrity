@@ -10,16 +10,22 @@
     "e2e:debug": "cypress open",
     "e2e:checks": "cypress run --spec 'cypress/e2e/checks/**/*.cy.ts'",
     "e2e:ui": "cypress run --spec 'cypress/e2e/ui/**/*.cy.ts'",
-    "lint": "tsc --noEmit -p ."
+    "lint": "tsc --noEmit -p .",
+    "report:merge": "mochawesome-merge results/reports/cypress*.json > results/reports/report.json && rm results/reports/cypress*.json",
+    "report:html": "marge --inline results/reports/report.json --reportDir results/reports/"
   },
   "devDependencies": {
     "@apollo/client": "^3.14.0",
     "@jahia/cypress": "^8.6.1",
     "cross-fetch": "3.1.6",
     "cypress": "15.13.0",
+    "cypress-multi-reporters": "^2.1.0",
     "graphql": "^15.10.1",
     "graphql-tag": "^2.12.6",
+    "mocha-junit-reporter": "^2.2.1",
     "mochawesome": "^7.1.3",
+    "mochawesome-merge": "^5.1.1",
+    "mochawesome-report-generator": "^6.2.0",
     "typescript": "^5.6.3"
   }
 }

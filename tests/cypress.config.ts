@@ -12,6 +12,10 @@ export default defineConfig({
     viewportWidth: 1366,
     viewportHeight: 768,
     watchForFileChanges: false,
+    reporter: 'cypress-multi-reporters',
+    reporterOptions: {
+        configFile: 'reporter-config.json'
+    },
     e2e: {
         specPattern: 'cypress/e2e/**/*.cy.ts',
         supportFile: 'cypress/support/e2e.ts',

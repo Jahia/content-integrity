@@ -26,6 +26,9 @@ The tests need Jahia 8.1.5 or later with the module deployed, and a root passwor
   [Jahia/legacy-default-components](https://github.com/Jahia/legacy-default-components)): the fixtures of
   `PropertyDefinitionsSanityCheck` and of the fixes of a node create `jnt:frame` nodes, a type which the module `default`
   no longer provides. Without it, these fixtures fail with `NoSuchNodeTypeException`, and so do 5 specs.
+* The fixtures of the virtual nodes create a `jnt:vfsMountPoint` mount point: the module `external-provider` must be
+  deployed (it ships with the Jahia distribution). The CI installs the prerequisites with
+  `provisioning-manifest-build.yml`.
 * The specs of the administration page expect its English labels: the UI language of root (`preferredLanguage` of
   `/users/root`) must be English, or they time out on the title of the page.
 
@@ -50,6 +53,26 @@ The specs must run one at a time, never in parallel: a single scan can run at a 
 The license of the server can limit the number of users logged in at once: the Jahia login page then answers
 "Authentication impossible as max number of concurrent users limit is reached". A spec which logs in other users than
 root logs them out after each test, so that their sessions do not hold the slots until they expire.
+
+## CI
+
+Every pull request, and every push to `master`, builds the module and runs every spec against a Jahia
+started for the run (`.github/workflows/on-code-change.yml` and `on-merge.yml`). On `master`, once the
+tests pass, the screenshots of the documentation are regenerated on the same server and pushed to
+`master` in a commit of their own.
+
+* `provisioning-manifest-build.yml` declares the external dependencies of the tests
+  (`legacy-default-components`; `external-provider`, needed by the fixtures of the virtual nodes,
+  ships with the Jahia distribution); the module under test comes from the build.
+* `Dockerfile` builds the tests container: Cypress, Chrome, `pngquant` and `python3`, which
+  `demo/generate.sh` needs.
+* `docker-compose.yml` starts Jahia and the tests container; `ci.startup.sh` drives it as the CI
+  does. Locally: `source set-env.sh` (from `.env.example`) then `bash ci.startup.sh notests` starts
+  Jahia alone, `bash ci.startup.sh` runs the whole suite.
+* `ci.screenshots.sh` regenerates all the screenshots inside the container, as the CI does after a
+  merge: `demo/regenerate.sh`, `demo/screenshots.sh`, then `demo/cleanup.sh --all-reports`.
+* The reports of a run land in `results/reports` (mochawesome, merged into `report.json`) and
+  `results/xml_reports` (JUnit, one file per spec): `reporter-config.json` configures both.
 
 ## Generate the demo
 

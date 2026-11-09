@@ -1,0 +1,12 @@
+# The external dependencies of the tests, installed by the CI on the Jahia image: the module under
+# test comes separately, from the build artifacts. See tests/README.md for the prerequisites.
+- addMavenRepository: 'https://store.jahia.com/nexus/content/repositories/jahia-public-app-store@id=JahiaStore'
+- addMavenRepository: 'https://devtools.jahia.com/nexus/content/groups/public/@snapshots@noreleases@id=JahiaSnapshot'
+
+# jnt:frame, which the module default no longer provides on Jahia 8.2: the fixtures of
+# PropertyDefinitionsSanityCheck and the fixes of a node need it (see tests/README.md).
+# external-provider, needed by the fixtures of the virtual nodes, ships with Jahia.
+- installBundle:
+  - 'mvn:org.jahia.modules/legacy-default-components/1.2.0'
+  autoStart: true
+  uninstallPreviousVersion: true
