@@ -19,7 +19,7 @@ jobs:
         username: ${{ secrets.GH_PACKAGES_USERNAME }}
         password: ${{ secrets.GH_PACKAGES_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jahia/jahia-modules-action/build@v2
         with:
           mvn_settings_filepath: '.github/maven.settings.xml'

@@ -25,7 +25,7 @@ jobs:
         username: ${{ secrets.GH_PACKAGES_USERNAME }}
         password: ${{ secrets.GH_PACKAGES_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jahia/jahia-modules-action/build@v2
         with:
           mvn_settings_filepath: '.github/maven.settings.xml'
@@ -51,13 +51,13 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 75
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: build-artifacts
           path: ci-build-artifacts
