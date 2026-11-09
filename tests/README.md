@@ -26,9 +26,9 @@ The tests need Jahia 8.1.5 or later with the module deployed, and a root passwor
   [Jahia/legacy-default-components](https://github.com/Jahia/legacy-default-components)): the fixtures of
   `PropertyDefinitionsSanityCheck` and of the fixes of a node create `jnt:frame` nodes, a type which the module `default`
   no longer provides. Without it, these fixtures fail with `NoSuchNodeTypeException`, and so do 5 specs.
-* The fixtures of the virtual nodes create a `jnt:vfsMountPoint` mount point: the module `external-provider` must be
-  deployed (it ships with the Jahia distribution). The CI installs the prerequisites with
-  `provisioning-manifest-build.yml`.
+* The fixtures of the virtual nodes create a `jnt:vfsMountPoint` mount point, a type of the module
+  `external-provider-vfs`: it must be deployed (some Jahia distributions ship it, not every dev
+  snapshot). The CI installs the prerequisites with `provisioning-manifest-build.yml`.
 * The specs of the administration page expect its English labels: the UI language of root (`preferredLanguage` of
   `/users/root`) must be English, or they time out on the title of the page.
 
@@ -62,8 +62,8 @@ tests pass, the screenshots of the documentation are regenerated on the same ser
 `master` in a commit of their own.
 
 * `provisioning-manifest-build.yml` declares the external dependencies of the tests
-  (`legacy-default-components`; `external-provider`, needed by the fixtures of the virtual nodes,
-  ships with the Jahia distribution); the module under test comes from the build.
+  (`legacy-default-components`, `external-provider-vfs`); the module under test comes from the
+  build.
 * `Dockerfile` builds the tests container: Cypress, Chrome, `pngquant` and `python3`, which
   `demo/generate.sh` needs.
 * `docker-compose.yml` starts Jahia and the tests container; `ci.startup.sh` drives it as the CI

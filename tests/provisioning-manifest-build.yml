@@ -10,3 +10,10 @@
   - 'mvn:org.jahia.modules/legacy-default-components/1.2.0'
   autoStart: true
   uninstallPreviousVersion: true
+
+# jnt:vfsMountPoint, used by the fixtures of the virtual nodes: it comes from external-provider-vfs,
+# which is deployed on some Jahia distributions only, not on every 8-SNAPSHOT dev image
+- installBundle:
+  - 'mvn:org.jahia.modules/external-provider-vfs/4.10.0'
+  autoStart: true
+  uninstallPreviousVersion: true
