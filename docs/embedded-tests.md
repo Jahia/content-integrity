@@ -1445,6 +1445,8 @@ The check provides no automatic fix.
 
 An orphaned version history is useless, and only takes some space in the database. The page of the Jahia tools which manages the version history can detect and delete the orphaned version histories.
 
+**Fix**: no automatic fix: delete the orphaned version histories from the page of the Jahia tools which manages the version history.
+
 #### Orphaned version histories in the scanned tree
 
 `Error code: ORPHAN_IN_SUBTREE`
@@ -1455,6 +1457,8 @@ An orphaned version history is useless, and only takes some space in the databas
 
 This error summarizes the `ORPHANED_HISTORY` errors, and is dealt with the same way.
 
+**Fix**: no automatic fix, as for `ORPHANED_HISTORY`.
+
 #### Version history without versioned node identifier
 
 `Error code: HISTORY_WITHOUT_NODE_ID`
@@ -1462,6 +1466,8 @@ This error summarizes the `ORPHANED_HISTORY` errors, and is dealt with the same 
 **Description**: the version history has no `jcr:versionableUuid` property, which identifies the versioned node. This property is protected, and set by the version manager: such a history has been altered below the JCR API, for example in the database.
 
 The version history can't be related to a node. Its subtree has to be analyzed, for example from the JCR browser of the tools, to decide if it can be deleted.
+
+**Fix**: no automatic fix: the error needs an analysis.
 
 ## WipSanityCheck
 
