@@ -4,8 +4,14 @@
 !.env.example
 !artifacts
 !provisioning-manifest-build.yml
+!env.run.sh
+!env.provision.sh
+!env.debug.sh
+!set-env.sh
 !package.json
 !reporter-config.json
+!cypress.config.ts
+!cypress.screenshots.config.ts
 !tsconfig.json
 !yarn.lock
 !.yarnrc.yml

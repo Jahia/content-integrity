@@ -18,6 +18,7 @@ COPY --chown=jahians:jahians package.json yarn.lock .yarnrc.yml /home/jahians/
 
 RUN mkdir -p /home/jahians/run-artifacts /home/jahians/results /home/jahians/cypress/plugins
 
+#CI=true reduces the verbosity of the installation logs
 RUN CI=true yarn install
 
 COPY --chown=jahians:jahians . /home/jahians
