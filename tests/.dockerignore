@@ -8,6 +8,10 @@
 !env.provision.sh
 !env.debug.sh
 !set-env.sh
+!ci.build.sh
+!ci.startup.sh
+!ci.postrun.sh
+!ci.screenshots.sh
 !package.json
 !reporter-config.json
 !cypress.config.ts
