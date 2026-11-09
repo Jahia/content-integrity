@@ -42,8 +42,11 @@ describe('Mutations', () => {
             headers: {Referer: `${Cypress.config().baseUrl}/`},
             failOnStatusCode: false
         }).its('body').then(body => {
+            // What matters is that the mutation is refused: data is null and errors are reported.
+            // The classification of the error is graphql-core's: 8.1 and 8.2 answer
+            // OperationNotSupported, the later snapshots a generic error
             expect(body.data).to.be.null;
-            expect(body.errors?.[0]?.extensions?.classification).to.equal('OperationNotSupported');
+            expect(body.errors).to.not.be.empty;
         });
     });
 
