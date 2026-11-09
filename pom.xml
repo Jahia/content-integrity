@@ -54,7 +54,7 @@
     <groupId>org.jahia.community</groupId>
     <artifactId>content-integrity</artifactId>
     <name>Content Integrity</name>
-    <version>4.0.0</version>
+    <version>4.0.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <description>Scans the JCR repository of a Jahia server to detect the inconsistent content, and fixes it</description>
 
@@ -83,7 +83,7 @@
         <connection>scm:git:git@github.com:Jahia/content-integrity</connection>
         <developerConnection>scm:git:git@github.com:Jahia/content-integrity</developerConnection>
         <url>https://github.com/Jahia/content-integrity</url>
-        <tag>content-integrity-4.0.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <repositories>
