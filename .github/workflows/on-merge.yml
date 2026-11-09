@@ -67,6 +67,13 @@ jobs:
         with:
           version: '1.29.2'
 
+      # The registries of the Jahia images, as the integration-tests action logs into before it
+      # pulls them: ghcr.io for jahia-ee-dev, Docker Hub for the base image of the tests image
+      - name: Docker login
+        run: |
+          echo '${{ secrets.GH_PACKAGES_TOKEN }}' | docker login ghcr.io -u '${{ secrets.GH_PACKAGES_USERNAME }}' --password-stdin
+          echo '${{ secrets.DOCKERHUB_PASSWORD }}' | docker login docker.io -u '${{ secrets.DOCKERHUB_USERNAME }}' --password-stdin
+
       # The same stack as the integration-tests job: a fresh Jahia, the manifest, the module built
       # by the build job, then ci.screenshots.sh inside the tests container
       - name: Build the tests image
