@@ -40,7 +40,7 @@
     "@jahia/webpack-config": "^1.1.0",
     "babel-loader": "^10.0.0",
     "clean-webpack-plugin": "^4.0.0",
-    "copy-webpack-plugin": "^11.0.0",
+    "copy-webpack-plugin": "^14.0.0",
     "css-loader": "^6.8.1",
     "marked": "12.0.2",
     "rimraf": "^5.0.0",
@@ -50,6 +50,9 @@
     "webpack": "^5.91.0",
     "webpack-bundle-analyzer": "^4.10.2",
     "webpack-cli": "^5.1.4"
+  },
+  "resolutions": {
+    "minimatch@npm:^9.0.4": "^11.0.1"
   },
   "browserslist": {
     "production": [
