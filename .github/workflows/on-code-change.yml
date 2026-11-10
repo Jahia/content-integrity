@@ -1,6 +1,5 @@
 # Builds the module and runs every Cypress spec against a Jahia started for the run, on every
-# pull request (a push to master, direct or through a merge, is covered by on-merge.yml, which
-# also regenerates the screenshots).
+# pull request (a push to master, direct or through a merge, is covered by on-merge.yml).
 name: On Code Change (PR)
 
 on:

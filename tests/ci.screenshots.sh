@@ -1,14 +1,16 @@
 #!/bin/bash
 # Regenerates the screenshots of the documentation of the checks, docs/img/checks/<check>.png,
-# <check>/<error type>.png and docs/img/ui-<name>.png, on the CI server after the tests pass:
-# rebuilds the demo (regenerate.sh, which deletes EVERY stored scan report: the CI server holds
-# only the module under test), takes all the screenshots (screenshots.sh), then removes the demo
-# again (cleanup.sh --all-reports), so the server is left as it was.
+# <check>/<error type>.png and docs/img/ui-<name>.png, by hand when the documentation needs new
+# images: rebuilds the demo (regenerate.sh, which deletes EVERY stored scan report: run it on a
+# disposable Jahia which holds only the module under test), takes all the screenshots
+# (screenshots.sh), then removes the demo again (cleanup.sh --all-reports), so the server is left
+# as it was.
 #
 # Runs INSIDE the tests container (whose working directory is this tests folder), against the Jahia
 # of the docker-compose stack: JAHIA_URL=http://jahia:8080 and SUPER_USER_PASSWORD come from the
-# environment. screenshots.sh copies the images into ../docs/img: the folder is created here, and
-# the CI copies it out of the container with docker cp.
+# environment. screenshots.sh copies the images into ../docs/img: the folder is created here; copy
+# it out of the container with docker cp (into results/docs-img), then run ci.postrun.sh on the
+# host.
 
 set -e
 TESTS=$(cd "$(dirname "$0")" && pwd)

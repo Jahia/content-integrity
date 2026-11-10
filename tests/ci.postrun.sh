@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Executed by the CI on the host after the screenshots job: copies the images the tests container
-# produced into the sources of the documentation, ready to be committed. The container wrote them
-# to docs/img (see ci.screenshots.sh); the CI copies that folder out first.
+# Run by hand on the host once the screenshots were regenerated: copies the images the tests
+# container produced into the sources of the documentation, ready to be committed. The container
+# wrote them to docs/img (see ci.screenshots.sh); copy that folder out of the container first
+# (docker cp <container>:/home/docs/img results/docs-img).
 
 set -e
 cd "$(dirname "$0")"

@@ -57,9 +57,9 @@ root logs them out after each test, so that their sessions do not hold the slots
 ## CI
 
 Every pull request, and every push to `master`, builds the module and runs every spec against a Jahia
-started for the run (`.github/workflows/on-code-change.yml` and `on-merge.yml`). Every night, on top
-of the build, the screenshots of the documentation are regenerated on a fresh Jahia and pushed to
-`master` when they changed (`nightly.yml`, on a schedule or by hand with `workflow_dispatch`).
+started for the run (`.github/workflows/on-code-change.yml` and `on-merge.yml`). The CI does not
+regenerate the screenshots of the documentation: they are taken by hand, with `demo/screenshots.sh`
+(see Generate the demo below, and the skill `regenerate-screenshots`).
 
 * `provisioning-manifest-build.yml` declares the external dependencies of the tests
   (`legacy-default-components`, `external-provider-vfs`); the module under test comes from the
@@ -69,8 +69,10 @@ of the build, the screenshots of the documentation are regenerated on a fresh Ja
 * `docker-compose.yml` starts Jahia and the tests container; `ci.startup.sh` drives it as the CI
   does. Locally: `source set-env.sh` (from `.env.example`) then `bash ci.startup.sh notests` starts
   Jahia alone, `bash ci.startup.sh` runs the whole suite.
-* `ci.screenshots.sh` regenerates all the screenshots inside the container, as the CI does after a
-  merge: `demo/regenerate.sh`, `demo/screenshots.sh`, then `demo/cleanup.sh --all-reports`.
+* `ci.screenshots.sh` regenerates all the screenshots inside the container: `demo/regenerate.sh`,
+  `demo/screenshots.sh`, then `demo/cleanup.sh --all-reports`. Copy the images out of the container
+  (`docker cp <container>:/home/docs/img results/docs-img`), then `ci.postrun.sh` copies them into
+  `docs/img`.
 * The reports of a run land in `results/reports` (mochawesome, merged into `report.json`) and
   `results/xml_reports` (JUnit, one file per spec): `reporter-config.json` configures both.
 
