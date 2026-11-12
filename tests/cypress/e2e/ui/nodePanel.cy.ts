@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {clearFilters, getDetailsPanel, getDetailsWorkspace, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
+import {clearFilters, getDetailsPanel, getDetailsWorkspace, getRow, openErrorDetails, selectFilter, visitLatestResults} from '../../support/adminPage';
 
 // The panel displays the errors of a node in one workspace. The fixtures give an error in each workspace.
 const SITE = 'ciUiNodePanel';
@@ -58,9 +58,9 @@ describe('Panel of the errors of a node', () => {
     it('closes the panel when the table is filtered on another workspace', () => {
         openErrorDetails(IN_DEFAULT);
         // Filtered on the workspace of the node, the panel stays
-        selectInDropdown('Workspace', /^default \(\d+\)$/);
+        selectFilter('Workspace', /^default \(\d+\)$/);
         getDetailsWorkspace().should('have.text', 'default');
-        selectInDropdown('Workspace', /^live \(\d+\)$/);
+        selectFilter('Workspace', /^live \(\d+\)$/);
         cy.get('#ci-node-errors').should('not.exist');
         getRow(IN_LIVE).should('exist');
     });

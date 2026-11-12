@@ -1,5 +1,5 @@
 import {createTestSite, deleteTestSite, runFixture, scan} from '../../support/integrity';
-import {closeDetailsPanel, confirmFix, getDetailsPanel, getRow, openErrorDetails, selectInDropdown, visitLatestResults} from '../../support/adminPage';
+import {closeDetailsPanel, confirmFix, getDetailsPanel, getRow, openErrorDetails, selectFilter, visitLatestResults} from '../../support/adminPage';
 
 const SITE = 'ciUiAclFix';
 const USER = `ci-${SITE}-ace`;
@@ -21,7 +21,7 @@ describe('Fix of an access control entry in the administration page', () => {
     it('chooses the principal of an ACE in a dropdown which groups the users and the groups', () => {
         // The ACL errors do not block an XML import: the results open without filter
         visitLatestResults();
-        selectInDropdown('Error type', /^NO_PRINCIPAL/);
+        selectFilter('Error type', /^NO_PRINCIPAL/);
         openErrorDetails(NO_PRINCIPAL);
         getDetailsPanel().within(() => {
             cy.contains('has no principal').should('be.visible');

@@ -1,4 +1,4 @@
-import {clearFilters, getDropdown, getResultsTable, getScanLabel, openDropdown, openErrorDetails, selectInDropdown, visitAdmin} from '../cypress/support/adminPage';
+import {clearFilters, getFilterChip, getResultsTable, getScanLabel, openErrorDetails, selectFilter, selectInDropdown, visitAdmin} from '../cypress/support/adminPage';
 import {graphql} from '../cypress/support/integrity';
 
 /**
@@ -35,14 +35,11 @@ let selectedChecks: string[] = [];
 let selectedErrorTypes: string[] = [];
 
 /**
- * Selects an item of a filter of the results table, found by its text. The menu can be longer than the screen: the item
- * is clicked even when the overlay of the menu covers it.
+ * Selects a value of a filter of the results table, found by its text, and waits for its chip to show it.
  */
 const filterOn = (label: string, value: string): void => {
-    openDropdown(label);
-    cy.contains('li.moonstone-menuItem', new RegExp(`^${value} \\(`)).click({force: true});
-    cy.get('.moonstone-menu_overlay').should('not.exist');
-    getDropdown(label).should('contain.text', value);
+    selectFilter(label, new RegExp(`^${value} \\(`));
+    getFilterChip(label).should('contain.text', value);
 };
 
 /**
