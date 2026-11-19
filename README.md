@@ -1,4 +1,4 @@
-<a href="https://store.jahia.com/contents/modules-repository/org/jahia/modules/content-integrity.html">
+<a href="https://store.jahia.com/contents/modules-repository/org/jahia/community/content-integrity.html">
     <img src="./docs/img/jahia-logo.svg" alt="Jahia logo" title="Jahia" align="right" height="40" />
 </a>
 
