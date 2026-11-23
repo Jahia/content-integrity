@@ -1248,7 +1248,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.14.5, @babel/runtime@npm:^7.17.2":
+"@babel/runtime@npm:^7.14.5":
   version: 7.29.7
   resolution: "@babel/runtime@npm:7.29.7"
   checksum: 10c0/ca11572f7146b21e0bde6a9ed4bb6a89eafbee5f0944c7eb54d0d8a2dac962c33638a1d611e14faa71dfbb92b4b5f9236232208568a6b7d5c6f3f39ddb91771e
@@ -1405,7 +1405,7 @@ __metadata:
     copy-webpack-plugin: "npm:^14.0.0"
     css-loader: "npm:^6.8.1"
     graphql: "npm:^15.8.0"
-    i18next: "npm:^21.6.14"
+    i18next: "npm:^26.3.4"
     marked: "npm:12.0.2"
     prop-types: "npm:^15.8.1"
     react: "npm:^18.3.1"
@@ -2735,12 +2735,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:^21.6.14":
-  version: 21.10.0
-  resolution: "i18next@npm:21.10.0"
-  dependencies:
-    "@babel/runtime": "npm:^7.17.2"
-  checksum: 10c0/2a674739aab219704d5a0bf62d03bed20ad2bceff9579efb4da61c4946c883fc172062ba7405a26bf795995860f2ab15826b05271f4c457bf7eb19e852f6006d
+"i18next@npm:^26.3.4":
+  version: 26.3.4
+  resolution: "i18next@npm:26.3.4"
+  peerDependencies:
+    typescript: ^5 || ^6
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/09b2e578660b1cdcb284ed00e1f1c8559871fa66cbf85e58f9b78bf782e3b575341f0668ca7230fc80d30104bec42f8ac3ac221096d0f6e6bfbf18255dcccc94
   languageName: node
   linkType: hard
 
